@@ -15,7 +15,7 @@ const SOURCES = {
   secret: {
     cats: SECRET_CATS,
     ref: (cat) => "db_sirr_" + cat,
-    secretFields: ["sirr"]
+    secretFields: ["sirr", "content"]
   },
   // Bibliothèque Almaqtab : un seul nœud. Champ payant = le lien du livre.
   // On accepte l'ancien nom "pdf" ET le nouveau "pdfUrl" (écrit par le panneau admin) :

@@ -63,8 +63,8 @@ async function loadSecrets(catId) {
     const { items } = await apiPost('list-content', { kind: 'secret', cat: catId });
     secretsCache[catId] = (items || []).map(val => ({
       key: val._key,
-      faida: val.faida || 'Secret sans titre',
-      img: val.img || null
+      faida: val.faida || val.title || val.titre || 'Secret sans titre',
+      img: val.img || val.image || null
     }));
   } catch (e) {
     console.error(e);
@@ -102,6 +102,10 @@ async function fetchAndShowDetail(key) {
     // Contenu complet (avec sirr) — l'API ne le renvoie qu'aux abonnés actifs.
     const { item } = await apiPost('get-content', { kind: 'secret', cat: currentCat.id, key });
     if (!item) throw new Error('Secret introuvable.');
+    // Compat : nouvelles fiches (title/content/image) ↔ anciennes (faida/sirr/img).
+    item.faida = item.faida || item.title || item.titre || '';
+    item.sirr  = item.sirr  || item.content || '';
+    item.img   = item.img   || item.image || null;
     currentSecret = { catId: currentCat.id, key, data: item };
     showDetailView(item);
   } catch (e) {
