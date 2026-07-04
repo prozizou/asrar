@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Planète — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #000000;
+      color: #F5E6C4;
+      font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+      margin: 0;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .glass-panel {
+      background: #121214 !important;
+      border: 1px solid #1F1F23 !important;
+      border-radius: 20px;
+      padding: 1.8rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: none !important;
+    }
+    .back-btn {
+      color: #F5E6C4;
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: inline-block;
+      margin-bottom: 1.2rem;
+      opacity: 0.7;
+    }
+
+    /* Horloge sacrée */
+    .time-display {
+      font-size: 3.5rem;
+      font-family: 'Cormorant Garamond', serif;
+      margin: 20px 0 5px;
+      color: #C9A961;
+      text-align: center;
+      letter-spacing: 3px;
+      font-weight: 600;
+      text-shadow: 0 0 20px rgba(201,169,97,0.3);
+    }
+    .date-display {
+      text-align: center;
+      color: #888;
+      margin-bottom: 24px;
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    /* Phase & planète actuelles */
+    .planet-card {
+      text-align: center;
+      padding: 10px 0;
+    }
+    .planet-icon {
+      font-size: 3.8rem;
+      display: block;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 12px rgba(255,255,255,0.15));
+    }
+    .planet-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .phase-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border-radius: 20px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: rgba(201,169,97,0.15);
+      color: #C9A961;
+      border: 1px solid #C9A961;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.95rem;
+    }
+    .info-row .label {
+      color: #888;
+    }
+    .info-row .value {
+      color: #F5E6C4;
+      font-weight: 600;
+    }
+
+    /* Semaine planétaire */
+    .planets-week h4 {
+      color: #888;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 400;
+    }
+    .day-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .day-row.today {
+      background: rgba(201,169,97,0.08);
+      border-color: #C9A961;
+    }
+    .day-name {
+      font-weight: 500;
+    }
+    .day-planet {
+      color: #C9A961;
+      font-weight: 600;
+    }
+
+    /* Bouton d'accès aux heures planétaires */
+    .access-btn {
+      background: #C9A961;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin: 20px 0;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+    .access-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Tableau des heures */
+    .planetary-hours-table {
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+    .planetary-hours-table table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .planetary-hours-table th {
+      text-align: left;
+      padding: 8px 6px;
+      color: #888;
+      font-weight: 400;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .planetary-hours-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .planetary-hours-table .planet-name {
+      font-weight: 600;
+      color: #F5E6C4;
+    }
+    .planetary-hours-table .hour-type {
+      font-size: 0.75rem;
+      color: #C9A961;
+      text-transform: uppercase;
+    }
+    .loading-text {
+      color: #888;
+      text-align: center;
+      padding: 20px;
+    }
+    .error-text {
+      color: #d9534f;
+      text-align: center;
+    }
+    .nat-tfav { color: #38d66b; font-weight: 700; }
+    .nat-fav  { color: #8fd694; }
+    .nat-def  { color: #d9534f; }
+    .nat-mix  { color: #C9A961; }
+    .planetary-hours-table table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+    .planetary-hours-table th, .planetary-hours-table td { padding: 6px 8px; border-bottom: 1px solid #1F1F23; text-align: left; }
+    .planetary-hours-table th { color: #C9A961; text-transform: uppercase; font-size: 0.7rem; }
+    .planetary-hours-table tr.now-hour { background: rgba(201,169,97,0.14); }
+    .planetary-hours-table tr.now-hour td { color: #F5E6C4; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/main.js"></script>
+
+  <div class="container">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+
+    <!-- Panneau principal -->
+    <div class="glass-panel" style="text-align:center;">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; margin-bottom:0;">🌍 Temporalité Mystique</h2>
+
+      <div class="time-display" id="timeDisplay">--:--:--</div>
+      <div class="date-display" id="dateDisplay">Chargement...</div>
+
+      <div class="planet-card">
+        <span class="planet-icon" id="phaseIcon">🌟</span>
+        <div class="planet-name" id="dayNightDisplay">Chargement...</div>
+        <span class="phase-badge" id="phaseBadge">Phase en cours</span>
+      </div>
+
+      <div style="margin-top:20px; text-align:left;">
+        <div class="info-row">
+          <span class="label">🪐 Planète de l'heure</span>
+          <span class="value" id="planetDisplay">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">⚖️ Nature de l'heure</span>
+          <span class="value" id="hourNature">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">🗓️ Jour planétaire</span>
+          <span class="value" id="planetaryDayDisplay">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">🌅 Lever du soleil</span>
+          <span class="value" id="sunriseDisplay">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">🌇 Coucher du soleil</span>
+          <span class="value" id="sunsetDisplay">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">📍 Position</span>
+          <span class="value" id="locInfo">—</span>
+        </div>
+      </div>
+
+      <!-- Bouton protégé : Heures planétaires complètes -->
+      <button class="access-btn" onclick="gatedPlanetaryHours()">🔮 Déterminer les heures planétaires</button>
+      <div id="planetaryHoursContainer"></div>
+    </div>
+
+    <!-- Planètes de la semaine -->
+    <div class="glass-panel planets-week">
+      <h4>🪐 Régents de la semaine</h4>
+      <div id="weekPlanets"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIGURATION ====================
+    const DAY_PLANETS = {
+      names: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+      planets: ['Soleil ☀️', 'Lune 🌙', 'Mars ♂️', 'Mercure ☿', 'Jupiter ♃', 'Vénus ♀', 'Saturne ♄'],
+      icons: ['☀️', '🌙', '♂️', '☿', '♃', '♀', '♄']
+    };
+
+    // Ordre chaldéen (suite des planètes)
+    const CHALDEAN_ORDER = ['Saturne', 'Jupiter', 'Mars', 'Soleil', 'Vénus', 'Mercure', 'Lune'];
+    const CHALDEAN_EMOJIS = { Saturne: '♄', Jupiter: '♃', Mars: '♂️', Soleil: '☀️', Vénus: '♀', Mercure: '☿', Lune: '🌙' };
+    const DAY_RULER_MAP = [3, 6, 2, 5, 1, 4, 0]; // index chaldéen pour dim(0)..sam(6)
+
+    // Nature des heures planétaires (selon la demande).
+    //  Soleil/Lune = favorable · Vénus/Jupiter = très favorable · Mars/Saturne = défavorable
+    //  Mercure = 1re moitié favorable, 2de moitié défavorable.
+    const PLANET_NATURE = {
+      'Soleil':  { txt: 'Favorable',      cls: 'nat-fav'  },
+      'Lune':    { txt: 'Favorable',      cls: 'nat-fav'  },
+      'Vénus':   { txt: 'Très favorable', cls: 'nat-tfav' },
+      'Jupiter': { txt: 'Très favorable', cls: 'nat-tfav' },
+      'Mars':    { txt: 'Défavorable',    cls: 'nat-def'  },
+      'Saturne': { txt: 'Défavorable',    cls: 'nat-def'  },
+      'Mercure': { txt: '1re moitié favorable · 2de défavorable', cls: 'nat-mix' }
+    };
+    // Nature effective d'une heure. fraction = avancement dans l'heure (0→1) pour Mercure.
+    function natureOf(planet, fraction) {
+      if (planet === 'Mercure') {
+        if (fraction == null) return PLANET_NATURE['Mercure'];
+        return fraction < 0.5
+          ? { txt: 'Favorable (1re moitié)',   cls: 'nat-fav' }
+          : { txt: 'Défavorable (2de moitié)', cls: 'nat-def' };
+      }
+      return PLANET_NATURE[planet] || { txt: '—', cls: '' };
+    }
+
+    let geoData = { lat: null, lng: null, city: '—', sunrise: null, sunset: null, ready: false };
+    // Journée planétaire courante (lever→lever) : sert au régent et aux 24 heures.
+    let pday = { sunrise: null, sunset: null, nextSunrise: null, dayOfWeek: null };
+
+    // ==================== AUTHENTIFICATION & GATING ====================
+    requireAuth(() => {});
+
+    function gatedPlanetaryHours() {
+      ensureAccess(() => calculateAllPlanetaryHours());
+    }
+
+    // ==================== GÉOLOCALISATION : GPS UNIQUEMENT ====================
+    async function initPlanete() {
+      buildWeekPlanets();
+      await localiserParGPS();   // GPS only, pas d'IP/réseau pour la position
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    function localiserParGPS() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          afficherErreurGPS('Géolocalisation non disponible sur cet appareil.');
+          return resolve();
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            geoData.lat = pos.coords.latitude;
+            geoData.lng = pos.coords.longitude;
+            geoData.city = geoData.lat.toFixed(4) + ', ' + geoData.lng.toFixed(4);
+            document.getElementById('locInfo').innerText = '📡 GPS : ' + geoData.city;
+            recalculerSoleil();        // calcul LOCAL (NOAA), aucun appel réseau
+            nommerVille();             // facultatif (affichage seulement)
+            geoData.ready = true;
+            resolve();
+          },
+          (err) => {
+            const msg = err && err.code === 1
+              ? 'Accès GPS refusé. Autorisez la localisation puis réessayez.'
+              : 'Position GPS indisponible. Réessayez en extérieur.';
+            afficherErreurGPS(msg);
+            resolve();
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      });
+    }
+
+    function afficherErreurGPS(message) {
+      geoData.ready = false;
+      const loc = document.getElementById('locInfo');
+      if (loc) loc.innerHTML = '<span style="color:#d9534f;">' + message + '</span> ' +
+        '<button onclick="localiserParGPS().then(updateClock)" style="margin-left:6px;cursor:pointer;background:#1F1F23;color:#C9A961;border:1px solid #C9A961;border-radius:8px;padding:2px 8px;">Réessayer</button>';
+      document.getElementById('planetDisplay').innerText = '— (GPS requis)';
+    }
+
+    // Nom de ville (réseau, AFFICHAGE seulement — la position vient du GPS).
+    async function nommerVille() {
+      try {
+        const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${geoData.lat}&longitude=${geoData.lng}&localityLanguage=fr`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const ville = d.city || d.locality;
+        if (ville) {
+          geoData.city = ville;
+          document.getElementById('locInfo').innerText = '📡 ' + ville + ' (GPS)';
+        }
+      } catch (e) { /* on garde les coordonnées GPS */ }
+    }
+
+    // ==================== LEVER/COUCHER LOCAL (NOAA, sans réseau) ====================
+    // Renvoie {sunrise:Date, sunset:Date} en heure LOCALE pour une date + position.
+    function sunTimesFor(dateLocal, lat, lng) {
+      const rad = Math.PI / 180, deg = 180 / Math.PI, J2000 = 2451545.0;
+      const utcMid = Date.UTC(dateLocal.getFullYear(), dateLocal.getMonth(), dateLocal.getDate());
+      const Jdate = utcMid / 86400000 + 2440587.5;        // JD à 00:00 UTC de la date
+      const n = Math.round(Jdate - J2000 + 0.0008);
+      const lw = -lng;                                     // longitude OUEST positive
+      const Jstar = n - lw / 360;
+      const M = (357.5291 + 0.98560028 * Jstar) % 360;
+      const Mr = M * rad;
+      const C = 1.9148 * Math.sin(Mr) + 0.0200 * Math.sin(2 * Mr) + 0.0003 * Math.sin(3 * Mr);
+      const lambda = (M + C + 180 + 102.9372) % 360;
+      const lr = lambda * rad;
+      const Jtransit = J2000 + Jstar + 0.0053 * Math.sin(Mr) - 0.0069 * Math.sin(2 * lr);
+      const decl = Math.asin(Math.sin(lr) * Math.sin(23.4397 * rad));
+      const phi = lat * rad;
+      const cosw = (Math.sin(-0.833 * rad) - Math.sin(phi) * Math.sin(decl)) / (Math.cos(phi) * Math.cos(decl));
+      if (cosw >= 1)  return { polar: 'nuit' };            // soleil ne se lève pas
+      if (cosw <= -1) return { polar: 'jour' };            // soleil ne se couche pas
+      const w = Math.acos(cosw) * deg;
+      const Jrise = Jtransit - w / 360;
+      const Jset  = Jtransit + w / 360;
+      return {
+        sunrise: new Date((Jrise - 2440587.5) * 86400000),
+        sunset:  new Date((Jset  - 2440587.5) * 86400000)
+      };
+    }
+
+    function defaultSun(date, h, m) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+    }
+    function sunOrDefault(date) {
+      const s = sunTimesFor(date, geoData.lat, geoData.lng);
+      if (s.sunrise && s.sunset) return s;
+      return { sunrise: defaultSun(date, 6, 30), sunset: defaultSun(date, 18, 0) };
+    }
+
+    // Recalcule le lever/coucher du jour + détermine la JOURNÉE PLANÉTAIRE courante.
+    function recalculerSoleil() {
+      if (geoData.lat === null) return;
+      const now = new Date();
+      const today = sunOrDefault(now);
+      geoData.sunrise = today.sunrise; // affichage + phase
+      geoData.sunset  = today.sunset;
+      majJournéePlanetaire(now);
+    }
+
+    // RÈGLE : on ne change PAS de jour planétaire tant que l'heure locale n'a pas
+    // dépassé le lever du soleil. Avant le lever, on reste dans la journée de la veille.
+    function majJournéePlanetaire(now) {
+      const today = sunOrDefault(now);
+      if (now.getTime() < today.sunrise.getTime()) {
+        // Avant le lever d'aujourd'hui → journée planétaire = celle de la VEILLE.
+        const veille = new Date(now); veille.setDate(veille.getDate() - 1);
+        const y = sunOrDefault(veille);
+        pday = { sunrise: y.sunrise, sunset: y.sunset, nextSunrise: today.sunrise, dayOfWeek: y.sunrise.getDay() };
+      } else {
+        const demain = new Date(now); demain.setDate(demain.getDate() + 1);
+        const t = sunOrDefault(demain);
+        pday = { sunrise: today.sunrise, sunset: today.sunset, nextSunrise: t.sunrise, dayOfWeek: today.sunrise.getDay() };
+      }
+    }
+
+    // ==================== HORLOGE & TEMPS RÉEL ====================
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('timeDisplay').innerText = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('dateDisplay').innerText = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      if (!geoData.ready || !pday.sunrise) return;
+
+      // Bascule de journée planétaire au passage d'un lever.
+      if (now.getTime() < pday.sunrise.getTime() || now.getTime() >= pday.nextSunrise.getTime()) {
+        recalculerSoleil();
+      }
+
+      document.getElementById('sunriseDisplay').innerText = geoData.sunrise.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('sunsetDisplay').innerText  = geoData.sunset.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      const jpEl = document.getElementById('planetaryDayDisplay');
+      if (jpEl) {
+        // Avant le lever, le jour planétaire reste celui de la VEILLE → on le signale.
+        const avantLever = pday.dayOfWeek !== now.getDay();
+        jpEl.innerText = DAY_PLANETS.names[pday.dayOfWeek] + ' — régent ' + DAY_PLANETS.planets[pday.dayOfWeek]
+          + (avantLever ? ' (nuit, avant le lever)' : '');
+      }
+
+      updatePhase(now);
+      updateCurrentPlanetaryHour(now);
+      highlightWeek();
+    }
+
+    function updatePhase(now) {
+      const ms = now.getTime();
+      const sr = geoData.sunrise.getTime(), ss = geoData.sunset.getTime();
+      let phase;
+      if (ms >= sr - 18e5 && ms < sr + 18e5)      phase = { icon: '🌅', name: 'Aube mystique', badge: 'Transition' };
+      else if (ms >= sr + 18e5 && ms < ss - 18e5) phase = { icon: '☀️', name: 'Jour sacré', badge: 'Lumière manifestée' };
+      else if (ms >= ss - 18e5 && ms < ss + 18e5) phase = { icon: '🌆', name: 'Crépuscule ésotérique', badge: 'Entre deux mondes' };
+      else                                         phase = { icon: '🌙', name: 'Nuit des secrets', badge: 'Royaume des ombres' };
+      document.getElementById('phaseIcon').innerText = phase.icon;
+      document.getElementById('dayNightDisplay').innerText = phase.name;
+      document.getElementById('phaseBadge').innerText = phase.badge;
+    }
+
+    // Heure planétaire courante dans la JOURNÉE PLANÉTAIRE (lever→lever).
+    function currentHour(now) {
+      const ms = now.getTime();
+      const srMs = pday.sunrise.getTime(), ssMs = pday.sunset.getTime(), nsMs = pday.nextSunrise.getTime();
+      let isDay, idx, hourStart, hourLen;
+      if (ms < ssMs) {            // diurne (ms ≥ lever garanti par la sélection de pday)
+        isDay = true;
+        hourLen = (ssMs - srMs) / 12;
+        idx = Math.min(11, Math.max(0, Math.floor((ms - srMs) / hourLen)));
+        hourStart = srMs + idx * hourLen;
+      } else {                    // nocturne
+        isDay = false;
+        hourLen = (nsMs - ssMs) / 12;
+        idx = Math.min(11, Math.max(0, Math.floor((ms - ssMs) / hourLen)));
+        hourStart = ssMs + idx * hourLen;
+      }
+      const start = DAY_RULER_MAP[pday.dayOfWeek];
+      const planet = CHALDEAN_ORDER[(start + (isDay ? 0 : 12) + idx) % 7];
+      const fraction = (ms - hourStart) / hourLen;
+      return { planet, isDay, idx, fraction };
+    }
+
+    function updateCurrentPlanetaryHour(now) {
+      const h = currentHour(now);
+      document.getElementById('planetDisplay').innerText = h.planet + ' ' + CHALDEAN_EMOJIS[h.planet];
+      const nat = natureOf(h.planet, h.fraction);
+      const el = document.getElementById('hourNature');
+      if (el) { el.innerText = nat.txt; el.className = 'value ' + nat.cls; }
+    }
+
+    // ==================== TABLEAU DES 24 HEURES (journée planétaire) ====================
+    function calculateAllPlanetaryHours() {
+      if (!geoData.ready || !pday.sunrise) {
+        document.getElementById('planetaryHoursContainer').innerHTML =
+          '<p class="error-text">Position GPS requise. Autorisez la localisation puis réessayez.</p>';
+        return;
+      }
+      const now = new Date();
+      const cur = currentHour(now);
+      const start = DAY_RULER_MAP[pday.dayOfWeek];
+      const dayLen = (pday.sunset.getTime() - pday.sunrise.getTime()) / 12;
+      const nightLen = (pday.nextSunrise.getTime() - pday.sunset.getTime()) / 12;
+
+      let html = '<div class="planetary-hours-table"><p style="text-align:center;color:#C9A961;margin:6px 0;">Journée planétaire : <strong>' +
+        DAY_PLANETS.names[pday.dayOfWeek] + '</strong></p><table>';
+      html += '<thead><tr><th>Période</th><th>Début</th><th>Planète</th><th>Nature</th></tr></thead><tbody>';
+
+      for (let i = 0; i < 24; i++) {
+        const isDay = i < 12;
+        const k = isDay ? i : i - 12;
+        const startMs = isDay ? pday.sunrise.getTime() + k * dayLen : pday.sunset.getTime() + k * nightLen;
+        const planet = CHALDEAN_ORDER[(start + i) % 7];
+        const nat = PLANET_NATURE[planet];
+        const isNow = (cur.isDay === isDay && cur.idx === k);
+        html += `<tr class="${isNow ? 'now-hour' : ''}">
+          <td class="hour-type">${isDay ? '☀️ Jour' : '🌙 Nuit'}</td>
+          <td>${new Date(startMs).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+          <td class="planet-name">${CHALDEAN_EMOJIS[planet]} ${planet}${isNow ? ' ◀' : ''}</td>
+          <td><span class="${nat.cls}">${nat.txt}</span></td>
+        </tr>`;
+      }
+      html += '</tbody></table></div>';
+      document.getElementById('planetaryHoursContainer').innerHTML = html;
+    }
+
+    // ==================== SEMAINE ====================
+    function buildWeekPlanets() {
+      document.getElementById('weekPlanets').innerHTML = DAY_PLANETS.names.map((day, i) => `
+        <div class="day-row" data-day="${i}">
+          <span class="day-name">${day}</span>
+          <span class="day-planet">${DAY_PLANETS.planets[i]}</span>
+        </div>
+      `).join('');
+    }
+    // Surligne le JOUR PLANÉTAIRE courant (pas le jour calendaire avant le lever).
+    function highlightWeek() {
+      const active = pday.dayOfWeek;
+      document.querySelectorAll('#weekPlanets .day-row').forEach((row) => {
+        const i = parseInt(row.getAttribute('data-day'), 10);
+        row.classList.toggle('today', i === active);
+        const name = row.querySelector('.day-name');
+        if (name) name.innerText = (i === active ? '▶ ' : '') + DAY_PLANETS.names[i];
+      });
+    }
+
+    // ==================== LANCEMENT ====================
+    window.addEventListener('DOMContentLoaded', initPlanete);
+
+    // Fallbacks (au cas où main.js ne les définirait pas)
+    if (typeof ensureAccess !== 'function') {
+      window.ensureAccess = function (cb) { cb(); };
+    }
+    if (typeof showSubscriptionGate !== 'function') {
+      window.showSubscriptionGate = function () {
+        alert("Contenu réservé aux abonnés. Demandez l'accès à l'administration via WhatsApp.");
+      };
+    }
+  </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

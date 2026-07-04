@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rouwhanes — ASRAR PRO</title>
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1712">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="mainContainer" class="main-container">
+        <div style="text-align:center;margin:4px 0 10px;">
+            <img src="/assets/logo-mark.png" alt="ASRAR PRO"
+                 style="width:64px;height:64px;border-radius:14px;display:inline-block;">
+        </div>
+        <div class="top-bar">
+            <div id="pmTotal" class="badge" dir="ltr">0</div>
+        </div>
+
+        <div class="input-container">
+            <div id="editor" contenteditable="true" spellcheck="false">محمد</div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="workIntent" class="intent-select" placeholder="Saisissez votre vœu (ex: amour, richesse, protection...)" autocomplete="off">
+        </div>
+
+        <div class="button-row">
+            <button id="btnExtract" class="primary-btn">Calculer</button>
+        </div>
+
+        <div class="result-box">
+            <span id="totalV1" class="total-indicator" dir="ltr">0</span>
+            <div id="textView1" class="scroll-text"></div>
+        </div>
+
+        <div class="result-box">
+            <span id="totalV2" class="total-indicator" dir="ltr">0</span>
+            <div id="textView2" class="scroll-text"></div>
+        </div>
+
+        <div class="stats-footer">
+            <div id="statLine1" class="stat-line">
+                <span id="formula1">0 × 0 = 0</span>
+                <span id="formula1bis">0 × 0 = 0</span>
+            </div>
+            <div id="statLine2" class="stat-line">
+                <span id="formula2">0 × 0 = 0</span>
+                <span id="formula2bis">0 × 0 = 0</span>
+            </div>
+            <div id="statLine3" class="stat-line">
+                <span id="formula3">0 × 0 = 0</span>
+                <span id="formula3bis">0 × 0 = 0</span>
+            </div>
+            <div id="totalFinal" class="total-final">Roi des Rouwhanes</div>
+        </div>
+
+        <button id="btnAngelNames" class="angel-btn" disabled>Générer le complet</button>
+
+        <div id="angelNamesContainer" class="angel-names-container" style="display: none;">
+            <h3>Les noms des rouwhanes</h3>
+            <div id="angelNamesList"></div>
+        </div>
+
+        <div id="allahNamesContainer" class="angel-names-container" style="display: none; border-top: 2px dashed #f39c12; margin-top: 15px;">
+            <h3 style="color: #d35400;">Les noms d'Allah qui vont avec</h3>
+            <div id="allahNamesList"></div>
+        </div>
+    </div>
+    <!-- Firebase (compat) + contrôle d'abonnement — AVANT script.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../js/whatsapp.js"></script>
+    <script src="access.js"></script>
+    <script src="script.js"></script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

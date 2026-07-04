@@ -1,0 +1,24 @@
+{
+  "name": "Asma ul-Husna",
+  "short_name": "Asma",
+  "description": "Les 99 plus beaux noms d'Allah",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a232e",
+  "theme_color": "#1a232e",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

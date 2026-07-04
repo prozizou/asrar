@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Secrets Mystiques — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="asrar.css">
+  <!-- Polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/api-content.js"></script>
+  <script src="../js/main.js"></script>
+
+  <div class="container">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+
+    <div class="glass-panel">
+      <div class="asrar-wrap">
+        <!-- Rail gauche des configurations -->
+        <div class="cat-rail" id="catRail"></div>
+
+        <!-- Panneau principal -->
+        <div class="asrar-main" id="mainContent">
+          <!-- Vue liste -->
+          <div id="listView">
+            <div class="secrets-list" id="secretsList"></div>
+          </div>
+
+          <!-- Vue détail -->
+          <div id="detailView" style="display:none;">
+            <div class="detail-head">
+              <button class="detail-back" onclick="backToList()">← Retour aux secrets</button>
+              <button class="detail-expand" onclick="openReader()" title="Plein écran">⛶ Plein écran</button>
+            </div>
+            <div class="detail-card">
+              <div class="detail-img-wrap" id="detImgWrap" onclick="openImageFullscreen()">
+                <img id="detImg" src="" alt="" style="display:none;">
+              </div>
+              <div class="detail-title" id="detTitle"></div>
+              <div class="mix" id="detSirr"></div>
+            </div>
+            <!-- Barre d'interactions (visible seulement en détail) -->
+            <div class="interaction-bar" id="interactionBar" style="display:none;">
+              <div class="rating-stars" id="ratingStars">
+                <span class="star" data-val="1">▯</span>
+                <span class="star" data-val="2">▯</span>
+                <span class="star" data-val="3">▯</span>
+                <span class="star" data-val="4">▯</span>
+                <span class="star" data-val="5">▯</span>
+              </div>
+              <div class="meta">
+                <span id="avgRating">⭐ 0.0</span>
+                <span id="commentCount" onclick="openCommentSheet()">💬 0</span>
+                <span id="bookmarkBtn" class="bookmark-icon" onclick="toggleBookmark()">🔖</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lecteur plein écran (espace complet du device, redimensionnable, zoom texte) -->
+  <div class="rdr-overlay" id="secretReader">
+    <div class="rdr-shell" id="rdrShell">
+      <div class="rdr-bar">
+        <button class="rdr-btn" onclick="closeReader()" title="Réduire">⤢ Réduire</button>
+        <span class="rdr-spacer"></span>
+        <button class="rdr-btn" onclick="readerFont(-1)" title="Réduire le texte">A−</button>
+        <button class="rdr-btn" onclick="readerFont(1)" title="Agrandir le texte">A+</button>
+        <button class="rdr-btn" onclick="closeReader()" title="Fermer">✕</button>
+      </div>
+      <div class="rdr-body" id="rdrBody">
+        <div class="rdr-img-wrap" id="rdrImgWrap" onclick="openImageFullscreen()">
+          <img id="rdrImg" src="" alt="">
+        </div>
+        <div class="rdr-title" id="rdrTitle"></div>
+        <div class="rdr-sirr mix" id="rdrSirr"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay et bottom sheet pour commentaires -->
+  <div class="overlay" id="overlay" onclick="closeCommentSheet()"></div>
+  <div class="comment-sheet" id="commentSheet">
+    <div class="comment-sheet-header">
+      <strong>Commentaires</strong>
+      <button onclick="closeCommentSheet()" class="close-sheet-btn">✕</button>
+    </div>
+    <div class="comment-list" id="commentList"></div>
+    <div class="comment-input">
+      <input type="text" id="commentInput" placeholder="Votre commentaire..." maxlength="500">
+      <button onclick="postComment()">Envoyer</button>
+    </div>
+  </div>
+
+  <!-- Script principal de la page -->
+  <script src="asrar.js"></script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

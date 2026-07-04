@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accueil — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .user-bar { display:flex; align-items:center; justify-content:space-between;
+                background:var(--glass-bg); border:1px solid var(--glass-border);
+                border-radius:12px; padding:12px 18px; margin-bottom:20px; }
+    .user-info { display:flex; align-items:center; gap:12px; }
+    .avatar { width:42px; height:42px; border-radius:50%;
+              background:var(--accent); display:flex; align-items:center;
+              justify-content:center; font-size:1.2rem; font-weight:bold; }
+    .signout-btn { background:rgba(255,100,100,.3); border:1px solid rgba(255,100,100,.4);
+                   padding:8px 16px; border-radius:20px; cursor:pointer; color:#fff;
+                   font-size:.85rem; width:auto; margin:0; }
+    .signout-btn:hover { background:rgba(255,100,100,.5); transform:none; }
+
+    /* Menus groupés (grand menu + sous-menu) */
+    .menu-group { margin-bottom:26px; }
+    .group-title { font-size:1.15rem; font-weight:700; letter-spacing:1px; margin-bottom:14px;
+                   padding-bottom:8px; border-bottom:1px solid var(--glass-border);
+                   background:-webkit-linear-gradient(45deg,var(--accent),var(--accent-hover));
+                   -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .sub-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+    .sub-grid .menu-item h3 { font-size:.9rem; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+
+  <div class="container">
+    <!-- User bar -->
+    <div class="user-bar">
+      <div class="user-info">
+        <div class="avatar" id="avatar">?</div>
+        <div>
+          <div style="font-weight:600;" id="user-name">Chargement...</div>
+          <div style="font-size:.8rem; color:var(--text-muted);" id="user-email"></div>
+        </div>
+      </div>
+      <button class="signout-btn" onclick="signOut()">Déconnexion</button>
+    </div>
+
+    <div class="header">
+      <img src="/assets/logo-mark.png" alt="ASRAR PRO"
+           style="width:84px;height:84px;display:block;margin:0 auto 8px;border-radius:16px;">
+      <h1>ASRAR PRO</h1>
+      <p style="color:var(--text-muted);">Tableau de bord</p>
+    </div>
+
+    <div class="grid-menu" style="display:block;">
+      <!-- ASRAR PRO -->
+      <section class="menu-group">
+        <h2 class="group-title">ASRAR PRO</h2>
+        <div class="sub-grid">
+          <a href="../asrar/asrar.html" class="menu-item"><div style="font-size:2rem;">📜</div><h3>Secret Mystique</h3></a>
+          <a href="../abajad/abajad.html" class="menu-item"><div style="font-size:2rem;">🔢</div><h3>Numérologie</h3></a>
+          <a href="../planete/planete.html" class="menu-item"><div style="font-size:2rem;">🌍</div><h3>Planète</h3></a>
+          <a href="../Benefits/index.html" class="menu-item"><div style="font-size:2rem;">🕌</div><h3>Noms d'Allah</h3></a>
+          <a href="../rouwhania/index.html" class="menu-item"><div style="font-size:2rem;">🌀</div><h3>Rouwhanes</h3></a>
+          <a href="../bibliotheque/bibliotheque.html" class="menu-item"><div style="font-size:2rem;">📚</div><h3>Bibliothèque</h3></a>
+          <a href="../marche/marche.html" class="menu-item"><div style="font-size:2rem;">🛒</div><h3>Marché Des Produits Mystiques</h3></a>
+        </div>
+      </section>
+
+      <!-- AL QALAM -->
+      <section class="menu-group">
+        <h2 class="group-title">Al Qalam</h2>
+        <div class="sub-grid">
+          <a href="../alqalam/index.html?mode=simple" class="menu-item"><div style="font-size:2rem;">🖋️</div><h3>Al Qalam</h3></a>
+        </div>
+      </section>
+
+      <!-- GÉOMANCIE -->
+      <section class="menu-group">
+        <h2 class="group-title">Géomancie</h2>
+        <div class="sub-grid">
+          <a href="../geomancie/tourab.html" class="menu-item"><div style="font-size:2rem;">🪨</div><h3>Tourab</h3></a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // Compat : nettoie d'anciens paramètres ?token=... d'URL (plus de paiement en ligne).
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.has("token") || params.has("canceled")) {
+        history.replaceState({}, document.title, location.pathname);
+        if (typeof invalidateAccessCache === "function") invalidateAccessCache();
+      }
+    })();
+
+    // Page accessible dès la connexion ; le portail s'affichera au clic sur un module verrouillé.
+    requireAuth((user) => {
+      const name = user.displayName || user.email.split('@')[0];
+      document.getElementById('user-name').innerText  = name;
+      document.getElementById('user-email').innerText = user.email;
+      document.getElementById('avatar').innerText     = name.charAt(0).toUpperCase();
+    });
+  </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

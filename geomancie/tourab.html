@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asrar Pro – Géomancie l'art divinatoire</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <style>
+        :root {
+            --bg: #0a0a14;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface2: rgba(255, 255, 255, 0.09);
+            --surface3: rgba(255, 255, 255, 0.14);
+            --text: #e0dcd0;
+            --text2: #b8b4a8;
+            --gold: #d4a745;
+            --gold2: #c7943b;
+            --accent: #b8945c;
+            --fire: #e8734a;
+            --air: #f0d56c;
+            --water: #5ba0c8;
+            --earth: #7a9e6b;
+            --highlight: rgba(212, 167, 69, 0.45);
+            --highlight2: rgba(212, 167, 69, 0.7);
+            --danger: #c0392b;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            --font: 'Segoe UI', 'Georgia', 'Times New Roman', serif;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at 50% 20%, #1a1a35 0%, #0a0a14 70%);
+            color: var(--text); font-family: var(--font); min-height: 100vh;
+            line-height: 1.6; display: flex; flex-direction: column; align-items: center;
+            padding: 12px; background-attachment: fixed;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(1px 1px at 10% 20%, rgba(212, 167, 69, 0.35), transparent),
+                        radial-gradient(1px 1px at 30% 60%, rgba(212, 167, 69, 0.25), transparent),
+                        radial-gradient(1px 1px at 55% 15%, rgba(200, 160, 100, 0.3), transparent),
+                        radial-gradient(1px 1px at 70% 75%, rgba(212, 167, 69, 0.2), transparent),
+                        radial-gradient(1px 1px at 85% 40%, rgba(200, 160, 100, 0.3), transparent),
+                        radial-gradient(1.5px 1.5px at 20% 80%, rgba(255, 255, 255, 0.25), transparent),
+                        radial-gradient(1px 1px at 60% 50%, rgba(255, 255, 255, 0.2), transparent),
+                        radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        .app-container { position: relative; z-index: 1; width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 20px; }
+
+        .header {
+            text-align: center; padding: 18px 20px 10px; background: var(--surface);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius); box-shadow: var(--shadow);
+        }
+        .header h1 { font-size: 2rem; letter-spacing: 0.04em; color: var(--gold); font-weight: 700; margin-bottom: 2px; }
+        .header .subtitle { font-size: 0.9rem; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; }
+
+        .panel {
+            background: var(--surface); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius);
+            padding: 20px 22px; box-shadow: var(--shadow); transition: var(--transition);
+        }
+        .panel h2 { font-size: 1.15rem; color: var(--gold); letter-spacing: 0.03em; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 8px; font-weight: 600; }
+
+        .mothers-grid { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+        .mother-card {
+            background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 12px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08); text-align: center; min-width: 90px; cursor: default; user-select: none;
+        }
+        .mother-card .mother-label { font-size: 0.8rem; color: var(--text2); letter-spacing: 0.04em; margin-bottom: 8px; font-weight: 600; }
+        .mother-card .figure-display { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+        .dot-row { display: flex; gap: 5px; cursor: pointer; padding: 4px 10px; border-radius: 20px; transition: background 0.15s; min-height: 32px; align-items: center; justify-content: center; }
+        .dot-row:hover { background: rgba(255, 255, 255, 0.08); }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(212, 167, 69, 0.5); transition: all 0.2s; }
+        .dot.double { width: 11px; height: 11px; }
+        .dot-row.double-row .dot { width: 11px; height: 11px; }
+
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn {
+            padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font);
+            font-size: 0.9rem; letter-spacing: 0.03em; transition: var(--transition); backdrop-filter: blur(10px); font-weight: 500; white-space: nowrap;
+        }
+        .btn:hover { background: var(--surface3); border-color: var(--gold2); box-shadow: 0 0 20px rgba(212, 167, 69, 0.2); transform: translateY(-1px); }
+        .btn.primary { background: rgba(212, 167, 69, 0.2); border-color: var(--gold); color: var(--gold); font-weight: 700; }
+        .btn.primary:hover { background: rgba(212, 167, 69, 0.35); box-shadow: 0 0 28px rgba(212, 167, 69, 0.35); }
+        .btn.accent { background: rgba(184, 148, 92, 0.15); border-color: var(--accent); color: var(--accent); }
+
+        .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-x: auto; padding: 8px 0; }
+        .shield-row { display: flex; gap: 7px; justify-content: space-around; width: 100%; margin-bottom: 12px; }
+        .w-100 { width: 100%; } .w-80 { width: 80%; } .w-40 { width: 45%; }
+        .row-last { display: flex; justify-content: center; width: 100%; position: relative; min-height: 95px; margin-top: 5px; }
+
+        .house-cell {
+            background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 7px 6px;
+            text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; min-width: 62px;
+        }
+        .house-cell:hover { border-color: var(--gold2); background: var(--surface3); box-shadow: 0 0 18px rgba(212, 167, 69, 0.25); transform: translateY(-2px); z-index: 2; }
+        .house-cell.voie-active { border-color: var(--gold) !important; box-shadow: 0 0 22px rgba(212, 167, 69, 0.55) !important; background: rgba(212, 167, 69, 0.18) !important; animation: pulse-gold 1.2s ease-in-out infinite; }
+        @keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 18px rgba(212, 167, 69, 0.4); } 50% { box-shadow: 0 0 35px rgba(212, 167, 69, 0.7); } }
+        
+        .house-cell .house-num { font-size: 0.65rem; color: var(--text2); letter-spacing: 0.03em; font-weight: 600; margin-bottom: 2px; }
+        .house-cell .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .house-cell .mini-row { display: flex; gap: 3px; justify-content: center; }
+        .house-cell .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px rgba(212, 167, 69, 0.5); }
+        .house-cell .fig-name { font-size: 0.6rem; color: var(--text2); margin-top: 3px; font-style: italic; }
+        
+        .bzdh-badge { font-size: 0.55rem; color: #4facfe; font-weight: bold; margin-top: 4px; padding: 2px 4px; background: rgba(79, 172, 254, 0.1); border-radius: 8px; border: 1px solid rgba(79, 172, 254, 0.3); }
+
+        .house-cell.judge-cell { border: 2px solid rgba(212, 167, 69, 0.5); background: rgba(212, 167, 69, 0.08); }
+        .house-cell.sentence-cell { border: 2px solid rgba(200, 160, 100, 0.4); background: rgba(200, 160, 100, 0.05); position: absolute; right: 5%; top: 0; }
+        
+        .parity-badge { display: inline-block; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; margin-top: 6px; font-weight: 600; letter-spacing: 0.04em; }
+        .parity-badge.ok { background: rgba(122, 158, 107, 0.3); color: #a0d89b; }
+        .parity-badge.warn { background: rgba(192, 57, 43, 0.3); color: #e8847b; }
+
+        .synthesis-card {
+            background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: var(--radius-sm); padding: 15px 20px; text-align: center; min-width: 220px;
+            box-shadow: var(--shadow); cursor: pointer; transition: var(--transition);
+        }
+        .synthesis-card:hover {
+            background: rgba(255, 215, 0, 0.1); border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(212, 167, 69, 0.4); transform: translateY(-3px);
+        }
+        .synthesis-card h4 { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; }
+        .synthesis-card p { font-size: 0.9rem; color: var(--text); margin-top: 8px; font-weight: bold; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); z-index: 100;
+            display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal {
+            background: #12121f; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius);
+            padding: 24px 20px; max-width: 650px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); position: relative;
+        }
+        .modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; }
+        .modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: var(--transition); }
+        .modal .close-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+        
+        .modal .copulation-steps { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin: 12px 0; font-size: 0.9rem; }
+        .modal .step-fig { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px; text-align: center; min-width: 55px; }
+        
+        .modal .sarax-box { background: rgba(212, 167, 69, 0.1); border: 1px solid rgba(212, 167, 69, 0.3); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 12px; font-style: italic; color: var(--gold); }
+        .element-tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin: 4px; }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a30; border: 1px solid var(--gold); color: var(--gold); padding: 10px 22px; border-radius: 30px; font-weight: 600; z-index: 200; animation: slideUp 0.35s ease-out; pointer-events: none; }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(30px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        @media (max-width: 700px) {
+            .mothers-grid { gap: 8px; } .mother-card { min-width: 65px; padding: 8px 6px; }
+            .dot { width: 10px; height: 10px; } .dot.double { width: 8px; height: 8px; }
+            .house-cell { min-width: 44px; padding: 5px 4px; } .house-cell .mini-dot { width: 5px; height: 5px; }
+            .house-cell .fig-name { font-size: 0.5rem; } .shield-row { gap: 3px; }
+            .house-cell.sentence-cell { right: 0%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>✦ Asrar Pro ✦</h1>
+            <p class="subtitle">Géomancie · L'art divinatoire</p>
+        </div>
+
+        <div class="panel" id="inputPanel">
+            <h2>🌙 Les Quatre Mères Sacrées</h2>
+            <div class="mothers-grid" id="mothersGrid"></div>
+            <div class="btn-row" style="margin-top:14px;">
+                <button class="btn primary" id="btnCalculate">🔮 Calculer l'Écu</button>
+                <button class="btn" id="btnRandom">🎲 Aléatoire</button>
+                <button class="btn" id="btnReset">🔄 Réinitialiser</button>
+            </div>
+        </div>
+
+        <div class="panel" id="shieldPanel">
+            <h2>🛡️ L'Écu Géomantique</h2>
+            <div class="shield-container" id="shieldContainer">
+                <p style="color:var(--text2);font-style:italic;text-align:center;padding:20px;">
+                    Saisissez les Mères et cliquez sur <strong>Calculer l'Écu</strong>.
+                </p>
+            </div>
+            <div id="parityIndicator" style="text-align:center;"></div>
+            
+            <div id="synthesisContainer" style="display:none; gap:15px; justify-content:center; margin-top:25px; flex-wrap:wrap;">
+            </div>
+
+            <div class="btn-row" style="margin-top:20px; display:none;" id="exportBtnRow">
+                <button class="btn accent" id="btnExportJSON">💾 Sauvegarder le thème (JSON)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay" style="display:none;">
+        <div class="modal" id="modalContent"></div>
+    </div>
+    <div id="toastContainer"></div>
+
+    <!-- Firebase + helpers (contenu servi via /api, plus de lecture publique) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../js/whatsapp.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/api-content.js"></script>
+
+    <!-- Le script commence ci-dessous -->
+    <script>
+    (function() {
+        let firebaseData = []; // Unique source pour les textes, titres et interprétations
+
+        // Mappage indispensable pour lier la signature binaire à l'index du JSON Firebase (1 à 16)
+        const figureToJsonIndex = {
+            '1121': 1,  // Youssouf
+            '1222': 2,  // Adama
+            '2111': 3,  // Mahdiou
+            '2212': 4,  // Idrissa
+            '1111': 5,  // Ibrahima
+            '1212': 6,  // Issa
+            '2122': 7,  // Oumar
+            '2221': 8,  // Ayyoube
+            '1122': 9,  // Allahou tall
+            '1221': 10, // Souleymane
+            '2112': 11, // Ali
+            '2211': 12, // Nouhou
+            '1112': 13, // Housseynou
+            '1211': 14, // Younouss
+            '2121': 15, // Ousmane
+            '2222': 16  // Moussa
+        };
+
+        const restingFigures = ['1121', '1222', '2111', '2212', '1111', '1212', '2122', '2221', '1122', '1221', '2112', '2211', '1112', '1211', '2121', '2222'];
+        const houseNames = ["L'Âme", "Les Biens", "L'Entourage", "Le Foyer", "Les Projets", "L'Épreuve", "Les Alliances", "L'Issue", "Les Déplacements", "Le Pouvoir", "Les Espérances", "Les Écueils", "Le Témoin Actif", "Le Témoin Passif", "Le Juge Suprême", "La Sentence Finale"];
+
+        let mothers = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]; 
+        let allHouses = []; 
+        let themeCalculated = false;
+
+        async function fetchFirebaseData() {
+            try {
+                // Le nœud theme_fondamental est désormais en lecture serveur uniquement :
+                // on passe par /api/get-theme (jeton d'identité Firebase requis).
+                const res = await apiPost('get-theme');
+                firebaseData = res.data || [];
+                console.log("✅ Données chargées via l'API.");
+                showToast("✨ Données chargées avec succès !");
+                // Si l'écu est déjà calculé, on rafraîchit pour afficher les noms venus de Firebase
+                if (themeCalculated) renderShield(allHouses, false);
+            } catch (error) {
+                console.error("⚠️ Impossible de charger les données :", error);
+                if (error && error.status === 403) {
+                    // Connecté mais non abonné → portail de demande d'accès (WhatsApp).
+                    showToast("🔒 Géomancie réservée aux abonnés.");
+                    if (typeof showSubscriptionGate === 'function') showSubscriptionGate();
+                } else if (error && error.status === 401) {
+                    window.location.href = '../index.html';
+                } else {
+                    showToast("❌ Échec du chargement (" + (error.message || "erreur") + ")");
+                }
+            }
+        }
+
+        function getCleanName(key) {
+            const idx = figureToJsonIndex[key];
+            if (firebaseData && firebaseData[idx] && firebaseData[idx].titre) {
+                // Extrait le premier mot (ex: "Youssouf (1121)" -> "Youssouf")
+                return firebaseData[idx].titre.split(' ')[0];
+            }
+            return '?';
+        }
+
+        function getFullTitle(key) {
+            const idx = figureToJsonIndex[key];
+            if (firebaseData && firebaseData[idx] && firebaseData[idx].titre) {
+                return firebaseData[idx].titre;
+            }
+            return 'Figure ' + key;
+        }
+
+        function getBZDHValue(figArray) {
+            let val = 0;
+            if (figArray[0] === 1) val += 2;
+            if (figArray[1] === 1) val += 7;
+            if (figArray[2] === 1) val += 4;
+            if (figArray[3] === 1) val += 8;
+            return val;
+        }
+
+        function addLignes(a, b) { return ((a + b) % 2 === 1) ? 1 : 2; }
+        function addFigures(figA, figB) { return figA.map((val, i) => addLignes(val, figB[i])); }
+        function figToKey(fig) { return fig.join(''); }
+        function keyToFig(key) { return key.split('').map(Number); }
+
+        function transposeMothers(mothersArr) {
+            const daughters = [];
+            for (let row = 0; row < 4; row++) {
+                daughters.push([mothersArr[0][row], mothersArr[1][row], mothersArr[2][row], mothersArr[3][row]]);
+            }
+            return daughters;
+        }
+
+        function generateAllHouses(mothersArr) {
+            const h = [];
+            for (let i = 0; i < 4; i++) h.push([...mothersArr[i]]);
+            const daughters = transposeMothers(mothersArr);
+            for (let i = 0; i < 4; i++) h.push([...daughters[i]]);
+            h.push(addFigures(h[0], h[1])); h.push(addFigures(h[2], h[3])); h.push(addFigures(h[4], h[5])); h.push(addFigures(h[6], h[7])); 
+            h.push(addFigures(h[8], h[9])); h.push(addFigures(h[10], h[11])); h.push(addFigures(h[12], h[13])); h.push(addFigures(h[14], h[0])); 
+            return h;
+        }
+
+        function checkJudgeParity(houses) {
+            const judge = houses[14]; 
+            const total = judge.reduce((a, b) => a + b, 0);
+            return { even: total % 2 === 0, total };
+        }
+
+        function renderMiniFigureHTML(figArray) {
+            let html = '<div class="mini-figure">';
+            for (let r = 0; r < 4; r++) {
+                html += '<div class="mini-row">';
+                for (let d = 0; d < figArray[r]; d++) html += '<span class="mini-dot"></span>';
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderFigureDots(figArray, clickable = false, motherIndex = null) {
+            const container = document.createElement('div'); container.className = 'figure-display';
+            for (let r = 0; r < 4; r++) {
+                const row = document.createElement('div'); row.className = 'dot-row';
+                if (figArray[r] === 2) row.classList.add('double-row');
+                const count = figArray[r];
+                for (let d = 0; d < count; d++) {
+                    const dot = document.createElement('span'); dot.className = 'dot';
+                    if (count === 2) dot.classList.add('double');
+                    row.appendChild(dot);
+                }
+                if (clickable && motherIndex !== null) {
+                    row.dataset.mother = motherIndex; row.dataset.row = r;
+                    row.addEventListener('click', (e) => { e.stopPropagation(); toggleMotherRow(motherIndex, r); });
+                }
+                container.appendChild(row);
+            }
+            return container;
+        }
+
+        function renderMothers() {
+            const grid = document.getElementById('mothersGrid'); grid.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                const card = document.createElement('div'); card.className = 'mother-card';
+                const label = document.createElement('div'); label.className = 'mother-label'; label.textContent = `Mère ${i + 1}`;
+                card.appendChild(label); card.appendChild(renderFigureDots(mothers[i], true, i)); grid.appendChild(card);
+            }
+        }
+
+        function toggleMotherRow(motherIndex, rowIndex) {
+            mothers[motherIndex][rowIndex] = (mothers[motherIndex][rowIndex] === 1) ? 2 : 1;
+            renderMothers();
+            if (themeCalculated) { allHouses = generateAllHouses(mothers); renderShield(allHouses, false); clearPassation(); }
+        }
+
+        function renderShield(houses, animated = false) {
+            const container = document.getElementById('shieldContainer');
+            container.innerHTML = '';
+            document.getElementById('synthesisContainer').style.display = 'none';
+            document.getElementById('exportBtnRow').style.display = 'none';
+
+            const allRows = [
+                { indices: [7, 6, 5, 4, 3, 2, 1, 0], cls: 'shield-row w-100' },
+                { indices: [11, 10, 9, 8], cls: 'shield-row w-80' },           
+                { indices: [13, 12], cls: 'shield-row w-40' },                  
+                { indices: [14, 15], cls: 'row-last' }                          
+            ];
+
+            function createHouseCell(houseIndex) {
+                const cell = document.createElement('div');
+                cell.className = 'house-cell';
+                cell.dataset.houseIndex = houseIndex;
+                if (houseIndex === 14) cell.classList.add('judge-cell');
+                if (houseIndex === 15) cell.classList.add('sentence-cell');
+
+                const num = document.createElement('div'); num.className = 'house-num'; num.textContent = `M${houseIndex + 1}`; cell.appendChild(num);
+                
+                const miniFigDiv = document.createElement('div'); miniFigDiv.innerHTML = renderMiniFigureHTML(houses[houseIndex]);
+                cell.appendChild(miniFigDiv);
+
+                const fname = document.createElement('div'); fname.className = 'fig-name';
+                const key = figToKey(houses[houseIndex]); fname.textContent = getCleanName(key);
+                cell.appendChild(fname);
+
+                const bzdhVal = getBZDHValue(houses[houseIndex]);
+                const bzdhBadge = document.createElement('div'); bzdhBadge.className = 'bzdh-badge';
+                bzdhBadge.textContent = `ord: ${bzdhVal}`;
+                cell.appendChild(bzdhBadge);
+
+                cell.addEventListener('click', () => openHouseModal(houseIndex));
+                return cell;
+            }
+
+            if (animated) {
+                let delay = 0;
+                allRows.forEach((rowDef) => {
+                    const rowEl = document.createElement('div'); rowEl.className = rowDef.cls; rowEl.style.opacity = '0';
+                    container.appendChild(rowEl);
+                    rowDef.indices.forEach((idx, ci) => {
+                        const cell = createHouseCell(idx); cell.style.opacity = '0'; cell.style.transform = 'scale(0.7)';
+                        rowEl.appendChild(cell);
+                        setTimeout(() => { cell.style.opacity = '1'; cell.style.transform = 'scale(1)'; }, delay + ci * 60);
+                    });
+                    setTimeout(() => { rowEl.style.opacity = '1'; }, delay);
+                    delay += rowDef.indices.length * 60 + 150;
+                });
+                setTimeout(() => { updateSynthesis(houses); document.getElementById('exportBtnRow').style.display = 'flex'; }, delay + 200);
+            } else {
+                allRows.forEach(rowDef => {
+                    const rowEl = document.createElement('div'); rowEl.className = rowDef.cls;
+                    rowDef.indices.forEach(idx => rowEl.appendChild(createHouseCell(idx))); container.appendChild(rowEl);
+                });
+                updateSynthesis(houses);
+                document.getElementById('exportBtnRow').style.display = 'flex';
+            }
+
+            const parity = checkJudgeParity(houses);
+            const pi = document.getElementById('parityIndicator');
+            pi.innerHTML = parity.even ? `<span class="parity-badge ok">✓ Parité du Juge : ${parity.total} points (paire)</span>` : `<span class="parity-badge warn">⚠ Anomalie de Parité détectée</span>`;
+        }
+
+        function updateSynthesis(houses) {
+            const container = document.getElementById('synthesisContainer');
+            
+            let exceptionFig = [2,2,2,2];
+            const exceptionKeys = ['1121', '2111', '1111', '2222'];
+            houses.forEach(h => {
+                if (exceptionKeys.includes(figToKey(h))) exceptionFig = addFigures(exceptionFig, h);
+            });
+            
+            let repFig = addFigures(addFigures(houses[1], houses[3]), addFigures(houses[6], houses[7]));
+            
+            const excKey = figToKey(exceptionFig);
+            const repKey = figToKey(repFig);
+            
+            container.innerHTML = `
+                <div class="synthesis-card" data-figkey="${excKey}" id="synthExceptions">
+                    <h4>🌟 Résultante des Exceptions</h4>
+                    ${renderMiniFigureHTML(exceptionFig)}
+                    <p>${getCleanName(excKey)}</p>
+                    <small style="font-size:0.65rem; color:var(--text2);">(Somme de Youssouf, Mahdiou, Ibrahima, Moussa)</small>
+                </div>
+                <div class="synthesis-card" data-figkey="${repKey}" id="synthRep">
+                    <h4>👁️ Figure de Repérage</h4>
+                    ${renderMiniFigureHTML(repFig)}
+                    <p>${getCleanName(repKey)}</p>
+                    <small style="font-size:0.65rem; color:var(--text2);">(M2 + M4 + M7 + M8)</small>
+                </div>
+            `;
+            container.style.display = 'flex';
+            container.style.animation = 'fadeIn 0.5s ease-in-out';
+
+            document.getElementById('synthExceptions').addEventListener('click', () => highlightFigureInShield(excKey));
+            document.getElementById('synthRep').addEventListener('click', () => highlightFigureInShield(repKey));
+        }
+
+        function clearPassation() { document.querySelectorAll('.house-cell.voie-active').forEach(c => c.classList.remove('voie-active')); }
+
+        function highlightPassation(figKey) {
+            clearPassation();
+            document.querySelectorAll('.house-cell').forEach(cell => {
+                const idx = parseInt(cell.dataset.houseIndex);
+                if (idx >= 0 && idx < allHouses.length && figToKey(allHouses[idx]) === figKey) cell.classList.add('voie-active');
+            });
+        }
+
+        function highlightFigureInShield(figKey) {
+            highlightPassation(figKey);
+            const foundCells = document.querySelectorAll('.house-cell.voie-active');
+            const figureName = getCleanName(figKey);
+            if (foundCells.length > 0) {
+                showToast(`🔍 ${figureName} présente dans ${foundCells.length} maison(s)`);
+            } else {
+                showToast(`❌ ${figureName} absente de l'écu`);
+                clearPassation();
+            }
+        }
+
+        function openHouseModal(houseIndex) {
+            if (!themeCalculated || allHouses.length < 16) return;
+            const houseFig = allHouses[houseIndex]; const houseKey = figToKey(houseFig);
+            highlightPassation(houseKey);
+
+            const modalOverlay = document.getElementById('modalOverlay'); const modalContent = document.getElementById('modalContent');
+            
+            const fbDirectIndex = figureToJsonIndex[houseKey];
+            const fbDirectData = (firebaseData && firebaseData[fbDirectIndex]) ? firebaseData[fbDirectIndex] : null;
+
+            let html = `
+                <button class="close-btn" id="closeModalBtn">&times;</button>
+                <h3>🏠 Maison ${houseIndex + 1} – ${houseNames[houseIndex]}</h3>
+                <p style="color:var(--text2);font-size:0.85rem;margin-bottom:6px;">
+                <strong>Occupante :</strong> ${getFullTitle(houseKey)} | <span style="color:#4facfe;">بزدح: ${getBZDHValue(houseFig)}</span>
+                </p>
+            `;
+
+            if (houseIndex === 14) {
+                html += `
+                    <div class="copulation-steps">
+                        <div class="step-fig" style="border:2px solid var(--gold);">
+                            <strong>Verdict</strong><br>${renderMiniFigureHTML(houseFig)}
+                            <small style="color:var(--gold);font-weight:700;">${getCleanName(houseKey)}</small>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left;">
+                        <h4 style="margin: 0 0 8px 0; color: var(--gold); font-size: 0.95rem;">⚖️ Interprétation du Juge</h4>
+                        <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--gold);"><strong>Domaine :</strong> ${fbDirectData ? fbDirectData.domaine : "Le verdict final."}</p>
+                        <p style="margin: 0; font-size: 0.85rem; line-height: 1.5;">👉 ${fbDirectData ? fbDirectData.interpretation : "Données en cours de chargement..."}</p>
+                    </div>
+                `;
+            } else if (houseIndex === 15) {
+                const m1 = allHouses[0];
+                const m1Key = figToKey(m1);
+                html += `
+                    <div class="copulation-steps">
+                        <div class="step-fig"><strong>Juge</strong><br>${renderMiniFigureHTML(allHouses[14])}</div>
+                        <span style="font-size:1.3rem;color:var(--gold);">+</span>
+                        <div class="step-fig"><strong>M1 (Âme)</strong><br>${renderMiniFigureHTML(m1)}<small>${getCleanName(m1Key)}</small></div>
+                        <span style="font-size:1.3rem;color:var(--gold);">=</span>
+                        <div class="step-fig" style="border:2px solid var(--gold);"><strong>Sentence</strong><br>${renderMiniFigureHTML(houseFig)}<small style="color:var(--gold);font-weight:700;">${getCleanName(houseKey)}</small></div>
+                    </div>
+                    <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left;">
+                        <h4 style="margin: 0 0 8px 0; color: var(--gold); font-size: 0.95rem;">📜 Interprétation de la Sentence</h4>
+                        <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--gold);"><strong>Domaine :</strong> ${fbDirectData ? fbDirectData.domaine : "Le point de chute final."}</p>
+                        <p style="margin: 0; font-size: 0.85rem; line-height: 1.5;">👉 ${fbDirectData ? fbDirectData.interpretation : "Données en cours de chargement..."}</p>
+                    </div>
+                `;
+            } else {
+                const restingKey = restingFigures[houseIndex]; const restingFig = keyToFig(restingKey);
+                const judgeFig = allHouses[14]; const judgeKey = figToKey(judgeFig);
+                const step1 = addFigures(houseFig, restingFig); const step1Key = figToKey(step1);
+                const step2 = addFigures(step1, judgeFig); const step2Key = figToKey(step2);
+
+                const fbStep1Data = (firebaseData && firebaseData[figureToJsonIndex[step1Key]]) ? firebaseData[figureToJsonIndex[step1Key]] : null;
+                const fbStep2Data = (firebaseData && firebaseData[figureToJsonIndex[step2Key]]) ? firebaseData[figureToJsonIndex[step2Key]] : null;
+
+                html += `
+                    <div class="copulation-steps">
+                        <div class="step-fig"><strong>Occupante</strong><br>${renderMiniFigureHTML(houseFig)}<small>${getCleanName(houseKey)}</small></div>
+                        <span style="font-size:1.3rem;color:var(--gold);">+</span>
+                        <div class="step-fig"><strong>Repos</strong><br>${renderMiniFigureHTML(restingFig)}<small>${getCleanName(restingKey)}</small></div>
+                        <span style="font-size:1.3rem;color:var(--gold);">=</span>
+                        <div class="step-fig"><strong>Étape 1</strong><br>${renderMiniFigureHTML(step1)}<small>${getCleanName(step1Key)}</small></div>
+                        <span style="font-size:1.3rem;color:var(--gold);">+</span>
+                        <div class="step-fig"><strong>Juge</strong><br>${renderMiniFigureHTML(judgeFig)}<small>${getCleanName(judgeKey)}</small></div>
+                        <span style="font-size:1.3rem;color:var(--gold);">=</span>
+                        <div class="step-fig" style="border:2px solid var(--gold);"><strong>Secret final</strong><br>${renderMiniFigureHTML(step2)}<small style="color:var(--gold);font-weight:700;">${getCleanName(step2Key)}</small></div>
+                    </div>
+                    
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left;">
+                        <h4 style="margin: 0 0 8px 0; color: #4facfe; font-size: 0.95rem;">1️⃣ Étape 1 : ${fbStep1Data ? fbStep1Data.titre : getFullTitle(step1Key)}</h4>
+                        <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--gold);"><strong>Domaine :</strong> ${fbStep1Data ? fbStep1Data.domaine : "Parole de la Maison (Occupante + Repos)"}</p>
+                        <p style="margin: 0; font-size: 0.85rem; line-height: 1.5;">👉 <strong>Interprétation :</strong> ${fbStep1Data ? fbStep1Data.interpretation : "En attente des données Firebase..."}</p>
+                    </div>
+
+                    <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left;">
+                        <h4 style="margin: 0 0 8px 0; color: var(--gold); font-size: 0.95rem;">2️⃣ Secret Final : ${fbStep2Data ? fbStep2Data.titre : getFullTitle(step2Key)}</h4>
+                        <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--gold);"><strong>Domaine :</strong> ${fbStep2Data ? fbStep2Data.domaine : "Décret du Juge (Parole + Juge)"}</p>
+                        <p style="margin: 0; font-size: 0.85rem; line-height: 1.5;">✨ <strong>Interprétation :</strong> ${fbStep2Data ? fbStep2Data.interpretation : "En attente des données Firebase..."}</p>
+                    </div>
+                `;
+            }
+            modalContent.innerHTML = html; modalOverlay.style.display = 'flex';
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; clearPassation(); }
+
+        function exportThemeJSON() {
+            if (!themeCalculated) return;
+            const exportData = {
+                mothers: mothers,
+                houses: allHouses.map(fig => figToKey(fig)),
+                bzdh: allHouses.map(fig => getBZDHValue(fig))
+            };
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonString], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `theme_geomancie_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('💾 Thème sauvegardé !');
+        }
+
+        // Journalise l'usage de la géomancie AVEC la localisation (suivi admin).
+        function logGeomancie() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const send = (lat, lng) => user.getIdToken().then(idToken =>
+                fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken, type: 'geomancie', page: 'geomancie', lat, lng }) })).catch(() => {});
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    p => send(p.coords.latitude, p.coords.longitude),
+                    () => send(null, null),
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 });
+            } else { send(null, null); }
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg;
+            container.appendChild(toast); setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400); }, 2200);
+        }
+
+        function init() {
+            // Plus de chargement au démarrage : l'abonnement n'est demandé QU'AU CLIC
+            // sur « Calculer l'Écu ». Les données premium sont chargées à ce moment-là.
+            renderMothers();
+            document.getElementById('btnCalculate').addEventListener('click', () => {
+                ensureAccess(async () => {
+                    if (!firebaseData || firebaseData.length === 0) {
+                        await fetchFirebaseData();   // get-theme (abonné garanti par ensureAccess)
+                    }
+                    allHouses = generateAllHouses(mothers); themeCalculated = true;
+                    renderShield(allHouses, true); clearPassation();
+                    logGeomancie();   // suivi admin : usage géomancie + localisation
+                });
+            });
+            document.getElementById('btnRandom').addEventListener('click', () => {
+                for (let i = 0; i < 4; i++) for (let r = 0; r < 4; r++) mothers[i][r] = Math.random() < 0.5 ? 1 : 2;
+                renderMothers(); themeCalculated = false;
+                document.getElementById('shieldContainer').innerHTML = `<p style="color:var(--text2);font-style:italic;text-align:center;padding:20px;">Cliquez sur <strong>Calculer l'Écu</strong>.</p>`;
+                document.getElementById('synthesisContainer').style.display = 'none';
+                document.getElementById('exportBtnRow').style.display = 'none';
+                document.getElementById('parityIndicator').innerHTML = '';
+                clearPassation();
+            });
+            document.getElementById('btnReset').addEventListener('click', () => {
+                mothers = [[1,1,1,1], [1,1,1,1], [1,1,1,1], [1,1,1,1]]; allHouses = []; themeCalculated = false; renderMothers();
+                document.getElementById('shieldContainer').innerHTML = `<p style="color:var(--text2);font-style:italic;text-align:center;padding:20px;">Saisissez les Mères et cliquez sur <strong>Calculer l'Écu</strong>.</p>`;
+                document.getElementById('synthesisContainer').style.display = 'none';
+                document.getElementById('exportBtnRow').style.display = 'none';
+                document.getElementById('parityIndicator').innerHTML = '';
+                clearPassation(); showToast('🔄 Thème réinitialisé');
+            });
+            document.getElementById('btnExportJSON').addEventListener('click', exportThemeJSON);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('modalOverlay').style.display === 'flex') closeModal(); });
+        }
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+    </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Marché Mystique — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="marche.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Firebase & API -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/api-content.js"></script>
+
+  <div class="container">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+    <div class="glass-panel" id="mainMarketView">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h2 style="margin:0;">🛒 Marché Mystique</h2>
+        <a href="../boutique/boutique.html" class="shop-link"
+           style="background:#C9A961;color:#000;text-decoration:none;font-weight:700;padding:8px 14px;border-radius:10px;font-size:.85rem;">🏪 Ma boutique</a>
+      </div>
+      <p class="subtitle">Produits ésotériques de nos praticiens certifiés</p>
+
+      <div class="market-nav">
+        <input type="text" class="search-bar" id="searchInput" placeholder="🔍 Rechercher un produit..." oninput="filterProducts()">
+        <div class="cart-icon-wrap" onclick="openCart()">
+          🛒
+          <span class="cart-count" id="cartCount">0</span>
+        </div>
+      </div>
+
+      <!-- Section vendeurs -->
+      <div class="vendors-section" id="vendorsSection">
+        <h3>🌙 Nos praticiens et vendeurs certifiés</h3>
+        <div class="vendors-scroll" id="vendorsScroll"></div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="filters" id="filtersBar"></div>
+
+      <!-- Grille produits -->
+      <div class="prod-grid" id="prodGrid">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+
+    <!-- Vue boutique vendeur (masquée au départ) -->
+    <div class="glass-panel" id="vendorShopView" style="display:none;">
+      <button class="back-btn" onclick="showMainMarket()" style="border:none; background:none; cursor:pointer;">← Retour au marché</button>
+      <div id="vendorShopContent"></div>
+    </div>
+  </div>
+
+  <!-- Modale produit -->
+  <div class="modal-overlay" id="prodModal">
+    <div class="modal-box">
+      <span class="modal-close" onclick="closeModal()">✕</span>
+      <img id="m-img" class="modal-img" src="" alt="" onerror="this.style.display='none'">
+      <h3 id="m-name"></h3>
+      <div id="m-price" style="font-size:1.3rem; font-weight:700; color:#6bffb8; margin:8px 0;"></div>
+      <div class="vendor-block" id="m-vendor-block"></div>
+      <div id="m-desc" style="line-height:1.7; border-top:1px solid #1F1F23; padding-top:14px;"></div>
+      <div class="contact-btns" id="m-contact" style="margin-top:14px;"></div>
+      <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCartFromModal()">🛒 Ajouter au panier</button>
+    </div>
+  </div>
+
+  <!-- Panier latéral -->
+  <div class="overlay" id="cartOverlay" onclick="closeCart()"></div>
+  <div class="cart-panel" id="cartPanel">
+    <div class="cart-header">
+      <h3 style="margin:0;">🛒 Panier</h3>
+      <button onclick="closeCart()" style="background:none;border:none;color:#888;font-size:1.4rem;cursor:pointer;">✕</button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-totals" id="cartTotals"></div>
+  </div>
+
+  <script src="marche.js"></script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "id": "/",
+  "name": "ASRAR PRO — Les noms d'Allah & géométrie mystique",
+  "short_name": "ASRAR PRO",
+  "description": "ASRAR PRO : noms d'Allah, numérologie abjad, heures planétaires, géomancie, Rouwhanes et bibliothèque mystique.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#1a1712",
+  "theme_color": "#1a1712",
+  "categories": ["education", "lifestyle", "books"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Noms d'Allah",
+      "short_name": "Noms",
+      "url": "/Benefits/index.html",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Rouwhanes",
+      "short_name": "Rouwhanes",
+      "url": "/rouwhania/index.html",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Secret Mystique",
+      "short_name": "Secret",
+      "url": "/asrar/asrar.html",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

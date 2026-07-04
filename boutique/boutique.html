@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Ma Boutique — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="boutique.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Firebase & API -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/api-content.js"></script>
+
+  <div class="container">
+    <a href="../marche/marche.html" class="back-btn">← Marché</a>
+
+    <div class="glass-panel">
+      <h2>🏪 Ma Boutique</h2>
+      <p class="subtitle">Vendez vos produits sur le Marché Mystique.</p>
+
+      <div id="loadingView" class="bq-loading">Chargement…</div>
+
+      <!-- VUE 1 : pas encore vendeur → demander une boutique (paiement) -->
+      <div id="gateView" style="display:none;">
+        <p class="bq-intro">
+          Pour ouvrir votre boutique, choisissez une formule. Chaque boutique est
+          liée à votre compte Google (un compte = une boutique unique).
+        </p>
+        <div class="bq-plans">
+          <div class="bq-plan" onclick="souscrireBoutique('boutique_1m')">
+            <div class="bq-plan-dur">1 Mois</div>
+            <div class="bq-plan-price">10 000 <small>FCFA</small></div>
+            <button class="bq-plan-btn">Choisir</button>
+          </div>
+          <div class="bq-plan best" onclick="souscrireBoutique('boutique_3m')">
+            <span class="bq-badge">Économique</span>
+            <div class="bq-plan-dur">3 Mois</div>
+            <div class="bq-plan-price">25 000 <small>FCFA</small></div>
+            <button class="bq-plan-btn">Choisir</button>
+          </div>
+        </div>
+        <p class="bq-note" id="gateNote">💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp. L'administration activera votre boutique.</p>
+      </div>
+
+      <!-- VUE 2 : vendeur actif → gestion -->
+      <div id="shopView" style="display:none;">
+        <div class="bq-status" id="bqStatus"></div>
+
+        <h3>Informations de la boutique</h3>
+        <div class="bq-form">
+          <label>Logo de la boutique
+            <input type="file" id="shopLogoFile" accept="image/*" onchange="previewShopLogo(event)">
+            <div id="shopLogoPreview" class="bq-logo-preview">
+              <img id="shopLogoImg" src="" alt="" style="display:none">
+              <span id="shopLogoEmpty">Aucun logo</span>
+            </div>
+          </label>
+          <label>Nom de la boutique
+            <input type="text" id="shopName" maxlength="80" placeholder="Ex : Boutique Al-Baraka">
+          </label>
+          <label>Description
+            <textarea id="shopDesc" maxlength="600" rows="3" placeholder="Présentez votre boutique…"></textarea>
+          </label>
+          <label>Téléphone / WhatsApp
+            <input type="tel" id="shopPhone" maxlength="20" placeholder="221770000000">
+          </label>
+          <button class="bq-btn" onclick="enregistrerBoutique()">💾 Enregistrer la boutique</button>
+        </div>
+
+        <div class="bq-products-head">
+          <h3>Mes produits (<span id="prodCount">0</span>)</h3>
+          <button class="bq-btn small" onclick="ouvrirFormProduit()">＋ Ajouter un produit</button>
+        </div>
+        <div class="bq-products" id="bqProducts"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale produit -->
+  <div class="bq-modal-overlay" id="prodFormOverlay">
+    <div class="bq-modal">
+      <span class="bq-modal-close" onclick="fermerFormProduit()">✕</span>
+      <h3 id="prodFormTitle">Ajouter un produit</h3>
+      <input type="hidden" id="pKey">
+      <div class="bq-form">
+        <label>Nom du produit *
+          <input type="text" id="pName" maxlength="120" placeholder="Ex : Encens de protection">
+        </label>
+        <div class="bq-row">
+          <label>Prix *
+            <input type="number" id="pPrice" min="1" placeholder="2000">
+          </label>
+          <label>Devise
+            <input type="text" id="pDevise" maxlength="8" value="FCFA">
+          </label>
+        </div>
+        <label>Catégorie
+          <select id="pChain">
+            <option value="Secret">Secret</option>
+            <option value="chaîne">Chaîne</option>
+            <option value="encens">Encens</option>
+            <option value="bague">Bague</option>
+            <option value="livre">Livre</option>
+            <option value="autres">Autres</option>
+          </select>
+        </label>
+        <label>Image du produit
+          <input type="file" id="pImageFile" accept="image/*" onchange="previewProdImage(event)">
+          <div id="pImagePreview" class="bq-logo-preview">
+            <img id="pImageImg" src="" alt="" style="display:none">
+            <span id="pImageEmpty">Aucune image</span>
+          </div>
+        </label>
+        <label>WhatsApp (numéro affiché aux acheteurs)
+          <input type="tel" id="pNumber" maxlength="20" placeholder="221770000000">
+        </label>
+        <label>Description
+          <textarea id="pDesc" maxlength="1000" rows="3" placeholder="Détaillez le produit…"></textarea>
+        </label>
+        <button class="bq-btn" onclick="enregistrerProduit()">💾 Enregistrer le produit</button>
+        <p class="bq-note" id="prodFormNote"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="boutique.js"></script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

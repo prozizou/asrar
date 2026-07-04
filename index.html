@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { justify-content:center; }
+    .google-btn { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3);
+                  display:flex; align-items:center; justify-content:center; gap:10px; }
+    .google-btn:hover { background:rgba(255,255,255,.22); }
+    #status   { margin-top:14px; font-size:.9rem; color:var(--text-muted); min-height:20px; }
+    #error-msg{ margin-top:6px;  font-size:.9rem; color:#ff6b6b; min-height:20px; }
+    .version  { font-size:.75rem; color:rgba(255,255,255,.3); margin-top:24px; }
+  </style>
+</head>
+<body>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="js/whatsapp.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <div class="container" style="max-width:420px;">
+    <div class="glass-panel" style="text-align:center;">
+      <div class="header">
+        <img src="/assets/logo-full.png" alt="ASRAR PRO — Les noms d'Allah & géométrie mystique"
+             style="width:82%;max-width:280px;height:auto;display:block;margin:0 auto 4px;">
+        <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">ASRAR PRO</h1>
+      </div>
+
+      <button class="google-btn" onclick="loginGoogle()">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.6 2.5 30.2 0 24 0 14.7 0 6.7 5.4 2.7 13.4l7.8 6C12.4 13 17.8 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.9 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.9c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.3-10.1 7.3-17.4z"/>
+          <path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8-6z"/>
+          <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2.1 1.4-4.8 2.2-7.6 2.2-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.7 42.6 14.7 48 24 48z"/>
+        </svg>
+        Continuer avec Google
+      </button>
+
+      <p id="status"></p>
+      <p id="error-msg"></p>
+      <p class="version">v2.3 — Firebase + Google</p>
+    </div>
+  </div>
+
+  <script>
+    const SEEN_KEY = 'asrar_seen'; // « déjà passé une fois » → reconnexion silencieuse
+    const statusEl = document.getElementById('status');
+    const errEl    = document.getElementById('error-msg');
+
+    // Persistance LOCALE explicite : la session survit à la fermeture de l'onglet/app.
+    // (Évite de redemander Google à chaque visite.)
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+    // Si l'utilisateur est déjà passé, on affiche « reconnexion » au lieu du bouton nu
+    // le temps que Firebase restaure la session (quelques centaines de ms).
+    if (localStorage.getItem(SEEN_KEY)) {
+      statusEl.innerText = 'Reconnexion automatique…';
+    }
+
+    // Retour d'une connexion par redirection (navigateurs qui bloquent les popups).
+    auth.getRedirectResult().catch(e => {
+      if (e && e.code && e.code !== 'auth/no-auth-event') {
+        errEl.innerText = translateError(e.code);
+        statusEl.innerText = '';
+      }
+    });
+
+    // Déjà connecté (session restaurée) → on passe directement, sans re-login.
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        localStorage.setItem(SEEN_KEY, '1');
+        window.location.href = 'accueil/accueil.html';
+      } else {
+        // Session absente : on retire l'état « reconnexion » et on montre le bouton.
+        statusEl.innerText = '';
+      }
+    });
+
+    function loginGoogle() {
+      errEl.innerText = '';
+      statusEl.innerText = 'Connexion en cours…';
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      auth.signInWithPopup(provider)
+        .then(() => {
+          localStorage.setItem(SEEN_KEY, '1');
+          window.location.href = 'accueil/accueil.html';
+        })
+        .catch(e => {
+          // Popup bloquée / non supportée (webviews, in-app) → repli sur la redirection.
+          if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment',
+               'auth/cancelled-popup-request'].includes(e.code)) {
+            statusEl.innerText = 'Ouverture de Google…';
+            auth.signInWithRedirect(provider).catch(err => {
+              statusEl.innerText = '';
+              errEl.innerText = translateError(err.code);
+            });
+            return;
+          }
+          statusEl.innerText = '';
+          errEl.innerText = translateError(e.code);
+        });
+    }
+
+    function translateError(code) {
+      const map = {
+        'auth/popup-closed-by-user': 'Connexion Google annulée.',
+        'auth/popup-blocked':        'La fenêtre Google a été bloquée par le navigateur.',
+        'auth/cancelled-popup-request': 'Connexion annulée.',
+        'auth/network-request-failed':  'Problème de connexion réseau.',
+        'auth/too-many-requests':    'Trop de tentatives. Réessayez plus tard.',
+      };
+      return map[code] || 'Une erreur est survenue. (' + code + ')';
+    }
+  </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Istihraj — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .result-big { font-size:1.8rem; font-weight:700; color:var(--accent); }
+    .zodiac-icon { font-size:3rem; display:block; margin-bottom:8px; }
+    .info-box { background:rgba(79,172,254,.08); border:1px solid rgba(79,172,254,.2);
+                border-radius:12px; padding:14px; margin-top:14px; font-size:.9rem;
+                color:var(--text-muted); line-height:1.7; }
+    .sect-title { margin:16px 0 6px; font-size:.8rem; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted);
+                  border-top:1px solid var(--glass-border); padding-top:12px; }
+    #chiffreInput {
+      width: 100%;
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      background: var(--accent);
+      border: none;
+      color: #1a1a1a;
+      font-weight: bold;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all .3s;
+      font-size: 1rem;
+    }
+    button:hover { filter: brightness(1.2); }
+  </style>
+</head>
+<body>
+  <!-- Scripts Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/main.js"></script>
+
+  <div class="container">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+
+    <div class="glass-panel">
+      <h2>♋ Istihraj (Extraction)</h2>
+      <p style="margin-bottom:15px;color:var(--text-muted);">
+        Entrez un nombre ou des lettres arabes pour déterminer les correspondances astrologiques.
+      </p>
+
+      <input type="text" id="chiffreInput" placeholder="Nombre ou lettres arabes..." style="direction:rtl;text-align:right;">
+      <button onclick="gatedIstihraj()">✨ Extraire</button>
+
+      <div class="result-box" id="resultBox" style="display:none;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <span class="zodiac-icon" id="zodiacIcon">♈</span>
+          <span id="signeResult" class="result-big">-</span>
+        </div>
+        <div class="result-row">
+          <span>Valeur numérique :</span>
+          <span id="numResult" class="result-value">-</span>
+        </div>
+        <div class="result-row">
+          <span>Nature (Élément) :</span>
+          <span id="natureResult" class="result-value">-</span>
+        </div>
+        <div class="result-row">
+          <span>Planète associée :</span>
+          <span id="planeteResult" class="result-value">-</span>
+        </div>
+
+        <div class="sect-title">Valeurs ésotériques</div>
+        <div class="result-row">
+          <span>Zahiria (valeur) :</span>
+          <span id="zahiriaResult" class="result-value">-</span>
+        </div>
+        <div class="result-row">
+          <span>Batiniya (miroir) :</span>
+          <span id="batiniyaResult" class="result-value">-</span>
+        </div>
+        <div class="result-row">
+          <span>Rouwhane (n × n) :</span>
+          <span id="rouwhaneResult" class="result-value">-</span>
+        </div>
+        <div class="result-row">
+          <span>Lumière n(n+1)/2 :</span>
+          <span id="lumiereResult" class="result-value">-</span>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>Méthode d'extraction :</strong><br>
+        La valeur Abajad (Machreqi) des lettres est calculée, puis réduite modulo 12 pour
+        déterminer le signe du zodiaque correspondant, son élément naturel (Feu, Terre, Air, Eau)
+        et la planète régissante selon la tradition islamique classique.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Table Abjad (Machreqi) ---
+    const ABJAD_TABLE = [
+      ['ا',1],['ب',2],['ج',3],['د',4],['ه',5],['و',6],['ز',7],['ح',8],['ط',9],['ي',10],
+      ['ك',20],['ل',30],['م',40],['ن',50],['س',60],['ع',70],['ف',80],['ص',90],
+      ['ق',100],['ر',200],['ش',300],['ت',400],['ث',500],['خ',600],['ذ',700],['ض',800],['ظ',900],['غ',1000]
+    ];
+
+    // --- Zodiaque par défaut (fallback) ---
+    const DEFAULT_ZODIAC = [
+      { name: "Bélier",       icon: "♈", element: "Feu",   planet: "Mars" },
+      { name: "Taureau",      icon: "♉", element: "Terre", planet: "Vénus" },
+      { name: "Gémeaux",      icon: "♊", element: "Air",   planet: "Mercure" },
+      { name: "Cancer",       icon: "♋", element: "Eau",   planet: "Lune" },
+      { name: "Lion",         icon: "♌", element: "Feu",   planet: "Soleil" },
+      { name: "Vierge",       icon: "♍", element: "Terre", planet: "Mercure" },
+      { name: "Balance",      icon: "♎", element: "Air",   planet: "Vénus" },
+      { name: "Scorpion",     icon: "♏", element: "Eau",   planet: "Mars" },
+      { name: "Sagittaire",   icon: "♐", element: "Feu",   planet: "Jupiter" },
+      { name: "Capricorne",   icon: "♑", element: "Terre", planet: "Saturne" },
+      { name: "Verseau",      icon: "♒", element: "Air",   planet: "Saturne" },
+      { name: "Poissons",     icon: "♓", element: "Eau",   planet: "Jupiter" }
+    ];
+
+    let zodiacSigns = DEFAULT_ZODIAC;
+
+    // --- Normalisation arabe ---
+    function normalizeArabic(str) {
+      return str
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/[ؤئ]/g, 'و')
+        .replace(/ة/g, 'ه')
+        .replace(/[ىئ]/g, 'ي')
+        .replace(/[ً-ْ]/g, '')
+        .replace(/[^ء-ي\s]/g, '')
+        .replace(/\s+/g, '')
+        .trim();
+    }
+
+    // --- Calcul somme Abjad ---
+    function computeAbajadSum(input) {
+      const normalized = normalizeArabic(input);
+      if (!normalized) return 0;
+      return normalized.split('').reduce((sum, ch) => {
+        const entry = ABJAD_TABLE.find(([c]) => c === ch);
+        return sum + (entry ? entry[1] : 0);
+      }, 0);
+    }
+
+    // --- Fonctions ésotériques ---
+    function mirrorNumber(n) {
+      return parseInt(n.toString().split('').reverse().join('')) || 0;
+    }
+    function rouwhane(n) { return n * n; }
+    function lumiere(n) { return n * (n + 1) / 2; }
+
+    // --- Chargement Firebase des signes (optionnel) ---
+    function loadZodiacs() {
+      if (typeof firebase !== 'undefined' && firebase.database) {
+        try {
+          const db = firebase.database();
+          db.ref('appData/zodiacs').once('value').then(snapshot => {
+            if (snapshot.exists()) {
+              const data = snapshot.val();
+              if (Array.isArray(data) && data.length === 12) {
+                // Fusion avec les valeurs par défaut : on garde élément/planète si absents en base.
+                zodiacSigns = data.map((z, i) => ({
+                  name:    (z && z.name)    || DEFAULT_ZODIAC[i].name,
+                  icon:    (z && z.icon)    || DEFAULT_ZODIAC[i].icon,
+                  element: (z && z.element) || DEFAULT_ZODIAC[i].element,
+                  planet:  (z && z.planet)  || DEFAULT_ZODIAC[i].planet
+                }));
+              }
+            }
+          }).catch(() => {});
+        } catch(e) {}
+      }
+    }
+
+    // --- Extraction Istihraj ---
+    function calculateIstihraj() {
+      const input = document.getElementById('chiffreInput').value.trim();
+      if (!input) {
+        alert("Veuillez entrer un nombre ou des lettres arabes.");
+        return;
+      }
+
+      let numericValue;
+      if (/^\d+$/.test(input)) {
+        numericValue = parseInt(input, 10);
+      } else {
+        numericValue = computeAbajadSum(input);
+      }
+
+      if (numericValue <= 0) {
+        alert("La valeur est nulle ou indéterminée.");
+        return;
+      }
+
+      const remainder = numericValue % 12;
+      const signIndex = remainder === 0 ? 11 : remainder - 1;
+      const sign = zodiacSigns[signIndex];
+
+      // Affichage
+      document.getElementById('zodiacIcon').textContent = sign.icon;
+      document.getElementById('signeResult').textContent = sign.name;
+      document.getElementById('numResult').textContent = numericValue;
+      document.getElementById('natureResult').textContent = sign.element;
+      document.getElementById('planeteResult').textContent = sign.planet;
+
+      document.getElementById('zahiriaResult').textContent = numericValue;
+      document.getElementById('batiniyaResult').textContent = mirrorNumber(numericValue);
+      document.getElementById('rouwhaneResult').textContent = rouwhane(numericValue);
+      document.getElementById('lumiereResult').textContent = lumiere(numericValue);
+
+      document.getElementById('resultBox').style.display = 'block';
+    }
+
+    // --- Sécurité & gating ---
+    requireAuth(() => {});
+    loadZodiacs();
+
+    function gatedIstihraj() {
+      if (typeof ensureAccess === 'function') {
+        ensureAccess(() => calculateIstihraj());
+      } else {
+        calculateIstihraj();
+      }
+    }
+  </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

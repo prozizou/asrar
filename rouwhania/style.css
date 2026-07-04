@@ -1,0 +1,327 @@
+/* ==================== VARIABLES & MODES ==================== */
+:root {
+    --bg-gradient-start: #FEC153;
+    --bg-gradient-end: #93A7B8;
+    --glass-bg: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --text-primary: #2d3436;
+    --text-secondary: #636e72;
+    --badge-bg: #fff;
+    --badge-border: #333;
+    --btn-primary: #6c5ce7;
+    --btn-disabled: #aaa;
+    --result-bg: rgba(255, 255, 255, 0.7);
+    --stat-bg: rgba(255, 255, 255, 0.4);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+
+    /* Cartes des noms d'Allah */
+    --card-bg: #fffef9;
+    --card-border: #f39c12;
+    --card-title: #d35400;
+    --card-text: #2d3436;
+    --card-accent: #ecf0f1;
+    --card-green-bg: #e8f8f5;
+    --card-green-text: #27ae60;
+}
+
+body.dark-mode {
+    --bg-gradient-start: #1e1e2f;
+    --bg-gradient-end: #2d2d44;
+    --glass-bg: rgba(30, 30, 50, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --text-primary: #f0f0f0;
+    --text-secondary: #b0b0b0;
+    --badge-bg: rgba(255, 255, 255, 0.15);
+    --badge-border: rgba(255, 255, 255, 0.3);
+    --result-bg: rgba(255, 255, 255, 0.08);
+    --stat-bg: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-inset: inset 0 1px 3px rgba(255, 255, 255, 0.05);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+
+    /* Cartes – mode sombre */
+    --card-bg: #2c2c3a;
+    --card-border: #f39c12;
+    --card-title: #f1c40f;
+    --card-text: #ecf0f1;
+    --card-accent: #3a3a4a;
+    --card-green-bg: #2e4a3a;
+    --card-green-text: #2ecc71;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: linear-gradient(to bottom right, var(--bg-gradient-start), var(--bg-gradient-end));
+    font-family: 'Arial', 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px 10px;
+    color: var(--text-primary);
+    transition: background 0.5s ease, color 0.3s ease;
+}
+
+.main-container {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ==================== COMPOSANTS GLASSMORPHIQUES ==================== */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
+}
+
+.badge, .input-container #editor, .intent-select, .result-box, .stats-footer,
+.angel-btn, .angel-names-container, .allah-names-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: var(--text-primary);
+}
+
+.badge {
+    border-radius: 50px;
+    padding: 8px 25px;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    min-width: 80px;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+.input-container {
+    width: 100%;
+}
+
+#editor {
+    padding: 12px;
+    font-size: 18px;
+    text-align: right;
+    min-height: 70px;
+    outline: none;
+    word-break: break-word;
+    border-radius: 15px;
+    transition: box-shadow 0.3s;
+}
+
+#editor:focus {
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.5);
+}
+
+.intent-select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 12px;
+    text-align: right;
+    direction: rtl;
+    outline: none;
+    cursor: pointer;
+}
+
+.intent-select:focus {
+    box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.5);
+}
+
+.button-row {
+    display: flex;
+    gap: 5px;
+}
+
+.primary-btn, .angel-btn {
+    width: 100%;
+    background: var(--btn-primary);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.primary-btn:disabled, .angel-btn:disabled {
+    background: var(--btn-disabled);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.result-box {
+    min-height: 100px;
+    height: auto;
+    padding: 15px;
+    position: relative;
+}
+
+.scroll-text {
+    text-align: right;
+    font-size: 18px;
+    padding-top: 25px;
+    word-wrap: break-word;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.total-indicator {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    right: auto;
+    font-weight: bold;
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    padding: 4px 10px;
+    border-radius: 8px;
+    z-index: 2;
+    direction: ltr;
+    unicode-bidi: isolate;
+    border: 1px solid var(--glass-border);
+}
+
+.stats-footer {
+    text-align: center;
+    font-size: 14px;
+    padding: 15px;
+    border-radius: 15px;
+}
+
+.stat-line {
+    margin: 6px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.stat-line span {
+    font-family: 'Courier New', monospace;
+    direction: ltr;
+    background: rgba(255,255,255,0.5);
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+.total-final {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--text-secondary);
+}
+
+.angel-names-container {
+    padding: 20px 15px;
+    margin-top: 10px;
+}
+
+.angel-names-container h3 {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.angel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+    gap: 10px;
+}
+
+.angel-row:last-child {
+    border-bottom: none;
+}
+
+.angel-number {
+    font-weight: bold;
+    font-size: 15px;
+    flex: 0 0 25%;
+    text-align: left;
+    color: var(--text-secondary);
+}
+
+.angel-arabic {
+    font-size: 22px;
+    color: var(--text-primary);
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+}
+
+.angel-transcript {
+    font-size: 14px;
+    color: var(--text-secondary);
+    flex: 0 0 35%;
+    text-align: right;
+    word-break: break-word;
+}
+
+/* ==================== MODE DARK BOUTON ==================== */
+#themeToggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+}
+
+#themeToggle:hover {
+    transform: scale(1.1);
+}
+
+/* ==================== SUGGESTIONS DE VERSETS ==================== */
+#versesSuggestions {
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+}
+
+/* ==================== ADAPTATION MOBILE ==================== */
+@media (max-width: 480px) {
+    .main-container {
+        gap: 12px;
+    }
+    .angel-arabic { font-size: 20px; }
+    .angel-transcript { font-size: 12px; }
+    .angel-number { font-size: 13px; }
+    .scroll-text { font-size: 16px; }
+    .angel-row { gap: 5px; }
+}

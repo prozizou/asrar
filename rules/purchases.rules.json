@@ -1,0 +1,98 @@
+{
+  "_comment": "À FUSIONNER dans tes règles RTDB existantes. Les écritures/lectures serveur (Admin SDK) et la console Firebase CONTOURNENT ces règles. Les nœuds de contenu passent en lecture serveur uniquement : le navigateur ne peut plus les lire directement (le paywall n'est donc plus contournable côté client).",
+
+  "rules": {
+    "purchased_user": {
+      "_comment": "Droits d'accès. Clé = email avec '.' → ','. Lecture par le seul propriétaire, écriture serveur uniquement.",
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",
+        ".write": false
+      }
+    },
+
+    "purchases": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "_comment_marche": "Commandes du Marché (historique éventuel). Écriture serveur uniquement (Admin SDK). Les commandes se font désormais via WhatsApp.",
+
+    "orders": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "vendor_sales": {
+      "_comment": "Journal des ventes par vendeur (commission 5% / reversement 95%). Lecture/écriture serveur uniquement.",
+      ".read": false,
+      ".write": false
+    },
+
+    "_comment_boutique": "Abonnement BOUTIQUE vendeur. Un compte Google = un vendeur (clé = uid). Lecture par le propriétaire, écriture serveur uniquement (activation admin + /api/shop).",
+
+    "sellers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "_comment_admin": "Données du tableau de bord admin : écrites par /api/track et /api/admin (Admin SDK), lues par l'admin via Admin SDK. Aucun accès client direct.",
+
+    "analytics":      { ".read": false, ".write": false },
+    "activity_feed":  { ".read": false, ".write": false, ".indexOn": ["at"] },
+    "geomancie_logs": { ".read": false, ".write": false, ".indexOn": ["at"] },
+    "admins": {
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",
+        ".write": false
+      }
+    },
+
+    "_comment_contenu": "Contenu PAYANT : lecture/écriture refusées au client. Servi via /api/list-content, /api/get-content et /api/get-theme (Admin SDK). Écriture via la console Firebase ou un script Admin SDK.",
+
+    "db_sirr_deblocage":  { ".read": false, ".write": false },
+    "db_sirr_domptage":   { ".read": false, ".write": false },
+    "db_sirr_ilham":      { ".read": false, ".write": false },
+    "db_sirr_protection": { ".read": false, ".write": false },
+    "db_sirr_ouverture":  { ".read": false, ".write": false },
+    "almaqtab":           { ".read": false, ".write": false },
+    "det_produits":       { ".read": false, ".write": false, ".indexOn": ["uid"] },
+    "theme_fondamental":  { ".read": false, ".write": false },
+
+    "_comment_social": "Données sociales (non payantes). Lecture par tout connecté ; écriture contrôlée et validée.",
+
+    "appData": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "ratings": {
+      "$cat": {
+        "$key": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+          }
+        }
+      }
+    },
+
+    "comments": {
+      "$cat": {
+        "$key": {
+          ".read": "auth != null",
+          "$commentId": {
+            ".write": "auth != null && !data.exists() && newData.exists()",
+            ".validate": "newData.hasChildren(['uid','text']) && newData.child('uid').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500"
+          }
+        }
+      }
+    }
+  }
+}

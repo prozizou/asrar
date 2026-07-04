@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abajad — ASRAR PRO</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    /* ---- Variables (si non définies dans style.css) ---- */
+    :root {
+      --accent: #c9a961;
+      --text-main: #e0d7c6;
+      --text-muted: #a89f8c;
+      --glass-bg: rgba(20, 20, 25, 0.7);
+      --glass-border: rgba(200, 180, 120, 0.2);
+    }
+    /* ---- Layout spécifique ---- */
+    .abajad-input {
+      font-size: 1.4rem;
+      text-align: right;
+      direction: rtl;
+      letter-spacing: 2px;
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 14px 16px;
+      border-radius: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .result-card {
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .result-card h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+    .result-big {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+    .result-reduced {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .breakdown {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 15px;
+      word-break: break-all;
+      line-height: 1.9;
+      direction: rtl;
+      text-align: right;
+    }
+    .breakdown .mw-line {
+      direction: ltr;
+      text-align: left;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--glass-border);
+      color: var(--text-main);
+      font-size: 0.92rem;
+    }
+    .breakdown .mw-line strong {
+      color: var(--accent);
+    }
+    .factor-pairs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .factor-pair {
+      background: rgba(200,160,80,0.15);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .sys-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .sys-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.85rem;
+      transition: all .3s;
+      color: var(--text-muted);
+    }
+    .sys-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #1a1a1a;
+    }
+    .letters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(60px,1fr));
+      gap: 8px;
+      direction: rtl;
+    }
+    .letter-cell {
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 8px 4px;
+      text-align: center;
+    }
+    .letter-char { font-size: 1.3rem; font-weight:600; }
+    .letter-val  { font-size: 0.75rem; color: var(--accent); }
+
+    .compare-section {
+      margin-top: 30px;
+      border-top: 1px solid var(--glass-border);
+      padding-top: 20px;
+    }
+    .compare-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .compare-row input {
+      flex: 1;
+      text-align: right;
+      direction: rtl;
+      font-size: 1rem;
+      padding: 8px 12px;
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      color: var(--text-main);
+    }
+    .history-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .history-item span {
+      color: var(--text-muted);
+    }
+    .history-item strong {
+      color: var(--accent);
+    }
+    .clear-history {
+      background: none;
+      border: none;
+      color: #d9534f;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    details {
+      margin-top: 15px;
+      background: rgba(255,255,255,0.03);
+      padding: 10px 15px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/main.js"></script>
+
+  <div class="container">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+
+    <div class="glass-panel">
+      <h2>🔢 Calculateur Abjad Ésotérique</h2>
+      <p style="margin-bottom:18px;color:var(--text-muted);">
+        Saisie en temps réel · Décomposition · Réduction théosophique · Facteurs mystiques
+      </p>
+
+      <input type="text" class="abajad-input" id="abajadInput"
+             placeholder="اكتب هنا..." oninput="gatedAbajad()" autofocus>
+
+      <!-- Résultats principaux -->
+      <div class="result-grid">
+        <div class="result-card">
+          <h3>☀️ Mashreqi (Oriental)</h3>
+          <div class="result-big" id="machreqiResult">0</div>
+          <div class="result-reduced" id="machreqiReduced"></div>
+        </div>
+        <div class="result-card">
+          <h3>🌙 Maghrébi (Occidental)</h3>
+          <div class="result-big" id="maghrebiResult">0</div>
+          <div class="result-reduced" id="maghrebiReduced"></div>
+        </div>
+      </div>
+
+      <!-- Décomposition lettre par lettre -->
+      <div class="breakdown" id="breakdown"></div>
+
+      <!-- Facteurs mystiques (pour le résultat Mashreqi) -->
+      <details id="mysticFactorsDetails" style="margin-top:15px;">
+        <summary>🔮 Poids mystique (paires de facteurs)</summary>
+        <div id="mysticFactors" class="factor-pairs"></div>
+      </details>
+    </div>
+
+    <!-- Comparateur -->
+    <div class="glass-panel compare-section">
+      <h3>⚖️ Comparateur de mots</h3>
+      <div class="compare-row">
+        <input type="text" id="compareInput1" placeholder="المدخل الأول" oninput="compareWords()" class="abajad-input" style="font-size:1rem;">
+        <input type="text" id="compareInput2" placeholder="المدخل الثاني" oninput="compareWords()" class="abajad-input" style="font-size:1rem;">
+      </div>
+      <div class="result-row" style="display:flex; gap:20px; margin-top:12px;">
+        <span>Différence (Mashreqi) :</span>
+        <strong id="compareDiff" class="result-value" style="color:var(--accent);">0</strong>
+        <span style="margin-left:auto; font-size:0.8rem; color:var(--text-muted);" id="compareInterpret"></span>
+      </div>
+    </div>
+
+    <!-- Historique -->
+    <div class="glass-panel" style="margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4 style="margin:0;">📜 Derniers calculs</h4>
+        <button class="clear-history" onclick="clearHistory()">Effacer</button>
+      </div>
+      <div id="historyContainer" class="history-list">
+        <span style="color:var(--text-muted);">Aucun historique</span>
+      </div>
+    </div>
+
+    <!-- Table de référence (accordéon) -->
+    <div class="glass-panel table-ref">
+      <details open>
+        <summary>📖 Tableau de correspondance</summary>
+        <div class="sys-toggle">
+          <div class="sys-btn active" onclick="showTable('mashriqi',this)">Machreqi</div>
+          <div class="sys-btn"       onclick="showTable('maghrebi', this)">Maghrébi</div>
+        </div>
+        <h4 id="table-label">Tableau Machreqi — utilisé en Orient</h4>
+        <div class="letters-grid" id="lettersGrid"></div>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    // --- Authentification (doit être déjà gérée par main.js) ---
+    requireAuth(() => {});
+
+    // --- Tables de correspondance ---
+    const TABLES = {
+      mashriqi: [
+        ['ا',1],['ب',2],['ج',3],['د',4],['ه',5],['و',6],['ز',7],['ح',8],['ط',9],['ي',10],
+        ['ك',20],['ل',30],['م',40],['ن',50],['س',60],['ع',70],['ف',80],['ص',90],
+        ['ق',100],['ر',200],['ش',300],['ت',400],['ث',500],['خ',600],['ذ',700],['ض',800],['ظ',900],['غ',1000]
+      ],
+      maghrebi: [
+        ['ا',1],['ب',2],['ج',3],['د',4],['ه',5],['و',6],['ز',7],['ح',8],['ط',9],['ي',10],
+        ['ك',20],['ل',30],['م',40],['ن',50],['ص',60],['ع',70],['ف',80],['ض',90],
+        ['ق',100],['ر',200],['س',300],['ت',400],['ث',500],['خ',600],['ذ',700],['ظ',800],['غ',900],['ش',1000]
+      ]
+    };
+
+    // Normalisation des caractères arabes (suppression diacritiques, variantes)
+    function normalizeArabic(str) {
+      return str
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/[ؤئ]/g, 'و')
+        .replace(/ة/g, 'ه')
+        .replace(/[ىئ]/g, 'ي')
+        .replace(/[ً-ْ]/g, '')      // diacritiques
+        .replace(/[^ء-ي\s]/g, '')   // tout ce qui n'est pas arabe ou espace
+        .replace(/\s+/g, '')        // supprimer les espaces
+        .trim();
+    }
+
+    // Obtenir la valeur d'une lettre dans un système
+    function getLetterValue(char, system) {
+      const table = TABLES[system];
+      const entry = table.find(([c]) => c === char);
+      return entry ? entry[1] : 0;
+    }
+
+    // Réduction théosophique (addition itérative jusqu'à 1 chiffre)
+    function reduceNumber(n) {
+      if (n <= 0) return 0;
+      while (n > 9) {
+        n = n.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+      }
+      return n;
+    }
+
+    // Trouver toutes les paires de facteurs d'un nombre
+    function getFactorPairs(num) {
+      if (num <= 0) return [];
+      const pairs = [];
+      for (let i = 1; i <= Math.sqrt(num); i++) {
+        if (num % i === 0) {
+          pairs.push([i, num / i]);
+          if (i !== num / i) pairs.push([num / i, i]); // pour l'ordre inverse
+        }
+      }
+      return pairs.sort((a, b) => a[0] - b[0]);
+    }
+
+    // --- Calcul principal ---
+    function calculateAbajad() {
+      const input = document.getElementById('abajadInput').value;
+      const normalized = normalizeArabic(input);
+      
+      if (!normalized) {
+        resetDisplay();
+        return;
+      }
+
+      const chars = normalized.split('');
+      let mashSum = 0, maghSum = 0;
+      const breakdownLetters = [];
+
+      chars.forEach(ch => {
+        const mashVal = getLetterValue(ch, 'mashriqi');
+        const maghVal = getLetterValue(ch, 'maghrebi');
+        mashSum += mashVal;
+        maghSum += maghVal;
+        breakdownLetters.push(`${ch} (${mashVal}/${maghVal})`);
+      });
+
+      // Mise à jour des totaux
+      document.getElementById('machreqiResult').textContent = mashSum;
+      document.getElementById('maghrebiResult').textContent = maghSum;
+
+      // Réduction théosophique
+      document.getElementById('machreqiReduced').textContent = 
+        mashSum > 0 ? `Réduit : ${reduceNumber(mashSum)}` : '';
+      document.getElementById('maghrebiReduced').textContent = 
+        maghSum > 0 ? `Réduit : ${reduceNumber(maghSum)}` : '';
+
+      // Décomposition lettre par lettre
+      document.getElementById('breakdown').innerHTML = 
+        '<div class="mw-line"><strong>Décomposition :</strong> ' + breakdownLetters.join(' + ') + '</div>';
+
+      // Facteurs mystiques (basé sur la somme Mashreqi)
+      const factorPairs = getFactorPairs(mashSum);
+      const factorsDiv = document.getElementById('mysticFactors');
+      if (factorPairs.length > 0 && mashSum > 0) {
+        factorsDiv.innerHTML = factorPairs.map(([a, b]) => 
+          `<span class="factor-pair">${a}×${b}</span>`
+        ).join('');
+        document.getElementById('mysticFactorsDetails').open = true;
+      } else {
+        factorsDiv.innerHTML = '<span style="color:var(--text-muted);">Aucun facteur</span>';
+        document.getElementById('mysticFactorsDetails').open = false;
+      }
+
+      // Ajouter à l'historique (si authentifié)
+      addToHistory(input.trim(), mashSum, maghSum);
+    }
+
+    function resetDisplay() {
+      document.getElementById('machreqiResult').textContent = '0';
+      document.getElementById('maghrebiResult').textContent = '0';
+      document.getElementById('machreqiReduced').textContent = '';
+      document.getElementById('maghrebiReduced').textContent = '';
+      document.getElementById('breakdown').innerHTML = '';
+      document.getElementById('mysticFactors').innerHTML = '';
+      document.getElementById('mysticFactorsDetails').open = false;
+    }
+
+    // --- Comparateur ---
+    function compareWords() {
+      const w1 = normalizeArabic(document.getElementById('compareInput1').value);
+      const w2 = normalizeArabic(document.getElementById('compareInput2').value);
+      const sum1 = computeSum(w1, 'mashriqi');
+      const sum2 = computeSum(w2, 'mashriqi');
+      const diff = Math.abs(sum1 - sum2);
+      document.getElementById('compareDiff').textContent = diff;
+      const interpret = diff === 0 ? '(Identique)' : '';
+      document.getElementById('compareInterpret').textContent = interpret;
+    }
+
+    function computeSum(word, system) {
+      if (!word) return 0;
+      return word.split('').reduce((acc, ch) => acc + getLetterValue(ch, system), 0);
+    }
+
+    // --- Historique (localStorage) ---
+    const HISTORY_KEY = 'abajad_history';
+    function loadHistory() {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }
+    function saveHistory(hist) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 20))); // limite 20 entrées
+    }
+    function addToHistory(word, mash, magh) {
+      if (!word) return;
+      let hist = loadHistory();
+      hist.unshift({ word, mash, magh, date: new Date().toLocaleString() });
+      hist = hist.slice(0, 20);
+      saveHistory(hist);
+      renderHistory(hist);
+    }
+    function clearHistory() {
+      localStorage.removeItem(HISTORY_KEY);
+      document.getElementById('historyContainer').innerHTML = '<span style="color:var(--text-muted);">Aucun historique</span>';
+    }
+    function renderHistory(hist) {
+      const container = document.getElementById('historyContainer');
+      if (!hist || hist.length === 0) {
+        container.innerHTML = '<span style="color:var(--text-muted);">Aucun historique</span>';
+        return;
+      }
+      container.innerHTML = hist.map(h => `
+        <div class="history-item">
+          <span dir="rtl">${h.word}</span>
+          <span><strong>${h.mash}</strong> / ${h.magh}</span>
+          <span style="font-size:0.7rem;">${h.date}</span>
+        </div>
+      `).join('');
+    }
+
+    // --- Tableau de référence ---
+    function showTable(system, el) {
+      document.querySelectorAll('.sys-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      const labels = {
+        mashriqi: 'Tableau Machreqi — utilisé en Orient',
+        maghrebi:  'Tableau Maghrébi — utilisé en Afrique du Nord & Ouest'
+      };
+      document.getElementById('table-label').innerText = labels[system];
+      document.getElementById('lettersGrid').innerHTML = TABLES[system].map(([ch,val]) => `
+        <div class="letter-cell">
+          <div class="letter-char">${ch}</div>
+          <div class="letter-val">${val}</div>
+        </div>
+      `).join('');
+    }
+
+    // --- Gating avec authentification (appelé par oninput) ---
+    function gatedAbajad() {
+      // ensureAccess doit exister dans main.js (fonction qui vérifie l'accès et lance le callback)
+      if (typeof ensureAccess === 'function') {
+        ensureAccess(() => calculateAbajad());
+      } else {
+        calculateAbajad(); // fallback pour test hors Firebase
+      }
+    }
+
+    // --- Initialisation au chargement ---
+    window.addEventListener('DOMContentLoaded', () => {
+      showTable('mashriqi', document.querySelector('.sys-btn.active'));
+      const hist = loadHistory();
+      renderHistory(hist);
+      // L'input peut avoir une valeur pré-enregistrée ? Non, donc rien.
+    });
+  </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>
