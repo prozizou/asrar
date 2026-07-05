@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
   <!-- Firebase & API -->
@@ -34,10 +35,6 @@
 
       <div class="market-nav">
         <input type="text" class="search-bar" id="searchInput" placeholder="🔍 Rechercher un produit..." oninput="filterProducts()">
-        <div class="cart-icon-wrap" onclick="openCart()">
-          🛒
-          <span class="cart-count" id="cartCount">0</span>
-        </div>
       </div>
 
       <!-- Section vendeurs -->
@@ -72,19 +69,8 @@
       <div class="vendor-block" id="m-vendor-block"></div>
       <div id="m-desc" style="line-height:1.7; border-top:1px solid #1F1F23; padding-top:14px;"></div>
       <div class="contact-btns" id="m-contact" style="margin-top:14px;"></div>
-      <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCartFromModal()">🛒 Ajouter au panier</button>
+      <button class="add-to-cart-btn" id="addToCartBtn" onclick="commanderProduit()">🛍️ Commander via WhatsApp</button>
     </div>
-  </div>
-
-  <!-- Panier latéral -->
-  <div class="overlay" id="cartOverlay" onclick="closeCart()"></div>
-  <div class="cart-panel" id="cartPanel">
-    <div class="cart-header">
-      <h3 style="margin:0;">🛒 Panier</h3>
-      <button onclick="closeCart()" style="background:none;border:none;color:#888;font-size:1.4rem;cursor:pointer;">✕</button>
-    </div>
-    <div class="cart-body" id="cartBody"></div>
-    <div class="cart-totals" id="cartTotals"></div>
   </div>
 
   <script src="marche.js"></script>

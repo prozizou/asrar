@@ -80,7 +80,7 @@ function renderList(catId) {
     return;
   }
   container.innerHTML = list.map(item => `
-    <div class="secret-card" data-key="${item.key}">
+    <div class="secret-card${item.img ? ' has-cover' : ''}" data-key="${item.key}">
       <div class="secret-thumb">${item.img ? `<img src="${escapeHtml(item.img)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='📜'">` : '📜'}</div>
       <div class="secret-title">${escapeHtml(item.faida)}</div>
     </div>

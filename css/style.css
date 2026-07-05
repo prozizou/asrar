@@ -203,3 +203,17 @@ input:focus {
     color: #fff;
     border-color: var(--glass-border);
 }
+
+/* ═══════════════ THÈME CLAIR (bascule via <html data-theme="light">) ═══════════════ */
+html[data-theme="light"] {
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(30, 40, 60, 0.14);
+  --glass-shadow: 0 8px 32px rgba(60, 80, 110, 0.14);
+  --text-main: #1b2634;
+  --text-muted: #51606f;
+  --accent: #1f77c9;
+  --accent-hover: #0bb7c4;
+}
+html[data-theme="light"] body {
+  background: linear-gradient(135deg, #eef3f7, #dde6ec, #cdd8e0);
+}

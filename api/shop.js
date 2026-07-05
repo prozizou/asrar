@@ -102,6 +102,9 @@ module.exports = async (req, res) => {
       const shopName = activeSeller
         ? ((seller && seller.shop && seller.shop.name) || "Ma boutique")
         : ((boutique && boutique.profile_name) || "Ma boutique");
+      const shopLogo = activeSeller
+        ? ((seller && seller.shop && seller.shop.logo) || "")
+        : ((boutique && boutique.img) || "");
 
       // Clé existante (édition) si elle nous appartient, sinon nouvelle.
       let key = str(product.key, 64);
@@ -125,6 +128,7 @@ module.exports = async (req, res) => {
         email: user.email,           // contact = email du vendeur (jeton vérifié)
         uid: user.uid,               // propriété
         vendeur: shopName,           // nom de la boutique
+        vendeurAvatar: shopLogo,     // logo de la boutique (pour le Marché)
         updatedAt: Date.now()
       };
       await db.ref("det_produits/" + key).update(record);

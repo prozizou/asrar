@@ -289,8 +289,10 @@ function saveCart() {
 }
 
 function updateCartCount() {
+  const el = document.getElementById('cartCount');
+  if (!el) return;
   const total = currentCart.reduce((sum, i) => sum + i.quantity, 0);
-  document.getElementById('cartCount').innerText = total;
+  el.innerText = total;
 }
 
 function openCart() {
@@ -364,6 +366,31 @@ function renderCart() {
     <div class="cart-total-row grand-total"><span>Grand total</span><span>${grandTotal.toLocaleString()} FCFA</span></div>
     <button class="pay-btn" onclick="commanderWhatsApp()">💬 Commander via WhatsApp</button>
   `;
+}
+
+// Commande d'un produit : message personnalisé envoyé DIRECTEMENT au propriétaire
+// de la boutique (son numéro WhatsApp), pré-rempli avec le modèle demandé.
+function commanderProduit() {
+  const p = currentModalProduct;
+  if (!p) return;
+  const number = (p.number || '').replace(/\D/g, '');
+  if (!number) { alert("Le numéro WhatsApp de la boutique n'est pas disponible."); return; }
+  let email = '';
+  try { email = (auth.currentUser && auth.currentUser.email) || ''; } catch (e) {}
+  const boutique = p.vendeur || 'la boutique';
+  const article = p.produit || 'Article';
+  const total = formatPrice(p.Prix, p.devise) || ((p.Prix || '') + ' FCFA');
+  const msg =
+`Assalamou aleykoum 🌙
+Je souhaite passer une commande sur le Marché (${boutique}).
+
+• Compte (e-mail) : ${email}
+• Articles :
+   - ${article}
+• Total : ${total}
+
+Merci de me confirmer la disponibilité et les modalités de paiement.`;
+  window.open('https://wa.me/' + number + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 // Envoie la commande (détails du panier) à l'administration via WhatsApp.
