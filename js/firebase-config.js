@@ -111,6 +111,15 @@ function startSubscription(productId) {
 let _accessStatus = null; // cache pour la session de la page
 // Force une nouvelle lecture de l'accès (ex: après un retour de paiement réussi).
 function invalidateAccessCache() { _accessStatus = null; }
+
+// Niveau d'abonnement (montant FCFA) de l'utilisateur, pour les fonctionnalités
+// gatées par palier (ex. téléchargement PDF ≥ 45 000). Admin/VIP = accès total.
+function getSubscriptionLevel() {
+  if (!_accessStatus) return 0;
+  if (_accessStatus.admin || _accessStatus.vip) return 999999;
+  const p = _accessStatus.purchase;
+  return (p && Number(p.level)) ? Number(p.level) : 0;
+}
 function ensureAccess(onGranted) {
   const user = auth.currentUser;
   if (!user) { window.location.href = getRoot() + 'index.html'; return; }

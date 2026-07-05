@@ -9,34 +9,49 @@ function getAudioCtx() {
     return audioCtx;
 }
 
-// Fonction utilitaire pour générer le son du grain
+// Son BOIS d'un grain : impact bruité filtré (le « toc ») + corps résonant bas,
+// sans harmoniques métalliques aiguës → timbre vibrant et boisé.
 function synthBead(ctx) {
     const now = ctx.currentTime;
 
-    // Clic boisé
-    const osc1 = ctx.createOscillator();
-    const g1   = ctx.createGain();
-    osc1.connect(g1);
-    g1.connect(ctx.destination);
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(480, now);
-    osc1.frequency.exponentialRampToValueAtTime(80, now + 0.06);
-    g1.gain.setValueAtTime(0.6, now);
-    g1.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
-    osc1.start(now);
-    osc1.stop(now + 0.07);
+    // 1) Impact — court burst de bruit filtré (le « toc » du contact bois)
+    const dur = 0.09;
+    const buf = ctx.createBuffer(1, Math.max(1, Math.ceil(ctx.sampleRate * dur)), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); // enveloppe décroissante
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1200;   // caractère « knock » médium (bois)
+    bp.Q.value = 1.1;
+    const ng = ctx.createGain();
+    ng.gain.value = 0.9;
+    noise.connect(bp); bp.connect(ng); ng.connect(ctx.destination);
+    noise.start(now); noise.stop(now + dur);
 
-    // Résonance légère
-    const osc2 = ctx.createOscillator();
-    const g2   = ctx.createGain();
-    osc2.connect(g2);
-    g2.connect(ctx.destination);
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(960, now);
-    g2.gain.setValueAtTime(0.12, now);
-    g2.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-    osc2.start(now);
-    osc2.stop(now + 0.15);
+    // 2) Corps résonant — basse fréquence, décroissance rapide (résonance du bois)
+    const body = ctx.createOscillator();
+    const bg = ctx.createGain();
+    body.type = 'sine';
+    body.frequency.setValueAtTime(220, now);
+    body.frequency.exponentialRampToValueAtTime(120, now + 0.05);
+    bg.gain.setValueAtTime(0.5, now);
+    bg.gain.exponentialRampToValueAtTime(0.01, now + 0.10);
+    body.connect(bg); bg.connect(ctx.destination);
+    body.start(now); body.stop(now + 0.11);
+
+    // 3) Grain léger (très court) pour la vivacité, sans brillance métallique
+    const h = ctx.createOscillator();
+    const hg = ctx.createGain();
+    h.type = 'triangle';
+    h.frequency.setValueAtTime(440, now);
+    hg.gain.setValueAtTime(0.07, now);
+    hg.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    h.connect(hg); hg.connect(ctx.destination);
+    h.start(now); h.stop(now + 0.06);
 }
 
 /**

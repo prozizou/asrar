@@ -334,10 +334,12 @@
           (pos) => {
             geoData.lat = pos.coords.latitude;
             geoData.lng = pos.coords.longitude;
+            const acc = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
             geoData.city = geoData.lat.toFixed(4) + ', ' + geoData.lng.toFixed(4);
-            document.getElementById('locInfo').innerText = '📡 GPS : ' + geoData.city;
-            recalculerSoleil();        // calcul LOCAL (NOAA), aucun appel réseau
-            nommerVille();             // facultatif (affichage seulement)
+            document.getElementById('locInfo').innerText = '📡 GPS : ' + geoData.city + (acc ? ' (±' + acc + ' m)' : '');
+            recalculerSoleil();                          // 1) calcul local immédiat
+            prefetchSunAPI().then(() => recalculerSoleil()); // 2) affine via API Sunrise-Sunset
+            nommerVille();
             geoData.ready = true;
             resolve();
           },
@@ -407,8 +409,34 @@
     function defaultSun(date, h, m) {
       return new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
     }
+
+    // ── API publique Sunrise-Sunset (plus précise) + cache + repli local ──
+    const sunCache = {};
+    function dateKey(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    async function prefetchSunAPI() {
+      if (geoData.lat === null) return;
+      const base = new Date();
+      const days = [-1, 0, 1].map((off) => { const d = new Date(base); d.setDate(d.getDate() + off); return d; });
+      await Promise.all(days.map(async (d) => {
+        const key = dateKey(d);
+        if (sunCache[key]) return;
+        try {
+          const url = 'https://api.sunrise-sunset.org/json?lat=' + geoData.lat + '&lng=' + geoData.lng + '&date=' + key + '&formatted=0';
+          const r = await fetch(url);
+          const j = await r.json();
+          if (j && j.status === 'OK' && j.results && j.results.sunrise && j.results.sunset) {
+            sunCache[key] = { sunrise: new Date(j.results.sunrise), sunset: new Date(j.results.sunset) };
+          }
+        } catch (e) { /* repli local via sunOrDefault */ }
+      }));
+    }
+
     function sunOrDefault(date) {
-      const s = sunTimesFor(date, geoData.lat, geoData.lng);
+      const cached = sunCache[dateKey(date)];
+      if (cached && cached.sunrise && cached.sunset) return cached;   // API
+      const s = sunTimesFor(date, geoData.lat, geoData.lng);          // repli NOAA local
       if (s.sunrise && s.sunset) return s;
       return { sunrise: defaultSun(date, 6, 30), sunset: defaultSun(date, 18, 0) };
     }
@@ -524,25 +552,34 @@
       const dayLen = (pday.sunset.getTime() - pday.sunrise.getTime()) / 12;
       const nightLen = (pday.nextSunrise.getTime() - pday.sunset.getTime()) / 12;
 
-      let html = '<div class="planetary-hours-table"><p style="text-align:center;color:#C9A961;margin:6px 0;">Journée planétaire : <strong>' +
-        DAY_PLANETS.names[pday.dayOfWeek] + '</strong></p><table>';
-      html += '<thead><tr><th>Période</th><th>Début</th><th>Planète</th><th>Nature</th></tr></thead><tbody>';
+      const fmt = (ms) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-      for (let i = 0; i < 24; i++) {
-        const isDay = i < 12;
-        const k = isDay ? i : i - 12;
-        const startMs = isDay ? pday.sunrise.getTime() + k * dayLen : pday.sunset.getTime() + k * nightLen;
-        const planet = CHALDEAN_ORDER[(start + i) % 7];
-        const nat = PLANET_NATURE[planet];
-        const isNow = (cur.isDay === isDay && cur.idx === k);
-        html += `<tr class="${isNow ? 'now-hour' : ''}">
-          <td class="hour-type">${isDay ? '☀️ Jour' : '🌙 Nuit'}</td>
-          <td>${new Date(startMs).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-          <td class="planet-name">${CHALDEAN_EMOJIS[planet]} ${planet}${isNow ? ' ◀' : ''}</td>
-          <td><span class="${nat.cls}">${nat.txt}</span></td>
-        </tr>`;
+      function buildList(isDay) {
+        const baseStart = isDay ? pday.sunrise.getTime() : pday.sunset.getTime();
+        const len = isDay ? dayLen : nightLen;
+        let rows = '';
+        for (let k = 0; k < 12; k++) {
+          const i = isDay ? k : k + 12;
+          const s = baseStart + k * len;
+          const e = s + len;
+          const planet = CHALDEAN_ORDER[(start + i) % 7];
+          const nat = PLANET_NATURE[planet];
+          const isNow = (cur.isDay === isDay && cur.idx === k);
+          rows += `<tr class="${isNow ? 'now-hour' : ''}">
+            <td>${fmt(s)} – ${fmt(e)}</td>
+            <td class="planet-name">${CHALDEAN_EMOJIS[planet]} ${planet}${isNow ? ' ◀' : ''}</td>
+            <td><span class="${nat.cls}">${nat.txt}</span></td>
+          </tr>`;
+        }
+        return `<div class="planetary-hours-table">
+          <h4 style="text-align:center;color:#C9A961;margin:14px 0 8px;">${isDay ? '☀️ Heures du Jour' : '🌙 Heures de la Nuit'}</h4>
+          <table><thead><tr><th>Intervalle</th><th>Planète</th><th>Nature</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>`;
       }
-      html += '</tbody></table></div>';
+
+      let html = '<p style="text-align:center;color:#C9A961;margin:6px 0;">Journée planétaire : <strong>' +
+        DAY_PLANETS.names[pday.dayOfWeek] + '</strong></p>';
+      html += buildList(true) + buildList(false);
       document.getElementById('planetaryHoursContainer').innerHTML = html;
     }
 

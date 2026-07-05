@@ -30,6 +30,17 @@ const SOURCES = {
     ref: () => "det_produits",
     secretFields: ["description", "number", "email"],
     authOnly: true
+  },
+  // Versets de référence (suggestions numérologie) — lecture seule, aucun champ secret.
+  verset: {
+    ref: () => "versetRef",
+    secretFields: []
+  },
+  // 99 Noms d'Allah — lus par le module Benefits. Toujours servis (Admin SDK) pour que
+  // TOUS les utilisateurs voient les noms depuis le RTDB ; le verrouillage carte est côté client.
+  asma: {
+    ref: () => "data/appData/asmaUlHusna",
+    secretFields: []
   }
 };
 

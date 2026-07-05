@@ -29,7 +29,7 @@ export const elements = {
 // ── ÉTAT ─────────────────────────────────────────────────────
 let currentData       = [];
 let currentSearchTerm = '';
-let viewMode          = localStorage.getItem('viewMode') || 'grid';
+let viewMode          = 'grid'; // vue grille uniquement
 let currentModalItem  = null;
 let toastTimer        = null;
 
@@ -141,6 +141,9 @@ function initEventDelegation() {
     elements.container.addEventListener('input', (e) => {
         if (e.target.classList.contains('zikr-input')) {
             updateTasbihSettings(e.target, e.target.dataset.id, e.target.value);
+            if (e.target.id && e.target.id.startsWith('input-target-')) {
+                renderObjSubdiv(e.target.dataset.id, e.target.value);
+            }
         }
     });
 }
@@ -157,6 +160,30 @@ export function initScrollButtons() {
 }
 
 // ── AFFICHAGE DES CARTES ──────────────────────────────────────
+
+// Préfixe d'imploration : « يا » devant le nom (l'article « ال » initial tombe au vocatif).
+function implore(name) {
+    return 'يا ' + String(name || '').replace(/^ال/, '');
+}
+// Subdivision d'un objectif N en paires a×b (a répété b fois), ex. 450 → 225×2, 150×3…
+function objSubdivisions(n) {
+    n = parseInt(n, 10);
+    if (!n || n <= 1) return [];
+    const out = [];
+    for (let a = n - 1; a >= 2 && out.length < 40; a--) {
+        if (n % a === 0) out.push(a + '×' + (n / a));
+    }
+    return out;
+}
+function renderObjSubdiv(id, target) {
+    const el = document.getElementById('obj-subdiv-' + id);
+    if (!el) return;
+    const subs = objSubdivisions(target);
+    el.innerHTML = subs.length
+        ? subs.map(x => '<span class="obj-chip">' + x + '</span>').join('')
+        : '';
+}
+
 export function renderCards(data, filterTerm = '', showFavoritesOnly = false) {
     currentSearchTerm = filterTerm.trim();
 
@@ -179,7 +206,7 @@ export function renderCards(data, filterTerm = '', showFavoritesOnly = false) {
     }
 
     elements.countSpan.textContent = filtered.length;
-    elements.container.className   = `cards-grid${viewMode === 'list' ? ' list-view' : ''}`;
+    elements.container.className   = 'cards-grid';
     elements.container.innerHTML   = '';
 
     if (filtered.length === 0) {
@@ -223,12 +250,17 @@ function highlightText(text) {
 // ── CONSTRUCTION HTML WAFQ ────────────────────────────────────
 function buildWafqSliderHtml(squaresData, orderedKeys, numericTarget, typeName) {
     if (!squaresData) return '';
-    const cols = typeName.includes('3x3') ? 3 : 4;
+    // Taille réelle du carré (3 ou 4) lue depuis la grille → robuste au format du nom
+    // (« 3×3 » avec le signe × ne contient PAS « 3x3 » : l'ancienne détection cassait l'affichage).
+    const firstSq = squaresData[orderedKeys[0]];
+    const cols = (firstSq && Array.isArray(firstSq.grid) && firstSq.grid.length) ? firstSq.grid.length
+               : (typeName.indexOf('4') !== -1 ? 4 : 3);
+    const is4 = cols === 4;
 
     const slidesHtml = orderedKeys.map((key, index) => {
         const sq        = squaresData[key];
         const isPrimary = index === 0;
-        const extraDot  = typeName.includes('4x4') ? `<div class="wafq-center-dot"></div>` : '';
+        const extraDot  = is4 ? `<div class="wafq-center-dot"></div>` : '';
 
         const cellsHtml = sq.grid.map((row, rIndex) =>
             row.map((cell, cIndex) => {
@@ -239,7 +271,7 @@ function buildWafqSliderHtml(squaresData, orderedKeys, numericTarget, typeName) 
                     </div>`;
                 }
                 let stepClass = 'step-right';
-                if (typeName.includes('4x4') && cIndex === 1 && (rIndex === 1 || rIndex === 2)) {
+                if (is4 && cIndex === 1 && (rIndex === 1 || rIndex === 2)) {
                     stepClass = 'step-left';
                 }
                 return `<div class="wafq-cell">
@@ -277,7 +309,7 @@ function hydrateCard(cardElement) {
 
     // — Sans abonnement : on n'affiche QUE le nom (verrou visuel) —
     if (!accessGranted) {
-        const hName     = highlightText(item.name);
+        const hName     = highlightText(implore(item.name));
         const hTranslit = highlightText(item.translit);
         const numLabel  = item.number && item.number < 999
             ? `<span class="stat-pill" style="font-size:0.72rem"><i class="fas fa-hashtag"></i><span>${item.number}</span></span>` : '';
@@ -303,6 +335,7 @@ function hydrateCard(cardElement) {
     let finalTarget  = localStorage.getItem(`tasbih_target_${item.id}`);
     if (finalTarget === null || finalTarget === '') finalTarget = autoTarget;
     let numericTarget = parseInt(finalTarget);
+    setTimeout(() => renderObjSubdiv(item.id, numericTarget), 0);
     if (isNaN(numericTarget) || numericTarget === 0) numericTarget = parseInt(autoTarget);
 
     const savedLoopMax     = localStorage.getItem(`tasbih_loopmax_${item.id}`) || '';
@@ -332,7 +365,7 @@ function hydrateCard(cardElement) {
             ${gridsHtml}
         </details>` : '';
 
-    const hName    = highlightText(item.name);
+    const hName    = highlightText(implore(item.name));
     const hTranslit = highlightText(item.translit);
     const hMeaning  = highlightText(item.meaning);
     const hBenefit  = highlightText(item.benefit || '');
@@ -382,6 +415,7 @@ function hydrateCard(cardElement) {
                     <input type="number" id="input-target-${item.id}" data-id="${item.id}"
                            class="zikr-input" placeholder="Obj." value="${finalTarget}" min="0" aria-label="Objectif">
                 </div>
+                <div class="obj-subdiv" id="obj-subdiv-${item.id}"></div>
                 <div class="setting-group" title="Nombre de séries">
                     <i class="fas fa-rotate"></i>
                     <input type="number" id="input-loop-${item.id}" data-id="${item.id}"
@@ -479,7 +513,7 @@ export function initModal() {
 export function showModal(item) {
     if (!item) return;
     currentModalItem = item;
-    elements.modalArabic.textContent   = item.name;
+    elements.modalArabic.textContent   = implore(item.name);
     elements.modalTranslit.textContent = item.translit;
 
     // Badge numéro (toujours visible)
@@ -604,9 +638,4 @@ export function showSuggestions(term, data) {
 export function setCurrentData(data) { currentData = data; }
 export function getCurrentData() { return currentData; }
 
-export function toggleView() {
-    viewMode = viewMode === 'grid' ? 'list' : 'grid';
-    localStorage.setItem('viewMode', viewMode);
-    elements.viewToggle.querySelector('i').className = viewMode === 'grid' ? 'fas fa-th-large' : 'fas fa-list';
-    renderCards(currentData, elements.searchInput.value, elements.favoritesBtn.classList.contains('active'));
-}
+export function toggleView() { /* vue grille uniquement — désactivé */ }

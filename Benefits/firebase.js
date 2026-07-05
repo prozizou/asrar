@@ -1,5 +1,6 @@
-// firebase.js — v2.1 (utilise l'app partagée firebase-init.js, plus de double init)
-import { db, ref, onValue } from './firebase-init.js';
+// firebase.js — v2.2 (noms servis par l'API serveur → tous les utilisateurs voient
+// les noms du RTDB ; repli RTDB direct puis local).
+import { db, ref, onValue, auth, authReady } from './firebase-init.js';
 
 const CACHE_KEY    = 'asma_cache';
 const CACHE_EXPIRY = 3_600_000; // 1 heure
@@ -38,14 +39,41 @@ export async function loadNames(callback, errorCallback) {
             const { data, timestamp } = JSON.parse(cached);
             if (Date.now() - timestamp < CACHE_EXPIRY) {
                 callback(data);
-                return; // Cache valide → pas besoin de Firebase
+                return; // Cache valide → pas besoin du réseau
             }
         } catch(e) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
 
-    // 2. Chargement Firebase avec timeout de sécurité (app partagée : firebase-init.js)
+    // 2. Essai via l'API serveur (Admin SDK) : renvoie TOUJOURS les noms du RTDB,
+    //    quel que soit l'abonnement. C'est la voie fiable (les règles RTDB peuvent
+    //    bloquer la lecture directe aux non-abonnés → sinon on tombait sur le local).
+    try {
+        const user = await authReady();
+        if (user) {
+            const token = await user.getIdToken();
+            const r = await fetch('/api/list-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: token, kind: 'asma' })
+            });
+            if (r.ok) {
+                const { items } = await r.json();
+                const names = (items || [])
+                    .filter(validateName)
+                    .map((v) => normalizeName(v._key || v.id || String(v.number), v))
+                    .sort((a, b) => (a.number || 999) - (b.number || 999));
+                if (names.length) {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: names, timestamp: Date.now() }));
+                    callback(names);
+                    return;
+                }
+            }
+        }
+    } catch (e) { /* on tente la lecture RTDB directe ci-dessous */ }
+
+    // 3. Repli : lecture RTDB directe (app partagée) puis fallback local
     try {
         const dbRef = ref(db, 'data/appData/asmaUlHusna');
 

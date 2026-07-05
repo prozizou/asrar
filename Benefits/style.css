@@ -1219,3 +1219,8 @@ body::before {
         transition-duration: 0.01ms !important;
     }
 }
+/* Subdivision d'objectif (a×b) dans le compteur de dhikr */
+.tasbih-settings { flex-wrap: wrap; }
+.obj-subdiv { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.obj-chip { background: rgba(201,169,97,0.15); border: 1px solid rgba(201,169,97,0.4);
+  color: #C9A961; border-radius: 14px; padding: 2px 10px; font-size: 0.78rem; white-space: nowrap; }
