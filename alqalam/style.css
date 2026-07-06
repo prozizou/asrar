@@ -14,17 +14,19 @@
 
 /* ───── Alias locaux vers les tokens partagés ─────
    alqalam utilise historiquement --accent-blue / --text-white / etc.
-   On les redirige vers les tokens globaux pour qu'ils réagissent
-   automatiquement au toggle clair/sombre. */
+   On les redirige vers les tokens globaux (définis dans /css/style.css) pour
+   qu'ils réagissent automatiquement au toggle clair/sombre.
+   Les valeurs après la virgule sont les fallbacks : si la feuille globale
+   n'est pas chargée, alqalam reste lisible avec ses couleurs d'origine. */
 :root {
-    --accent-blue: var(--accent);
-    --text-white: var(--text-main);
-    --text-gray:  var(--text-muted);
-    --text-red:   var(--danger);
-    --glass-bg:    var(--surface);
-    --glass-border:var(--border);
-    --glass-shadow:var(--glass-shadow);
-    --accent-hover:var(--accent-hover);
+    --accent-blue: var(--accent, #4D96FF);
+    --text-white:  var(--text-main, #FFFFFF);
+    --text-gray:   var(--text-muted, #D0D0D0);
+    --text-red:    var(--danger, #FF6B6B);
+    --glass-bg:    var(--surface, rgba(255,255,255,0.08));
+    --glass-border:var(--border, rgba(255,255,255,0.15));
+    --glass-shadow:var(--glass-shadow, 0 8px 32px 0 rgba(0,0,0,0.3));
+    --accent-hover:var(--accent-hover, #2176FF);
 }
 
 @media screen {
