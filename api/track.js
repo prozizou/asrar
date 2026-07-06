@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
     if (kind === "geomancie") {
       await db.ref("geomancie_logs").push({
         uid: user.uid, email: user.email, at: now,
-        lat: num(lat), lng: num(lng), city: str(city, 80)
+        lat: coord(lat, -90, 90), lng: coord(lng, -180, 180), city: str(city, 80)
       });
     }
 
@@ -58,3 +58,5 @@ module.exports = async (req, res) => {
 
 function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max || 120); }
 function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+// Coordonnée bornée : rejette les valeurs hors [min,max] (protège le dashboard).
+function coord(v, min, max) { const n = parseFloat(v); return (Number.isFinite(n) && n >= min && n <= max) ? n : null; }

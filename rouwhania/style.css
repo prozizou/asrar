@@ -1,58 +1,76 @@
-/* ==================== VARIABLES & MODES ==================== */
+/* style.css — rouwhania
+   Refactoré pour s'aligner sur le système de thème global piloté par
+   <html data-theme="dark|light"> via /js/theme.js.
+   Avant : :root = clair + body.dark-mode = sombre (inversé).
+   Maintenant : :root = sombre (par défaut) + [data-theme="light"] = clair. */
+
+/* ───── MODE SOMBRE (par défaut, conforme au reste du projet) ───── */
 :root {
-    --bg-gradient-start: #FEC153;
-    --bg-gradient-end: #93A7B8;
-    --glass-bg: rgba(255, 255, 255, 0.25);
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --text-primary: #2d3436;
-    --text-secondary: #636e72;
-    --badge-bg: #fff;
-    --badge-border: #333;
-    --btn-primary: #6c5ce7;
-    --btn-disabled: #aaa;
-    --result-bg: rgba(255, 255, 255, 0.7);
-    --stat-bg: rgba(255, 255, 255, 0.4);
-    --border-color: rgba(0, 0, 0, 0.1);
-    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
-    --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
-
-    /* Cartes des noms d'Allah */
-    --card-bg: #fffef9;
-    --card-border: #f39c12;
-    --card-title: #d35400;
-    --card-text: #2d3436;
-    --card-accent: #ecf0f1;
-    --card-green-bg: #e8f8f5;
-    --card-green-text: #27ae60;
-}
-
-body.dark-mode {
+    /* Gradient de fond */
     --bg-gradient-start: #1e1e2f;
-    --bg-gradient-end: #2d2d44;
-    --glass-bg: rgba(30, 30, 50, 0.4);
+    --bg-gradient-end:   #2d2d44;
+
+    /* Surfaces verre */
+    --glass-bg:     rgba(30, 30, 50, 0.4);
     --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --text-primary: #f0f0f0;
+
+    /* Texte */
+    --text-primary:   #f0f0f0;
     --text-secondary: #b0b0b0;
-    --badge-bg: rgba(255, 255, 255, 0.15);
-    --badge-border: rgba(255, 255, 255, 0.3);
-    --result-bg: rgba(255, 255, 255, 0.08);
-    --stat-bg: rgba(255, 255, 255, 0.1);
-    --border-color: rgba(255, 255, 255, 0.2);
-    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --shadow-inset: inset 0 1px 3px rgba(255, 255, 255, 0.05);
+
+    /* Badges & UI */
+    --badge-bg:        rgba(255, 255, 255, 0.15);
+    --badge-border:    rgba(255, 255, 255, 0.3);
+    --btn-primary:     #6c5ce7;
+    --btn-disabled:     #aaa;
+    --result-bg:       rgba(255, 255, 255, 0.08);
+    --stat-bg:         rgba(255, 255, 255, 0.1);
+    --border-color:    rgba(255, 255, 255, 0.2);
+    --shadow-sm:       0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-inset:    inset 0 1px 3px rgba(255, 255, 255, 0.05);
     --scrollbar-thumb: rgba(255, 255, 255, 0.3);
 
-    /* Cartes – mode sombre */
-    --card-bg: #2c2c3a;
-    --card-border: #f39c12;
-    --card-title: #f1c40f;
-    --card-text: #ecf0f1;
-    --card-accent: #3a3a4a;
-    --card-green-bg: #2e4a3a;
+    /* Cartes des noms d'Allah */
+    --card-bg:         #2c2c3a;
+    --card-border:     #f39c12;
+    --card-title:      #f1c40f;
+    --card-text:       #ecf0f1;
+    --card-accent:     #3a3a4a;
+    --card-green-bg:   #2e4a3a;
     --card-green-text: #2ecc71;
+}
+
+/* ───── MODE CLAIR ───── */
+html[data-theme="light"] {
+    --bg-gradient-start: #FEC153;
+    --bg-gradient-end:   #93A7B8;
+
+    --glass-bg:     rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+    --text-primary:   #2d3436;
+    --text-secondary: #636e72;
+
+    --badge-bg:        #fff;
+    --badge-border:    #333;
+    --btn-primary:     #6c5ce7;
+    --btn-disabled:     #aaa;
+    --result-bg:       rgba(255, 255, 255, 0.7);
+    --stat-bg:         rgba(255, 255, 255, 0.4);
+    --border-color:    rgba(0, 0, 0, 0.1);
+    --shadow-sm:       0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-inset:    inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+
+    --card-bg:         #fffef9;
+    --card-border:     #f39c12;
+    --card-title:      #d35400;
+    --card-text:       #2d3436;
+    --card-accent:     #ecf0f1;
+    --card-green-bg:   #e8f8f5;
+    --card-green-text: #27ae60;
 }
 
 * {
@@ -162,7 +180,7 @@ body {
     padding: 12px;
     cursor: pointer;
     transition: 0.2s;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .primary-btn:disabled, .angel-btn:disabled {
@@ -221,9 +239,10 @@ body {
 .stat-line span {
     font-family: 'Courier New', monospace;
     direction: ltr;
-    background: rgba(255,255,255,0.5);
+    background: var(--stat-bg);
     padding: 2px 8px;
     border-radius: 5px;
+    color: var(--text-primary);
 }
 
 .total-final {
@@ -283,7 +302,10 @@ body {
     word-break: break-word;
 }
 
-/* ==================== MODE DARK BOUTON ==================== */
+/* ==================== BOUTON THÈME LOCAL (routé vers le toggle global) ====================
+   Ce bouton historique (id="themeToggle") coexiste avec le bouton flottant
+   injecté par /js/theme.js. On le garde en haut à droite et on le branche
+   sur la même fonction de bascule pour éviter d'avoir deux états séparés. */
 #themeToggle {
     position: fixed;
     top: 15px;
@@ -302,6 +324,7 @@ body {
     cursor: pointer;
     z-index: 9999;
     transition: 0.3s;
+    color: var(--text-primary);
 }
 
 #themeToggle:hover {

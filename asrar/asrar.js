@@ -361,7 +361,7 @@ function openImageFullscreen() {
 
 // ── Téléchargement PDF du secret (design épuré, gaté au palier 45 000 FCFA) ──
 const PDF_MIN_LEVEL = 45000;
-const ASRAR_SITE_URL = 'https://asrar-hub.vercel.app';
+const ASRAR_SITE_URL = (window.ASRAR_CONFIG && window.ASRAR_CONFIG.siteUrl) || 'https://asrar-hub.vercel.app';
 
 function telechargerSecretPdf() {
   if (!currentSecret || !currentSecret.data) return;

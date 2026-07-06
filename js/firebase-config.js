@@ -1,6 +1,9 @@
 // ============================================================
 //  ASRAR PRO — Configuration Firebase
 // ============================================================
+// Config applicative partagée (URL du site utilisée p.ex. dans les PDF).
+window.ASRAR_CONFIG = window.ASRAR_CONFIG || { siteUrl: 'https://asrar-hub.vercel.app' };
+
 const firebaseConfig = {
   apiKey: "AIzaSyBLzPKzbiNYitUz7sv9Ftqm0oF20rA32Zk",
   authDomain: "asrar-bc059.firebaseapp.com",

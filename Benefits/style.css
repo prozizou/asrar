@@ -568,42 +568,58 @@ body::before {
 .inline-bead-string {
     position: relative;
     width: 100%;
-    height: 38px;
+    height: 58px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
 
+/* Le fil devient un ARC (courbure vers le bas), comme un chapelet tenu */
 .inline-bead-line {
     position: absolute;
-    width: 100%;
-    height: 1px;
-    background: var(--border-strong);
+    top: 6px;
+    width: 82%;
+    height: 34px;
+    background: none;
+    border-bottom: 2px solid rgba(165,120,60,0.55);
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
     z-index: 1;
 }
 
 .inline-beads-container {
     display: flex;
-    gap: 12px;
+    gap: 11px;
     z-index: 2;
     transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* Grains en BOIS (au lieu du métallique) */
 .inline-bead {
     width: 24px;
     height: 24px;
     flex-shrink: 0;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #e8ecf5, #7a8299);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.3);
-    transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+    background: radial-gradient(circle at 35% 28%, #f2ddb0, #c99a58 55%, #7e4f24);
+    box-shadow: 0 3px 7px rgba(60,35,10,0.5), inset 0 1px 2px rgba(255,245,220,0.5), inset 0 -3px 5px rgba(80,45,15,0.5);
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
 }
 
+/* Disposition en ARC (U) : les grains extérieurs remontent, le central descend */
+.inline-beads-container .inline-bead:nth-child(1),
+.inline-beads-container .inline-bead:nth-child(9) { transform: translateY(-11px); }
+.inline-beads-container .inline-bead:nth-child(2),
+.inline-beads-container .inline-bead:nth-child(8) { transform: translateY(-5px); }
+.inline-beads-container .inline-bead:nth-child(3),
+.inline-beads-container .inline-bead:nth-child(7) { transform: translateY(-1px); }
+.inline-beads-container .inline-bead:nth-child(4),
+.inline-beads-container .inline-bead:nth-child(6) { transform: translateY(3px); }
+
+/* Grain central = celui qu'on égrène : plus bas, plus gros, lueur chaude */
 .inline-beads-container .inline-bead:nth-child(5) {
-    transform: scale(1.35);
-    background: radial-gradient(circle at 35% 30%, #fff7d4, #f0c060, #e08020);
-    box-shadow: 0 0 14px rgba(240,140,0,0.7), 0 3px 8px rgba(0,0,0,0.4);
+    transform: translateY(7px) scale(1.4);
+    background: radial-gradient(circle at 35% 28%, #ffe9b0, #d9a441 55%, #9a5f1c);
+    box-shadow: 0 0 14px rgba(217,164,65,0.7), 0 4px 8px rgba(60,35,10,0.5), inset 0 1px 2px rgba(255,250,230,0.6);
     z-index: 5;
 }
 

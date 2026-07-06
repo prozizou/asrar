@@ -1,15 +1,111 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   style.css — FEUILLE DE STYLE PARTAGÉE + SOURCE UNIQUE DES TOKENS DE THÈME
+   Toutes les pages (alqalam, rouwhania, asrar, boutique, marche, Benefits,
+   geomancie) DOIVENT utiliser ces variables CSS plutôt que des couleurs
+   codées en dur, afin que le toggle clair/sombre via
+   <html data-theme="light|dark"> reste cohérent partout.
+   ═══════════════════════════════════════════════════════════════════════ */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
+/* ───────────── :root = MODE SOMBRE (valeurs par défaut) ───────────── */
 :root {
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    --text-main: #ffffff;
-    --text-muted: #e0e0e0;
-    --accent: #4facfe;
-    --accent-hover: #00f2fe;
+    /* Fonds & surfaces */
+    --bg-gradient:    linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    --bg-deep:        #0a0a14;
+    --bg-alt:         #000000;
+    --surface:        rgba(255, 255, 255, 0.1);
+    --surface-2:      rgba(255, 255, 255, 0.05);
+    --surface-3:      rgba(0, 0, 0, 0.3);
+    --surface-input:  rgba(0, 0, 0, 0.2);
+
+    /* Bordures */
+    --border:         rgba(255, 255, 255, 0.2);
+    --border-strong:  rgba(255, 255, 255, 0.4);
+    --border-soft:    rgba(255, 255, 255, 0.15);
+
+    /* Texte */
+    --text-main:      #ffffff;
+    --text-muted:     #e0e0e0;
+    --text-dim:       #b0b0b0;
+    --text-faint:     #888888;
+    --text-on-accent: #ffffff;
+
+    /* Accents génériques */
+    --accent:         #4facfe;
+    --accent-hover:   #00f2fe;
+    --accent-glow:    rgba(79, 172, 254, 0.4);
+
+    /* Or / mystique (asrar, boutique, marche, geomancie, Benefits) */
+    --gold:           #C9A961;
+    --gold-hover:     #F5E6C4;
+    --gold-soft:      #d4a745;
+    --gold-ink:       #2d1f10;
+
+    /* Sémantique */
+    --success:        #38d66b;
+    --danger:         #d9534f;
+
+    /* Cartes (Benefits, rouwhania) */
+    --card-bg:        #2c2c3a;
+    --card-border:    #f39c12;
+    --card-text:      #ecf0f1;
+    --card-accent:    #3a3a4a;
+    --card-green-bg:  #2e4a3a;
+    --card-green-text:#2ecc71;
+
+    /* Verre / ombres */
+    --glass-bg:       var(--surface);
+    --glass-border:   var(--border);
+    --glass-shadow:   0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
+/* ───────────── html[data-theme="light"] = MODE CLAIR ───────────── */
+html[data-theme="light"] {
+    --bg-gradient:    linear-gradient(135deg, #eef3f7, #dde6ec, #cdd8e0);
+    --bg-deep:        #f5f1e8;
+    --bg-alt:         #faf6ec;
+    --surface:        rgba(255, 255, 255, 0.78);
+    --surface-2:      rgba(255, 255, 255, 0.55);
+    --surface-3:      rgba(30, 40, 60, 0.06);
+    --surface-input:  rgba(255, 255, 255, 0.85);
+
+    --border:         rgba(30, 40, 60, 0.14);
+    --border-strong:  rgba(30, 40, 60, 0.28);
+    --border-soft:    rgba(30, 40, 60, 0.10);
+
+    --text-main:      #1b2634;
+    --text-muted:     #51606f;
+    --text-dim:       #6b7886;
+    --text-faint:     #8a96a4;
+    --text-on-accent: #ffffff;
+
+    --accent:         #1f77c9;
+    --accent-hover:   #0bb7c4;
+    --accent-glow:    rgba(31, 119, 201, 0.3);
+
+    /* Mystique : en clair, l'or reste l'or mais le fond crème l'adoucit */
+    --gold:           #b0852f;
+    --gold-hover:     #8c6418;
+    --gold-soft:      #b0852f;
+    --gold-ink:       #fdf7e6;
+
+    --success:        #2c9c54;
+    --danger:         #b53a37;
+
+    --card-bg:        #fffef9;
+    --card-border:    #f39c12;
+    --card-text:      #2d3436;
+    --card-accent:    #ecf0f1;
+    --card-green-bg:  #e8f8f5;
+    --card-green-text:#27ae60;
+
+    --glass-bg:       rgba(255, 255, 255, 0.78);
+    --glass-border:   rgba(30, 40, 60, 0.14);
+    --glass-shadow:   0 8px 32px rgba(60, 80, 110, 0.14);
+}
+
+/* ───────────── Reset & typo ───────────── */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -18,15 +114,17 @@
 }
 
 body {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: background 0.4s ease, color 0.3s ease;
 }
 
+/* ───────────── Layout primitives ───────────── */
 .container {
     width: 100%;
     max-width: 800px;
@@ -43,6 +141,7 @@ body {
     box-shadow: var(--glass-shadow);
     padding: 30px;
     margin-bottom: 20px;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .header {
@@ -62,12 +161,13 @@ h1, h2, h3 {
     -webkit-text-fill-color: transparent;
 }
 
+/* ───────────── Boutons & formulaires ───────────── */
 button {
     background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     border: none;
     padding: 12px 24px;
     border-radius: 30px;
-    color: #fff;
+    color: var(--text-on-accent);
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
@@ -78,7 +178,7 @@ button {
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+    box-shadow: 0 5px 15px var(--accent-glow);
 }
 
 input[type="text"], input[type="email"], input[type="password"] {
@@ -86,22 +186,23 @@ input[type="text"], input[type="email"], input[type="password"] {
     padding: 15px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
-    background: rgba(0, 0, 0, 0.2);
-    color: #fff;
+    background: var(--surface-input);
+    color: var(--text-main);
     margin-bottom: 15px;
     font-size: 1rem;
     outline: none;
-    transition: border 0.3s ease;
+    transition: border 0.3s ease, background 0.3s ease;
 }
 
 input::placeholder {
-    color: #aaa;
+    color: var(--text-faint);
 }
 
 input:focus {
     border-color: var(--accent);
 }
 
+/* ───────────── Menu d'accueil ───────────── */
 .grid-menu {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -126,7 +227,7 @@ input:focus {
 }
 
 .menu-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--surface);
     transform: translateY(-5px);
 }
 
@@ -147,12 +248,15 @@ input:focus {
     border: 1px solid var(--glass-border);
 }
 
+/* ───────────── Résultats & loader ───────────── */
 .result-box {
     margin-top: 20px;
     padding: 20px;
     border-radius: 12px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--surface-3);
     border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .result-row {
@@ -168,7 +272,7 @@ input:focus {
 }
 
 .loader {
-    border: 4px solid rgba(255,255,255,0.1);
+    border: 4px solid var(--surface);
     border-top: 4px solid var(--accent);
     border-radius: 50%;
     width: 50px;
@@ -182,6 +286,7 @@ input:focus {
     100% { transform: rotate(360deg); }
 }
 
+/* ───────────── Onglets ───────────── */
 .tab-container {
     display: flex;
     gap: 10px;
@@ -191,29 +296,17 @@ input:focus {
 
 .tab {
     padding: 10px 20px;
-    background: rgba(0,0,0,0.3);
+    background: var(--surface-3);
     border-radius: 20px;
     cursor: pointer;
     white-space: nowrap;
     border: 1px solid transparent;
+    color: var(--text-main);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .tab.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     border-color: var(--glass-border);
-}
-
-/* ═══════════════ THÈME CLAIR (bascule via <html data-theme="light">) ═══════════════ */
-html[data-theme="light"] {
-  --glass-bg: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(30, 40, 60, 0.14);
-  --glass-shadow: 0 8px 32px rgba(60, 80, 110, 0.14);
-  --text-main: #1b2634;
-  --text-muted: #51606f;
-  --accent: #1f77c9;
-  --accent-hover: #0bb7c4;
-}
-html[data-theme="light"] body {
-  background: linear-gradient(135deg, #eef3f7, #dde6ec, #cdd8e0);
 }

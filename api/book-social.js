@@ -82,8 +82,16 @@ module.exports = async (req, res) => {
     if (action === "comment") {
       const t = String(text || "").trim().slice(0, 500);
       if (!t) return res.status(400).json({ error: "Commentaire vide." });
-      const rec = { uid: user.uid, name: nameFromEmail(user.email), text: t, at: Date.now() };
+      // Anti-spam : cooldown de 15 s par utilisateur entre deux commentaires.
+      const metaRef = db.ref("book_social_meta/" + user.uid + "/lastComment");
+      const last = (await metaRef.once("value")).val() || 0;
+      const now = Date.now();
+      if (now - last < 15000) {
+        return res.status(429).json({ error: "Patientez quelques secondes avant de commenter à nouveau." });
+      }
+      const rec = { uid: user.uid, name: nameFromEmail(user.email), text: t, at: now };
       await db.ref("book_comments/" + bookKey).push(rec);
+      await metaRef.set(now);
       return res.status(200).json({ ok: true, comment: { name: rec.name, text: rec.text, at: rec.at } });
     }
 

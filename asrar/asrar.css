@@ -1,10 +1,57 @@
-/* Fond noir absolu, typographie ésotérique */
+/* asrar.css — Refactoré pour respecter le toggle clair/sombre global.
+   Le mode sombre garde l'identité ésotérique (noir + or + crème).
+   Le mode clair devient une variante "parchemin crème" qui préserve l'esprit
+   tout en étant lisible (fond crème, texte brun foncé, or conservé). */
+
+/* ───── MODE SOMBRE (par défaut) ───── */
+:root {
+    /* On garde l'échelle typographique déjà présente */
+    --asrar-scale: 1;
+
+    /* Identité mystique sombre */
+    --asrar-bg:        #000000;
+    --asrar-bg-deep:   #0A0A0D;
+    --asrar-surface:   #121214;
+    --asrar-surface-2: #1A1A1E;
+    --asrar-border:    #1F1F23;
+    --asrar-border-2:  #2a2a2f;
+    --asrar-text:      #F5E6C4;
+    --asrar-text-soft: #E0D7C6;
+    --asrar-text-dim:  #CCCCCC;
+    --asrar-star-off:  #3A3A40;
+    --asrar-overlay:   rgba(0,0,0,0.6);
+
+    /* L'or (utilisé tel quel) */
+    --asrar-gold:      #C9A961;
+    --asrar-cream:     #F5E6C4;
+}
+
+/* ───── MODE CLAIR — parchemin crème ───── */
+html[data-theme="light"] {
+    --asrar-bg:        #fdf7e6;
+    --asrar-bg-deep:   #f5ecd0;
+    --asrar-surface:   #fffbef;
+    --asrar-surface-2: #f7eed5;
+    --asrar-border:    #d6c79a;
+    --asrar-border-2:  #c4b07a;
+    --asrar-text:      #2d1f10;
+    --asrar-text-soft: #4a3a25;
+    --asrar-text-dim:  #6b5a3a;
+    --asrar-star-off:  #c8b98a;
+    --asrar-overlay:   rgba(45,31,16,0.35);
+
+    --asrar-gold:      #b0852f;
+    --asrar-cream:     #2d1f10;
+}
+
+/* ───── Style ───── */
 body {
-  background: #000000 !important;
+  background: var(--asrar-bg) !important;
   margin: 0;
   font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -17,7 +64,7 @@ body {
 }
 
 .back-btn {
-  color: #F5E6C4;
+  color: var(--asrar-text);
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
@@ -49,20 +96,20 @@ body {
 }
 
 .cat-item {
-  background: #121214;
-  border: 1px solid #1F1F23;
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
   border-radius: 12px;
   padding: 12px 8px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: #F5E6C4;
+  color: var(--asrar-text);
 }
 
 .cat-item.active {
-  background: #F5E6C4;
-  color: #000;
-  border-color: #F5E6C4;
+  background: var(--asrar-cream);
+  color: var(--asrar-bg);
+  border-color: var(--asrar-cream);
 }
 
 .cat-item .ic {
@@ -91,8 +138,8 @@ body {
 }
 
 .secret-card {
-  background: #121214;
-  border: 1px solid #1F1F23;
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
   border-radius: 12px;
   padding: 1rem;
   cursor: pointer;
@@ -103,7 +150,7 @@ body {
 }
 
 .secret-card:hover {
-  background: #1A1A1E;
+  background: var(--asrar-surface-2);
   transform: translateX(4px);
 }
 
@@ -112,12 +159,12 @@ body {
   height: 48px;
   border-radius: 8px;
   object-fit: cover;
-  background: #1F1F23;
+  background: var(--asrar-border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   flex-shrink: 0;
 }
 
@@ -126,10 +173,10 @@ body {
   font-weight: 600;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
-  color: #F5E6C4;
+  color: var(--asrar-text);
 }
 
-/* Carte avec cover : image en pleine largeur AU-DESSUS du titre */
+/* Carte avec cover */
 .secret-card.has-cover {
   flex-direction: column;
   align-items: stretch;
@@ -149,8 +196,8 @@ body {
 
 /* Vue détail */
 .detail-card {
-  background: #121214;
-  border: 1px solid #1F1F23;
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
   border-radius: 16px;
   padding: 1.5rem;
   margin-top: 1rem;
@@ -163,7 +210,7 @@ body {
   overflow: hidden;
   margin-bottom: 1rem;
   cursor: pointer;
-  background: #1A1A1E;
+  background: var(--asrar-surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,13 +227,13 @@ body {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.6rem;
   font-weight: 600;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   text-align: center;
   margin-bottom: 1rem;
 }
 
 .mix {
-  background: rgba(255,255,255,0.03);
+  background: var(--asrar-surface-2);
   border-radius: 12px;
   padding: 1.5rem;
   margin: 1rem 0;
@@ -197,7 +244,7 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   margin: 0.5rem 0;
-  color: #E0D7C6;
+  color: var(--asrar-text-soft);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -209,7 +256,7 @@ body {
   direction: rtl;
   text-align: right;
   margin: 0.8rem 0;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -220,15 +267,15 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(18,18,20,0.92);
+  background: color-mix(in srgb, var(--asrar-surface) 92%, transparent);
   backdrop-filter: blur(8px);
-  border-top: 1px solid #1F1F23;
+  border-top: 1px solid var(--asrar-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
   padding: 0.8rem 1rem;
   z-index: 100;
-  color: #F5E6C4;
+  color: var(--asrar-text);
 }
 
 .rating-stars {
@@ -239,13 +286,13 @@ body {
 .rating-stars .star {
   font-size: 1.4rem;
   cursor: pointer;
-  color: #3A3A40;
+  color: var(--asrar-star-off);
   transition: color 0.2s;
 }
 
 .rating-stars .star.active,
 .rating-stars .star:hover {
-  color: #F5E6C4;
+  color: var(--asrar-text);
 }
 
 .interaction-bar .meta {
@@ -267,7 +314,7 @@ body {
 }
 
 .bookmark-icon.saved {
-  color: #F5E6C4;
+  color: var(--asrar-text);
   font-weight: bold;
 }
 
@@ -277,7 +324,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #000000;
+  background: var(--asrar-bg);
   border-radius: 20px 20px 0 0;
   padding: 1.2rem;
   z-index: 200;
@@ -286,7 +333,7 @@ body {
   max-height: 70vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.8);
+  box-shadow: 0 -4px 20px var(--asrar-overlay);
 }
 
 .comment-sheet.open {
@@ -309,20 +356,20 @@ body {
 }
 
 .comment-item {
-  background: #121214;
+  background: var(--asrar-surface);
   border-radius: 12px;
   padding: 0.8rem;
-  border: 1px solid #1F1F23;
+  border: 1px solid var(--asrar-border);
 }
 
 .comment-pseudo {
   font-weight: 600;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   font-size: 0.8rem;
 }
 
 .comment-text {
-  color: #CCCCCC;
+  color: var(--asrar-text-dim);
   margin-top: 4px;
 }
 
@@ -333,21 +380,21 @@ body {
 
 .comment-input input {
   flex: 1;
-  background: #121214;
-  border: 1px solid #1F1F23;
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
   border-radius: 20px;
   padding: 10px 16px;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   outline: none;
 }
 
 .comment-input button {
-  background: #F5E6C4;
+  background: var(--asrar-cream);
   border: none;
   border-radius: 20px;
   padding: 0 20px;
   font-weight: 600;
-  color: #000;
+  color: var(--asrar-bg);
   cursor: pointer;
 }
 
@@ -357,7 +404,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.6);
+  background: var(--asrar-overlay);
   z-index: 150;
   display: none;
 }
@@ -369,7 +416,7 @@ body {
 .detail-back {
   background: none;
   border: none;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   cursor: pointer;
   margin-bottom: 1rem;
   font-size: 0.9rem;
@@ -378,67 +425,63 @@ body {
 .close-sheet-btn {
   background: none;
   border: none;
-  color: #F5E6C4;
+  color: var(--asrar-text);
   font-size: 1.2rem;
 }
-/* ==================== LECTEUR PLEIN ÉCRAN (espace complet + zoom + resize) ==================== */
-/* Échelle de texte appliquée à la fiche ET au lecteur (réglable A− / A+). */
-:root { --asrar-scale: 1; }
 
-/* En mode détail, le rail des catégories se masque → la carte prend toute la largeur. */
+/* ==================== LECTEUR PLEIN ÉCRAN ==================== */
 .asrar-wrap.detail-mode .cat-rail { display: none; }
 .asrar-wrap.detail-mode .asrar-main { width: 100%; flex: 1 1 100%; }
 
 .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .detail-expand {
-  background: #C9A961; color: #000; border: none; border-radius: 10px;
+  background: var(--asrar-gold); color: var(--asrar-bg); border: none; border-radius: 10px;
   padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: .82rem;
 }
 .detail-expand:hover { filter: brightness(1.08); }
 
-/* La fiche détail suit l'échelle de texte choisie. */
+/* Échelle typographique appliquée à la fiche et au lecteur. */
 #detSirr { font-size: calc(1rem * var(--asrar-scale)); }
 #detSirr .seg-ar, #rdrSirr .seg-ar { font-size: calc(1.7rem * var(--asrar-scale)); line-height: 2.1; }
 #detSirr .seg-fr, #rdrSirr .seg-fr { font-size: calc(1.02rem * var(--asrar-scale)); line-height: 1.8; }
 
-/* Overlay plein écran : prend TOUT l'espace du device. */
+/* Overlay plein écran */
 .rdr-overlay {
   position: fixed; inset: 0; z-index: 400; display: none;
-  background: #0A0A0D;
+  background: var(--asrar-bg-deep);
 }
 .rdr-overlay.open { display: flex; }
 .rdr-shell {
   display: flex; flex-direction: column;
   width: 100%; height: 100%;
-  /* Sur grand écran : fenêtre centrée redimensionnable (allonger / réduire). */
   max-width: 1100px; margin: 0 auto;
 }
 @media (min-width: 900px) {
-  .rdr-overlay.open { align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.85); }
+  .rdr-overlay.open { align-items: center; justify-content: center; padding: 24px; background: var(--asrar-overlay); }
   .rdr-shell {
-    height: 88vh; border: 1px solid #1F1F23; border-radius: 16px; overflow: hidden;
-    resize: both;            /* poignée de redimensionnement (coin bas-droit) */
+    height: 88vh; border: 1px solid var(--asrar-border); border-radius: 16px; overflow: hidden;
+    resize: both;
     min-width: 420px; min-height: 320px; max-width: 96vw; max-height: 94vh;
   }
 }
 .rdr-bar {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; background: #121214; border-bottom: 1px solid #1F1F23;
+  padding: 10px 12px; background: var(--asrar-surface); border-bottom: 1px solid var(--asrar-border);
   flex-shrink: 0;
 }
 .rdr-spacer { flex: 1; }
 .rdr-btn {
-  background: #1F1F23; color: #F5E6C4; border: 1px solid #2a2a2f;
+  background: var(--asrar-border); color: var(--asrar-text); border: 1px solid var(--asrar-border-2);
   border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: .85rem; font-weight: 600;
 }
-.rdr-btn:hover { border-color: #C9A961; color: #C9A961; }
-.rdr-body { flex: 1; overflow-y: auto; padding: 18px 20px 60px; }
+.rdr-btn:hover { border-color: var(--asrar-gold); color: var(--asrar-gold); }
+.rdr-body { flex: 1; overflow-y: auto; padding: 18px 20px 60px; color: var(--asrar-text); }
 .rdr-img-wrap { text-align: center; margin-bottom: 16px; cursor: zoom-in; }
 .rdr-img-wrap img {
   max-width: 100%; max-height: 60vh; border-radius: 12px; display: none; margin: 0 auto;
 }
 .rdr-title {
-  text-align: center; margin-bottom: 18px; color: #C9A961;
+  text-align: center; margin-bottom: 18px; color: var(--asrar-gold);
   font-size: calc(1.3rem * var(--asrar-scale)); font-weight: 700;
 }
 .rdr-sirr { line-height: 1.9; }
