@@ -71,6 +71,12 @@
       ".write": false
     },
 
+    "alqalam_fonts": {
+      "_comment": "Polices Al-Qalam gérées par l'admin. Métadonnées publiques (nom, famille CSS, URL Cloudinary, palier). Lecture par tout utilisateur connecté, écriture serveur uniquement (panneau admin).",
+      ".read": "auth != null",
+      ".write": false
+    },
+
     "ratings": {
       "$cat": {
         "$key": {

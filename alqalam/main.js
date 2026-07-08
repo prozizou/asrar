@@ -8,7 +8,7 @@ import { updateUI, debouncedUpdateUI, debounce, handleCopy, injecterPolice, show
 import { generateVectorPDF } from './pdf.js';
 import { generateDocx } from './docx.js';
 import { formaterTexteIntercale } from './formatter.js';
-import { config } from './config.js';
+import { config, POLICES } from './config.js';
 
 initStore();
 chargerSourates();
@@ -223,7 +223,6 @@ function togglePanelGuarded(checkbox, panel, featureName) {
 }
 
 togglePanelGuarded(elements.chkDoc, elements.panelDoc, "les documents");
-togglePanelGuarded(elements.chkRep, elements.panelRep, "la répétition avancée");
 togglePanelGuarded(elements.chkSearch, elements.panelSearch, "la recherche");
 togglePanelGuarded(elements.chkIntercaler, elements.panelIntercaler, "l'intercalation");
 togglePanelGuarded(elements.chkFont, elements.panelFont, "les polices personnalisées");
@@ -262,21 +261,6 @@ elements.btnWrite.addEventListener('click', () => {
     }, "l'écriture du texte");
 });
 
-elements.btnToolRep.addEventListener('click', () => {
-    requireAlQalamAccess(() => {
-        const multiplier = parseInt(elements.toolRepCount.value);
-        if (isNaN(multiplier) || multiplier <= 0 || state.totalMultiplier === 0) return;
-        state.totalMultiplier *= multiplier;
-        if (state.totalMultiplier > config.MAX_TOTAL_REPEAT) {
-            showToast(`Répétitions bloquées à ${config.MAX_TOTAL_REPEAT}`, "error");
-            state.totalMultiplier = config.MAX_TOTAL_REPEAT;
-        } else {
-            showToast(`Multiplié ! Total actuel : ${state.totalMultiplier.toLocaleString()}`, "info");
-        }
-        updateUI();
-    }, "la répétition avancée");
-});
-
 // ─── GRATUIT ───
 elements.btnEspace.addEventListener('click', () => {
     if (state.baseText) { state.baseText = " " + state.baseText; updateUI(); }
@@ -288,24 +272,86 @@ elements.btnCopyOutput.addEventListener('click', () => {
     handleCopy(elements.btnCopyOutput, rawOutput);
 });
 
-// ─── POLICE (panel déjà protégé, bouton accessible si ouvert) ───
+// ─── POLICE — liste premium, réservée à l'abonnement ≥ 45 000 FCFA ───
+// Sources fusionnées : polices statiques (config.POLICES) + polices ajoutées
+// via le panneau d'administration (nœud Firebase `alqalam_fonts`).
+let POLICES_DISPO = POLICES.slice();
+
+function remplirListePolices() {
+    if (!elements.fontSelect) return;
+    // Réinitialise en gardant la 1re option (placeholder)
+    elements.fontSelect.length = 1;
+    POLICES_DISPO.forEach((p) => {
+        const opt = document.createElement('option');
+        opt.value = p.family;
+        opt.textContent = p.name + (p.level ? ` (${Number(p.level).toLocaleString('fr-FR')} FCFA)` : '');
+        opt.dataset.url = p.url || '';
+        opt.dataset.level = p.level != null ? p.level : config.FONT_MIN_LEVEL;
+        elements.fontSelect.appendChild(opt);
+    });
+}
+
+remplirListePolices();
+
+// Charge les polices gérées par l'admin (si Firebase dispo) et les fusionne.
+(function chargerPolicesAdmin() {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.database) return;
+        firebase.database().ref('alqalam_fonts').once('value').then((snap) => {
+            const val = snap.val() || {};
+            const dynamiques = Object.values(val)
+                .filter((f) => f && f.enabled !== false && f.url && f.name)
+                .map((f) => ({
+                    name: f.name,
+                    family: f.family || ('AdminFont_' + Math.random().toString(36).slice(2, 6)),
+                    url: f.url,
+                    level: f.level != null ? f.level : config.FONT_MIN_LEVEL
+                }));
+            if (dynamiques.length) {
+                POLICES_DISPO = POLICES.concat(dynamiques);
+                remplirListePolices();
+            }
+        }).catch(() => {});
+    } catch (e) {}
+})();
+
 elements.btnApplyFont.addEventListener('click', () => {
-    const file = elements.fontFile.files[0];
-    const url = elements.fontUrl.value.trim();
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            injecterPolice(e.target.result, 'PoliceLocaleCustom');
-            showToast("Police locale appliquée !", "info");
-        };
-        reader.readAsDataURL(file);
-    } else if (url) {
-        injecterPolice(url, 'PoliceUrlCustom');
-        showToast("Police URL appliquée !", "info");
-    } else {
-        showToast("Veuillez choisir un fichier ou entrer un lien.", "error");
+    const family = elements.fontSelect ? elements.fontSelect.value : '';
+    if (!family) { showToast("Veuillez choisir une police.", "error"); return; }
+
+    const police = POLICES_DISPO.find((p) => p.family === family);
+    if (!police) { showToast("Police introuvable.", "error"); return; }
+
+    // Palier d'abonnement requis (défini par police, défaut 45 000 FCFA).
+    const requis = police.level != null ? Number(police.level) : config.FONT_MIN_LEVEL;
+    const level = (typeof getSubscriptionLevel === 'function') ? getSubscriptionLevel() : 0;
+    if (level < requis) {
+        showToast(`Cette police nécessite l'abonnement ${requis.toLocaleString('fr-FR')} FCFA.`, "error");
+        if (typeof showSubscriptionGate === 'function') showSubscriptionGate();
+        return;
     }
+
+    if (police.url) {
+        injecterPolice(police.url, police.family);
+    } else {
+        appliquerPoliceParNom(police.family);
+    }
+    showToast(`Police « ${police.name} » appliquée.`, "info");
 });
+
+// Applique une police déjà chargée (sans @font-face) à l'aperçu, la saisie et le PDF.
+function appliquerPoliceParNom(nomPolice) {
+    const styleId = "custom-font-style";
+    let old = document.getElementById(styleId);
+    if (old) old.remove();
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+        .top-textarea, .output-area, #print-area, #inter-sourate-select {
+            font-family: '${nomPolice}', 'Alkalami', serif !important;
+        }`;
+    document.head.appendChild(style);
+}
 
 // ─── INTERCALER — PROTÉGÉ ───
 elements.btnIntercaler.addEventListener('click', () => {
@@ -320,28 +366,18 @@ elements.btnIntercaler.addEventListener('click', () => {
         if (result.includes("﴾")) result = result.split("﴾").join(phrase + " ");
         if (result.includes("(")) result = result.split("(").join(phrase + " ");
         result = result.replace(/[0-9]/g, "").split("ك").join("ک").replace(/\s+/g, ' ').trim();
+
+        // Application directe : le texte combiné devient la base et s'affiche
+        // immédiatement dans l'aperçu (aucune question posée).
         state.baseText = result;
         state.intercalatedPhrase = phrase;
+        state.totalMultiplier = 1;
+        elements.inputText.value = result;
         elements.chkIntercaler.checked = false;
         elements.panelIntercaler.classList.remove('show-panel');
-        elements.dialogIntercaler.style.display = 'flex';
+        updateUI();
+        showToast("Texte combiné généré.", "info");
     }, "l'intercalation");
-});
-
-elements.btnDialogRepeat.addEventListener('click', () => {
-    const inputValue = parseInt(elements.repCount.value) || 1;
-    state.totalMultiplier = Math.min(inputValue, config.MAX_TOTAL_REPEAT);
-    elements.dialogIntercaler.style.display = 'none';
-    elements.inputText.value = state.baseText;
-    updateUI();
-});
-
-elements.btnDialogOnce.addEventListener('click', () => {
-    state.totalMultiplier = 1;
-    elements.repCount.value = 1;
-    elements.dialogIntercaler.style.display = 'none';
-    elements.inputText.value = "";
-    updateUI();
 });
 
 // ─── CUMULER — PROTÉGÉ ───
