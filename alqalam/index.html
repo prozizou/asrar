@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Al-Qalam</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <!-- Source unique des tokens de thème (dark/light) — DOIT précéder style.css -->
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="/js/loader.js" defer></script>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase (SDK compat) — MÊME version que le hub ASRAR PRO -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Auth + paywall + paiement partagés (scripts CLASSIQUES → définissent les globaux) -->
+    <script src="../js/whatsapp.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/api-content.js"></script>
+  <script src="/js/theme.js"></script>
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+    <div id="asrar-loader"><div class="asrar-spinner"></div><span class="asrar-loader-text">Chargement…</span></div>
+
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <div class="app-container">
+        
+        <div class="controls-section" role="region" aria-label="Panneau de contrôle">
+            
+            <div style="position: relative; width: 100%;">
+                <button id="btn-copy-input" class="copy-btn" aria-label="Copier le texte d'entrée">📋 Copier</button>
+                <textarea id="input-text" class="glass-input top-textarea" placeholder="يحبونهم كحب الله..." aria-label="Zone de saisie du texte arabe"></textarea>
+                <div id="suggestions-box" class="suggestions-container hidden-panel" role="listbox" aria-label="Suggestions de versets"></div>
+            </div>
+            
+            <div class="grid-row-2-1">
+                <input type="number" id="rep-count" class="glass-input" placeholder="100" value="100" aria-label="Nombre de répétitions de base">
+                <button id="btn-write" class="btn-glass" aria-label="Valider l'écriture du texte">Écrire</button>
+            </div>
+
+            <div class="tools-grid" role="group" aria-label="Outils d'édition">
+                <label class="tool-box"><input type="checkbox" id="chk-doc" aria-label="Afficher les outils de documents"><span>Documents</span></label>
+                <label class="tool-box"><input type="checkbox" id="chk-search" aria-label="Afficher la barre de recherche"><span>Recherche</span></label>
+                <label class="tool-box"><input type="checkbox" id="chk-intercaler" aria-label="Afficher l'outil pour intercaler des phrases"><span>Intercaler</span></label>
+                <label class="tool-box"><input type="checkbox" id="chk-font" aria-label="Afficher les paramètres de police"><span>Police</span></label>
+                <label class="tool-box" style="background: rgba(77, 150, 255, 0.15); border-color: var(--accent-blue);">
+                    <input type="checkbox" id="chk-rasm" aria-label="Activer le mode Rasm sans points"><span>Mode Rasm</span>
+                </label>
+            </div>
+
+            <div id="panel-doc" class="hidden-panel">
+                <input type="text" id="doc-name" class="glass-input flex-grow" placeholder="Nom du document" aria-label="Nom du document final">
+                <div class="grid-row-1-1">
+                    <button id="btn-doc" class="btn-glass" aria-label="Ouvrir le menu de génération de document">DOCS</button>
+                    <button id="btn-espace" class="btn-glass" aria-label="Ajouter un espace au début du texte">ESPACE</button>
+                </div>
+                <div class="grid-row-1-1" style="margin-top: 10px;">
+                    <button id="btn-add-temp" class="btn-glass" style="background: linear-gradient(135deg, #2b5876, #4e4376);" aria-label="Ajouter au document temporaire">➕ Cumuler</button>
+                    <button id="btn-clear-temp" class="btn-glass" style="background: linear-gradient(135deg, #870000, #190a05);" aria-label="Vider le document temporaire">🗑️ Vider (<span id="temp-count">0</span>)</button>
+                </div>
+            </div>
+
+            <div id="panel-search" class="hidden-panel search-container glass-input">
+                <input type="text" id="search-input" class="search-input-inner" placeholder="Mot à rechercher" aria-label="Rechercher un mot dans le texte">
+                <span id="search-count" class="search-count-text" aria-live="polite"></span>
+            </div>
+
+            <div id="panel-intercaler" class="hidden-panel">
+                <select id="inter-sourate-select" class="glass-input" style="direction: rtl; font-family: 'Alkalami', serif;" aria-label="Sélectionner une sourate cible">
+                    <option value="">⏳ Chargement des sourates...</option>
+                </select>
+                <input type="text" id="inter-phrase" class="glass-input" placeholder="Expression à intercaler" style="direction: rtl;" aria-label="Phrase à intercaler dans la sourate">
+                <button id="btn-intercaler" class="btn-glass" style="width: 100%;" aria-label="Combiner la sourate et la phrase">Combiner le texte</button>
+            </div>
+
+            <div id="panel-font" class="hidden-panel">
+                <span style="font-size: 12px; color: var(--text-gray);">Choisir une police (abonnement ≥ 45 000 FCFA) :</span>
+                <select id="font-select" class="glass-input" aria-label="Choisir une police premium">
+                    <option value="">— Sélectionner une police —</option>
+                </select>
+                <button id="btn-apply-font" class="btn-glass" style="width: 100%;" aria-label="Appliquer la police sélectionnée">Appliquer la police</button>
+            </div>
+
+            <div class="slider-container">
+                <span class="slider-label" id="font-slider-label">Taille du texte</span>
+                <input type="range" id="font-size-slider" class="slider" min="12" max="60" value="28" aria-labelledby="font-slider-label">
+            </div>
+        </div>
+
+        <div class="output-section" role="region" aria-label="Zone d'aperçu du texte">
+            <button id="btn-copy-output" class="copy-btn" aria-label="Copier le texte généré">📋 Copier</button>
+            <div id="output-area" class="output-area glass-panel" aria-live="polite"></div>
+        </div>
+
+    </div>
+
+    <div id="popup-menu" class="popup-overlay" role="dialog" aria-modal="true" aria-label="Options de génération du document">
+        <div class="popup-content glass-panel">
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button id="fmt-pdf" class="btn-glass" style="flex:1; background:linear-gradient(135deg,#00b894,#00a884);">📄 PDF</button>
+                <button id="fmt-docx" class="btn-glass" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:var(--text-white);">📝 Word / WPS (.docx)</button>
+            </div>
+            <button class="popup-item" id="opt-both" style="width:100%; background:none; border:none; color:white; text-align:left;">Avec ouverture et fermeture</button>
+            <button class="popup-item" id="opt-start" style="width:100%; background:none; border:none; color:white; text-align:left;">Avec ouverture seulement</button>
+            <button class="popup-item" id="opt-end" style="width:100%; background:none; border:none; color:white; text-align:left;">Avec fermeture seulement</button>
+            <button class="popup-item" id="opt-none" style="width:100%; background:none; border:none; color:white; text-align:left;">Sans ouverture ni fermeture</button>
+        </div>
+    </div>
+    
+    <div id="progress-overlay" class="popup-overlay" role="dialog" aria-modal="true" aria-label="Progression de la génération">
+        <div class="popup-content glass-panel" style="text-align: center;">
+            <h3 style="margin-top: 0; color: var(--accent-blue);">Génération en cours</h3>
+            <div class="progress-bar-container">
+                <div id="progress-bar-fill"></div>
+            </div>
+            <p id="progress-text" style="font-size: 14px; color: var(--text-gray);" aria-live="polite">Préparation...</p>
+        </div>
+    </div>
+
+    <!-- Paywall Overlay ASRAR PRO -->
+    <div id="paywall-overlay" class="popup-overlay" style="display: none;" role="dialog" aria-modal="true">
+        <div class="popup-content glass-panel" style="max-width: 420px; text-align: center; padding: 30px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🔒</div>
+            <h3 style="margin-top: 0; color: var(--accent-blue);">Al-Qalam Premium</h3>
+            <p style="font-size: 15px; color: var(--text-white); margin-bottom: 5px;">
+                L'accès à <strong id="paywall-feature-name">cette fonctionnalité</strong> est réservé aux abonnés.
+            </p>
+            <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 20px;">
+                Profitez de l'écriture illimitée, l'intercalation, la génération PDF et le mode Rasm.
+            </p>
+            
+            <button id="btn-paywall-subscribe" class="btn-glass" style="width: 100%; margin-bottom: 10px; background: linear-gradient(135deg, #00b894, #00a884);">
+                💬 Demander l'accès via WhatsApp
+            </button>
+            
+            <button id="btn-paywall-login" class="btn-glass" style="width: 100%; margin-bottom: 10px; background: rgba(255,255,255,0.1); display: none;">
+                🔑 Se connecter d'abord
+            </button>
+            
+            <button id="btn-paywall-cancel" class="btn-glass" style="width: 100%; background: transparent; border: 1px solid var(--glass-border); color: var(--text-gray);">
+                Plus tard
+            </button>
+        </div>
+    </div>
+
+    <div id="print-area" aria-hidden="true"></div>
+
+    <!-- Application Al-Qalam (les scripts globaux ASRAR PRO sont chargés dans <head>) -->
+    <script src="app.js" defer></script>
+    <script>
+      (function () {
+        var m = new URLSearchParams(location.search).get('mode');
+        if (!m) return;
+        window.addEventListener('load', function () {
+          function on(id) {
+            var el = document.getElementById(id);
+            if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
+          }
+          if (m === 'intercaler') on('chk-intercaler');
+          if (m === 'rasm') on('chk-rasm');
+        });
+      })();
+    </script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

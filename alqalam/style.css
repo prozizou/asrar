@@ -1,0 +1,165 @@
+/* style.css — alqalam
+   Refactoré pour utiliser les tokens partagés de /css/style.css
+   afin que le toggle clair/sombre s'applique correctement. */
+@import url('https://fonts.googleapis.com/css2?family=Alkalami&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@700&display=swap');
+
+* { box-sizing: border-box; }
+
+/* Accessibilité pour la navigation au clavier */
+*:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ───── Alias locaux vers les tokens partagés ─────
+   alqalam utilise historiquement --accent-blue / --text-white / etc.
+   On les redirige vers les tokens globaux (définis dans /css/style.css) pour
+   qu'ils réagissent automatiquement au toggle clair/sombre.
+   Les valeurs après la virgule sont les fallbacks : si la feuille globale
+   n'est pas chargée, alqalam reste lisible avec ses couleurs d'origine. */
+:root {
+    --accent-blue: var(--accent, #4D96FF);
+    --text-white:  var(--text-main, #FFFFFF);
+    --text-gray:   var(--text-muted, #D0D0D0);
+    --text-red:    var(--danger, #FF6B6B);
+    --glass-bg:    var(--surface, rgba(255,255,255,0.08));
+    --glass-border:var(--border, rgba(255,255,255,0.15));
+    --glass-shadow:var(--glass-shadow, 0 8px 32px 0 rgba(0,0,0,0.3));
+    --accent-hover:var(--accent-hover, #2176FF);
+}
+
+@media screen {
+    body {
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        background: var(--bg-gradient);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        overflow-x: hidden;
+        transition: background 0.4s ease, color 0.3s ease;
+    }
+
+    .bg-shape { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.4; }
+    .shape1 { width: 300px; height: 300px; background: var(--accent); top: -100px; left: -100px; }
+    html[data-theme="light"] .shape1 { opacity: 0.25; }
+    .shape2 { width: 400px; height: 400px; background: var(--danger); bottom: -150px; right: -100px; opacity: 0.2; }
+
+    .app-container { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; margin-top: 10px; overflow: visible; }
+
+    .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
+
+    .controls-section { display: flex; flex-direction: column; gap: 15px; background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
+
+    .output-section { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+    .copy-btn { position: absolute; top: 8px; right: 8px; left: auto; background: var(--surface-3); border: 1px solid var(--border); color: var(--text-main); padding: 5px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; backdrop-filter: blur(5px); z-index: 10; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
+    .copy-btn:hover { background: var(--accent); color: var(--text-on-accent); }
+
+    /* Réserve de l'espace en haut des zones de texte pour ne pas passer SOUS le bouton Copier */
+    .top-textarea { padding-top: 40px; }
+    .output-area  { padding-top: 40px; }
+
+    .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
+    .glass-input:focus { border-color: var(--accent); background: var(--surface-input); }
+
+    .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Alkalami', serif; font-size: 24px; }
+
+    .grid-row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+    .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+
+    .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; min-width: 0; }
+
+    .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
+    .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
+
+    .tool-box { min-width: 0; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 2px; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: 0.3s; user-select: none; }
+    .tool-box:hover { background: var(--surface); }
+    .tool-box input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; flex-shrink: 0; }
+    .tool-box span { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+
+    .hidden-panel { display: none; width: 100%; gap: 10px; }
+    .show-panel { display: flex; flex-direction: column; }
+    .show-panel.grid-row-2-1 { display: grid; }
+
+    /* Le panneau Police : select + bouton empilés proprement */
+    #panel-font.show-panel { gap: 8px; }
+    #panel-font select.glass-input { cursor: pointer; }
+
+    .search-container { display: none; align-items: center; padding-right: 15px; }
+    .search-container.show-panel { display: flex; flex-direction: row; }
+    .search-input-inner { background: transparent; border: none; color: var(--text-main); flex: 1; outline: none; }
+    .search-count-text { color: var(--danger); font-size: 14px; font-weight: bold; white-space: nowrap; }
+
+    .slider-container { width: 100%; padding: 0 5px; }
+    .slider-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px; }
+    .slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--border-strong); outline: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+
+    .output-area { height: 100%; min-height: 200px; max-height: calc(100vh - 80px); overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Alkalami', 'Scheherazade New', serif; font-size: 28px; color: var(--text-main); }
+    .output-area::-webkit-scrollbar { width: 8px; }
+    .output-area::-webkit-scrollbar-track { background: var(--surface-3); border-radius: 10px; }
+    .output-area::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+    .highlight { background-color: rgba(255, 255, 0, 0.35); color: var(--text-main); border-radius: 4px; padding: 0 4px;}
+    html[data-theme="light"] .highlight { background-color: rgba(255, 215, 0, 0.4); }
+
+    /* Couleurs manuscrites (mots-clés) — mêmes classes que le PDF/Word, pour que
+       l'aperçu à l'écran corresponde exactement au document exporté. */
+    .mot-rouge   { color: #D11015; }
+    .mot-vert    { color: #008A3B; }
+    .mot-bleu    { color: #1B378C; }
+    .verset-brun { color: #8B0000; }
+    html[data-theme="light"] .mot-rouge   { color: #B00D12; }
+    html[data-theme="light"] .mot-vert    { color: #00702F; }
+    html[data-theme="light"] .mot-bleu    { color: #16306E; }
+    html[data-theme="light"] .verset-brun { color: #7A0000; }
+
+    .preview-warning { border-color: #FFC107; background: rgba(255, 193, 7, 0.12); color: #FFC107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #FFC107; border-radius: 12px; font-family: sans-serif; }
+    html[data-theme="light"] .preview-warning { background: rgba(255, 193, 7, 0.18); }
+
+    .popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    html[data-theme="light"] .popup-overlay { background: rgba(30,40,60,0.35); }
+    .popup-content { padding: 20px; width: 90%; max-width: 350px; overflow: hidden; }
+    .popup-item { padding: 18px 20px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--glass-border); transition: 0.3s; margin: -20px -20px 0 -20px; color: var(--text-main); }
+    .popup-item:last-child { border-bottom: none; }
+    .popup-item:hover { background: var(--surface); padding-left: 25px; }
+
+    .progress-bar-container { width: 100%; height: 12px; background: var(--surface-3); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; margin: 20px 0; }
+    #progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.1s linear; }
+
+    .toast-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--text-on-accent); padding: 12px 24px; border-radius: 8px; z-index: 9999; font-family: sans-serif; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: opacity 0.3s ease-in-out; opacity: 1; }
+    .toast-error { background-color: rgba(217, 83, 79, 0.95); border: 1px solid var(--danger); }
+    .toast-info { background-color: rgba(79, 172, 254, 0.95); border: 1px solid var(--accent); }
+
+    #print-area { display: none; }
+
+    .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Alkalami', serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
+    .suggestions-container.show-panel { display: block; }
+
+    .suggestion-item { padding: 12px 15px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid var(--border-soft); transition: 0.2s; font-size: 22px; }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: var(--surface); padding-right: 25px; }
+    .suggestion-item::-webkit-scrollbar { width: 6px; }
+    .suggestion-item::-webkit-scrollbar-track { background: transparent; }
+    .suggestion-item::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+    @media (max-width: 899px) { .app-container { max-width: 600px; } .output-area { max-height: 40vh; } }
+    @media (max-width: 480px) { body { padding: 10px; } .controls-section { padding: 15px; } .grid-row-2-1, .grid-row-1-1 { grid-template-columns: 1fr; } .tools-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 900px) { .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; height: calc(100vh - 40px); margin: 0 auto; } .controls-section { width: 380px; flex-shrink: 0; height: 100%; overflow-y: auto; } .output-section { flex-grow: 1; height: 100%; } .output-area { height: 100%; max-height: 100%; } }
+}
+
+@media print {
+    body { background: white !important; color: black !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .app-container, .popup-overlay, .bg-shape, .no-print, #asrarThemeBtn, #asrar-loader { display: none !important; }
+    @page { size: A4 portrait; margin: 15mm 15mm 20mm 15mm; @bottom-center { content: "[ " counter(page) " ]"; font-family: 'Alkalami', serif; font-size: 12pt; } }
+
+    #print-area { display: block !important; font-family: 'Alkalami', serif; direction: rtl; text-align: justify; text-align-last: justify; text-justify: inter-word; font-size: 18pt; line-height: 1.8; color: black; orphans: 1; widows: 1; }
+
+    .mot-rouge { color: #D11015 !important; } .mot-vert { color: #008A3B !important; } .mot-bleu { color: #1B378C !important; }
+    .verset-brun { color: #8B0000 !important; }
+}
