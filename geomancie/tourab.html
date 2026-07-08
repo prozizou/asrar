@@ -176,7 +176,12 @@
         .modal {
             background: #12121f; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius);
             padding: 24px 20px; max-width: 650px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); position: relative;
+            color: #e0dcd0;
         }
+        /* La modale garde un fond sombre en permanence : on force donc un texte clair
+           dans les deux thèmes pour rester lisible (sinon texte brun sur fond sombre). */
+        html[data-theme="light"] .modal { color: #e0dcd0; }
+        .modal p { color: #e0dcd0; }
         .modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; }
         .modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: var(--transition); }
         .modal .close-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
@@ -232,7 +237,7 @@
             </div>
 
             <div class="btn-row" style="margin-top:20px; display:none;" id="exportBtnRow">
-                <button class="btn accent" id="btnExportJSON">💾 Sauvegarder le thème (JSON)</button>
+
             </div>
         </div>
     </div>
@@ -476,29 +481,25 @@
         function updateSynthesis(houses) {
             const container = document.getElementById('synthesisContainer');
             
-            let exceptionFig = [2,2,2,2];
-            const exceptionKeys = ['1121', '2111', '1111', '2222'];
-            houses.forEach(h => {
-                if (exceptionKeys.includes(figToKey(h))) exceptionFig = addFigures(exceptionFig, h);
-            });
+            // Le vœu = figure résultante de M8 + M1 + M3 + M5
+            // (maisons indexées à partir de 0 : M1=houses[0], M3=houses[2], M5=houses[4], M8=houses[7])
+            let voeuFig = addFigures(addFigures(houses[7], houses[0]), addFigures(houses[2], houses[4]));
             
             let repFig = addFigures(addFigures(houses[1], houses[3]), addFigures(houses[6], houses[7]));
             
-            const excKey = figToKey(exceptionFig);
+            const excKey = figToKey(voeuFig);
             const repKey = figToKey(repFig);
             
             container.innerHTML = `
                 <div class="synthesis-card" data-figkey="${excKey}" id="synthExceptions">
-                    <h4>🌟 Résultante des Exceptions</h4>
-                    ${renderMiniFigureHTML(exceptionFig)}
+                    <h4>🌟 Le vœu</h4>
+                    ${renderMiniFigureHTML(voeuFig)}
                     <p>${getCleanName(excKey)}</p>
-                    <small style="font-size:0.65rem; color:var(--text2);">(Somme de Youssouf, Mahdiou, Ibrahima, Moussa)</small>
                 </div>
                 <div class="synthesis-card" data-figkey="${repKey}" id="synthRep">
                     <h4>👁️ Figure de Repérage</h4>
                     ${renderMiniFigureHTML(repFig)}
                     <p>${getCleanName(repKey)}</p>
-                    <small style="font-size:0.65rem; color:var(--text2);">(M2 + M4 + M7 + M8)</small>
                 </div>
             `;
             container.style.display = 'flex';
@@ -589,18 +590,6 @@
                 const fbStep2Data = (firebaseData && firebaseData[figureToJsonIndex[step2Key]]) ? firebaseData[figureToJsonIndex[step2Key]] : null;
 
                 html += `
-                    <div class="copulation-steps">
-                        <div class="step-fig"><strong>Occupante</strong><br>${renderMiniFigureHTML(houseFig)}<small>${getCleanName(houseKey)}</small></div>
-                        <span style="font-size:1.3rem;color:var(--gold);">+</span>
-                        <div class="step-fig"><strong>Repos</strong><br>${renderMiniFigureHTML(restingFig)}<small>${getCleanName(restingKey)}</small></div>
-                        <span style="font-size:1.3rem;color:var(--gold);">=</span>
-                        <div class="step-fig"><strong>Étape 1</strong><br>${renderMiniFigureHTML(step1)}<small>${getCleanName(step1Key)}</small></div>
-                        <span style="font-size:1.3rem;color:var(--gold);">+</span>
-                        <div class="step-fig"><strong>Juge</strong><br>${renderMiniFigureHTML(judgeFig)}<small>${getCleanName(judgeKey)}</small></div>
-                        <span style="font-size:1.3rem;color:var(--gold);">=</span>
-                        <div class="step-fig" style="border:2px solid var(--gold);"><strong>Secret final</strong><br>${renderMiniFigureHTML(step2)}<small style="color:var(--gold);font-weight:700;">${getCleanName(step2Key)}</small></div>
-                    </div>
-                    
                     <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left;">
                         <h4 style="margin: 0 0 8px 0; color: #4facfe; font-size: 0.95rem;">1️⃣ Étape 1 : ${fbStep1Data ? fbStep1Data.titre : getFullTitle(step1Key)}</h4>
                         <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--gold);"><strong>Domaine :</strong> ${fbStep1Data ? fbStep1Data.domaine : "Parole de la Maison (Occupante + Repos)"}</p>
@@ -620,24 +609,6 @@
         }
 
         function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; clearPassation(); }
-
-        function exportThemeJSON() {
-            if (!themeCalculated) return;
-            const exportData = {
-                mothers: mothers,
-                houses: allHouses.map(fig => figToKey(fig)),
-                bzdh: allHouses.map(fig => getBZDHValue(fig))
-            };
-            const jsonString = JSON.stringify(exportData, null, 2);
-            const blob = new Blob([jsonString], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `theme_geomancie_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('💾 Thème sauvegardé !');
-        }
 
         // Journalise l'usage de la géomancie AVEC la localisation (suivi admin).
         function logGeomancie() {
@@ -690,7 +661,7 @@
                 document.getElementById('parityIndicator').innerHTML = '';
                 clearPassation(); showToast('🔄 Thème réinitialisé');
             });
-            document.getElementById('btnExportJSON').addEventListener('click', exportThemeJSON);
+
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('modalOverlay').style.display === 'flex') closeModal(); });
         }
         document.addEventListener('DOMContentLoaded', init);
