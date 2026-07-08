@@ -14,10 +14,6 @@ initStore();
 chargerSourates();
 chargerVersets();
 
-// Masque le loader plein écran dès que l'utilisateur (Firebase) est résolu :
-// à ce stade l'interface est interactive (le paywall gère le reste au clic).
-whenUser().finally(() => { if (window.asrarHideLoader) window.asrarHideLoader(); });
-
 // ─── INTÉGRATION PAIEMENT / ABONNEMENT — ASRAR PRO ─────────────
 // firebase-config.js (script CLASSIQUE chargé AVANT ce module, via <head>)
 // fournit en global, dans la MÊME app Firebase que tout le hub :
@@ -46,6 +42,10 @@ function whenUser() {
         const off = a.onAuthStateChanged((u) => { _userResolved = true; off(); resolve(u); });
     });
 }
+
+// Masque le loader plein écran dès que l'utilisateur (Firebase) est résolu :
+// à ce stade l'interface est interactive (le paywall gère le reste au clic).
+whenUser().finally(() => { if (window.asrarHideLoader) window.asrarHideLoader(); });
 
 // Cache court : évite de relire la base à chaque clic.
 const ACCESS_CACHE_MS = 60000;
@@ -476,4 +476,3 @@ document.getElementById('opt-none').addEventListener('click', () => triggerPDF(f
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 })();
-
