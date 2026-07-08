@@ -8,7 +8,7 @@ import { updateUI, debouncedUpdateUI, debounce, handleCopy, injecterPolice, show
 import { generateVectorPDF } from './pdf.js';
 import { generateDocx } from './docx.js';
 import { formaterTexteIntercale } from './formatter.js';
-import { config, POLICES } from './config.js';
+import { config } from './config.js';
 
 initStore();
 chargerSourates();
@@ -275,6 +275,14 @@ elements.btnCopyOutput.addEventListener('click', () => {
 // ─── POLICE — liste premium, réservée à l'abonnement ≥ 45 000 FCFA ───
 // Sources fusionnées : polices statiques (config.POLICES) + polices ajoutées
 // via le panneau d'administration (nœud Firebase `alqalam_fonts`).
+// Fallback intégré : si config.POLICES est absent (ancienne version de config.js),
+// on garde au moins les polices de base pour ne jamais casser le module.
+const POLICES = (config && Array.isArray(config.POLICES) && config.POLICES.length)
+    ? config.POLICES
+    : [
+        { name: 'Alkalami (par défaut)', family: 'Alkalami',        url: '', level: 0 },
+        { name: 'Scheherazade New',      family: 'Scheherazade New', url: '', level: 0 }
+      ];
 let POLICES_DISPO = POLICES.slice();
 
 function remplirListePolices() {
