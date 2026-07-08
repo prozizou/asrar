@@ -72,6 +72,24 @@
       <div class="vendor-block" id="m-vendor-block"></div>
       <div id="m-desc" style="line-height:1.7; border-top:1px solid #1F1F23; padding-top:14px;"></div>
       <div class="contact-btns" id="m-contact" style="margin-top:14px;"></div>
+
+      <div class="social-bar" id="m-social">
+        <button class="like-btn" id="m-like-btn" onclick="toggleProductLike()">
+          <span id="m-like-icon">🤍</span> <span id="m-like-count">0</span>
+        </button>
+        <button class="comment-toggle-btn" onclick="toggleCommentsPanel()">
+          💬 <span id="m-comment-count">0</span>
+        </button>
+      </div>
+
+      <div class="comments-panel" id="m-comments-panel">
+        <div class="comment-list" id="m-comment-list"></div>
+        <div class="comment-input-row">
+          <input type="text" id="m-comment-input" maxlength="500" placeholder="Écrire un commentaire…">
+          <button onclick="postProductComment()">Envoyer</button>
+        </div>
+      </div>
+
       <button class="add-to-cart-btn" id="addToCartBtn" onclick="commanderProduit()">🛍️ Commander via WhatsApp</button>
     </div>
   </div>

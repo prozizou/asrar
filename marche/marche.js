@@ -7,6 +7,9 @@ let activeFilter = '';
 let currentCart = JSON.parse(localStorage.getItem('mysticCart') || '[]');
 let currentModalProduct = null;
 
+// Réf. temps réel likes/commentaires du produit affiché (détachées à la fermeture).
+let mLikesRef = null, mCommentsRef = null, mCommentsListener = null;
+
 // Fallbacks pour les fonctions externes (main.js)
 if (typeof ensureAccess !== 'function') {
   window.ensureAccess = function(cb) { cb(); };
@@ -224,13 +227,102 @@ function openModal(product) {
   }
   document.getElementById('m-contact').innerHTML = contactHTML || '<p style="color:#888;">Aucun contact disponible.</p>';
 
+  loadProductSocial(product._key);
+
   document.getElementById('prodModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
+  detachProductSocial();
   document.getElementById('prodModal').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+// ==================== LIKES & COMMENTAIRES PRODUIT ====================
+// Réutilise les nœuds partagés `ratings/product/{key}` (like = présence de l'uid)
+// et `comments/product/{key}` (mêmes règles Firebase que les Secrets Mystiques).
+
+function detachProductSocial() {
+  if (mLikesRef) { mLikesRef.off('value'); mLikesRef = null; }
+  if (mCommentsRef && mCommentsListener) mCommentsRef.off('child_added', mCommentsListener);
+  mCommentsRef = null; mCommentsListener = null;
+  const panel = document.getElementById('m-comments-panel');
+  if (panel) panel.classList.remove('open');
+}
+
+function loadProductSocial(key) {
+  detachProductSocial();
+  if (!key) return;
+  const uid = firebase.auth().currentUser?.uid;
+  const list = document.getElementById('m-comment-list');
+  if (list) list.innerHTML = '';
+
+  // — Likes (temps réel) —
+  mLikesRef = firebase.database().ref(`ratings/product/${key}`);
+  mLikesRef.on('value', snap => {
+    const likes = snap.val() || {};
+    const count = Object.keys(likes).length;
+    const liked = uid && likes[uid];
+    const icon = document.getElementById('m-like-icon');
+    const cnt = document.getElementById('m-like-count');
+    const btn = document.getElementById('m-like-btn');
+    if (icon) icon.textContent = liked ? '❤️' : '🤍';
+    if (cnt) cnt.textContent = count;
+    if (btn) btn.classList.toggle('liked', !!liked);
+  });
+
+  // — Commentaires (temps réel) —
+  mCommentsRef = firebase.database().ref(`comments/product/${key}`);
+  mCommentsListener = mCommentsRef.on('child_added', snap => {
+    const c = snap.val() || {};
+    appendProductComment(c.pseudo, c.text);
+  });
+  mCommentsRef.once('value').then(snap => {
+    const el = document.getElementById('m-comment-count');
+    if (el) el.textContent = snap.numChildren();
+  });
+}
+
+function toggleProductLike() {
+  const key = currentModalProduct && currentModalProduct._key;
+  const uid = firebase.auth().currentUser?.uid;
+  if (!key || !uid) return;
+  const ref = firebase.database().ref(`ratings/product/${key}/${uid}`);
+  ref.once('value').then(snap => {
+    // like = valeur 5 (compatible règle 1–5) ; unlike = suppression.
+    if (snap.exists()) ref.remove();
+    else ref.set(5);
+  });
+}
+
+function toggleCommentsPanel() {
+  const panel = document.getElementById('m-comments-panel');
+  if (panel) panel.classList.toggle('open');
+}
+
+function postProductComment() {
+  const key = currentModalProduct && currentModalProduct._key;
+  const input = document.getElementById('m-comment-input');
+  const text = input ? input.value.trim() : '';
+  const uid = firebase.auth().currentUser?.uid;
+  if (!key || !text || !uid) return;
+  const pseudo = '@Client_' + uid.substring(0, 4).toUpperCase();
+  firebase.database().ref(`comments/product/${key}`).push({
+    uid, pseudo, text,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  });
+  input.value = '';
+}
+
+function appendProductComment(pseudo, text) {
+  const list = document.getElementById('m-comment-list');
+  if (!list) return;
+  const div = document.createElement('div');
+  div.className = 'm-comment-item';
+  div.innerHTML = `<div class="m-comment-pseudo">${escapeHtml(pseudo || '@Client')}</div><div class="m-comment-text">${escapeHtml(text || '')}</div>`;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
 }
 
 document.getElementById('prodModal').addEventListener('click', function(e) {
