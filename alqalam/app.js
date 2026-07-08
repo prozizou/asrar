@@ -10,6 +10,13 @@
 // CONFIGURATION (formules, POLICES, constantes)   (ex-config.js)
 // ──────────────────────────────────────────────────────────
 // config.js
+
+// Encapsulé dans une IIFE : isole les variables (db, config, state…) du
+// scope global pour éviter tout conflit avec les scripts partagés du hub
+// (ex. firebase-config.js qui déclare aussi `const db`).
+(function () {
+'use strict';
+
 const formules = {
     ouverture: "كن بسم الله الرحمن الرحيم اللهم صل على سيدنا محمد و على ءاله و صحبه و سلم تسليما ",
     fermeture: " اللهم صل على سيدنا محمد و على ءاله و صحبه و سلم تسليما فيكون ءامين يا رب العالمين و الحمد لله رب العالمين"
@@ -1191,3 +1198,4 @@ document.getElementById('opt-none').addEventListener('click', () => triggerPDF(f
     }
 })();
 
+})();
