@@ -187,9 +187,6 @@ const elements = {
     interPhrase: document.getElementById('inter-phrase'),
     btnIntercaler: document.getElementById('btn-intercaler'),
 
-    btnCopyInput: document.getElementById('btn-copy-input'),
-    btnCopyOutput: document.getElementById('btn-copy-output'),
-
     fontSelect: document.getElementById('font-select'),
     btnApplyFont: document.getElementById('btn-apply-font'),
 
@@ -405,13 +402,35 @@ function updateUI() {
 
 const debouncedUpdateUI = debounce(updateUI);
 
-function handleCopy(button, textToCopy) {
+// Copie le texte dans le presse-papiers et confirme via un toast
+// (plus de bouton dédié : déclenché par appui long sur les zones de texte).
+function copierTexte(textToCopy) {
     if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        const originalText = button.innerText;
-        button.innerText = "✅ Copié !";
-        setTimeout(() => { button.innerText = originalText; }, 2000);
-    }).catch(() => showToast("Impossible de copier", "error"));
+    navigator.clipboard.writeText(textToCopy)
+        .then(() => showToast("✅ Texte copié !", "info"))
+        .catch(() => showToast("Impossible de copier", "error"));
+}
+
+// Attache le copier par « appui long » (≈550 ms) sur un élément — souris et tactile.
+function attacherAppuiLong(element, getTexte) {
+    if (!element) return;
+    let timer = null;
+    const LONG_MS = 550;
+    const start = () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            copierTexte(getTexte());
+            if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+        }, LONG_MS);
+    };
+    const cancel = () => clearTimeout(timer);
+    element.addEventListener('touchstart', start, { passive: true });
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchmove', cancel, { passive: true });
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+    element.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 function injecterPolice(url, nomPolice) {
@@ -987,11 +1006,9 @@ elements.btnEspace.addEventListener('click', () => {
     if (state.baseText) { state.baseText = " " + state.baseText; updateUI(); }
 });
 
-elements.btnCopyInput.addEventListener('click', () => handleCopy(elements.btnCopyInput, elements.inputText.value));
-elements.btnCopyOutput.addEventListener('click', () => {
-    const rawOutput = (state.baseText + " ").repeat(state.totalMultiplier).trim();
-    handleCopy(elements.btnCopyOutput, rawOutput);
-});
+// Copier par appui long sur les zones de texte (plus de boutons Copier).
+attacherAppuiLong(elements.inputText, () => elements.inputText.value);
+attacherAppuiLong(elements.outputArea, () => (state.baseText + " ").repeat(state.totalMultiplier).trim());
 
 // ─── POLICE — liste premium, réservée à l'abonnement ≥ 45 000 FCFA ───
 // Sources fusionnées : polices statiques (config.POLICES) + polices ajoutées
