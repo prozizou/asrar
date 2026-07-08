@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
 
   try {
     if (action === "me") {
-      const products = await myProducts(db, user.uid);
+      const products = await myProducts(db, user.uid, boutique && boutique._id);
       if (activeSeller) {
         return res.status(200).json({ active: true, seller, products, mode: "seller" });
       }
@@ -110,7 +110,10 @@ module.exports = async (req, res) => {
       let key = str(product.key, 64);
       if (key) {
         const cur = (await db.ref("det_produits/" + key).once("value")).val();
-        if (cur && cur.uid && cur.uid !== user.uid) {
+        if (!cur) return res.status(404).json({ error: "Produit introuvable." });
+        // Accepte aussi les produits hérités (vendeurId) : sinon leur édition
+        // était systématiquement refusée.
+        if (!estProprietaire(cur, user.uid, boutique && boutique._id)) {
           return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
         }
       } else {
@@ -140,7 +143,9 @@ module.exports = async (req, res) => {
       if (!key) return res.status(400).json({ error: "Clé produit requise." });
       const cur = (await db.ref("det_produits/" + key).once("value")).val();
       if (!cur) return res.status(404).json({ error: "Produit introuvable." });
-      if (cur.uid !== user.uid) return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
+      if (!estProprietaire(cur, user.uid, boutique && boutique._id)) {
+        return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
+      }
       await db.ref("det_produits/" + key).remove();
       return res.status(200).json({ ok: true });
     }
@@ -151,11 +156,28 @@ module.exports = async (req, res) => {
   }
 };
 
-async function myProducts(db, uid) {
-  const snap = await db.ref("det_produits").orderByChild("uid").equalTo(uid).once("value");
+// Récupère les produits du vendeur. Historiquement, l'appartenance a été stockée
+// sous plusieurs champs selon l'origine du produit (`uid` pour ceux créés depuis
+// « Ma boutique », `vendeurId` pour ceux créés depuis l'administration). On lit
+// donc l'ensemble du nœud et on filtre sur tous les identifiants possibles,
+// sinon les anciens produits n'apparaissent jamais dans « Mes produits ».
+async function myProducts(db, uid, boutiqueId) {
+  const snap = await db.ref("det_produits").once("value");
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  snap.forEach((c) => {
+    const v = c.val() || {};
+    if (estProprietaire(v, uid, boutiqueId)) out.push({ _key: c.key, ...v });
+  });
   return out;
+}
+
+// Vrai si le produit appartient à l'utilisateur (uid direct, vendeurId hérité,
+// ou rattachement à sa boutique profile_clients).
+function estProprietaire(prod, uid, boutiqueId) {
+  if (!prod) return false;
+  if (prod.uid) return prod.uid === uid;
+  if (prod.vendeurId) return prod.vendeurId === uid || (boutiqueId && prod.vendeurId === boutiqueId);
+  return false;
 }
 
 function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max || 200); }
