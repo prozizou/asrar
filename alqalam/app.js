@@ -440,9 +440,13 @@ function injecterPolice(url, nomPolice) {
 
     const style = document.createElement('style');
     style.id = styleId;
+    // Le sélecteur cible aussi les DESCENDANTS (`*`) : sans cela, les mots colorés
+    // (<span class="mot-rouge">…) gardaient la police par défaut, à l'écran comme
+    // dans le PDF (#print-area a une font-family en dur dans @media print).
     style.innerHTML = `
         @font-face { font-family: '${nomPolice}'; src: url('${url}'); }
-        .top-textarea, .output-area, #print-area, #inter-sourate-select {
+        .top-textarea, .output-area, #print-area, #inter-sourate-select,
+        .output-area *, #print-area * {
             font-family: '${nomPolice}', 'Alkalami', serif !important;
         }
     `;
@@ -1061,19 +1065,28 @@ remplirListePolices();
     } catch (e) {}
 })();
 
-elements.btnApplyFont.addEventListener('click', () => {
+// Applique la police sélectionnée (aperçu immédiat), en vérifiant le palier.
+// `silencieux` : true quand déclenché par le simple choix dans la liste.
+function activerPoliceSelectionnee(silencieux) {
     const family = elements.fontSelect ? elements.fontSelect.value : '';
-    if (!family) { showToast("Veuillez choisir une police.", "error"); return; }
+    if (!family) {
+        if (!silencieux) showToast("Veuillez choisir une police.", "error");
+        return;
+    }
 
     const police = POLICES_DISPO.find((p) => p.family === family);
-    if (!police) { showToast("Police introuvable.", "error"); return; }
+    if (!police) {
+        if (!silencieux) showToast("Police introuvable.", "error");
+        return;
+    }
 
     // Palier d'abonnement requis (défini par police, défaut 45 000 FCFA).
     const requis = police.level != null ? Number(police.level) : config.FONT_MIN_LEVEL;
     const level = (typeof getSubscriptionLevel === 'function') ? getSubscriptionLevel() : 0;
     if (level < requis) {
         showToast(`Cette police nécessite l'abonnement ${requis.toLocaleString('fr-FR')} FCFA.`, "error");
-        if (typeof showSubscriptionGate === 'function') showSubscriptionGate();
+        if (!silencieux && typeof showSubscriptionGate === 'function') showSubscriptionGate();
+        if (elements.fontSelect) elements.fontSelect.value = '';   // revient au choix neutre
         return;
     }
 
@@ -1082,8 +1095,15 @@ elements.btnApplyFont.addEventListener('click', () => {
     } else {
         appliquerPoliceParNom(police.family);
     }
-    showToast(`Police « ${police.name} » appliquée.`, "info");
-});
+    if (!silencieux) showToast(`Police « ${police.name} » appliquée.`, "info");
+}
+
+// Aperçu en direct : la police s'applique dès qu'on la choisit dans la liste.
+if (elements.fontSelect) {
+    elements.fontSelect.addEventListener('change', () => activerPoliceSelectionnee(true));
+}
+
+elements.btnApplyFont.addEventListener('click', () => activerPoliceSelectionnee(false));
 
 // Applique une police déjà chargée (sans @font-face) à l'aperçu, la saisie et le PDF.
 function appliquerPoliceParNom(nomPolice) {
@@ -1093,7 +1113,8 @@ function appliquerPoliceParNom(nomPolice) {
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        .top-textarea, .output-area, #print-area, #inter-sourate-select {
+        .top-textarea, .output-area, #print-area, #inter-sourate-select,
+        .output-area *, #print-area * {
             font-family: '${nomPolice}', 'Alkalami', serif !important;
         }`;
     document.head.appendChild(style);
