@@ -14,6 +14,10 @@ initStore();
 chargerSourates();
 chargerVersets();
 
+// Masque le loader plein écran dès que l'utilisateur (Firebase) est résolu :
+// à ce stade l'interface est interactive (le paywall gère le reste au clic).
+whenUser().finally(() => { if (window.asrarHideLoader) window.asrarHideLoader(); });
+
 // ─── INTÉGRATION PAIEMENT / ABONNEMENT — ASRAR PRO ─────────────
 // firebase-config.js (script CLASSIQUE chargé AVANT ce module, via <head>)
 // fournit en global, dans la MÊME app Firebase que tout le hub :

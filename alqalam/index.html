@@ -3,7 +3,7 @@
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Al-Qalam</title>
@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
     <!-- Source unique des tokens de thème (dark/light) — DOIT précéder style.css -->
     <link rel="stylesheet" href="../css/style.css">
+    <script src="/js/loader.js" defer></script>
     <link rel="stylesheet" href="style.css">
 
     <!-- Firebase (SDK compat) — MÊME version que le hub ASRAR PRO -->
@@ -26,6 +27,7 @@
   <script src="/js/nav.js"></script>
 </head>
 <body>
+    <div id="asrar-loader"><div class="asrar-spinner"></div><span class="asrar-loader-text">Chargement…</span></div>
 
     <div class="bg-shape shape1"></div>
     <div class="bg-shape shape2"></div>
@@ -111,7 +113,7 @@
         <div class="popup-content glass-panel">
             <div style="display:flex; gap:8px; margin-bottom:12px;">
                 <button id="fmt-pdf" class="btn-glass" style="flex:1; background:linear-gradient(135deg,#00b894,#00a884);">📄 PDF</button>
-                <button id="fmt-docx" class="btn-glass" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:var(--text-white);">📝 Word (.docx)</button>
+                <button id="fmt-docx" class="btn-glass" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:var(--text-white);">📝 Word / WPS (.docx)</button>
             </div>
             <button class="popup-item" id="opt-both" style="width:100%; background:none; border:none; color:white; text-align:left;">Avec ouverture et fermeture</button>
             <button class="popup-item" id="opt-start" style="width:100%; background:none; border:none; color:white; text-align:left;">Avec ouverture seulement</button>

@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les 99 Noms d'Allah — Combinaisons par Poids Mystique avec ASRAR PRO</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../css/style.css">
+    <script src="/js/loader.js" defer></script>
+<!-- Firebase (auth + abonnement) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Socle partagé ASRAR PRO -->
+<script src="../js/whatsapp.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/api-content.js"></script>
+<script src="/js/theme.js"></script>
+<script src="/js/nav.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --gold: #b8892a;
+    --gold-light: #d4a84b;
+    --gold-pale: #fdf6e8;
+    --gold-border: #dfc07a;
+    --deep: #1a2744;
+    --deep2: #243260;
+    --lapis: #2c4a8a;
+    --cream: #faf7f0;
+    --ink: #111827;
+    --muted: #6b7280;
+    --red: #991b1b;
+    --card-bg: #ffffff;
+    --shadow: 0 2px 16px rgba(26,39,68,0.1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(160deg, #0f1d3a 0%, #1a2e5a 50%, #243872 100%);
+    padding: 2.8rem 1.5rem 2.2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), var(--gold-light), transparent);
+  }
+  .bismillah {
+    font-family: 'Amiri', serif;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    color: var(--gold-light);
+    margin-bottom: 0.8rem;
+    direction: rtl;
+    letter-spacing: 0.05em;
+  }
+  header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.4rem;
+  }
+  header h1 span { color: var(--gold-light); }
+  .subtitle {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.85rem;
+    font-weight: 300;
+  }
+
+  /* LAYOUT */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e8e0ce;
+    border-radius: 14px;
+    padding: 1.6rem;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 20px; height: 2px;
+    background: var(--gold);
+    border-radius: 1px;
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.2rem;
+  }
+  @media(max-width:520px){ .form-grid { grid-template-columns: 1fr; } }
+
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--lapis);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid var(--gold-border);
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--gold-pale);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(184,137,42,0.15);
+  }
+  .field input[type="number"] { text-align: center; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.05em; }
+
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+  .btn-primary {
+    flex: 1;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, var(--deep) 0%, var(--lapis) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary {
+    padding: 0.8rem 1.2rem;
+    background: #fff;
+    color: var(--red);
+    border: 1.5px solid #fca5a5;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: #fff5f5; }
+
+  /* PROGRESS */
+  #progress-wrap { display: none; margin-top: 1.2rem; }
+  .progress-track {
+    background: #f0e8d8;
+    border-radius: 99px;
+    height: 7px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.15s ease;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  #stop-hint { font-style: italic; }
+
+  /* RESULTS */
+  #results-section { display: none; }
+  .results-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .results-bar .card-title { margin-bottom: 0; }
+  .badge {
+    background: var(--deep);
+    color: var(--gold-light);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25em 0.7em;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  #results-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+  .result-card {
+    background: var(--gold-pale);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .rc-arabic {
+    font-family: 'Amiri', serif;
+    font-size: 1.3rem;
+    color: var(--deep);
+    font-weight: 700;
+    direction: rtl;
+    text-align: right;
+    margin-bottom: 0.35rem;
+    line-height: 1.8;
+  }
+  .rc-formula {
+    font-size: 0.78rem;
+    color: var(--lapis);
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    font-family: 'Inter', monospace;
+    background: rgba(44,74,138,0.07);
+    display: inline-block;
+    padding: 0.15em 0.6em;
+    border-radius: 4px;
+  }
+  .rc-defs {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.65;
+  }
+  .rc-defs b { color: var(--deep); font-weight: 600; }
+
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* ABJAD CALC */
+  .calc-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .calc-text {
+    flex: 1;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid var(--gold-border);
+    border-radius: 9px;
+    font-family: 'Amiri', serif;
+    font-size: 1.15rem;
+    background: var(--gold-pale);
+    direction: rtl;
+    text-align: right;
+    outline: none;
+  }
+  .calc-text:focus { border-color: var(--gold); }
+  .calc-display {
+    min-width: 90px;
+    text-align: center;
+    background: var(--deep);
+    color: var(--gold-light);
+    border-radius: 9px;
+    padding: 0.7rem 0.8rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+    letter-spacing: 0.05em;
+  }
+  .calc-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.6rem;
+  }
+
+  /* RESULTS SEARCH BAR */
+  .results-search-wrap {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.9rem;
+  }
+  .results-search-input {
+    flex: 1;
+    padding: 0.55rem 0.9rem 0.55rem 2.4rem;
+    border: 1.5px solid var(--gold-border);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: var(--gold-pale);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .results-search-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(184,137,42,0.15);
+  }
+  .results-search-wrap .search-icon-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  .results-search-wrap .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--gold);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+  .results-search-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    transition: color 0.15s;
+    display: none;
+  }
+  .results-search-clear:hover { color: var(--red); }
+  .filter-count {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-style: italic;
+  }
+
+  /* ALLAH PRIORITY BADGE */
+  .rc-allah-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: linear-gradient(135deg, var(--deep) 0%, var(--lapis) 100%);
+    color: var(--gold-light);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15em 0.55em;
+    border-radius: 99px;
+    letter-spacing: 0.06em;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    font-family: 'Inter', sans-serif;
+  }
+  .result-card.has-allah {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #fdf6e8 0%, #fef9f0 100%);
+    box-shadow: 0 0 0 1px var(--gold-border), 0 2px 12px rgba(184,137,42,0.12);
+  }
+
+  /* PAGINATION */
+  .pagination-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+    flex-wrap: wrap;
+  }
+  .page-btn {
+    padding: 0.35rem 0.75rem;
+    border-radius: 7px;
+    border: 1.5px solid var(--gold-border);
+    background: var(--gold-pale);
+    color: var(--deep);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { background: #f0e4c8; border-color: var(--gold); }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .page-btn.active { background: var(--deep); color: var(--gold-light); border-color: var(--deep); }
+  .page-info { font-size: 0.75rem; color: var(--muted); }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: '▶';
+    font-size: 0.6rem;
+    transition: transform 0.2s;
+    color: var(--gold);
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+
+  .names-grid {
+    margin-top: 1.2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 0.5rem;
+  }
+  .name-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    background: var(--gold-pale);
+    border: 1px solid var(--gold-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .name-chip:hover {
+    background: #f0e4c8;
+    border-color: var(--gold);
+    box-shadow: 0 2px 8px rgba(184,137,42,0.15);
+  }
+  .nc-ar {
+    font-family: 'Amiri', serif;
+    font-size: 1rem;
+    color: var(--deep);
+    font-weight: 700;
+    direction: rtl;
+  }
+  .nc-info { text-align: right; }
+  .nc-weight {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: monospace;
+  }
+  .nc-fr {
+    font-size: 0.65rem;
+    color: var(--muted);
+    line-height: 1.2;
+    max-width: 100px;
+    text-align: right;
+  }
+
+  footer {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    border-top: 1px solid #e8e0ce;
+  }
+
+  /* SPEED BADGE */
+  .speed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(135deg, #14532d, #166534);
+    color: #86efac;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2em 0.65em;
+    border-radius: 99px;
+    letter-spacing: 0.06em;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  /* RESTORE BANNER — masqué par défaut via l'attribut HTML style="display:none" */
+  #restore-banner {
+    background: var(--gold-pale);
+    border: 1.5px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.82rem;
+    color: var(--deep);
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  #restore-banner .rb-text { flex: 1; }
+  #restore-banner .rb-text strong { color: var(--gold); }
+  .rb-btn {
+    padding: 0.4rem 0.9rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .rb-btn-restore { background: var(--deep); color: var(--gold-light); }
+  .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid #d1c9b8; }
+</style>
+</head>
+<body>
+    <div id="asrar-loader"><div class="asrar-spinner"></div><span class="asrar-loader-text">Chargement…</span></div>
+
+<header>
+  <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+  <h1>Les 99 Noms d'<span>Allah</span> Asrar Pro</h1>
+  <p class="subtitle">Combinaisons par poids mystique · Calcul Abjad (حساب الجُمَّل)</p>
+</header>
+
+<main>
+
+  <!-- RESTORE BANNER -->
+  <div id="restore-banner" style="display:none">
+    <div class="rb-text">
+      💾 Une recherche précédente a été trouvée : <strong id="rb-desc"></strong>
+    </div>
+    <button class="rb-btn rb-btn-restore" onclick="restoreLastSearch()">Restaurer</button>
+    <button class="rb-btn rb-btn-dismiss" onclick="dismissBanner()">Ignorer</button>
+  </div>
+
+  <!-- RECHERCHE -->
+  <div class="card">
+    <div class="card-title">Recherche de combinaisons</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Poids mystique cible</label>
+        <input type="number" id="target" placeholder="ex. 644" min="1" max="999999" />
+      </div>
+      <div class="field">
+        <label>Nombre de noms à combiner</label>
+        <select id="k-select" onchange="onKSelectChange()">
+          <option value="2">2 noms</option>
+          <option value="3" selected>3 noms</option>
+          <option value="4">4 noms</option>
+          <option value="5">5 noms</option>
+          <option value="6">6 noms</option>
+          <option value="7">7 noms</option>
+          <option value="8">8 noms</option>
+          <option value="9">9 noms</option>
+          <option value="10">10 noms</option>
+          <option value="11">11 noms</option>
+        </select>
+        <div id="perf-warning" style="display:none; margin-top:0.45rem; padding:0.4rem 0.7rem; background:#fff3cd; border:1px solid #ffc107; border-radius:7px; font-size:0.74rem; color:#856404;">
+          ⚠️ <strong>Attention :</strong> k ≥ 8 implique des milliards de combinaisons théoriques (ex. C(99,9) ≈ 1,7 Md). Le pruning reste efficace, mais préparez-vous à une exécution longue selon le poids cible. Utilisez le bouton <em>Arrêter</em> si nécessaire.
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="btn-search" onclick="handleSearch()">
+        <span id="btn-icon">🔍</span>
+        <span id="btn-label">Rechercher</span>
+      </button>
+      <button class="btn-secondary" onclick="clearAll()">Effacer</button>
+    </div>
+
+    <div id="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="progress-label">Recherche en cours…</span>
+        <span id="stop-hint">Cliquez sur Arrêter pour interrompre</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RÉSULTATS -->
+  <div class="card" id="results-section">
+    <div class="results-bar">
+      <div class="card-title" style="margin-bottom:0">Combinaisons trouvées</div>
+      <span class="badge" id="results-badge">0 résultat</span>
+    </div>
+
+    <!-- Barre de filtre -->
+    <div class="results-search-wrap" id="results-search-wrap" style="display:none">
+      <div class="search-icon-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          class="results-search-input"
+          id="results-filter"
+          type="text"
+          placeholder="Filtrer : nom arabe, transcription, poids…"
+          oninput="onFilterInput()"
+          dir="auto"
+        />
+      </div>
+      <button class="results-search-clear" id="filter-clear" onclick="clearFilter()" title="Effacer le filtre">✕</button>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+
+    <div id="results-list"></div>
+    <div class="pagination-wrap" id="pagination-wrap" style="display:none"></div>
+  </div>
+
+  <!-- CALCULATRICE ABJAD -->
+  <div class="card">
+    <div class="card-title">Calculatrice Abjad — poids d'un texte arabe</div>
+    <div class="calc-row">
+      <input class="calc-text" id="calc-input" type="text"
+             placeholder="Saisissez un texte en arabe…"
+             oninput="onCalcInput(this.value)">
+      <div class="calc-display" id="calc-output">—</div>
+    </div>
+    <p class="calc-note">
+      Le poids est calculé selon le système Abjad (حساب الجُمَّل الكبير).
+      Cliquez sur un nom dans le tableau ci-dessous pour l'utiliser comme cible.
+    </p>
+  </div>
+
+  <!-- TABLEAU DES NOMS -->
+  <div class="card">
+    <details>
+      <summary>Tableau des 99 Noms et leurs poids Abjad</summary>
+      <div class="names-grid" id="names-grid"></div>
+    </details>
+  </div>
+
+</main>
+
+<footer>
+  Les 99 Noms d'Allah · Poids Abjad (حساب الجُمَّل الكبير) · Application éducative et spirituelle
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// 1. VALEURS ABJAD DES LETTRES
+// ═══════════════════════════════════════════════════════
+const ABJAD_VALUES = {
+  'ا':1, 'أ':1, 'إ':1, 'آ':1, 'ٱ':1, 'ء':1, 'ئ':1, 'ؤ':1,
+  'ب':2, 'ج':3, 'د':4, 'ه':5, 'ة':5, 'و':6, 'ز':7, 'ح':8,
+  'ط':9, 'ي':10, 'ى':10, 'ك':20, 'ک':20, 'ل':30, 'م':40, 'ن':50,
+  'ص':60, 'ع':70, 'ف':80, 'ض':90, 'ق':100, 'ر':200, 'س':300,
+  'ت':400, 'ث':500, 'خ':600, 'ذ':700, 'ظ':800, 'غ':900, 'ش':1000
+};
+
+// OPTIMISATION 1 — Nettoyage des diacritiques (tashkeel) avant calcul
+// Supprime toutes les harakat : fatha, kasra, damma, sukun, shadda, tanwin, etc.
+const TASHKEEL_REGEX = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g;
+
+function stripDiacritics(text) {
+  return text.replace(TASHKEEL_REGEX, '');
+}
+
+function abjadWeight(text) {
+  const clean = stripDiacritics(text);
+  let total = 0;
+  for (const ch of clean) {
+    if (ABJAD_VALUES[ch] !== undefined) total += ABJAD_VALUES[ch];
+  }
+  return total;
+}
+
+// ═══════════════════════════════════════════════════════
+// 2. LES 99 NOMS D'ALLAH
+//    [nom_arabe_affiché, forme_propre_pour_calcul, traduction_française]
+// ═══════════════════════════════════════════════════════
+const NAMES_DATA = [
+  ["اللَّه",       "الله",         "Allah — Le Nom suprême",                66],
+  ["رحمن",   "الرحمن",       "Ar-Rahmân — Le Tout Miséricordieux",    298],
+  ["رحيم",    "الرحيم",       "Ar-Rahîm — Le Très Miséricordieux",     258],
+  ["ملك",    "الملك",        "Al-Malik — Le Roi souverain",           90],
+  ["قدوس",  "القدوس",       "Al-Quddûs — Le Très Saint",             410], // Modifié (س)
+  ["سلام",    "السلام",       "As-Salâm — La Paix, la Source de paix", 371], // Modifié (س)
+  ["مؤمن",  "المؤمن",       "Al-Mu'min — Le Garant de la foi",       136],
+  ["مهيمن","المهيمن",      "Al-Muhaymin — Le Gardien suprême",      145],
+  ["عزيز",   "العزيز",       "Al-'Azîz — Le Tout Puissant",           94],
+  ["جبار",  "الجبار",       "Al-Jabbâr — Le Tout Contraignant",      206],
+  ["متكبر","المتكبر",     "Al-Mutakabbir — Le Souverainement Grand",662],
+  ["خالق",   "الخالق",       "Al-Khâliq — Le Créateur",              731],
+  ["بارئ",   "البارئ",       "Al-Bâri' — L'Auteur de toute existence",214],
+  ["مصور", "المصور",       "Al-Mussawwir — Le Façonneur des formes", 306], // Modifié (ص)
+  ["غفار",  "الغفار",       "Al-Ghaffâr — Le Grand Pardonneur",      1181], // Modifié (غ)
+  ["قهار",  "القهار",       "Al-Qahhâr — Le Dominateur suprême",     306],
+  ["وهاب",  "الوهاب",       "Al-Wahhâb — Le Grand Donateur",         14],
+  ["رزاق",  "الرزاق",       "Ar-Razzâq — Le Pourvoyeur de subsistance",308],
+  ["فتاح",  "الفتاح",       "Al-Fattâh — Le Grand Ouvreur",          489],
+  ["عليم",   "العليم",       "Al-'Alîm — L'Omniscient",               150],
+  ["قابض",   "القابض",       "Al-Qâbid — Le Resserreur",              193], // Modifié (ض)
+  ["باسط",   "الباسط",       "Al-Bâsit — Le Dispensateur",            312], // Modifié (س)
+  ["خافض",   "الخافض",       "Al-Khâfid — L'Abaisseur",               771], // Modifié (ض)
+  ["رافع",   "الرافع",       "Ar-Râfi' — L'Éleveur",                  351],
+  ["معز",    "المعز",        "Al-Mu'izz — Celui qui glorifie",         117],
+  ["مذل",    "المذل",        "Al-Mudhill — Celui qui humilie",         770],
+  ["سميع",   "السميع",       "As-Samî' — L'Omniscient des voix",       420], // Modifié (س)
+  ["بصير",   "البصير",       "Al-Bassîr — Le Clairvoyant",             272], // Modifié (ص)
+  ["حكم",    "الحكم",        "Al-Hakam — L'Arbitre suprême",           68],
+  ["عدل",    "العدل",        "Al-'Adl — Le Juste",                     104],
+  ["لطيف",   "اللطيف",       "Al-Latîf — Le Doux et Subtil",           129],
+  ["خبير",   "الخبير",       "Al-Khabîr — Le Très Avisé",             812],
+  ["حليم",   "الحليم",       "Al-Halîm — Le Très Doux",               88],
+  ["عظيم",   "العظيم",       "Al-'Azîm — L'Immense",                  920], // Modifié (ظ)
+  ["غفور",   "الغفور",       "Al-Ghafûr — Le Très Pardonneur",        1186], // Modifié (غ)
+  ["شكور",   "الشكور",       "Ash-Shakûr — Le Très Reconnaissant",     1226], // Modifié (ش)
+  ["علي",   "العلي",        "Al-'Alî — Le Très Haut",                110],
+  ["كبير",   "الكبير",       "Al-Kabîr — Le Grand",                    232],
+  ["حفيظ",   "الحفيظ",       "Al-Hafîz — Le Préservateur",            898], // Modifié (ظ)
+  ["مقيت",   "المقيت",       "Al-Muqît — Le Sustentateur",             550],
+  ["حسيب",   "الحسيب",       "Al-Hassîb — Le Suffisant",               320], // Modifié (س)
+  ["جليل",   "الجليل",       "Al-Jalîl — Le Majestueux",               73],
+  ["كريم",   "الكريم",       "Al-Karîm — Le Très Généreux",            270],
+  ["رقيب",   "الرقيب",       "Ar-Raqîb — Le Gardien attentif",         312],
+  ["مجيب",   "المجيب",       "Al-Mujîb — Celui qui répond aux prières",55],
+  ["واسع",   "الواسع",       "Al-Wâsi' — L'Immensément Vaste",        377], // Modifié (س)
+  ["حكيم",   "الحكيم",       "Al-Hakîm — Le Sage",                    78],
+  ["ودود",   "الودود",       "Al-Wadûd — Le Très Affectueux",          20],
+  ["مجيد",   "المجيد",       "Al-Majîd — Le Très Noble",               57],
+  ["باعث",   "الباعث",       "Al-Bâ'ith — Celui qui ressuscite",       573],
+  ["شهيد",   "الشهيد",       "Ash-Shahîd — Le Témoin universel",        1019], // Modifié (ش)
+  ["حق",      "الحق",         "Al-Haqq — La Vérité absolue",            108],
+  ["وكيل",   "الوكيل",       "Al-Wakîl — Le Garant suprême",           66],
+  ["قوي",   "القوي",        "Al-Qawiyy — Le Très Fort",               116],
+  ["متين",   "المتين",       "Al-Matîn — Le Solide",                   500],
+  ["ولي",   "الولي",        "Al-Waliyy — L'Ami protecteur",           46],
+  ["حميد",   "الحميد",       "Al-Hamîd — Le Digne de louanges",        62],
+  ["محصي",  "المحصي",       "Al-Muhsî — Celui qui dénombre tout",     118], // Modifié (ص)
+  ["مبدئ",  "المبدئ",       "Al-Mubdi' — L'Initiateur",              56],
+  ["معيد",   "المعيد",       "Al-Mu'îd — Le Restaurateur",            124],
+  ["محيي",  "المحيي",       "Al-Muhyî — Celui qui donne la vie",      68],
+  ["مميت",   "المميت",       "Al-Mumît — Celui qui donne la mort",     490],
+  ["حي",     "الحي",         "Al-Hayy — Le Vivant éternel",            18],
+  ["قيوم",  "القيوم",       "Al-Qayyûm — Le Subsistant par Lui-même", 156],
+  ["واجد",   "الواجد",       "Al-Wâjid — Le Trouvant tout",            14],
+  ["ماجد",   "الماجد",       "Al-Mâjid — Le Glorieux",                 48],
+  ["واحد",   "الواحد",       "Al-Wâhid — L'Unique",                    19],
+  ["احد",     "الاحد",        "Al-Ahad — L'Un absolument",              13],
+  ["صمد",    "الصمد",        "As-Samad — Le Seigneur des seigneurs",    104], // Modifié (ص)
+  ["قادر",   "القادر",       "Al-Qâdir — Le Tout Puissant",            305],
+  ["مقتدر","المقتدر",      "Al-Muqtadir — Le Détenteur de toute puissance",744],
+  ["مقدم", "المقدم",       "Al-Muqaddim — Celui qui avance les choses",184],
+  ["مؤخر", "المؤخر",       "Al-Mu'akhkhir — Celui qui reporte",      846],
+  ["اول",    "الاول",        "Al-Awwal — Le Premier sans commencement", 37],
+  ["اخر",      "الاخر",        "Al-Âkhir — Le Dernier sans fin",          801],
+  ["ظاهر",   "الظاهر",       "Az-Zâhir — L'Apparent",                 1006], // Modifié (ظ)
+  ["باطن",   "الباطن",       "Al-Bâtin — Le Caché",                    62],
+  ["والي",   "الوالي",       "Al-Wâlî — Le Gouverneur",                47],
+  ["متعالي","المتعالي",     "Al-Muta'âlî — L'Infiniment Élevé",      551],
+  ["بر",      "البر",         "Al-Barr — Le Bienveillant",               203],
+  ["تواب",  "التواب",       "At-Tawwâb — Celui qui accueille le repentir",409],
+  ["منتقم","المنتقم",      "Al-Muntaqim — Le Vengeur de la justice", 630],
+  ["عفو",   "العفو",        "Al-'Afuww — Le Grand Pardonneur",        156],
+  ["رؤوف",   "الرؤوف",       "Ar-Ra'ûf — Le Très Compatissant",        287],
+  ["مَالِكُ الْمُلْك","مالك الملك","Mâlik ul-Mulk — Maître absolu du Royaume",212],
+  ["ذُو الْجَلَالِ","ذو الجلال والإكرام","Dhûl-Jalâl — Seigneur de Majesté et Bienfaisance",1100],
+  ["مقسط",  "المقسط",       "Al-Muqsit — L'Équitable",               449], // Modifié (س)
+  ["جامع",   "الجامع",       "Al-Jâmi' — Celui qui rassemble tout",    114],
+  ["غني",   "الغني",        "Al-Ghaniyy — L'Infiniment Riche",        960], // Modifié (غ)
+  ["مغني",  "المغني",       "Al-Mughnî — Celui qui enrichit",          1000], // Modifié (غ)
+  ["مانع",   "المانع",       "Al-Mâni' — Celui qui retient",           161],
+  ["ضار",     "الضار",        "Ad-Dârr — Celui qui éprouve",             291], // Modifié (ض)
+  ["نافع",   "النافع",       "An-Nâfi' — Celui qui bienfait",           201],
+  ["نور",     "النور",        "An-Nûr — La Lumière",                     256],
+  ["هادي",   "الهادي",       "Al-Hâdî — Le Guide vers la droiture",    20],
+  ["بديع",   "البديع",       "Al-Badî' — L'Incomparable Innovateur",    87],
+  ["باقي",   "الباقي",       "Al-Bâqî — L'Éternellement Subsistant",   113],
+  ["وارث",   "الوارث",       "Al-Wârith — L'Héritier ultime",          707],
+  ["رشيد",   "الرشيد",       "Ar-Rashîd — Le Guide vers le bon chemin", 1214], // Modifié (ش)
+  ["صبور",   "الصبور",       "As-Sabûr — Le Très Patient",             268], // Modifié (ص)
+];
+// Build the NAMES array, using pre-computed weights where available,
+// falling back to abjad calculation for verification
+const NAMES = NAMES_DATA.map(([display, clean, fr, precomputed]) => {
+  const computed = abjadWeight(clean);
+  // Use precomputed if available and > 0, else use computed
+  const weight = (precomputed && precomputed > 0) ? precomputed : computed;
+  return { display, clean, fr, weight };
+});
+
+// OPTIMISATION 2 — Tableau trié par poids croissant pour l'élagage (pruning)
+// On trie une COPIE pour ne pas perturber l'affichage d'origine (renderNamesGrid)
+const NAMES_SORTED = [...NAMES].sort((a, b) => a.weight - b.weight);
+
+// Tableau des sommes de préfixes : prefixMin[i] = somme des i plus petits poids
+// parmi NAMES_SORTED[0..i-1]. Précalculé une seule fois pour des prunings O(1).
+const numNames = NAMES_SORTED.length; // Bug 7 corrigé : renommé en numNames pour éviter de masquer le `n` de .map((n,i))
+const prefixMin = new Array(numNames + 1).fill(0);
+for (let i = 0; i < numNames; i++) {
+  prefixMin[i + 1] = prefixMin[i] + NAMES_SORTED[i].weight;
+}
+
+// ═══════════════════════════════════════════════════════
+// 3. RENDU DU TABLEAU DES NOMS
+// ═══════════════════════════════════════════════════════
+function renderNamesGrid() {
+  const grid = document.getElementById('names-grid');
+  grid.innerHTML = NAMES.map((nm, i) => `
+    <div class="name-chip" onclick="setTarget(${nm.weight})" title="${nm.fr}">
+      <span class="nc-ar">${nm.display}</span>
+      <div class="nc-info">
+        <div class="nc-weight">${nm.weight}</div>
+        <div class="nc-fr">${nm.fr.split('—')[0].trim()}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setTarget(w) {
+  document.getElementById('target').value = w;
+  document.getElementById('target').focus();
+  document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════
+// 4. CALCULATRICE ABJAD
+// ═══════════════════════════════════════════════════════
+function onCalcInput(text) {
+  const w = abjadWeight(text);
+  document.getElementById('calc-output').textContent = w > 0 ? w : '—';
+}
+
+// ═══════════════════════════════════════════════════════
+// 5. ALGORITHME DE RECHERCHE — COMBINAISONS EXACTES
+//    OPTIMISATION 2 : Backtracking avec élagage fort (pruning)
+//    sur tableau trié + sommes de préfixes précalculées.
+// ═══════════════════════════════════════════════════════
+let isSearching = false;
+let shouldStop  = false;
+let foundResults = [];
+let checkedCount = 0;
+let prunedCount  = 0;   // compteur de branches élaguées
+
+function factorial(n) {
+  let r = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) r *= i;
+  return r;
+}
+function countCombinations(n, k) {
+  // n et k ici sont des paramètres locaux de la fonction, pas des variables globales
+  if (k > n || k < 0) return 0;
+  if (k === 0 || k === n) return 1;
+  let num = 1n, den = 1n;
+  for (let i = 0; i < k; i++) {
+    num *= BigInt(n - i);
+    den *= BigInt(i + 1);
+  }
+  return Number(num / den);
+}
+
+// ── Rendering engine ──────────────────────────────────
+// All display is handled here : sort, filter, paginate, render.
+// Bug 10 corrigé : ces déclarations sont maintenant AVANT clearAll() qui les référence.
+const PAGE_SIZE = 50; // cards per page
+let currentPage = 0;
+let filteredResults = []; // indices into sortedResults
+let sortedResults  = []; // foundResults sorted (الله first)
+let resultSearchTexts = [];
+
+function clearAll() {
+  foundResults = [];
+  sortedResults = [];
+  filteredResults = [];
+  resultSearchTexts = [];
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('results-badge').textContent = '0 résultat';
+  document.getElementById('results-search-wrap').style.display = 'none';
+  document.getElementById('pagination-wrap').style.display = 'none';
+  document.getElementById('target').value = '';
+  localStorage.removeItem('asrar_last_search');
+  dismissBanner();
+}
+
+function addResult(indices) {
+  foundResults.push([...indices]);
+  // Live badge update only — rendering is deferred to renderPage()
+  const count = foundResults.length;
+  document.getElementById('results-badge').textContent =
+    count === 1 ? '1 résultat' : `${count} résultats`;
+  document.getElementById('results-section').style.display = 'block';
+}
+
+
+function hasAllah(indices) {
+  return indices.some(i => NAMES_SORTED[i].clean === 'الله');
+}
+
+function buildResultHTML(indices) {
+  const names   = indices.map(i => NAMES_SORTED[i]);
+  const total   = names.reduce((s, nn) => s + nn.weight, 0);
+  const formula = names.map(nn => `${nn.weight}`).join(' + ') + ` = ${total}`;
+  const isAllah = names.some(nn => nn.clean === 'الله');
+  const badge   = isAllah
+    ? `<span class="rc-allah-badge">★ الله</span>`
+    : '';
+  return `
+    <div class="result-card${isAllah ? ' has-allah' : ''}">
+      <div class="rc-arabic">${names.map(nn => nn.display).join('  +  ')}${badge}</div>
+      <div><span class="rc-formula">${formula}</span></div>
+      <div class="rc-defs">${names.map(nn => `<b>${nn.display}</b> — ${nn.fr}`).join('<br>')}</div>
+    </div>`;
+}
+
+// Build searchable text for a result (used by filter)
+function resultSearchText(indices) {
+  return indices.map(i => {
+    const nn = NAMES_SORTED[i];
+    return `${nn.display} ${nn.clean} ${nn.fr} ${nn.weight}`;
+  }).join(' ').toLowerCase();
+}
+
+
+function finalizeResults() {
+  // 1. Sort: الله-containing combos first, then by index order
+  sortedResults = [...foundResults].sort((a, b) => {
+    const aA = hasAllah(a) ? 0 : 1;
+    const bA = hasAllah(b) ? 0 : 1;
+    return aA - bA;
+  });
+
+  // 2. Pre-build search texts
+  resultSearchTexts = sortedResults.map(resultSearchText);
+
+  // 3. Show filter bar if more than 10 results
+  const wrap = document.getElementById('results-search-wrap');
+  wrap.style.display = sortedResults.length > 10 ? 'flex' : 'none';
+
+  // 4. Clear filter and render page 0
+  document.getElementById('results-filter').value = '';
+  document.getElementById('filter-clear').style.display = 'none';
+  document.getElementById('filter-count').textContent = '';
+  filteredResults = sortedResults.map((_, i) => i);
+  currentPage = 0;
+  renderPage();
+}
+
+function renderPage() {
+  const list  = document.getElementById('results-list');
+  const total = filteredResults.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const start = currentPage * PAGE_SIZE;
+  const end   = Math.min(start + PAGE_SIZE, total);
+  const slice = filteredResults.slice(start, end);
+
+  list.innerHTML = slice.map(i => buildResultHTML(sortedResults[i])).join('');
+
+  // Pagination
+  const pWrap = document.getElementById('pagination-wrap');
+  if (pages <= 1) {
+    pWrap.style.display = 'none';
+    return;
+  }
+  pWrap.style.display = 'flex';
+
+  // Build compact pagination: prev · 1 … cur-1 cur cur+1 … last · next
+  let html = '';
+  html += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>‹</button>`;
+
+  const pageNums = new Set([0, pages - 1, currentPage - 1, currentPage, currentPage + 1].filter(p => p >= 0 && p < pages));
+  const sorted = [...pageNums].sort((a, b) => a - b);
+  let prev = -1;
+  for (const p of sorted) {
+    if (prev >= 0 && p - prev > 1) html += `<span class="page-info">…</span>`;
+    html += `<button class="page-btn${p === currentPage ? ' active' : ''}" onclick="goPage(${p})">${p + 1}</button>`;
+    prev = p;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage >= pages - 1 ? 'disabled' : ''}>›</button>`;
+  html += `<span class="page-info">${start + 1}–${end} / ${total}</span>`;
+  pWrap.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  if (p < 0 || p >= pages) return;
+  currentPage = p;
+  renderPage();
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function onFilterInput() {
+  const q = document.getElementById('results-filter').value.trim().toLowerCase();
+  document.getElementById('filter-clear').style.display = q ? 'inline-block' : 'none';
+
+  if (!q) {
+    filteredResults = sortedResults.map((_, i) => i);
+    document.getElementById('filter-count').textContent = '';
+  } else {
+    filteredResults = [];
+    for (let i = 0; i < resultSearchTexts.length; i++) {
+      if (resultSearchTexts[i].includes(q)) filteredResults.push(i);
+    }
+    const fc = filteredResults.length;
+    document.getElementById('filter-count').textContent =
+      fc === 0 ? 'Aucun résultat' : `${fc} résultat${fc > 1 ? 's' : ''}`;
+  }
+  currentPage = 0;
+  renderPage();
+}
+
+function clearFilter() {
+  document.getElementById('results-filter').value = '';
+  onFilterInput();
+  document.getElementById('results-filter').focus();
+}
+
+// ── Algorithme principal ───────────────────────────────
+// NAMES_SORTED est trié par poids croissant.
+// À chaque nœud on dispose de deux bornes :
+//   • borne basse  : currentSum + somme des `remaining` plus petits poids disponibles
+//   • borne haute  : currentSum + somme des `remaining` plus grands poids disponibles
+// Si borne_basse  > target → toute la sous-arbre est trop grande → break (+ pruning)
+// Si borne_haute  < target → même en prenant les plus grands on n'atteint pas → continue
+async function search(target, k, startIdx, current, currentSum, depth) {
+  if (shouldStop) return;
+
+  const remaining = k - depth;
+
+  if (remaining === 0) {
+    if (currentSum === target) addResult(current);
+    checkedCount++;
+    if (checkedCount % 50000 === 0) {
+      const pct = Math.min(99, Math.round((startIdx / numNames) * 100));
+      updateProgress(pct);
+      await new Promise(r => setTimeout(r, 0));
+    }
+    return;
+  }
+
+  // Nombre d'éléments disponibles à partir de startIdx
+  const available = numNames - startIdx;
+  if (available < remaining) return; // pas assez d'éléments
+
+  for (let i = startIdx; i <= numNames - remaining; i++) {
+    if (shouldStop) return;
+
+    const newSum = currentSum + NAMES_SORTED[i].weight;
+
+    // ── ÉLAGAGE 1 : borne basse ──────────────────────────
+    // La somme minimale atteignable avec les `remaining-1` éléments suivants
+    // (les plus petits disponibles = indices i+1 .. i+remaining-1)
+    // = newSum + prefixMin[i + remaining] - prefixMin[i + 1]
+    const minReachable = newSum + (prefixMin[i + remaining] - prefixMin[i + 1]);
+    if (minReachable > target) {
+      // Tous les éléments suivants sont encore plus lourds → on coupe la branche
+      prunedCount++;
+      break; // break (pas continue) car NAMES_SORTED est trié
+    }
+
+    // ── ÉLAGAGE 2 : borne haute ──────────────────────────
+    // La somme maximale atteignable avec les `remaining-1` plus grands restants
+    // (les `remaining-1` derniers éléments de NAMES_SORTED[i+1..numNames-1])
+    // = prefixMin[numNames] - prefixMin[numNames - (remaining - 1)]
+    const maxReachable = newSum + (prefixMin[numNames] - prefixMin[numNames - (remaining - 1)]);
+    if (maxReachable < target) {
+      // Même en prenant les plus grands éléments restants, on n'atteint pas la cible
+      prunedCount++;
+      continue;
+    }
+
+    current.push(i);
+    await search(target, k, i + 1, current, newSum, depth + 1);
+    current.pop();
+
+    // Progress update at top level
+    if (depth === 0 && i % 10 === 0) {
+      const pct = Math.round((i / (numNames - remaining)) * 100);
+      updateProgress(pct);
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+}
+
+function updateProgress(pct) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent =
+    `Vérification… ${pct}% — ${foundResults.length} combinaison(s) trouvée(s) · ${prunedCount.toLocaleString('fr-FR')} branches élaguées`;
+}
+
+// Bug 8 : Avertissement de performance pour k ≥ 8
+function onKSelectChange() {
+  const k = parseInt(document.getElementById('k-select').value, 10);
+  const warn = document.getElementById('perf-warning');
+  warn.style.display = k >= 8 ? 'block' : 'none';
+}
+
+function handleSearch() {
+  // Paywall au clic : abonné → lance la vraie recherche ; sinon → portail d'abonnement.
+  ensureAccess(() => { runSearch(); });
+}
+
+async function runSearch() {
+  if (isSearching) {
+    shouldStop = true;
+    document.getElementById('btn-label').textContent = 'Arrêt en cours…';
+    document.getElementById('btn-search').disabled = true;
+    return;
+  }
+
+  const rawTarget = document.getElementById('target').value.trim();
+  const target = parseInt(rawTarget, 10);
+  const k = parseInt(document.getElementById('k-select').value, 10);
+
+  if (!rawTarget || isNaN(target) || target < 1) {
+    alert('Veuillez saisir un poids cible valide (nombre entier positif).');
+    return;
+  }
+
+  // Clear previous results
+  foundResults = [];
+  checkedCount = 0;
+  prunedCount  = 0;
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('results-badge').textContent = '0 résultat';
+
+  isSearching = true;
+  shouldStop  = false;
+
+  document.getElementById('btn-icon').textContent = '⏹';
+  document.getElementById('btn-label').textContent = 'Arrêter la recherche';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('progress-label').textContent = 'Démarrage…';
+
+  const est = countCombinations(numNames, k);
+  document.getElementById('stop-hint').textContent =
+    `~${est.toLocaleString('fr-FR')} combinaisons théoriques`;
+
+  await new Promise(r => setTimeout(r, 10));
+
+  const t0 = performance.now();
+  await search(target, k, 0, [], 0, 0);
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+
+  isSearching = false;
+  document.getElementById('btn-icon').textContent = '🔍';
+  document.getElementById('btn-label').textContent = 'Rechercher';
+  document.getElementById('btn-search').disabled = false;
+  document.getElementById('progress-fill').style.width = '100%';
+
+  // OPTIMISATION 3 — Sauvegarde dans localStorage
+  if (!shouldStop && foundResults.length > 0) {
+    try {
+      localStorage.setItem('asrar_last_search', JSON.stringify({
+        target, k,
+        results: foundResults,
+        elapsed,
+        date: new Date().toLocaleString('fr-FR')
+      }));
+    } catch(e) { /* quota exceeded — silently ignore */ }
+  }
+
+  // Tri الله + rendu paginé
+  finalizeResults();
+
+  const speedNote = `<span class="speed-badge">⚡ ${elapsed}s · ${prunedCount.toLocaleString('fr-FR')} branches élaguées</span>`;
+
+  if (shouldStop) {
+    document.getElementById('progress-label').innerHTML =
+      `Recherche interrompue — ${foundResults.length} résultat(s) partiel(s) ${speedNote}`;
+  } else {
+    document.getElementById('progress-label').innerHTML =
+      `Terminé — ${foundResults.length} combinaison(s) pour le poids ${target} ${speedNote}`;
+  }
+
+  if (foundResults.length === 0 && !shouldStop) {
+    document.getElementById('results-section').style.display = 'block';
+    document.getElementById('results-list').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔎</div>
+        <p>Aucune combinaison de <strong>${k} noms</strong> ne donne le poids <strong>${target}</strong>.<br>
+        Essayez un autre nombre de noms ou un autre poids cible.</p>
+      </div>`;
+    document.getElementById('results-search-wrap').style.display = 'none';
+    document.getElementById('pagination-wrap').style.display = 'none';
+  }
+  shouldStop = false;
+}
+
+// ═══════════════════════════════════════════════════════
+// OPTIMISATION 3 — Restauration depuis localStorage
+// ═══════════════════════════════════════════════════════
+let savedSearch = null;
+
+function checkSavedSearch() {
+  try {
+    const raw = localStorage.getItem('asrar_last_search');
+    if (!raw) return;
+    savedSearch = JSON.parse(raw);
+    const banner = document.getElementById('restore-banner');
+    document.getElementById('rb-desc').textContent =
+      `poids ${savedSearch.target}, ${savedSearch.k} noms — ${savedSearch.results.length} résultat(s) — ${savedSearch.date}`;
+    banner.style.display = 'flex';
+  } catch(e) { /* corrupt data */ }
+}
+
+function restoreLastSearch() {
+  if (!savedSearch) return;
+  dismissBanner();
+  document.getElementById('target').value = savedSearch.target;
+
+  // Bug 9 corrigé : vérifier que l'option k sauvegardée existe dans le select
+  const kSelect = document.getElementById('k-select');
+  const kExists = Array.from(kSelect.options).some(opt => parseInt(opt.value, 10) === savedSearch.k);
+  if (kExists) {
+    kSelect.value = savedSearch.k;
+  } else {
+    // Fallback : sélectionner 3 (valeur par défaut) si l'option n'existe plus
+    kSelect.value = '3';
+    console.warn(`restoreLastSearch : k=${savedSearch.k} n'existe pas dans le select, fallback sur 3.`);
+  }
+  onKSelectChange(); // mettre à jour l'avertissement de performance
+
+  foundResults = savedSearch.results;
+
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('results-section').style.display = 'none';
+
+  // Re-sort et affichage paginé
+  finalizeResults();
+
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('progress-label').innerHTML =
+    `Résultats restaurés — ${savedSearch.results.length} combinaison(s) pour le poids ${savedSearch.target} <span class="speed-badge">💾 Restauré</span>`;
+  document.getElementById('stop-hint').textContent = `Sauvegardé le ${savedSearch.date}`;
+  document.getElementById('results-badge').textContent =
+    `${savedSearch.results.length} résultat${savedSearch.results.length > 1 ? 's' : ''}`;
+  document.getElementById('results-section').style.display = 'block';
+}
+
+function dismissBanner() {
+  document.getElementById('restore-banner').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// 6. INITIALISATION
+// ═══════════════════════════════════════════════════════
+requireAuth(() => {
+  renderNamesGrid();
+  checkSavedSearch();
+
+  document.getElementById('target').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSearch();
+  });
+});
+</script>
+<script src="/pwa.js" defer></script>
+</body>
+</html>
