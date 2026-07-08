@@ -30,11 +30,6 @@
                    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
     .sub-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
     .sub-grid .menu-item h3 { font-size:.9rem; margin-top:8px; }
-    .menu-item { position:relative; }
-    .fav-star { position:absolute; top:5px; right:7px; background:none; border:none;
-                color:#C9A961; font-size:1.15rem; line-height:1; padding:2px; cursor:pointer; opacity:.8; }
-    .fav-star:hover { opacity:1; }
-    .menu-item.is-fav { outline:1px solid rgba(201,169,97,.55); outline-offset:-1px; }
   </style>
   <script src="/js/theme.js"></script>
   <script src="/js/nav.js"></script>
@@ -73,13 +68,14 @@
         <h2 class="group-title">ASRAR PRO</h2>
         <div class="sub-grid">
           <a href="../asrar/asrar.html" class="menu-item"><div style="font-size:2rem;">📜</div><h3>Secret Mystique</h3></a>
-          <a href="../abajad/abajad.html" class="menu-item"><div style="font-size:2rem;">🔢</div><h3>Numérologie</h3></a>
+          <a href="../abajad/abajad.html" class="menu-item"><div style="font-size:2rem;">🔢</div><h3>Abajad</h3></a>
           <a href="../planete/planete.html" class="menu-item"><div style="font-size:2rem;">🌍</div><h3>Planète</h3></a>
           <a href="../Benefits/index.html" class="menu-item"><div style="font-size:2rem;">🕌</div><h3>Noms d'Allah</h3></a>
           <a href="../combinaisons/combinaisons.html" class="menu-item"><div style="font-size:2rem;">✨</div><h3>Combinaisons Mystiques</h3></a>
           <a href="../rouwhania/index.html" class="menu-item"><div style="font-size:2rem;">🌀</div><h3>Rouwhanes</h3></a>
           <a href="../bibliotheque/bibliotheque.html" class="menu-item"><div style="font-size:2rem;">📚</div><h3>Bibliothèque</h3></a>
           <a href="../marche/marche.html" class="menu-item"><div style="font-size:2rem;">🛒</div><h3>Marché Des Produits Mystiques</h3></a>
+          <a href="../boutique/boutique.html" class="menu-item"><div style="font-size:2rem;">🏪</div><h3>Ma Boutique</h3></a>
         </div>
       </section>
 
@@ -123,51 +119,6 @@
         avatar.innerText = name.charAt(0).toUpperCase();
       }
     });
-
-    // ── Favoris de menus : épingler ses modules en tête (persistant) ──
-    (function initMenuFavorites() {
-      const FAV_KEY = 'asrar_menu_favs';
-      let favs = [];
-      try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { favs = []; }
-      const save = () => { try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) {} };
-
-      document.querySelectorAll('.sub-grid').forEach((grid) => {
-        const items = Array.from(grid.querySelectorAll('.menu-item'));
-        if (items.length < 2) return; // rien à réorganiser
-
-        function reorder() {
-          Array.from(grid.querySelectorAll('.menu-item'))
-            .sort((a, b) => {
-              const ia = favs.indexOf(a.getAttribute('href'));
-              const ib = favs.indexOf(b.getAttribute('href'));
-              return (ia < 0 ? Infinity : ia) - (ib < 0 ? Infinity : ib);
-            })
-            .forEach((it) => grid.appendChild(it));
-        }
-
-        items.forEach((a) => {
-          const key = a.getAttribute('href');
-          if (favs.includes(key)) a.classList.add('is-fav');
-          const star = document.createElement('button');
-          star.className = 'fav-star';
-          star.type = 'button';
-          star.setAttribute('aria-label', 'Épingler ce module');
-          star.textContent = favs.includes(key) ? '★' : '☆';
-          star.addEventListener('click', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const i = favs.indexOf(key);
-            if (i >= 0) favs.splice(i, 1); else favs.unshift(key);
-            save();
-            const on = favs.includes(key);
-            star.textContent = on ? '★' : '☆';
-            a.classList.toggle('is-fav', on);
-            reorder();
-          });
-          a.appendChild(star);
-        });
-        reorder();
-      });
-    })();
   </script>
     <script src="/pwa.js" defer></script>
 </body>
