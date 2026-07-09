@@ -109,6 +109,25 @@ module.exports = async (req, res) => {
       const shopLogo = activeSeller
         ? ((seller && seller.shop && seller.shop.logo) || "")
         : ((boutique && boutique.img) || "");
+      // Le numéro affiché aux acheteurs vient TOUJOURS de la fiche boutique :
+      // le vendeur n'a plus à le ressaisir à chaque produit.
+      const shopPhone = activeSeller
+        ? ((seller && seller.shop && seller.shop.phone) || "")
+        : ((boutique && boutique.number) || "");
+
+      // Galerie : 2 images minimum, 5 maximum (contrôle aussi côté serveur).
+      const images = Array.isArray(product.images)
+        ? product.images.map((u) => str(u, 500)).filter(Boolean).slice(0, 5)
+        : [];
+      if (images.length < 2) {
+        return res.status(400).json({ error: "Ajoutez au moins 2 images du produit." });
+      }
+      if (!str(product.description, 1000)) {
+        return res.status(400).json({ error: "La description est requise." });
+      }
+      if (!str(product.chain, 60)) {
+        return res.status(400).json({ error: "La catégorie est requise." });
+      }
 
       // Clé existante (édition) si elle nous appartient, sinon nouvelle.
       let key = str(product.key, 64);
@@ -128,9 +147,10 @@ module.exports = async (req, res) => {
         produit: nom,
         Prix: prix,
         devise: str(product.devise, 8) || "FCFA",
-        Image: str(product.Image, 500),
+        images: images,              // galerie (2 à 5)
+        Image: images[0],            // compat : image principale
         description: str(product.description, 1000),
-        number: digits(product.number, 20),
+        number: digits(shopPhone, 20),   // téléphone repris de la fiche boutique
         chain: str(product.chain, 60),
         email: user.email,           // contact = email du vendeur (jeton vérifié)
         uid: user.uid,               // propriété
