@@ -40,13 +40,17 @@ module.exports = async (req, res) => {
 
   try {
     if (action === "me") {
-      const products = await myProducts(db, user.uid, boutique && boutique._id);
+      const products = await myProducts(db, user.uid, user.email);
       if (activeSeller) {
         return res.status(200).json({ active: true, seller, products, mode: "seller" });
       }
       if (boutique) {
-        // Lie l'uid à la boutique au 1er accès → détection durable ensuite.
-        if (!boutique.uid) { try { await db.ref("profile_clients/" + boutique._id + "/uid").set(user.uid); } catch (_) {} }
+        // Lie/resynchronise l'uid de la fiche boutique avec le compte réellement
+        // connecté (identifié par email). Un uid périmé (compte recréé) laissait
+        // la boutique visible mais empêchait de retrouver ses produits.
+        if (boutique.uid !== user.uid) {
+          try { await db.ref("profile_clients/" + boutique._id + "/uid").set(user.uid); } catch (_) {}
+        }
         const synth = {
           shop: {
             name: boutique.profile_name || "Ma boutique",
@@ -113,7 +117,7 @@ module.exports = async (req, res) => {
         if (!cur) return res.status(404).json({ error: "Produit introuvable." });
         // Accepte aussi les produits hérités (vendeurId) : sinon leur édition
         // était systématiquement refusée.
-        if (!estProprietaire(cur, user.uid, boutique && boutique._id)) {
+        if (!estProprietaire(cur, user.uid, user.email)) {
           return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
         }
       } else {
@@ -143,7 +147,7 @@ module.exports = async (req, res) => {
       if (!key) return res.status(400).json({ error: "Clé produit requise." });
       const cur = (await db.ref("det_produits/" + key).once("value")).val();
       if (!cur) return res.status(404).json({ error: "Produit introuvable." });
-      if (!estProprietaire(cur, user.uid, boutique && boutique._id)) {
+      if (!estProprietaire(cur, user.uid, user.email)) {
         return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
       }
       await db.ref("det_produits/" + key).remove();
@@ -156,27 +160,30 @@ module.exports = async (req, res) => {
   }
 };
 
-// Récupère les produits du vendeur. Historiquement, l'appartenance a été stockée
-// sous plusieurs champs selon l'origine du produit (`uid` pour ceux créés depuis
-// « Ma boutique », `vendeurId` pour ceux créés depuis l'administration). On lit
-// donc l'ensemble du nœud et on filtre sur tous les identifiants possibles,
-// sinon les anciens produits n'apparaissent jamais dans « Mes produits ».
-async function myProducts(db, uid, boutiqueId) {
+// Récupère les produits du vendeur.
+// On ne peut pas se fier au seul `uid` : le `uid` enregistré dans la fiche
+// boutique (profile_clients) peut différer de celui porté par les produits
+// (comptes recréés, migrations). L'email, lui, est stable et provient du jeton
+// Firebase vérifié côté serveur — c'est donc le critère principal.
+async function myProducts(db, uid, email) {
   const snap = await db.ref("det_produits").once("value");
   const out = [];
   snap.forEach((c) => {
     const v = c.val() || {};
-    if (estProprietaire(v, uid, boutiqueId)) out.push({ _key: c.key, ...v });
+    if (estProprietaire(v, uid, email)) out.push({ _key: c.key, ...v });
   });
   return out;
 }
 
-// Vrai si le produit appartient à l'utilisateur (uid direct, vendeurId hérité,
-// ou rattachement à sa boutique profile_clients).
-function estProprietaire(prod, uid, boutiqueId) {
+// Vrai si le produit appartient à l'utilisateur : correspondance sur l'uid
+// courant OU sur l'email vérifié (identifiant stable dans le temps).
+function estProprietaire(prod, uid, email) {
   if (!prod) return false;
-  if (prod.uid) return prod.uid === uid;
-  if (prod.vendeurId) return prod.vendeurId === uid || (boutiqueId && prod.vendeurId === boutiqueId);
+  const mailProd = typeof prod.email === "string" ? prod.email.toLowerCase() : "";
+  const mailUser = typeof email === "string" ? email.toLowerCase() : "";
+  if (mailProd && mailUser && mailProd === mailUser) return true;
+  if (prod.uid && uid && prod.uid === uid) return true;
+  if (prod.vendeurId && uid && prod.vendeurId === uid) return true;   // ancien format
   return false;
 }
 
