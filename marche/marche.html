@@ -67,12 +67,11 @@
     <div class="modal-box">
       <span class="modal-close" onclick="closeModal()">✕</span>
       <img id="m-img" class="modal-img" src="" alt="" onerror="this.style.display='none'">
+      <div id="m-thumbs" class="m-thumbs" style="display:none;"></div>
       <h3 id="m-name"></h3>
       <div id="m-price" style="font-size:1.3rem; font-weight:700; color:#6bffb8; margin:8px 0;"></div>
       <div class="vendor-block" id="m-vendor-block"></div>
       <div id="m-desc" style="line-height:1.7; border-top:1px solid #1F1F23; padding-top:14px;"></div>
-      <div class="contact-btns" id="m-contact" style="margin-top:14px;"></div>
-
       <div class="social-bar" id="m-social">
         <button class="like-btn" id="m-like-btn" onclick="toggleProductLike()">
           <span id="m-like-icon">🤍</span> <span id="m-like-count">0</span>
@@ -85,8 +84,11 @@
       <div class="comments-panel" id="m-comments-panel">
         <div class="comment-list" id="m-comment-list"></div>
         <div class="comment-input-row">
-          <input type="text" id="m-comment-input" maxlength="500" placeholder="Écrire un commentaire…">
-          <button onclick="postProductComment()">Envoyer</button>
+          <textarea id="m-comment-input" maxlength="500" rows="1"
+                    placeholder="Écrire un commentaire…"
+                    oninput="autoGrowComment(this)"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();postProductComment();}"></textarea>
+          <button class="comment-send" onclick="postProductComment()" aria-label="Envoyer">➤</button>
         </div>
       </div>
 

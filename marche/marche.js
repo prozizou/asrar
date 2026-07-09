@@ -36,6 +36,10 @@ async function loadMarketData() {
     buildFilters();
     renderProducts(allProducts);
     updateCartCount();
+    // Popularité (likes + commentaires) : chargée après l'affichage initial pour
+    // ne pas retarder le rendu, puis on retrie et on rafraîchit.
+    chargerPopularite();
+    chargerLikesVendeurs();
   } catch (e) {
     document.getElementById('prodGrid').innerHTML =
       '<p style="color:#888;grid-column:1/-1;text-align:center;padding:40px;">Erreur de chargement des produits.<br><small>' + e.message + '</small></p>';
@@ -46,7 +50,9 @@ async function loadMarketData() {
 function extractVendors() {
   const vendorMap = new Map();
   allProducts.forEach(p => {
-    const id = p.uid || p.vendeurId || 'inconnu';   // utilise uid ou vendeurId
+    // Identifiant STABLE : l'email. L'uid peut différer d'un produit à l'autre
+    // (compte recréé, produit réédité) et dupliquait alors la même boutique.
+    const id = vendorKey(p);
     if (!vendorMap.has(id)) {
       vendorMap.set(id, {
         id: id,
@@ -63,6 +69,99 @@ function extractVendors() {
   allVendors = Array.from(vendorMap.values());
 }
 
+// Clé d'identification d'un vendeur, commune à tout le module.
+function vendorKey(p) {
+  return (p.email && String(p.email).toLowerCase()) || p.uid || p.vendeurId || 'inconnu';
+}
+
+// Firebase interdit . # $ / [ ] dans les clés : on assainit l'email.
+function safeKey(k) {
+  return String(k).replace(/[.#$/\[\]]/g, '_');
+}
+
+// 1 → "1", 999 → "999", 1000 → "1k", 12500 → "12,5k", 1000000 → "1M"
+function formatCount(n) {
+  n = Number(n) || 0;
+  if (n < 1000) return String(n);
+  if (n < 1000000) {
+    const v = n / 1000;
+    return (v < 10 ? v.toFixed(1).replace(/\.0$/, '').replace('.', ',') : Math.floor(v)) + 'k';
+  }
+  const v = n / 1000000;
+  return (v < 10 ? v.toFixed(1).replace(/\.0$/, '').replace('.', ',') : Math.floor(v)) + 'M';
+}
+
+// ==================== POPULARITÉ (tri des produits) ====================
+// Score = likes + commentaires + achats. Sert à prioriser les meilleurs produits.
+let popularite = {};      // { [prodKey]: { likes, comments, orders } }
+let vendorLikes = {};     // { [safeKey(vendorId)]: { count, liked } }
+
+async function chargerPopularite() {
+  try {
+    const db = firebase.database();
+    const [likesSnap, comsSnap, ordersSnap] = await Promise.all([
+      db.ref('ratings/product').once('value'),
+      db.ref('comments/product').once('value'),
+      db.ref('orders_count').once('value').catch(() => null)
+    ]);
+    const likes = likesSnap.val() || {};
+    const coms = comsSnap.val() || {};
+    const orders = (ordersSnap && ordersSnap.val()) || {};
+
+    popularite = {};
+    allProducts.forEach(p => {
+      popularite[p._key] = {
+        likes: Object.keys(likes[p._key] || {}).length,
+        comments: Object.keys(coms[p._key] || {}).length,
+        orders: Number(orders[p._key] || 0)
+      };
+    });
+    filterProducts();   // retrie et réaffiche
+  } catch (e) { /* la popularité est un bonus : on n'interrompt pas l'affichage */ }
+}
+
+// Score de popularité : les achats pèsent le plus, puis les likes, puis les commentaires.
+function scorePopularite(p) {
+  const s = popularite[p._key];
+  if (!s) return 0;
+  return s.orders * 5 + s.likes * 3 + s.comments;
+}
+
+// ==================== LIKES DES BOUTIQUES ====================
+async function chargerLikesVendeurs() {
+  try {
+    const db = firebase.database();
+    const uid = firebase.auth().currentUser?.uid;
+    const snap = await db.ref('ratings/vendor').once('value');
+    const val = snap.val() || {};
+    vendorLikes = {};
+    allVendors.forEach(v => {
+      const k = safeKey(v.id);
+      const entry = val[k] || {};
+      vendorLikes[k] = { count: Object.keys(entry).length, liked: !!(uid && entry[uid]) };
+    });
+    buildVendorSection();
+  } catch (e) { /* non bloquant */ }
+}
+
+function toggleVendorLike(vendorId, ev) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  const uid = firebase.auth().currentUser?.uid;
+  if (!uid) return;
+  const k = safeKey(vendorId);
+  const ref = firebase.database().ref(`ratings/vendor/${k}/${uid}`);
+  const etait = vendorLikes[k] && vendorLikes[k].liked;
+
+  // Mise à jour optimiste de l'affichage, puis écriture.
+  vendorLikes[k] = {
+    count: Math.max(0, (vendorLikes[k]?.count || 0) + (etait ? -1 : 1)),
+    liked: !etait
+  };
+  buildVendorSection();
+
+  (etait ? ref.remove() : ref.set(5)).catch(() => chargerLikesVendeurs());
+}
+
 // ==================== SECTION VENDEURS (SCROLL HORIZONTAL) ====================
 function buildVendorSection() {
   const scroll = document.getElementById('vendorsScroll');
@@ -70,16 +169,23 @@ function buildVendorSection() {
     document.getElementById('vendorsSection').style.display = 'none';
     return;
   }
-  scroll.innerHTML = allVendors.map(v => `
+  scroll.innerHTML = allVendors.map(v => {
+    const k = safeKey(v.id);
+    const l = vendorLikes[k] || { count: 0, liked: false };
+    return `
     <div class="vendor-card" onclick="openVendorShop('${v.id}')">
       <div class="vendor-avatar">
         ${v.avatar ? `<img src="${escapeHtml(v.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.innerHTML='🔮'">` : '🔮'}
       </div>
       <div class="vendor-name">${escapeHtml(v.name)}</div>
       <div class="vendor-specialty">${escapeHtml(v.specialty)}</div>
-      <div class="vendor-rating">⭐ ${v.rating}</div>
-    </div>
-  `).join('');
+      <button class="vendor-like${l.liked ? ' liked' : ''}"
+              onclick="toggleVendorLike('${v.id}', event)"
+              aria-label="Aimer cette boutique">
+        <span>${l.liked ? '❤️' : '🤍'}</span> <span>${formatCount(l.count)}</span>
+      </button>
+    </div>`;
+  }).join('');
 }
 
 // ==================== FILTRES ====================
@@ -113,6 +219,12 @@ function filterProducts() {
     (p.description || '').toLowerCase().includes(q) ||
     (p.vendeur || '').toLowerCase().includes(q)
   );
+  // Priorise les meilleurs : achats, puis likes, puis commentaires.
+  // À score égal, les plus récents d'abord.
+  filtered = filtered.slice().sort((a, b) => {
+    const d = scorePopularite(b) - scorePopularite(a);
+    return d !== 0 ? d : (Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+  });
   renderProducts(filtered);
 }
 
@@ -120,11 +232,13 @@ function filterProducts() {
 function renderProducts(products) {
   const grid = document.getElementById('prodGrid');
   if (products.length === 0) {
-    grid.innerHTML = '<p style="color:#888;grid-column:1/-1;text-align:center;padding:40px;">Aucun produit trouvé.</p>';
+    grid.innerHTML = '<p style="color:#888;text-align:center;padding:40px;width:100%;">Aucun produit trouvé.</p>';
     return;
   }
+  // Liste en carrousel horizontal, sans limite de nombre.
   grid.innerHTML = products.map(p => {
-    const vendor = allVendors.find(v => v.id === (p.uid || p.vendeurId));
+    const vendor = allVendors.find(v => v.id === vendorKey(p));
+    const s = popularite[p._key] || { likes: 0, comments: 0 };
     return `
       <div class="prod-card" onclick="gatedOpenProduct('${p._key}')">
         ${p.Image ? `<img class="prod-img" src="${escapeHtml(p.Image)}" alt="${escapeHtml(p.produit || '')}" loading="lazy" onerror="this.outerHTML='<div class=prod-img-placeholder>🔮</div>'">` : '<div class="prod-img-placeholder">🔮</div>'}
@@ -132,6 +246,7 @@ function renderProducts(products) {
           <div class="prod-name">${escapeHtml(p.produit || 'Produit')}</div>
           <div class="prod-price">${formatPrice(p.Prix, p.devise)}</div>
           <div class="prod-chain">${escapeHtml(p.chain || '')}</div>
+          <div class="prod-stats">🤍 ${formatCount(s.likes)} &nbsp; 💬 ${formatCount(s.comments)}</div>
           ${vendor ? `
           <div class="prod-vendor-line">
             <img class="prod-vendor-avatar" src="${escapeHtml(vendor.avatar) || '🔮'}" onerror="this.style.display='none'">
@@ -149,7 +264,7 @@ function openVendorShop(vendorId) {
   document.getElementById('mainMarketView').style.display = 'none';
   const shopView = document.getElementById('vendorShopView');
   shopView.style.display = 'block';
-  const products = allProducts.filter(p => (p.uid || p.vendeurId) === vendorId);
+  const products = allProducts.filter(p => vendorKey(p) === vendorId);
   document.getElementById('vendorShopContent').innerHTML = `
     <div style="margin-bottom:1.5rem; display:flex; gap:1rem; align-items:center;">
       <div style="width:80px;height:80px;border-radius:50%;background:#0A0A0D;display:flex;align-items:center;justify-content:center;font-size:2.5rem;">
@@ -195,13 +310,35 @@ async function gatedOpenProduct(key) {
 }
 
 function openModal(product) {
-  document.getElementById('m-img').src = product.Image || '';
-  document.getElementById('m-img').style.display = product.Image ? '' : 'none';
+  // Galerie : `images` (nouveau, jusqu'à 5) avec repli sur `Image` (ancien format).
+  const galerie = Array.isArray(product.images) && product.images.length
+    ? product.images.filter(Boolean)
+    : (product.Image ? [product.Image] : []);
+
+  const mImg = document.getElementById('m-img');
+  mImg.src = galerie[0] || '';
+  mImg.style.display = galerie.length ? '' : 'none';
+
+  // Miniatures cliquables si plusieurs images.
+  const thumbs = document.getElementById('m-thumbs');
+  if (thumbs) {
+    if (galerie.length > 1) {
+      thumbs.innerHTML = galerie.map((url, i) => `
+        <img src="${escapeHtml(url)}" class="m-thumb${i === 0 ? ' active' : ''}"
+             onclick="changerImagePrincipale(this, '${escapeHtml(url)}')"
+             onerror="this.style.display='none'" alt="Vue ${i + 1}">`).join('');
+      thumbs.style.display = 'flex';
+    } else {
+      thumbs.innerHTML = '';
+      thumbs.style.display = 'none';
+    }
+  }
+
   document.getElementById('m-name').innerText = product.produit || 'Produit';
   document.getElementById('m-price').innerText = formatPrice(product.Prix, product.devise);
   document.getElementById('m-desc').innerText = product.description || '';
 
-  const vendor = allVendors.find(v => v.id === (product.uid || product.vendeurId));
+  const vendor = allVendors.find(v => v.id === vendorKey(product));
   const vendorBlock = document.getElementById('m-vendor-block');
   if (vendor) {
     vendorBlock.innerHTML = `
@@ -217,20 +354,17 @@ function openModal(product) {
     vendorBlock.style.display = 'none';
   }
 
-  let contactHTML = '';
-  if (product.number) {
-    const clean = product.number.replace(/\D/g, '');
-    contactHTML += `<a href="https://wa.me/${clean}" target="_blank" class="whatsapp-btn">💬 WhatsApp</a>`;
-  }
-  if (product.email) {
-    contactHTML += `<a href="mailto:${product.email}" class="email-btn">📧 Email</a>`;
-  }
-  document.getElementById('m-contact').innerHTML = contactHTML || '<p style="color:#888;">Aucun contact disponible.</p>';
-
   loadProductSocial(product._key);
 
   document.getElementById('prodModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+// Bascule l'image principale depuis une miniature.
+function changerImagePrincipale(el, url) {
+  document.getElementById('m-img').src = url;
+  document.querySelectorAll('.m-thumb').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
 }
 
 function closeModal() {
@@ -301,6 +435,13 @@ function toggleCommentsPanel() {
   if (panel) panel.classList.toggle('open');
 }
 
+// Le champ commentaire grandit avec le texte (style WhatsApp), jusqu'à ~5 lignes.
+function autoGrowComment(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
 function postProductComment() {
   const key = currentModalProduct && currentModalProduct._key;
   const input = document.getElementById('m-comment-input');
@@ -313,6 +454,7 @@ function postProductComment() {
     timestamp: firebase.database.ServerValue.TIMESTAMP
   });
   input.value = '';
+  autoGrowComment(input);
 }
 
 function appendProductComment(pseudo, text) {
@@ -342,7 +484,7 @@ function addToCart(product) {
     name: product.produit,
     price: parseInt(product.Prix, 10) || 0,
     devise: product.devise || 'FCFA',
-    vendorId: product.uid || product.vendeurId,
+    vendorId: vendorKey(product),
     vendorName: product.vendeur || 'Vendeur',
     image: product.Image
   };
