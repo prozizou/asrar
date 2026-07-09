@@ -108,8 +108,9 @@
             <input type="text" id="pDevise" maxlength="8" value="FCFA">
           </label>
         </div>
-        <label>Catégorie
+        <label>Catégorie *
           <select id="pChain">
+            <option value="">— Choisir une catégorie —</option>
             <option value="Secret">Secret</option>
             <option value="chaîne">Chaîne</option>
             <option value="encens">Encens</option>
@@ -118,19 +119,15 @@
             <option value="autres">Autres</option>
           </select>
         </label>
-        <label>Image du produit
-          <input type="file" id="pImageFile" accept="image/*" onchange="previewProdImage(event)">
-          <div id="pImagePreview" class="bq-logo-preview">
-            <img id="pImageImg" src="" alt="" style="display:none">
-            <span id="pImageEmpty">Aucune image</span>
-          </div>
+        <label>Images du produit * <small style="opacity:.7">(2 minimum, 5 maximum)</small>
+          <input type="file" id="pImageFile" accept="image/*" multiple onchange="ajouterImagesProduit(event)">
+          <div id="pImagesPreview" class="bq-images-preview"></div>
+          <small id="pImagesCount" class="bq-note" style="margin:4px 0 0;">0 / 5 image(s)</small>
         </label>
-        <label>WhatsApp (numéro affiché aux acheteurs)
-          <input type="tel" id="pNumber" maxlength="20" placeholder="221770000000">
-        </label>
-        <label>Description
+        <label>Description *
           <textarea id="pDesc" maxlength="1000" rows="3" placeholder="Détaillez le produit…"></textarea>
         </label>
+        <p class="bq-note" style="margin-top:0;">📞 Le numéro WhatsApp de votre boutique sera automatiquement affiché aux acheteurs.</p>
         <button class="bq-btn" onclick="enregistrerProduit()">💾 Enregistrer le produit</button>
         <p class="bq-note" id="prodFormNote"></p>
       </div>

@@ -6,8 +6,20 @@
 
 let myProducts = [];
 let shopLogoFile = null;      // logo boutique choisi (avant upload)
-let prodImageFile = null;     // image produit choisie (avant upload)
-let currentProdImage = '';    // image existante en édition
+// Toast léger (remplace les alert() bloquants pour la validation du formulaire).
+function toast(msg) {
+  let t = document.getElementById('bqToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'bqToast';
+    t.className = 'bq-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+}
 
 // Upload d'une image (téléphone → Cloudinary) via signature serveur.
 async function uploadImage(file, folder) {
@@ -30,11 +42,53 @@ function previewShopLogo(e) {
   const img = document.getElementById('shopLogoImg'), empty = document.getElementById('shopLogoEmpty');
   img.src = URL.createObjectURL(f); img.style.display = ''; empty.style.display = 'none';
 }
-function previewProdImage(e) {
-  const f = e.target.files[0]; if (!f) return;
-  prodImageFile = f;
-  const img = document.getElementById('pImageImg'), empty = document.getElementById('pImageEmpty');
-  img.src = URL.createObjectURL(f); img.style.display = ''; empty.style.display = 'none';
+// ── Images du produit : 2 minimum, 5 maximum ──
+const MAX_IMAGES = 5;
+const MIN_IMAGES = 2;
+// Chaque entrée : { file: File|null, url: string }
+// `file` = nouvelle image à téléverser ; `url` = image déjà hébergée (édition).
+let prodImages = [];
+
+function ajouterImagesProduit(e) {
+  const fichiers = Array.from(e.target.files || []);
+  e.target.value = '';   // permet de re-sélectionner le même fichier
+  if (!fichiers.length) return;
+
+  const place = MAX_IMAGES - prodImages.length;
+  if (place <= 0) { toast(`Maximum ${MAX_IMAGES} images.`); return; }
+  if (fichiers.length > place) toast(`Seules ${place} image(s) ont été ajoutées (max ${MAX_IMAGES}).`);
+
+  fichiers.slice(0, place).forEach(f => {
+    prodImages.push({ file: f, url: URL.createObjectURL(f) });
+  });
+  renderProdImages();
+}
+
+function retirerImageProduit(i) {
+  const img = prodImages[i];
+  if (img && img.file && img.url) URL.revokeObjectURL(img.url);
+  prodImages.splice(i, 1);
+  renderProdImages();
+}
+
+function renderProdImages() {
+  const wrap = document.getElementById('pImagesPreview');
+  const cnt = document.getElementById('pImagesCount');
+  if (cnt) {
+    cnt.innerText = `${prodImages.length} / ${MAX_IMAGES} image(s)` +
+      (prodImages.length < MIN_IMAGES ? ` — ${MIN_IMAGES} minimum` : '');
+  }
+  if (!wrap) return;
+  if (!prodImages.length) {
+    wrap.innerHTML = '<span class="bq-images-empty">Aucune image</span>';
+    return;
+  }
+  wrap.innerHTML = prodImages.map((im, i) => `
+    <div class="bq-image-item">
+      <img src="${esc(im.url)}" alt="">
+      <button type="button" onclick="retirerImageProduit(${i})" aria-label="Retirer">✕</button>
+      ${i === 0 ? '<span class="bq-image-main">Principale</span>' : ''}
+    </div>`).join('');
 }
 
 requireAuth(() => { boot(); });
@@ -157,15 +211,19 @@ function ouvrirFormProduit(prod) {
   document.getElementById('pName').value = prod ? (prod.produit || '') : '';
   document.getElementById('pPrice').value = prod ? (prod.Prix || '') : '';
   document.getElementById('pDevise').value = prod ? (prod.devise || 'FCFA') : 'FCFA';
-  document.getElementById('pChain').value = prod ? (prod.chain || 'autres') : 'Secret';
-  document.getElementById('pNumber').value = prod ? (prod.number || '') : '';
+  document.getElementById('pChain').value = prod ? (prod.chain || '') : '';
   document.getElementById('pDesc').value = prod ? (prod.description || '') : '';
-  // Image : aperçu de l'existante, réinitialise le fichier choisi
-  prodImageFile = null;
-  currentProdImage = prod ? (prod.Image || '') : '';
-  const pImg = document.getElementById('pImageImg'), pEmpty = document.getElementById('pImageEmpty');
-  if (currentProdImage) { pImg.src = currentProdImage; pImg.style.display = ''; pEmpty.style.display = 'none'; }
-  else { pImg.src = ''; pImg.style.display = 'none'; pEmpty.style.display = ''; }
+
+  // Galerie : `images` (nouveau) ou repli sur `Image` (ancien format).
+  prodImages = [];
+  if (prod) {
+    const src = Array.isArray(prod.images) && prod.images.length
+      ? prod.images
+      : (prod.Image ? [prod.Image] : []);
+    prodImages = src.filter(Boolean).slice(0, MAX_IMAGES).map(u => ({ file: null, url: u }));
+  }
+  renderProdImages();
+
   const pf = document.getElementById('pImageFile'); if (pf) pf.value = '';
   document.getElementById('prodFormNote').innerText = '';
   document.getElementById('prodFormOverlay').classList.add('open');
@@ -178,28 +236,74 @@ function editerProduit(key) {
   if (p) ouvrirFormProduit(p);
 }
 
+// Vérifie chaque champ dans l'ordre du formulaire. Au premier manquant :
+// toast explicite, focus + surlignage du champ concerné.
+function validerFormProduit() {
+  const champs = [
+    { id: 'pName',   test: v => v.trim().length > 0,          msg: 'Indiquez le nom du produit.' },
+    { id: 'pPrice',  test: v => parseInt(v, 10) > 0,          msg: 'Indiquez un prix valide (supérieur à 0).' },
+    { id: 'pDevise', test: v => v.trim().length > 0,          msg: 'Indiquez la devise (ex : FCFA).' },
+    { id: 'pChain',  test: v => v.trim().length > 0,          msg: 'Choisissez une catégorie.' },
+    { id: 'pDesc',   test: v => v.trim().length > 0,          msg: 'Ajoutez une description du produit.' }
+  ];
+
+  document.querySelectorAll('.bq-field-error').forEach(el => el.classList.remove('bq-field-error'));
+
+  for (const c of champs) {
+    const el = document.getElementById(c.id);
+    if (!el || c.test(el.value)) continue;
+    toast(c.msg);
+    el.classList.add('bq-field-error');
+    el.focus();
+    if (el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return false;
+  }
+
+  if (prodImages.length < MIN_IMAGES) {
+    toast(`Ajoutez au moins ${MIN_IMAGES} images du produit (${prodImages.length} pour l'instant).`);
+    const zone = document.getElementById('pImagesPreview');
+    if (zone) { zone.classList.add('bq-field-error'); zone.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    return false;
+  }
+  return true;
+}
+
 async function enregistrerProduit() {
-  const nom = document.getElementById('pName').value.trim();
-  const prix = document.getElementById('pPrice').value;
-  if (!nom) { setNote('Le nom du produit est requis.'); return; }
-  if (!(parseInt(prix, 10) > 0)) { setNote('Prix invalide.'); return; }
+  if (!validerFormProduit()) return;
+
   try {
-    let imageUrl = currentProdImage;
-    if (prodImageFile) { setNote('Envoi de l\'image…'); imageUrl = await uploadImage(prodImageFile, 'products'); }
+    // Téléverse uniquement les nouvelles images ; conserve les URL existantes.
+    const urls = [];
+    for (let i = 0; i < prodImages.length; i++) {
+      const im = prodImages[i];
+      if (im.file) {
+        setNote(`Envoi de l'image ${i + 1}/${prodImages.length}…`);
+        urls.push(await uploadImage(im.file, 'products'));
+      } else {
+        urls.push(im.url);
+      }
+    }
+    setNote('Enregistrement…');
+
     const product = {
       key: document.getElementById('pKey').value || undefined,
-      produit: nom,
-      Prix: prix,
+      produit: document.getElementById('pName').value.trim(),
+      Prix: document.getElementById('pPrice').value,
       devise: document.getElementById('pDevise').value.trim() || 'FCFA',
       chain: document.getElementById('pChain').value,
-      Image: imageUrl,
-      number: document.getElementById('pNumber').value.trim(),
+      images: urls,          // galerie complète (2 à 5)
+      Image: urls[0] || '',  // compat : image principale pour l'ancien affichage
       description: document.getElementById('pDesc').value.trim()
+      // `number` n'est plus envoyé : le serveur reprend le téléphone de la boutique.
     };
     await apiPost('shop', { action: 'save-product', product });
+    toast('✅ Produit enregistré.');
     fermerFormProduit();
     await chargerStatut();
-  } catch (e) { setNote('Erreur : ' + (e.message || e)); }
+  } catch (e) {
+    setNote('');
+    toast('Erreur : ' + (e.message || e));
+  }
 }
 
 async function supprimerProduit(key) {

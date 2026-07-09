@@ -160,3 +160,64 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   color: var(--bq-gold-soft); font-size: .8rem; text-align: center;
 }
 .bq-logo-preview img { width: 100%; height: 100%; object-fit: cover; }
+/* ───── Galerie d'images du produit (2 à 5) ───── */
+.bq-images-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px;
+  min-height: 84px;
+  align-items: center;
+  background: var(--bq-surface-2);
+  border: 1px solid var(--bq-border);
+  border-radius: 12px;
+}
+.bq-images-empty { color: var(--bq-text-dim); font-size: .85rem; }
+.bq-image-item { position: relative; width: 72px; height: 72px; flex: 0 0 auto; }
+.bq-image-item img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 10px; border: 1px solid var(--bq-border);
+}
+.bq-image-item button {
+  position: absolute; top: -6px; right: -6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #c0392b; color: #fff; border: none;
+  font-size: .7rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.bq-image-main {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.7); color: var(--bq-gold, #C9A961);
+  font-size: .58rem; text-align: center;
+  border-radius: 0 0 10px 10px; padding: 2px 0;
+}
+
+/* Champ en erreur (validation du formulaire produit) */
+.bq-field-error {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, .18);
+}
+
+/* ───── Toast ───── */
+.bq-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(16px);
+  max-width: min(90vw, 420px);
+  background: var(--bq-surface);
+  color: var(--bq-text);
+  border: 1px solid var(--bq-border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: .9rem;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 10000;
+}
+.bq-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
