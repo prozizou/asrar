@@ -348,3 +348,54 @@ body {
     .scroll-text { font-size: 16px; }
     .angel-row { gap: 5px; }
 }
+/* ==================== INTERACTIONS (survol souris) ==================== */
+.primary-btn:hover:not(:disabled),
+.angel-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.angel-row {
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}
+.angel-row:hover {
+    background: var(--stat-bg);
+}
+
+/* ==================== VERSION DESKTOP (≥1024px) ==================== */
+@media (min-width: 1024px) {
+    .main-container {
+        max-width: 1080px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        align-items: start;
+    }
+
+    /* Placement explicite — l'ordre DOM et le mobile restent intacts.
+       1 logo · 2 top-bar · 3 éditeur · 4 vœu · 5 Calculer ·
+       6 result-box V1 · 7 result-box V2 · 8 formules ·
+       9 bouton complet · 10 noms rouwhanes · 11 noms d'Allah */
+    .main-container > :nth-child(1)  { grid-column: 1 / -1; }               /* logo */
+    .main-container > :nth-child(2)  { grid-column: 1 / -1; }               /* top-bar */
+    .main-container > :nth-child(3)  { grid-column: 1; grid-row: 3; }       /* éditeur */
+    .main-container > :nth-child(4)  { grid-column: 1; grid-row: 4; }       /* vœu */
+    .main-container > :nth-child(5)  { grid-column: 1; grid-row: 5; }       /* Calculer */
+    .main-container > :nth-child(6)  { grid-column: 2; grid-row: 3 / span 2; } /* résultat V1 */
+    .main-container > :nth-child(7)  { grid-column: 2; grid-row: 5 / span 2; } /* résultat V2 */
+    .main-container > :nth-child(8)  { grid-column: 1; grid-row: 6; }       /* formules */
+    .main-container > :nth-child(9)  { grid-column: 1 / -1; }               /* bouton complet */
+    .main-container > :nth-child(10) { grid-column: 1 / -1; }               /* noms rouwhanes */
+    .main-container > :nth-child(11) { grid-column: 1 / -1; }               /* noms d'Allah */
+
+    /* Listes de noms sur 2 colonnes pour exploiter la largeur */
+    #angelNamesList,
+    #allahNamesList {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 28px;
+    }
+    .angel-row { border-bottom: 1px solid var(--border-color); }
+}
