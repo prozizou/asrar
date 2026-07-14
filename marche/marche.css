@@ -101,6 +101,7 @@ h2 {
 
 .search-bar {
   flex: 2 1 300px;
+  max-width: 480px;
   background: var(--mk-surface);
   border: 1px solid var(--mk-border);
   border-radius: 14px;
@@ -615,4 +616,19 @@ h2 {
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.7; }
+}
+/* ───── VERSION DESKTOP : vraie grille responsive (≥768px) ───── */
+@media (min-width: 768px) {
+  .prod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+  .prod-card { width: auto; }
+
+  .vendors-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
