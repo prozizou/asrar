@@ -17,10 +17,11 @@
     .avatar { width:42px; height:42px; border-radius:50%; overflow:hidden;
               background:var(--accent); display:flex; align-items:center;
               justify-content:center; font-size:1.2rem; font-weight:bold; }
-    .signout-btn { background:rgba(255,100,100,.3); border:1px solid rgba(255,100,100,.4);
-                   padding:8px 16px; border-radius:20px; cursor:pointer; color:#fff;
-                   font-size:.85rem; width:auto; margin:0; }
-    .signout-btn:hover { background:rgba(255,100,100,.5); transform:none; }
+    .signout-btn { background:transparent; border:1px solid var(--glass-border);
+                   width:38px; height:38px; border-radius:50%; cursor:pointer;
+                   color:var(--text-muted); font-size:1.05rem; padding:0; margin:0;
+                   display:flex; align-items:center; justify-content:center; }
+    .signout-btn:hover { background:var(--glass-bg); color:#fff; transform:none; }
 
     /* Menus groupés (grand menu + sous-menu) */
     .menu-group { margin-bottom:26px; }
@@ -30,6 +31,8 @@
                    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
     .sub-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
     .sub-grid .menu-item h3 { font-size:.9rem; margin-top:8px; }
+    .menu-item { transition:transform .12s ease, box-shadow .12s ease; }
+    .menu-item:active { transform:scale(.96); box-shadow:0 0 0 2px var(--accent) inset; }
   </style>
   <script src="/js/theme.js"></script>
   <script src="/js/nav.js"></script>
@@ -52,7 +55,7 @@
           <div style="font-size:.8rem; color:var(--text-muted);" id="user-email"></div>
         </div>
       </div>
-      <button class="signout-btn" onclick="signOut()">Déconnexion</button>
+      <button class="signout-btn" onclick="signOut()" title="Déconnexion" aria-label="Déconnexion">⏻</button>
     </div>
 
     <div class="header">
@@ -67,14 +70,17 @@
       <section class="menu-group">
         <h2 class="group-title">ASRAR PRO</h2>
         <div class="sub-grid">
+          <!-- Outils de calcul / spirituels -->
           <a href="../asrar/asrar.html" class="menu-item"><div style="font-size:2rem;">📜</div><h3>Secret Mystique</h3></a>
           <a href="../abajad/abajad.html" class="menu-item"><div style="font-size:2rem;">🔢</div><h3>Abajad</h3></a>
           <a href="../planete/planete.html" class="menu-item"><div style="font-size:2rem;">🌍</div><h3>Planète</h3></a>
+          <a href="../combinaisons/combinaisons.html" class="menu-item"><div style="font-size:2rem;">✨</div><h3>Combinaisons</h3></a>
           <a href="../Benefits/index.html" class="menu-item"><div style="font-size:2rem;">🕌</div><h3>Noms d'Allah</h3></a>
-          <a href="../combinaisons/combinaisons.html" class="menu-item"><div style="font-size:2rem;">✨</div><h3>Combinaisons Mystiques</h3></a>
+          <!-- Ressources documentaires -->
           <a href="../rouwhania/index.html" class="menu-item"><div style="font-size:2rem;">🌀</div><h3>Rouwhanes</h3></a>
           <a href="../bibliotheque/bibliotheque.html" class="menu-item"><div style="font-size:2rem;">📚</div><h3>Bibliothèque</h3></a>
-          <a href="../marche/marche.html" class="menu-item"><div style="font-size:2rem;">🛒</div><h3>Marché Des Produits Mystiques</h3></a>
+          <!-- Boutique -->
+          <a href="../marche/marche.html" class="menu-item"><div style="font-size:2rem;">🛒</div><h3>Marché Mystique</h3></a>
         </div>
       </section>
 
