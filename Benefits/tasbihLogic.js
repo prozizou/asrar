@@ -28,7 +28,8 @@ export function handleTasbihAction(card, id) {
             if (loopsCur < loopsMax) currentCount = 0; 
         }
     } else {
-        if(window.navigator.vibrate) window.navigator.vibrate(30); 
+        // Double pulsation courte = ressenti « clic de grain » plus tactile.
+        if(window.navigator.vibrate) window.navigator.vibrate([18, 12, 24]);
         playBeadSound(); 
     }
     
@@ -37,14 +38,31 @@ export function handleTasbihAction(card, id) {
     counterDisplay.textContent = currentCount.toString().padStart(2, '0');
     badgeDisplay.textContent = currentCount;
     
-    // Animation du grain
-    beadsContainer.style.transform = 'translateX(-40px)'; 
-    setTimeout(() => {
+    scrollBead(beadsContainer);
+}
+
+// Défilement fluide d'un grain : on décale d'exactement une largeur de grain
+// (mesurée dynamiquement), puis on recycle le premier grain sans à-coup.
+function scrollBead(beadsContainer) {
+    const first = beadsContainer.firstElementChild;
+    if (!first) return;
+
+    // Largeur d'un grain + espacement réel de la grille/flex.
+    const style = getComputedStyle(beadsContainer);
+    const gap = parseFloat(style.columnGap || style.gap || '0') || 0;
+    const shift = first.getBoundingClientRect().width + gap;
+
+    beadsContainer.style.transition = 'transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1)';
+    beadsContainer.style.transform = `translateX(-${shift}px)`;
+
+    const onEnd = () => {
+        beadsContainer.removeEventListener('transitionend', onEnd);
         beadsContainer.style.transition = 'none';
         beadsContainer.style.transform = 'translateX(0)';
-        beadsContainer.appendChild(beadsContainer.firstElementChild);
-        setTimeout(() => beadsContainer.style.transition = 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)', 20);
-    }, 150);
+        beadsContainer.appendChild(first);          // recyclage du premier grain
+        void beadsContainer.offsetWidth;            // force le reflow → pas de saut
+    };
+    beadsContainer.addEventListener('transitionend', onEnd);
 }
 
 export function resetTasbih(card, id) {
@@ -75,4 +93,5 @@ export function updateTasbihSettings(input, id, val) {
         }
     }
 }
+
 
