@@ -227,6 +227,24 @@ const ELS = {
     allahNamesList: document.getElementById('allahNamesList')
 };
 
+// ==================== VISIBILITÉ RÉSERVÉE À L'ADMINISTRATION ====================
+// Les blocs de calcul intermédiaire (résultats + formules) ne sont visibles que
+// pour le super-admin. Pour les autres, ils restent masqués via CSS (mais toujours
+// présents dans le DOM : generateAngelNames() lit l'objet `results`, pas le DOM).
+const RW_SUPER_ADMIN = 'prozizou298@gmail.com';
+function applyAdminVisibility(user) {
+    const isAdmin = !!(user && user.email &&
+        user.email.trim().toLowerCase() === RW_SUPER_ADMIN);
+    document.documentElement.setAttribute('data-rw-admin', isAdmin ? '1' : '0');
+}
+try {
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged(applyAdminVisibility);
+    } else {
+        applyAdminVisibility(null);
+    }
+} catch (e) { applyAdminVisibility(null); }
+
 let stock = 0, secondLength = 0, trois = 0;
 let results = { v1m1: 0, v1m2: 0, v2m1: 0, v2m2: 0, v3m1: 0, v3m2: 0, total: 0 };
 let isRunning = false;
@@ -380,6 +398,12 @@ async function runAll() {
     ELS.btnExtract.textContent = 'Calculer';
     isRunning = false;
     checkEnableAngelButton();
+
+    // Fusion avec « Générer le complet » : dès que le calcul aboutit, on enchaîne
+    // automatiquement la génération des noms des rouwhanes (et noms d'Allah).
+    if (!ELS.btnAngelNames.disabled) {
+        generateAngelNames();
+    }
 }
 
 // ==================== GÉNÉRATION ====================

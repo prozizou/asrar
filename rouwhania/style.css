@@ -154,8 +154,8 @@ body {
     font-size: 16px;
     font-weight: bold;
     border-radius: 12px;
-    text-align: right;
-    direction: rtl;
+    text-align: left;
+    direction: ltr;
     outline: none;
     cursor: pointer;
 }
@@ -399,3 +399,15 @@ body {
     }
     .angel-row { border-bottom: 1px solid var(--border-color); }
 }
+
+/* ==================== BLOCS TECHNIQUES RÉSERVÉS À L'ADMIN ==================== */
+/* Les résultats intermédiaires (.result-box) et le bloc formules/total
+   (.stats-footer) sont masqués pour l'utilisateur standard. Ils restent dans le
+   DOM (le calcul continue de les alimenter) mais ne s'affichent que pour le
+   super-admin, via data-rw-admin="1" posé par script.js après authentification. */
+.result-box,
+.stats-footer {
+    display: none;
+}
+html[data-rw-admin="1"] .result-box  { display: block; }
+html[data-rw-admin="1"] .stats-footer { display: block; }
