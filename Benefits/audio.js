@@ -14,44 +14,51 @@ function getAudioCtx() {
 function synthBead(ctx) {
     const now = ctx.currentTime;
 
-    // 1) Impact — court burst de bruit filtré (le « toc » du contact bois)
-    const dur = 0.09;
+    // Filtre passe-bas global : coupe toute brillance/métal, ne garde que le bois.
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 900;
+    lp.Q.value = 0.7;
+    lp.connect(ctx.destination);
+
+    // 1) Impact — « toc » sec du contact bois : bruit court filtré bas.
+    const dur = 0.05;
     const buf = ctx.createBuffer(1, Math.max(1, Math.ceil(ctx.sampleRate * dur)), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) {
-        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); // enveloppe décroissante
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4); // attaque nette, décroissance rapide
     }
     const noise = ctx.createBufferSource();
     noise.buffer = buf;
     const bp = ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.frequency.value = 1200;   // caractère « knock » médium (bois)
-    bp.Q.value = 1.1;
+    bp.frequency.value = 650;    // médium-bas = bois (au lieu de 1200)
+    bp.Q.value = 0.8;
     const ng = ctx.createGain();
-    ng.gain.value = 0.9;
-    noise.connect(bp); bp.connect(ng); ng.connect(ctx.destination);
+    ng.gain.value = 0.8;
+    noise.connect(bp); bp.connect(ng); ng.connect(lp);
     noise.start(now); noise.stop(now + dur);
 
-    // 2) Corps résonant — basse fréquence, décroissance rapide (résonance du bois)
+    // 2) Corps résonant — thump grave et boisé, décroissance rapide.
     const body = ctx.createOscillator();
     const bg = ctx.createGain();
     body.type = 'sine';
-    body.frequency.setValueAtTime(220, now);
-    body.frequency.exponentialRampToValueAtTime(120, now + 0.05);
-    bg.gain.setValueAtTime(0.5, now);
-    bg.gain.exponentialRampToValueAtTime(0.01, now + 0.10);
-    body.connect(bg); bg.connect(ctx.destination);
-    body.start(now); body.stop(now + 0.11);
+    body.frequency.setValueAtTime(190, now);
+    body.frequency.exponentialRampToValueAtTime(95, now + 0.06);
+    bg.gain.setValueAtTime(0.6, now);
+    bg.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    body.connect(bg); bg.connect(lp);
+    body.start(now); body.stop(now + 0.13);
 
-    // 3) Grain léger (très court) pour la vivacité, sans brillance métallique
+    // 3) Second harmonique très doux (corps du bois), pas de triangle brillant.
     const h = ctx.createOscillator();
     const hg = ctx.createGain();
-    h.type = 'triangle';
-    h.frequency.setValueAtTime(440, now);
-    hg.gain.setValueAtTime(0.07, now);
-    hg.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-    h.connect(hg); hg.connect(ctx.destination);
-    h.start(now); h.stop(now + 0.06);
+    h.type = 'sine';
+    h.frequency.setValueAtTime(285, now);
+    hg.gain.setValueAtTime(0.12, now);
+    hg.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+    h.connect(hg); hg.connect(lp);
+    h.start(now); h.stop(now + 0.08);
 }
 
 /**
