@@ -37,8 +37,32 @@ export function handleTasbihAction(card, id) {
     localStorage.setItem(`tasbih_asma_${id}`, currentCount);
     counterDisplay.textContent = currentCount.toString().padStart(2, '0');
     badgeDisplay.textContent = currentCount;
-    
+
+    updateProgress(card, id);
     scrollBead(beadsContainer);
+}
+
+// Progression cumulée temps réel : (séries terminées × objectif) + série en cours.
+// Ex. objectif 298, 7 séries → total 2086. Le cap évite le double comptage
+// de la dernière série (où le compteur reste à 298 sans repartir à zéro).
+export function updateProgress(card, id) {
+    if (!card) return;
+    const target   = parseInt(card.querySelector(`#input-target-${id}`)?.value) || 0;
+    const loopsMax = parseInt(localStorage.getItem(`tasbih_loopmax_${id}`)) || 0;
+    const loopsCur = parseInt(localStorage.getItem(`tasbih_loopcur_${id}`)) || 0;
+    const count    = parseInt(localStorage.getItem(`tasbih_asma_${id}`)) || 0;
+
+    const grand = target * (loopsMax > 0 ? loopsMax : 1);
+    let total = loopsCur * target + count;
+    if (grand > 0 && total > grand) total = grand;   // dernière série
+    const pct = grand > 0 ? Math.min(100, (total / grand) * 100) : 0;
+
+    const totalEl = card.querySelector(`#progress-total-${id}`);
+    const grandEl = card.querySelector(`#progress-grand-${id}`);
+    const fillEl  = card.querySelector(`#progress-fill-${id}`);
+    if (totalEl) totalEl.textContent = total;
+    if (grandEl) grandEl.textContent = grand;
+    if (fillEl)  fillEl.style.width = pct + '%';
 }
 
 // Défilement fluide d'un grain : on décale d'exactement une largeur de grain
@@ -72,14 +96,16 @@ export function resetTasbih(card, id) {
     card.querySelector(`#badge-${id}`).textContent = '0';
     const loopCurrent = card.querySelector(`#loop-current-${id}`);
     if(loopCurrent) loopCurrent.textContent = '0';
+    updateProgress(card, id);
 }
 
 export function updateTasbihSettings(input, id, val) {
+    const card = input.closest('.glass-card');
     if (input.id.startsWith('input-target-')) {
         localStorage.setItem(`tasbih_target_${id}`, val);
+        updateProgress(card, id);
     } else if (input.id.startsWith('input-loop-')) {
         localStorage.setItem(`tasbih_loopmax_${id}`, val);
-        const card = input.closest('.glass-card');
         const display = card.querySelector(`#loop-display-${id}`);
         const maxSpan = card.querySelector(`#loop-max-${id}`);
         
@@ -91,6 +117,7 @@ export function updateTasbihSettings(input, id, val) {
             localStorage.setItem(`tasbih_loopcur_${id}`, 0);
             card.querySelector(`#loop-current-${id}`).textContent = '0';
         }
+        updateProgress(card, id);
     }
 }
 
