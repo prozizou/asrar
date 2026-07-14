@@ -588,35 +588,15 @@ function attachSuggestionsListener() {
 }
 
 // ==================== MODE SOMBRE / CLAIR ====================
-function createThemeToggle() {
-    const toggleBtn = document.createElement('button');
-    toggleBtn.id = 'themeToggle';
-    toggleBtn.innerHTML = '🌙';
-    toggleBtn.title = 'Basculer mode sombre';
-    document.body.appendChild(toggleBtn);
-
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode === 'enabled') {
-        document.body.classList.add('dark-mode');
-        toggleBtn.innerHTML = '☀️';
-    }
-
-    toggleBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
-        toggleBtn.innerHTML = isDark ? '☀️' : '🌙';
-
-        if (suggestionsContainer) {
-            suggestionsContainer.style.background = isDark ? 'rgba(30,30,50,0.8)' : 'rgba(255,255,255,0.8)';
-        }
-    });
-}
+// Le bouton de thème est désormais injecté et géré globalement par /js/theme.js
+// (bouton flottant #asrarThemeBtn, piloté via html[data-theme]).
+// L'ancien toggle local basé sur body.dark-mode a été retiré : il créait un
+// second bouton en double et s'appuyait sur un mécanisme obsolète.
 
 // ==================== INITIALISATION ====================
 window.addEventListener('DOMContentLoaded', () => {
     attachSuggestionsListener();
-    createThemeToggle();
+    // Toggle thème legacy supprimé : le bouton global est géré par /js/theme.js
 
     ELS.btnExtract.addEventListener('click', runAll);
     ELS.btnAngelNames.addEventListener('click', generateAngelNames);
