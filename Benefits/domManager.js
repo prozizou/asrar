@@ -434,6 +434,28 @@ function hydrateCard(cardElement) {
                 ${savedCount.toString().padStart(2, '0')}
             </div>
 
+            ${(() => {
+                const loopsForGrand = parseInt(savedLoopMax) > 0 ? parseInt(savedLoopMax) : 1;
+                const grand = (numericTarget || 0) * loopsForGrand;
+                let total = (savedLoopCurrent * (numericTarget || 0)) + savedCount;
+                if (grand > 0 && total > grand) total = grand;
+                const pct = grand > 0 ? Math.min(100, (total / grand) * 100) : 0;
+                return `
+            <div class="tasbih-progress" id="progress-wrap-${item.id}"
+                 style="margin:6px 0 4px;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;font-size:.78rem;opacity:.85">
+                    <span>Progression</span>
+                    <span><strong id="progress-total-${item.id}">${total}</strong> / <span id="progress-grand-${item.id}">${grand}</span></span>
+                </div>
+                <div style="height:6px;border-radius:6px;background:var(--glass-border);overflow:hidden">
+                    <div id="progress-fill-${item.id}"
+                         style="height:100%;width:${pct}%;border-radius:6px;
+                                background:linear-gradient(90deg,var(--accent),var(--accent-hover));
+                                transition:width .3s ease"></div>
+                </div>
+            </div>`;
+            })()}
+
             <div class="inline-bead-string" aria-hidden="true">
                 <div class="inline-bead-line"></div>
                 <div class="inline-beads-container" id="beads-container-${item.id}">
