@@ -364,40 +364,88 @@ body {
     background: var(--stat-bg);
 }
 
+/* ==================== BOUTON « GÉNÉRER LE COMPLET » RETIRÉ ==================== */
+/* Son action est désormais enchaînée automatiquement après « Calculer ». */
+#btnAngelNames { display: none !important; }
+
+/* ==================== WRAPPERS DE MISE EN PAGE ==================== */
+/* Sur mobile, les wrappers sont neutres (display:contents) : l'ordre du DOM et
+   l'affichage validé restent strictement identiques. Ils ne deviennent des
+   colonnes qu'en version desktop. */
+.rw-left,
+.rw-right { display: contents; }
+
+/* Visuel d'attente (colonne droite avant calcul) — masqué sur mobile */
+.rw-hint { display: none; }
+
 /* ==================== VERSION DESKTOP (≥1024px) ==================== */
 @media (min-width: 1024px) {
-    .main-container {
-        max-width: 1080px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        align-items: start;
+    body {
+        align-items: flex-start;
+        padding: 40px 24px;
     }
 
-    /* Placement explicite — l'ordre DOM et le mobile restent intacts.
-       1 logo · 2 top-bar · 3 éditeur · 4 vœu · 5 Calculer ·
-       6 result-box V1 · 7 result-box V2 · 8 formules ·
-       9 bouton complet · 10 noms rouwhanes · 11 noms d'Allah */
-    .main-container > :nth-child(1)  { grid-column: 1 / -1; }               /* logo */
-    .main-container > :nth-child(2)  { grid-column: 1 / -1; }               /* top-bar */
-    .main-container > :nth-child(3)  { grid-column: 1; grid-row: 3; }       /* éditeur */
-    .main-container > :nth-child(4)  { grid-column: 1; grid-row: 4; }       /* vœu */
-    .main-container > :nth-child(5)  { grid-column: 1; grid-row: 5; }       /* Calculer */
-    .main-container > :nth-child(6)  { grid-column: 2; grid-row: 3 / span 2; } /* résultat V1 */
-    .main-container > :nth-child(7)  { grid-column: 2; grid-row: 5 / span 2; } /* résultat V2 */
-    .main-container > :nth-child(8)  { grid-column: 1; grid-row: 6; }       /* formules */
-    .main-container > :nth-child(9)  { grid-column: 1 / -1; }               /* bouton complet */
-    .main-container > :nth-child(10) { grid-column: 1 / -1; }               /* noms rouwhanes */
-    .main-container > :nth-child(11) { grid-column: 1 / -1; }               /* noms d'Allah */
+    .main-container {
+        max-width: 1160px;
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        align-items: start;
+        gap: 28px;
+    }
 
-    /* Listes de noms sur 2 colonnes pour exploiter la largeur */
+    /* Colonne gauche : carte de saisie fixe (logo, total, nom, vœu, Calculer) */
+    .rw-left {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        position: sticky;
+        top: 40px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        box-shadow: var(--glass-shadow);
+        padding: 24px;
+    }
+
+    /* Colonne droite : résultats (admin) + noms des rouwhanes */
+    .rw-right {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    /* Les listes de noms exploitent la largeur sur 2 colonnes */
     #angelNamesList,
     #allahNamesList {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        column-gap: 28px;
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 32px;
     }
     .angel-row { border-bottom: 1px solid var(--border-color); }
+
+    /* Visuel d'attente affiché tant qu'aucun nom n'a été généré */
+    .rw-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        min-height: 340px;
+        padding: 40px;
+        text-align: center;
+        color: var(--text-secondary);
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+    }
+    .rw-hint .rw-hint-icon { font-size: 3rem; opacity: 0.8; }
+    .rw-hint .rw-hint-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+    .rw-hint .rw-hint-text { font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
 }
 
 /* ==================== BLOCS TECHNIQUES RÉSERVÉS À L'ADMIN ==================== */

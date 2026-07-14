@@ -476,6 +476,8 @@ function generateAngelNames() {
     });
     ELS.angelNamesList.innerHTML = html;
     ELS.angelNamesContainer.style.display = 'block';
+    var hint = document.getElementById('rwHint');
+    if (hint) hint.style.display = 'none';
     if (seventhNameArabic) generateAllahNames(seventhNameArabic);
 }
 
