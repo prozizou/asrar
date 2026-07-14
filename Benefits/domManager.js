@@ -416,15 +416,18 @@ function hydrateCard(cardElement) {
                            class="zikr-input" placeholder="Obj." value="${finalTarget}" min="0" aria-label="Objectif">
                 </div>
                 <div class="obj-subdiv" id="obj-subdiv-${item.id}"></div>
-                <div class="setting-group" title="Nombre de séries">
+                <div class="setting-group" title="Nombre de séries (l'objectif est réparti dessus, le reste va sur la dernière)">
                     <i class="fas fa-rotate"></i>
                     <input type="number" id="input-loop-${item.id}" data-id="${item.id}"
                            class="zikr-input" placeholder="Séries" value="${savedLoopMax}" min="0" aria-label="Nombre de séries">
                 </div>
-                <div class="loop-display" id="loop-display-${item.id}"
-                     style="display:${savedLoopMax ? 'flex' : 'none'};align-items:center;gap:4px">
-                    Série <span id="loop-current-${item.id}">${savedLoopCurrent}</span>/<span id="loop-max-${item.id}">${savedLoopMax || 0}</span>
-                </div>
+                ${(() => {
+                    const seriesCount = parseInt(savedLoopMax) || 0;
+                    return `<div class="loop-display" id="loop-display-${item.id}"
+                     style="display:${seriesCount > 0 ? 'flex' : 'none'};align-items:center;gap:4px">
+                    Série <span id="loop-current-${item.id}">${savedLoopCurrent}</span>/<span id="loop-max-${item.id}">${seriesCount}</span>
+                </div>`;
+                })()}
                 <button class="reset-zikr-btn" aria-label="Réinitialiser le compteur">
                     <i class="fas fa-rotate-left"></i>
                 </button>
@@ -435,9 +438,10 @@ function hydrateCard(cardElement) {
             </div>
 
             ${(() => {
-                const loopsForGrand = parseInt(savedLoopMax) > 0 ? parseInt(savedLoopMax) : 1;
-                const grand = (numericTarget || 0) * loopsForGrand;
-                let total = (savedLoopCurrent * (numericTarget || 0)) + savedCount;
+                const seriesCount = parseInt(savedLoopMax) || 0;
+                const grand = numericTarget || 0;                          // l'objectif EST le total
+                const base = seriesCount > 0 ? Math.floor(grand / seriesCount) : 0;
+                let total = (base * savedLoopCurrent) + savedCount;
                 if (grand > 0 && total > grand) total = grand;
                 const pct = grand > 0 ? Math.min(100, (total / grand) * 100) : 0;
                 return `
