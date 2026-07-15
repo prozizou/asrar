@@ -25,6 +25,7 @@
   <script src="../js/whatsapp.js"></script>
   <script src="../js/firebase-config.js"></script>
   <script src="../js/api-content.js"></script>
+  <script src="../js/share.js"></script>
 
   <div class="container">
     <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
@@ -79,6 +80,7 @@
         <button class="comment-toggle-btn" onclick="toggleCommentsPanel()">
           💬 <span id="m-comment-count">0</span>
         </button>
+        <button class="comment-toggle-btn" title="Partager ce produit" onclick="partagerProduit()">📤</button>
       </div>
 
       <div class="comments-panel" id="m-comments-panel">

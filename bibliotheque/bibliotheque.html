@@ -329,6 +329,7 @@
   <script src="../js/whatsapp.js"></script>
   <script src="../js/firebase-config.js"></script>
   <script src="../js/api-content.js"></script>
+  <script src="../js/share.js"></script>
 
   <div class="container">
     <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
@@ -379,6 +380,7 @@
     .cm-form { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
     .cm-form textarea { width:100%; box-sizing:border-box; min-height:64px; border-radius:10px; padding:10px; background:rgba(0,0,0,0.3);
       border:1px solid rgba(201,169,97,0.3); color:#fff; resize:vertical; font-size:.95rem; }
+    .book-highlight { outline:2px solid #C9A961; outline-offset:3px; border-radius:12px; }
     .cm-send { align-self:flex-end; background:linear-gradient(135deg,#C9A961,#a9821b); border:none; color:#231a05;
       font-weight:700; border-radius:10px; padding:10px 22px; cursor:pointer; }
   </style>
@@ -397,6 +399,18 @@
     // ==================== INITIALISATION ====================
     requireAuth(() => { loadBooks(); });
 
+    // Lien partagé : /s?k=book&i=<clé> → ?item=<clé> ici (ouverture après chargement).
+    function ouvrirDepuisLien() {
+      const deep = (typeof ASRAR_SHARE !== 'undefined') ? ASRAR_SHARE.deepLink() : null;
+      if (!deep || !deep.key) return;
+      ASRAR_SHARE.clean();
+      const book = allBooks.find(b => b._key === deep.key);
+      const card = document.getElementById('book-' + deep.key);
+      if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('book-highlight'); }
+      if (book) ouvrirLivre(deep.key);
+      else alert("Cet ouvrage n'est plus disponible.");
+    }
+
     async function loadBooks() {
       try {
         const { items } = await apiPost('list-content', { kind: 'book' });
@@ -410,6 +424,7 @@
         }));
         renderBooks(allBooks);
         loadSocialCounts();
+        ouvrirDepuisLien();
       } catch (e) {
         document.getElementById('bookGrid').innerHTML =
           '<p class="empty-msg">Erreur de chargement.<br><small>' + escapeHtml(e.message) + '</small></p>';
@@ -433,7 +448,7 @@
       grid.innerHTML = books.map(book => {
         const s = socialStats[book._key] || { likes: 0, liked: false, comments: 0 };
         return `
-        <div class="book-card">
+        <div class="book-card" id="book-${book._key}">
           <div class="book-cover" onclick="ouvrirLivre('${book._key}')">
             ${book.img ? `<img src="${escapeHtml(book.img)}" alt="${escapeHtml(book.text)}" loading="lazy" onerror="this.parentElement.innerHTML='\ud83d\udcd6'">` : '\ud83d\udcd6'}
           </div>
@@ -447,6 +462,7 @@
               <button class="bs-btn" onclick="openComments('${book._key}')">
                 \ud83d\udcac <span id="commc-${book._key}">${s.comments}</span>
               </button>
+              <button class="bs-btn" title="Partager" onclick="partagerLivre('${book._key}')">\ud83d\udce4</button>
             </div>
           </div>
         </div>`;
@@ -467,11 +483,25 @@
           const { item } = await apiPost('get-content', { kind: 'book', key });
           const link = item.pdf || item.pdfUrl || '';
           if (!link) { alert("Lien du document indisponible."); return; }
-          window.open(link, '_blank', 'noopener');
+          // Ouverture directe ; si le navigateur bloque la fenêtre (arrivée via
+          // un lien partagé, donc sans geste utilisateur), on navigue sur place.
+          const w = window.open(link, '_blank', 'noopener');
+          if (!w) window.location.href = link;
         } catch (e) {
           if (e.status === 403) showSubscriptionGate();
           else alert('Erreur : ' + e.message);
         }
+      });
+    }
+
+    // ==================== PARTAGE (lien profond) ====================
+    function partagerLivre(key) {
+      if (typeof ASRAR_SHARE === 'undefined') return;
+      const b = allBooks.find(x => x._key === key) || {};
+      const titre = b.text || 'Ouvrage';
+      ASRAR_SHARE.share({
+        kind: 'book', key: key, title: titre,
+        text: '\ud83d\udcda ' + titre + ' — Bibliothèque Almaqtab sur ASRAR PRO'
       });
     }
 

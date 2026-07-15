@@ -28,9 +28,21 @@ if (typeof showSubscriptionGate !== 'function') {
 
 // ==================== INITIALISATION ====================
 requireAuth(async () => {
+  // Lien partagé : /s?k=secret&c=<cat>&i=<clé> → ?item=<clé>&cat=<cat> ici.
+  const deep = (typeof ASRAR_SHARE !== 'undefined') ? ASRAR_SHARE.deepLink() : null;
+  if (deep && deep.cat) {
+    const c = CATS.find(x => x.id === deep.cat);
+    if (c) currentCat = c;
+  }
+
   buildRail();
   await loadSecrets(currentCat.id);
   renderList(currentCat.id);
+
+  if (deep && deep.key) {
+    ASRAR_SHARE.clean();          // URL propre après ouverture
+    openSecret(deep.key);         // paywall inchangé : ensureAccess est appelé dedans
+  }
 });
 
 function buildRail() {
@@ -196,6 +208,22 @@ function backToList() {
   ratingsAvgRef = null;
   currentSecret = null;
   closeCommentSheet();
+}
+
+// ==================== PARTAGE (lien profond) ====================
+// Produit une URL courte /s?k=secret&c=…&i=… contenant AUSSI le code de
+// parrainage de l'utilisateur : chaque partage peut donc rapporter des points.
+function partagerSecret() {
+  if (!currentSecret) return;
+  if (typeof ASRAR_SHARE === 'undefined') { alert('Partage indisponible.'); return; }
+  const titre = (currentSecret.data && (currentSecret.data.faida || currentSecret.data.title)) || 'Secret Mystique';
+  ASRAR_SHARE.share({
+    kind: 'secret',
+    cat:  currentSecret.catId,
+    key:  currentSecret.key,
+    title: titre,
+    text: '📜 ' + titre + ' — Secrets Mystiques sur ASRAR PRO'
+  });
 }
 
 // ==================== FORMATAGE MIXTE ====================

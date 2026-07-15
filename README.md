@@ -44,11 +44,13 @@ Les deux passent par la **même** facture PayDunya et le **même** callback
 ├── chiffre/                   # Numérologie / Abjad / Istihraj
 ├── abajad/                    # Comparateur Abjad
 ├── alqalam/                   # Sous-app PWA de calligraphie (modules ES)
+├── parrainage/                # Parrainage : lien personnel, points, 3 mois offerts
 │
 ├── css/style.css              # Styles globaux du hub
 ├── js/
 │   ├── firebase-config.js     # Init Firebase (SDK COMPAT) + auth + paywall + plans
 │   ├── api-content.js         # apiPost() : appel /api avec idToken injecté
+│   ├── share.js               # Liens partageables (/s) + Web Share + parrainage
 │   ├── paydunya-client.js     # Helpers paiement (createCheckout, confirmFromReturn)
 │   └── main.js                # Utilitaires partagés (calculs astronomiques, etc.)
 │
@@ -62,6 +64,8 @@ Les deux passent par la **même** facture PayDunya et le **même** callback
 │   ├── get-theme.js           # Données géomancie — RÉSERVÉ AUX ABONNÉS
 │   ├── create-order.js        # (déjà ci-dessus) commande Marché
 │   ├── shop.js                # Gestion boutique vendeur (CRUD produits)
+│   ├── share.js               # /s → aperçu Open Graph + redirection vers l'élément
+│   ├── referral.js            # Parrainage : code, crédit des points, 3 mois offerts
 │   ├── track.js               # Journalisation visites / activité / géomancie (lu par l'admin)
 │   └── _lib/
 │       ├── access.js          # verifyUser() + hasActiveAccess() (la vraie barrière)
@@ -230,8 +234,23 @@ Plans (`api/_lib/plans.js`) : `sub_3m` 15 000 / 90 j · `sub_6m` 25 000 / 180 j 
 
 ---
 
-## 9. Pour aller plus loin
+## 9. Partage & parrainage
+
+Chaque élément possède un lien court **`/s?k=secret&c=deblocage&i=<clé>&r=<code>`**
+(réécrit vers `api/share.js`) : aperçu Open Graph pour WhatsApp/Facebook/TikTok, puis
+redirection vers la page du hub (`?item=&cat=`), connexion différée via `?next=` si besoin.
+Le paywall reste intact (l'aperçu n'expose que titre + image).
+
+Le **parrainage** (`api/referral.js`, `/parrainage/`) crédite **10 points** par
+**nouveau compte** inscrit depuis le lien (jamais au simple clic : ce serait
+falsifiable) ; **1000 points = 3 mois d'abonnement**. Détails, paramètres et
+anti-triche : **`PARTAGE_ET_PARRAINAGE.md`**.
+
+---
+
+## 10. Pour aller plus loin
 - `CHANGELOG.md` : ce qui a été corrigé/ajouté à la dernière session.
 - `api/README.md` : référence des endpoints.
 - `rules/README.md` : fusion des règles RTDB.
 - `REVUE.md` : revue technique antérieure (asrar / marché / planète / chiffre).
+- `PARTAGE_ET_PARRAINAGE.md` : liens partageables et programme de parrainage.

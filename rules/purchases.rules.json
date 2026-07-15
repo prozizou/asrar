@@ -53,6 +53,27 @@
       }
     },
 
+    "_comment_parrainage": "PARRAINAGE. Tout est écrit par /api/referral et /api/share (Admin SDK). Le client LIT seulement sa propre fiche ; il ne peut RIEN écrire (sinon les points seraient falsifiables).",
+
+    "referrals": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "referral_codes": {
+      "_comment": "Index code → uid. Serveur uniquement (empêche d'énumérer les codes).",
+      ".read": false,
+      ".write": false
+    },
+
+    "referred": {
+      "_comment": "Dédoublonnage : 1 crédit par compte filleul.",
+      ".read": false,
+      ".write": false
+    },
+
     "_comment_contenu": "Contenu PAYANT : lecture/écriture refusées au client. Servi via /api/list-content, /api/get-content et /api/get-theme (Admin SDK). Écriture via la console Firebase ou un script Admin SDK.",
 
     "db_sirr_deblocage":  { ".read": false, ".write": false },

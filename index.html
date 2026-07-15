@@ -29,6 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="js/whatsapp.js"></script>
   <script src="js/firebase-config.js"></script>
+  <script src="js/share.js"></script>
 
   <div class="container" style="max-width:420px;">
     <div class="glass-panel" style="text-align:center;">
@@ -56,6 +57,17 @@
 
   <script>
     const SEEN_KEY = 'asrar_seen'; // « déjà passé une fois » → reconnexion silencieuse
+
+    // ── Destination après connexion ─────────────────────────────
+    // ?next=/chemin?params : renvoyé par loginUrl() quand un LIEN PARTAGÉ
+    // (/s?k=…&i=…) a été ouvert sans être connecté. On n'accepte qu'un chemin
+    // interne (jamais une URL absolue → pas de redirection ouverte).
+    function nextTarget() {
+      let n = null;
+      try { n = new URLSearchParams(location.search).get('next'); } catch (e) {}
+      if (n && n.charAt(0) === '/' && n.charAt(1) !== '/' && !/[\\:]/.test(n)) return n;
+      return 'accueil/accueil.html';
+    }
     const statusEl = document.getElementById('status');
     const errEl    = document.getElementById('error-msg');
 
@@ -81,7 +93,7 @@
     auth.onAuthStateChanged(user => {
       if (user) {
         localStorage.setItem(SEEN_KEY, '1');
-        window.location.href = 'accueil/accueil.html';
+        window.location.href = nextTarget();
       } else {
         // Session absente : on retire l'état « reconnexion » et on montre le bouton.
         statusEl.innerText = '';
@@ -97,7 +109,7 @@
       auth.signInWithPopup(provider)
         .then(() => {
           localStorage.setItem(SEEN_KEY, '1');
-          window.location.href = 'accueil/accueil.html';
+          window.location.href = nextTarget();
         })
         .catch(e => {
           // Popup bloquée / non supportée (webviews, in-app) → repli sur la redirection.

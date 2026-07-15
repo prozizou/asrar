@@ -26,6 +26,26 @@ requireAuth(() => {
   verifierRetourCommande();
 });
 
+// Lien partagé : /s?k=product&i=<clé> → ?item=<clé> ici (ouvert après chargement).
+function ouvrirDepuisLien() {
+  const deep = (typeof ASRAR_SHARE !== 'undefined') ? ASRAR_SHARE.deepLink() : null;
+  if (!deep || !deep.key) return;
+  ASRAR_SHARE.clean();
+  if (!allProducts.some(p => p._key === deep.key)) { alert("Ce produit n'est plus disponible."); return; }
+  gatedOpenProduct(deep.key);
+}
+
+// ==================== PARTAGE (lien profond) ====================
+// Le lien contient aussi le code de parrainage : partager = gagner des points.
+function partagerProduit() {
+  if (!currentModalProduct || typeof ASRAR_SHARE === 'undefined') return;
+  const nom = currentModalProduct.produit || 'Produit';
+  ASRAR_SHARE.share({
+    kind: 'product', key: currentModalProduct._key, title: nom,
+    text: '🛒 ' + nom + ' — Marché Mystique sur ASRAR PRO'
+  });
+}
+
 async function loadMarketData() {
   try {
     // Métadonnées produits (sans description / number / email vendeur, qui sont payants).
@@ -40,6 +60,7 @@ async function loadMarketData() {
     // ne pas retarder le rendu, puis on retrie et on rafraîchit.
     chargerPopularite();
     chargerLikesVendeurs();
+    ouvrirDepuisLien();
   } catch (e) {
     document.getElementById('prodGrid').innerHTML =
       '<p style="color:#888;grid-column:1/-1;text-align:center;padding:40px;">Erreur de chargement des produits.<br><small>' + e.message + '</small></p>';

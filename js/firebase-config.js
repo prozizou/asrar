@@ -64,13 +64,22 @@ function checkAccess(user) {
   });
 }
 
+// ── URL de connexion CONSERVANT le lien profond en cours ────
+// Un lien partagé (/s?k=secret&i=…) atterrit sur une page du hub avec
+// ?item=…&cat=… ; si l'utilisateur n'est pas connecté, on mémorise la
+// destination dans ?next= pour l'y renvoyer après le Google Sign-In.
+function loginUrl() {
+  const next = window.location.pathname + window.location.search;
+  return getRoot() + 'index.html?next=' + encodeURIComponent(next);
+}
+
 // ── Auth guard simple (authentification uniquement) ────────
 function requireAuth(callback) {
   auth.onAuthStateChanged(user => {
     if (user) {
       if (callback) callback(user);
     } else {
-      window.location.href = getRoot() + 'index.html';
+      window.location.href = loginUrl();
     }
   });
 }
@@ -80,7 +89,7 @@ function requireAuth(callback) {
 function requireAccess(callback) {
   auth.onAuthStateChanged(user => {
     if (!user) {
-      window.location.href = getRoot() + 'index.html';
+      window.location.href = loginUrl();
       return;
     }
     checkAccess(user).then(status => {
@@ -98,7 +107,7 @@ function requireAccess(callback) {
 //  l'administration après réception de la demande WhatsApp.)
 function startSubscription(productId) {
   const user = auth.currentUser;
-  if (!user) { window.location.href = getRoot() + 'index.html'; return; }
+  if (!user) { window.location.href = loginUrl(); return; }
 
   if (!window.ASRAR_WA) {
     alert("Contactez l'administration pour activer votre accès.");
@@ -125,7 +134,7 @@ function getSubscriptionLevel() {
 }
 function ensureAccess(onGranted) {
   const user = auth.currentUser;
-  if (!user) { window.location.href = getRoot() + 'index.html'; return; }
+  if (!user) { window.location.href = loginUrl(); return; }
 
   const apply = (status) => {
     _accessStatus = status;
@@ -179,6 +188,11 @@ function showSubscriptionGate() {
         background:linear-gradient(45deg,#4facfe,#00f2fe); color:#fff; font-size:.62rem;
         font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; }
       #gate-note { margin-top:18px; font-size:.82rem; color:#cfd8dc; min-height:18px; }
+      .sg-free { display:block; margin-top:16px; padding:12px 14px; border-radius:14px;
+        border:1px dashed rgba(0,242,254,.55); background:rgba(0,242,254,.06); color:#e8f7ff;
+        text-decoration:none; font-size:.88rem; line-height:1.5; }
+      .sg-free:hover { background:rgba(0,242,254,.14); }
+      .sg-free b { color:#00f2fe; }
     </style>
     <div class="sg-box">
       <span class="sg-close" onclick="closeSubscriptionGate()">✕</span>
@@ -187,6 +201,10 @@ function showSubscriptionGate() {
       <p class="sg-sub">Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration.</p>
       <div class="sg-grid">${cards}</div>
       <p id="gate-note">💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp.</p>
+      <a class="sg-free" href="${getRoot()}parrainage/parrainage.html">
+        🎁 <b>Pas les moyens ?</b> Partagez ASRAR PRO avec votre lien personnel :
+        chaque personne qui s'inscrit vous rapporte des points — <b>3 mois offerts</b> à 1000 points.
+      </a>
     </div>`;
 
   document.body.appendChild(ov);

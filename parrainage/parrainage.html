@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parrainage — ASRAR PRO</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="/js/loader.js" defer></script>
+  <style>
+    .pr-hero { text-align:center; margin-bottom:22px; }
+    .pr-hero h1 { margin:6px 0 4px; font-size:1.6rem; }
+    .pr-hero p  { color:var(--text-muted); margin:0; font-size:.95rem; }
+
+    .pr-card { background:var(--glass-bg); border:1px solid var(--glass-border);
+               border-radius:16px; padding:18px; margin-bottom:16px; }
+    .pr-card h3 { margin:0 0 10px; font-size:1rem; letter-spacing:.5px; }
+
+    /* Progression */
+    .pr-points { font-size:2.2rem; font-weight:700; line-height:1;
+                 background:-webkit-linear-gradient(45deg,#4facfe,#00f2fe);
+                 -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .pr-goal { color:var(--text-muted); font-size:.85rem; margin-top:4px; }
+    .pr-bar { height:10px; border-radius:20px; background:rgba(255,255,255,.12);
+              overflow:hidden; margin:14px 0 6px; }
+    .pr-bar span { display:block; height:100%; width:0;
+                   background:linear-gradient(90deg,#4facfe,#00f2fe); transition:width .6s ease; }
+
+    /* Lien */
+    .pr-link-row { display:flex; gap:8px; align-items:center; }
+    .pr-link { flex:1; background:rgba(0,0,0,.3); border:1px solid var(--glass-border);
+               border-radius:10px; padding:11px 12px; color:#fff; font-size:.85rem;
+               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pr-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    .pr-btn { flex:1 1 140px; border:none; border-radius:12px; padding:13px 16px; cursor:pointer;
+              font-weight:600; font-size:.92rem; background:rgba(255,255,255,.12);
+              border:1px solid var(--glass-border); color:#fff; }
+    .pr-btn:hover { background:rgba(255,255,255,.2); }
+    .pr-btn.main { background:linear-gradient(45deg,#4facfe,#00f2fe); border:none; color:#04222c; }
+    .pr-btn:disabled { opacity:.45; cursor:not-allowed; }
+
+    /* Stats */
+    .pr-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .pr-stat { background:rgba(0,0,0,.22); border:1px solid var(--glass-border);
+               border-radius:12px; padding:12px 8px; text-align:center; }
+    .pr-stat b { display:block; font-size:1.25rem; }
+    .pr-stat small { color:var(--text-muted); font-size:.72rem; }
+
+    .pr-code { font-family:monospace; font-size:1.35rem; letter-spacing:3px; font-weight:700; color:#00f2fe; }
+    .pr-rules { color:var(--text-muted); font-size:.85rem; line-height:1.65; padding-left:18px; margin:0; }
+    .pr-rules li { margin-bottom:5px; }
+    #pr-msg { min-height:20px; font-size:.88rem; text-align:center; margin-top:10px; color:#cfd8dc; }
+  </style>
+  <script src="/js/theme.js"></script>
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+  <div id="asrar-loader"><div class="asrar-spinner"></div><span class="asrar-loader-text">Chargement…</span></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/whatsapp.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/api-content.js"></script>
+  <script src="../js/share.js"></script>
+
+  <div class="container" style="max-width:620px;">
+    <a href="../accueil/accueil.html" class="back-btn">← Retour</a>
+
+    <div class="glass-panel">
+      <div class="pr-hero">
+        <div style="font-size:2.6rem;">🎁</div>
+        <h1>Parrainage</h1>
+        <p>Pas les moyens de vous abonner ? Partagez ASRAR PRO et gagnez votre accès.</p>
+      </div>
+
+      <!-- Progression -->
+      <div class="pr-card">
+        <h3>MES POINTS</h3>
+        <div class="pr-points" id="pr-points">—</div>
+        <div class="pr-bar"><span id="pr-bar"></span></div>
+        <div class="pr-goal" id="pr-goal">Chargement…</div>
+        <button class="pr-btn main" id="pr-redeem" style="margin-top:14px;width:100%;flex:none;" disabled
+                onclick="convertir()">🔓 Activer 3 mois d'abonnement</button>
+      </div>
+
+      <!-- Lien de parrainage -->
+      <div class="pr-card">
+        <h3>MON LIEN DE PARRAINAGE</h3>
+        <div class="pr-link-row">
+          <div class="pr-link" id="pr-link">Chargement…</div>
+        </div>
+        <div style="margin-top:10px;color:var(--text-muted);font-size:.82rem;">
+          Mon code : <span class="pr-code" id="pr-code">—</span>
+        </div>
+        <div class="pr-actions">
+          <button class="pr-btn main" onclick="partagerApp()">📤 Partager</button>
+          <button class="pr-btn" onclick="copierLien()">🔗 Copier le lien</button>
+        </div>
+        <p id="pr-msg"></p>
+      </div>
+
+      <!-- Statistiques -->
+      <div class="pr-card">
+        <h3>STATISTIQUES</h3>
+        <div class="pr-stats">
+          <div class="pr-stat"><b id="pr-clicks">0</b><small>Clics sur mon lien</small></div>
+          <div class="pr-stat"><b id="pr-invited">0</b><small>Filleuls inscrits</small></div>
+          <div class="pr-stat"><b id="pr-rewards">0</b><small>Abonnements gagnés</small></div>
+        </div>
+      </div>
+
+      <!-- Règles -->
+      <div class="pr-card">
+        <h3>COMMENT ÇA MARCHE</h3>
+        <ul class="pr-rules">
+          <li>Partagez votre lien sur WhatsApp, Facebook, TikTok…</li>
+          <li><b id="pr-ppi">10</b> points quand une personne <b>crée un compte</b> ASRAR PRO depuis votre lien.</li>
+          <li>À <b id="pr-need">1000</b> points, activez <b>3 mois d'abonnement</b> gratuit en un clic.</li>
+          <li>Le clic seul ne rapporte rien (il est seulement compté) : c'est l'inscription du filleul qui crédite les points.</li>
+          <li>Un compte ne peut être parrainé qu'une seule fois. L'auto-parrainage n'est pas crédité.</li>
+          <li>Tous les liens que vous partagez depuis l'app (secrets, livres, produits) contiennent déjà votre code.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let INFO = null;
+
+    requireAuth(() => { charger(); });
+
+    async function charger(force) {
+      try {
+        INFO = await ASRAR_SHARE.me(!!force);
+        afficher(INFO);
+      } catch (e) {
+        document.getElementById('pr-goal').innerText = 'Erreur de chargement : ' + (e.message || e);
+      }
+    }
+
+    function afficher(d) {
+      const need = d.pointsForReward, pts = d.points;
+      document.getElementById('pr-points').innerText = pts.toLocaleString('fr-FR');
+      document.getElementById('pr-goal').innerText =
+        pts >= need ? '🎉 Objectif atteint — activez vos ' + d.rewardDays + ' jours !'
+                    : (need - pts).toLocaleString('fr-FR') + ' points restants sur ' + need.toLocaleString('fr-FR')
+                      + ' (soit ' + Math.ceil((need - pts) / d.pointsPerInvite) + ' filleul(s))';
+      document.getElementById('pr-bar').style.width = Math.min(100, (pts / need) * 100) + '%';
+      document.getElementById('pr-link').innerText = d.link;
+      document.getElementById('pr-code').innerText = d.code;
+      document.getElementById('pr-clicks').innerText  = d.clicks;
+      document.getElementById('pr-invited').innerText = d.invited;
+      document.getElementById('pr-rewards').innerText = d.rewards;
+      document.getElementById('pr-ppi').innerText  = d.pointsPerInvite;
+      document.getElementById('pr-need').innerText = need;
+      document.getElementById('pr-redeem').disabled = !d.canRedeem;
+    }
+
+    function partagerApp() {
+      ASRAR_SHARE.share({
+        title: 'ASRAR PRO',
+        text: "Assalamou aleykoum 🌙 Découvre ASRAR PRO : secrets mystiques, bibliothèque Almaqtab, géomancie et noms d'Allah."
+      });
+    }
+
+    function copierLien() {
+      if (!INFO) return;
+      ASRAR_SHARE.copy(INFO.link);
+    }
+
+    async function convertir() {
+      const btn = document.getElementById('pr-redeem');
+      const msg = document.getElementById('pr-msg');
+      if (!confirm("Convertir " + INFO.pointsForReward + " points en " + INFO.rewardDays + " jours d'abonnement ?")) return;
+      btn.disabled = true; msg.innerText = 'Activation en cours…';
+      try {
+        const r = await ASRAR_SHARE.post('redeem');
+        if (typeof invalidateAccessCache === 'function') invalidateAccessCache();
+        msg.innerText = '✅ Abonnement activé jusqu\'au ' + new Date(r.expiresAt).toLocaleDateString('fr-FR') + '.';
+        charger(true);
+      } catch (e) {
+        msg.innerText = '❌ ' + (e.message || e);
+        btn.disabled = false;
+      }
+    }
+  </script>
+  <script src="/pwa.js" defer></script>
+</body>
+</html>

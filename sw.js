@@ -6,7 +6,7 @@
 // (skipWaiting + clients.claim), purge les anciens caches, et pwa.js recharge la
 // page automatiquement → l'utilisateur voit la nouvelle version sans rien faire.
 
-const SW_VERSION = 'v25.2';                 // ← incrémenter à chaque mise à jour
+const SW_VERSION = 'v26.0';                 // ← incrémenter à chaque mise à jour
 const CACHE = 'asrar-' + SW_VERSION;
 
 // Coquille minimale : pages/ressources clés. Le reste est mis en cache à la volée
@@ -18,6 +18,8 @@ const APP_SHELL = [
   '/css/style.css',
   '/js/firebase-config.js',
   '/js/whatsapp.js',
+  '/js/share.js',
+  '/parrainage/parrainage.html',
   '/js/main.js',
   '/pwa.js',
   '/manifest.json',
@@ -28,9 +30,11 @@ const APP_SHELL = [
   '/assets/icon-512.png'
 ];
 
-// Ne JAMAIS mettre en cache : API, Firebase, gstatic, analytics tiers.
+// Ne JAMAIS mettre en cache : API, liens partagés (/s → /api/share, redirection
+// dynamique + comptage de clics), Firebase, gstatic, analytics tiers.
 function isBypassed(url) {
   return url.pathname.startsWith('/api/') ||
+         url.pathname === '/s' || url.pathname.startsWith('/s/') ||
          /(^|\.)gstatic\.com$/.test(url.hostname) ||
          /(^|\.)googleapis\.com$/.test(url.hostname) ||
          /firebaseio\.com$/.test(url.hostname) ||

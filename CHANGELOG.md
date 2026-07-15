@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## Session 7 — Liens partageables (deep links) & Parrainage
+
+Deux ajouts, documentés en détail dans **`PARTAGE_ET_PARRAINAGE.md`**.
+
+### 1) Chaque élément a une URL partageable
+- Nouveau lien court **`/s?k=<type>&c=<cat>&i=<clé>&r=<code>`** (réécriture `vercel.json`
+  → `api/share.js`). Types : `secret`, `book`, `product`.
+- `api/share.js` sert une page d'**aperçu Open Graph** (titre + image) pour
+  WhatsApp / Messenger / Facebook / TikTok / Telegram, puis **redirige** vers la page
+  du hub avec `?item=&cat=`.
+- `js/share.js` (nouveau) : construction des liens, **Web Share API** + repli copie,
+  lecture du lien profond, capture du code de parrainage.
+- Boutons **📤 Partager** : détail + lecteur des Secrets, cartes de la Bibliothèque,
+  modale produit du Marché.
+- **Connexion différée** : `loginUrl()` ajoute `?next=<destination>` ; `index.html`
+  renvoie l'utilisateur sur l'élément partagé après le Google Sign-In.
+- **Paywall inchangé** : l'aperçu ne lit que titre/image (jamais `sirr`, `pdf`,
+  description vendeur) ; l'ouverture passe toujours par `get-content`.
+
+### 2) Parrainage — gagner un abonnement en partageant
+- Nouvelle page **`/parrainage/parrainage.html`** (lien personnel, code, points,
+  progression, statistiques, activation) + entrée 🎁 dans l'accueil et CTA dans la
+  passerelle « Abonnement requis ».
+- Nouvelle fonction **`api/referral.js`** : `me` / `claim` / `redeem`.
+  **10 points par filleul inscrit**, **1000 points → 3 mois d'abonnement**
+  (prolonge l'échéance en cours, restitution des points si l'activation échoue).
+- **Anti-triche** : les points ne sont PAS crédités au clic (répétable à l'infini)
+  mais à l'**inscription d'un nouveau compte** venu du lien — 1 crédit par filleul
+  (transaction `referred/{uid}`), auto-parrainage refusé, compte de plus de 7 jours
+  non crédité. Les clics restent comptés à titre statistique.
+- Règles RTDB : `referrals`, `referral_codes`, `referred` (lecture propriétaire,
+  écriture serveur uniquement) — à fusionner depuis `rules/purchases.rules.json`.
+- `SW_VERSION` → **`v26.0`** (le lien `/s` n'est jamais mis en cache).
+
 ## Session 6 — Suppression de PayDunya → activation manuelle via WhatsApp
 
 Motivation : impossible de récupérer les fonds envoyés depuis l'étranger (ex. Burkina Faso)
