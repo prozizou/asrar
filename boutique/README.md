@@ -12,16 +12,21 @@ sa boutique et ses produits**. Distinct de l'abonnement au contenu.
   WhatsApp) et **ajouter / modifier / supprimer** ses produits (nom, prix, devise,
   image, description, contact, catégorie).
 
+> **Paiement en ligne retiré.** L'accès vendeur n'est plus payé via PayDunya : la
+> demande passe **par WhatsApp**, puis l'administration active `sellers/{uid}`
+> manuellement (via `/api/admin`).
+
 ## Fichiers
 - `boutique.html` — page (socle Firebase compat + `api-content.js`).
-- `boutique.js` — paiement (`startSubscription`), retour PayDunya, et CRUD via `/api/shop`.
+- `boutique.js` — demande d'accès (`startSubscription` → WhatsApp) et CRUD via `/api/shop`.
 - `boutique.css` — styles.
 
 ## Flux
 1. `requireAuth` → `apiPost('shop', { action:'me' })`.
 2. **Pas vendeur actif** → cartes d'offres `boutique_1m` / `boutique_3m` →
-   `startSubscription(planId)` → PayDunya. Au retour (`?token=`), `confirm-invoice`
-   active `sellers/{uid}` (via `grantSeller`).
+   `startSubscription(planId)` → `window.ASRAR_WA.openAccess({ planId, email, section })`
+   ouvre **`/api/wa`** (redirection WhatsApp). L'administration active ensuite
+   `sellers/{uid}` à la main via `/api/admin` (`seller-action` : `activate` / `extend`).
 3. **Vendeur actif** → édition boutique (`save-shop`) + produits
    (`save-product` / `delete-product`).
 
@@ -31,7 +36,7 @@ sa boutique et ses produits**. Distinct de l'abonnement au contenu.
 - Un vendeur ne peut modifier/supprimer **que ses propres** produits
   (`det_produits/{key}.uid === auth.uid`, vérifié serveur).
 - `sellers/{uid}` : lisible par le propriétaire, écriture serveur uniquement
-  (paiement + `/api/shop`).
+  (activation admin + `/api/shop`).
 
 ## Données
 - `sellers/{uid}` = `{ email, shopActive, plan, expiresAt, shop:{ name, description, phone }, ... }`

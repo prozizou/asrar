@@ -73,8 +73,7 @@ Trois « portes » distinctes coexistent :
 │   ├── main.js                # Utilitaires partagés (calculs astronomiques, etc.)
 │   ├── theme.js               # Bascule clair/sombre globale, persistée
 │   ├── loader.js              # Loader plein écran entre les pages
-│   ├── nav.js                 # Bouton « retour » → accueil depuis une section
-│   └── paydunya-client.js     # ⚠️ VESTIGE PayDunya — plus chargé par aucune page
+│   └── nav.js                 # Bouton « retour » → accueil depuis une section
 │
 ├── api/                        # Fonctions Vercel (Node 18+) — un fichier = un endpoint
 │   ├── list-content.js        # Métadonnées d'une liste (sans champ payant) — auth requise
@@ -93,10 +92,7 @@ Trois « portes » distinctes coexistent :
 │       ├── grant.js           # Init Firebase Admin partagée (app())
 │       ├── sellers.js         # Statut vendeur : sellers/{uid} + boutiques "profil"
 │       ├── sources.js         # Liste blanche des nœuds + champs sensibles
-│       ├── http.js            # CORS + parsing du body
-│       ├── plans.js           # ⚠️ Catalogue prix/durée — VESTIGE, plus importé
-│       ├── orders.js          # ⚠️ Commandes Marché + commission 5 % — VESTIGE, plus importé
-│       └── paydunya.js        # ⚠️ Appels API PayDunya — VESTIGE, plus importé
+│       └── http.js            # CORS + parsing du body
 │
 ├── rules/purchases.rules.json # Règles RTDB à FUSIONNER (voir rules/README.md)
 ├── assets/                    # Jeu d'icônes complet (192/512, maskable, apple-touch, favicon, logos)
@@ -265,12 +261,11 @@ auto-parrainage refusé, comptes trop anciens refusés. Détails : `PARTAGE_ET_P
 ## 9. Note sur PayDunya (héritage retiré)
 
 Le projet utilisait auparavant un paiement en ligne PayDunya. **Ce flux a été remplacé
-par l'activation manuelle via WhatsApp.** Les fichiers suivants sont conservés dans le
-dépôt mais **ne sont plus utilisés par aucun endpoint ni aucune page** :
-`js/paydunya-client.js`, `api/_lib/paydunya.js`, `api/_lib/orders.js`, `api/_lib/plans.js`.
-Les endpoints `create-invoice`, `create-order`, `confirm-invoice` et `paydunya-ipn`
-**n'existent plus**. Ces vestiges peuvent être supprimés sans impact (le catalogue
-prix/durée est aujourd'hui rappelé dans `js/whatsapp.js` et le portail d'offres).
+par l'activation manuelle via WhatsApp.** Les fichiers du flux PayDunya
+(`js/paydunya-client.js`, `api/_lib/paydunya.js`, `api/_lib/orders.js`, `api/_lib/plans.js`)
+ainsi que les endpoints `create-invoice`, `create-order`, `confirm-invoice` et
+`paydunya-ipn` **ont été supprimés**. Le catalogue prix/durée est aujourd'hui rappelé
+dans `js/whatsapp.js` et le portail d'offres.
 
 ---
 
