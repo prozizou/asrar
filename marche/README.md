@@ -1,12 +1,16 @@
-# Marché Mystique — produits & checkout
+# Marché Mystique — produits & commande
 
-Marketplace de produits ésotériques. **Modèle de paiement distinct de
-l'abonnement** : l'acheteur paie le **prix du vendeur** ; l'administration retient
-**5 % du total**, 95 % reviennent au vendeur.
+Marketplace de produits ésotériques. **Modèle distinct de l'abonnement** :
+l'acheteur contacte le vendeur/l'administration pour finaliser l'achat.
+
+> **Paiement en ligne retiré.** La commande n'est plus payée via PayDunya : elle
+> est transmise **par WhatsApp** (récapitulatif du panier), puis traitée
+> manuellement. Il n'y a plus d'endpoint `create-order` ni de calcul de
+> commission côté serveur.
 
 ## Fichiers
 - `marche.html` — page (charge le socle Firebase compat + `api-content.js`).
-- `marche.js` — grille produits, fiches, **panier**, et **checkout** réel.
+- `marche.js` — grille produits, fiches, **panier**, et **envoi de la commande**.
 - `marche.css` — styles.
 
 ## Parcours d'achat
@@ -14,32 +18,20 @@ l'abonnement** : l'acheteur paie le **prix du vendeur** ; l'administration retie
 2. Fiche produit via `apiPost('get-content', { kind:'product', key })`
    (description + contact vendeur : **auth seule, PAS d'abonnement** — `authOnly`).
 3. Panier (clé, quantité) en `localStorage`.
-4. `payWithPayDunya()` → `apiPost('create-order', { items:[{key,quantity}] })`.
-   Le client n'envoie **que** des clés + quantités ; les prix sont **relus
-   serveur** dans `det_produits` (anti-fraude). Redirection vers PayDunya.
-5. Retour `marche.html?token=…` → `/api/confirm-invoice` : panier vidé, commande
-   marquée `paid`. L'IPN confirme aussi en parallèle.
-
-## Commission (5 %)
-Calcul dans `api/_lib/orders.js` :
-- `total` = Σ (prix × quantité) ;
-- `commission` = `round(total × 0,05)` → administration ;
-- `sellerPayout` = `total − commission` → vendeur (ventilé par vendeur).
-
-Stockage : `orders/{uid}/{orderId}` (commande) et `vendor_sales/{vendorId}/{orderId}`
-(journal pour règlement).
+4. Validation → `window.ASRAR_WA.openOrder({ email, items, total, devise })` :
+   construit un message récapitulatif (articles, quantités, total) et ouvre
+   **`/api/wa`**, qui redirige vers WhatsApp avec le numéro stocké côté serveur.
+5. La disponibilité, le prix et les modalités sont confirmés **par WhatsApp** ;
+   l'administration/le vendeur finalise hors ligne.
 
 ## Notes
-- **Pas de split automatique** : tout arrive sur le compte plateforme ; les
-  reversements vendeurs se font à partir de `vendor_sales`.
-- **Livraison** : la livraison « fictive » a été mise à 0 (affichage = montant
-  débité). Pour une livraison réelle, l'ajouter côté serveur dans le calcul du
-  total (sinon elle ne serait pas facturée).
+- Les prix affichés viennent de `det_produits/{key}` (`Prix`, `devise`) ; le total
+  est calculé côté client uniquement pour enrichir le message WhatsApp.
 - Schéma produit attendu dans `det_produits/{key}` : `produit`, `Prix`, `devise`,
   `Image`, `vendeur`, `uid`/`vendeurId`, et (sensibles) `description`, `number`,
   `email`.
 
 ## Vendre sur le Marché
 Les produits proviennent de `det_produits`, alimentés par les vendeurs depuis
-`boutique/` (abonnement boutique). Voir `boutique/README.md`. Un lien « 🏪 Ma boutique »
-figure en haut de `marche.html`.
+`boutique/` (statut vendeur actif). Voir `boutique/README.md`. Un lien
+« 🏪 Ma boutique » figure en haut de `marche.html`.

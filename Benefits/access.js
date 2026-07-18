@@ -18,7 +18,7 @@ const CACHE_TTL   = 6 * 3_600_000; // 6 h — permet aux abonnés hors-ligne de 
 
 const emailToKey = (e) => (e ? e.replace(/\./g, ',') : null);
 
-// Offres « contenu » (identiques au catalogue serveur plans.js).
+// Offres « contenu » (identiques au catalogue rappelé dans js/whatsapp.js).
 const SUB_PLANS = [
   { id: 'sub_3m',   dur: '3 Mois',        price: '15 000' },
   { id: 'sub_6m',   dur: '6 Mois',        price: '25 000' },
