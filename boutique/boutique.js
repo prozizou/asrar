@@ -174,7 +174,7 @@ function renderProducts() {
   wrap.innerHTML = myProducts.map(p => `
     <div class="bq-prod">
       <div class="bq-prod-img">${p.Image
-        ? `<img src="${esc(p.Image)}" onerror="this.parentElement.innerHTML='🔮'">` : '🔮'}</div>
+        ? `<img src="${esc(p.Image)}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='🔮'">` : '🔮'}</div>
       <div class="bq-prod-body">
         <div class="bq-prod-name">${esc(p.produit || 'Produit')}</div>
         <div class="bq-prod-price">${Number(p.Prix||0).toLocaleString('fr-FR')} ${esc(p.devise||'FCFA')}</div>

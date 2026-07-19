@@ -53,14 +53,20 @@
 - `boutique/boutique.css` : media queries mobiles — formulaires en pleine
   largeur, grille de plans adaptative, cartes produit qui ne débordent plus,
   modale ajustée.
+- **Tokens de thème — source unique pour l'or de marque** : `--bq-gold`,
+  `--asrar-gold` et `--mk-gold` (valeurs identiques `#C9A961` / `#b0852f`)
+  pointent désormais vers `var(--gold)` de `css/style.css`. Zéro changement
+  visuel (vérifié en clair et sombre), une seule valeur à maintenir.
+- **Lazy-loading des images de listes** : `loading="lazy"` + `decoding="async"`
+  ajoutés aux vignettes de secrets (asrar), au catalogue boutique et aux avatars
+  vendeurs (marché). Les images produits du marché l'avaient déjà.
 
 ## 🚀 Améliorations proposées (suite)
 
-1. **Unifier les tokens de thème** : dériver `--bq-*`, `--asrar-*`, `--mk-*` des
-   variables partagées (ou les fusionner) pour une seule source de vérité.
+1. **Poursuivre l'unification des tokens** : les fonds/surfaces crème restent
+   propres à chaque module par choix d'identité ; on pourrait les dériver d'un
+   sous-jeu partagé « mystique » si l'on veut aller plus loin.
 2. **Fiabiliser les dépendances** : self-héberger Firebase/les polices, ou
    ajouter SRI + `preconnect`/`font-display: swap`.
-3. **Images** : ajouter `loading="lazy"` et `width`/`height` aux visuels
-   produits (marché, boutique) pour la perf et éviter le layout shift.
-4. **Basculer `planete.html` sur le calcul NOAA hors-ligne** déjà présent.
-5. **Ajouter un audit Lighthouse** et quelques tests de non-régression.
+3. **Basculer `planete.html` sur le calcul NOAA hors-ligne** déjà présent.
+4. **Ajouter un audit Lighthouse** et quelques tests de non-régression.

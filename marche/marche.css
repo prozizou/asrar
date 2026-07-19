@@ -12,7 +12,7 @@
     --mk-text-soft:   #aaa;
     --mk-text-dim:    #888;
     --mk-text-faint:  #666;
-    --mk-gold:        #C9A961;
+    --mk-gold:        var(--gold);   /* or de marque : source unique dans css/style.css */
     --mk-overlay:     rgba(0,0,0,0.6);
     --mk-modal-bg:    rgba(0,0,0,0.85);
     --mk-soft-2:      rgba(255,255,255,0.03);
@@ -33,7 +33,7 @@ html[data-theme="light"] {
     --mk-text-soft:   #5a4a30;
     --mk-text-dim:    #8a7d5a;
     --mk-text-faint:  #b0a480;
-    --mk-gold:        #b0852f;
+    --mk-gold:        var(--gold);   /* or de marque : source unique dans css/style.css */
     --mk-overlay:     rgba(45,31,16,0.4);
     --mk-modal-bg:    rgba(45,31,16,0.5);
     --mk-soft-2:      rgba(0,0,0,0.04);

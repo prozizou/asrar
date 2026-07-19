@@ -196,7 +196,7 @@ function buildVendorSection() {
     return `
     <div class="vendor-card" onclick="openVendorShop('${v.id}')">
       <div class="vendor-avatar">
-        ${v.avatar ? `<img src="${escapeHtml(v.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.innerHTML='🔮'">` : '🔮'}
+        ${v.avatar ? `<img src="${escapeHtml(v.avatar)}" loading="lazy" decoding="async" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.innerHTML='🔮'">` : '🔮'}
       </div>
       <div class="vendor-name">${escapeHtml(v.name)}</div>
       <div class="vendor-specialty">${escapeHtml(v.specialty)}</div>

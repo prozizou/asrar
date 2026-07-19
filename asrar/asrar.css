@@ -21,8 +21,8 @@
     --asrar-star-off:  #3A3A40;
     --asrar-overlay:   rgba(0,0,0,0.6);
 
-    /* L'or (utilisé tel quel) */
-    --asrar-gold:      #C9A961;
+    /* L'or de marque : source unique dans css/style.css */
+    --asrar-gold:      var(--gold);
     --asrar-cream:     #F5E6C4;
 }
 
@@ -40,7 +40,7 @@ html[data-theme="light"] {
     --asrar-star-off:  #c8b98a;
     --asrar-overlay:   rgba(45,31,16,0.35);
 
-    --asrar-gold:      #b0852f;
+    --asrar-gold:      var(--gold);
     --asrar-cream:     #2d1f10;
 }
 

@@ -10,7 +10,7 @@
     --bq-text:      #F5E6C4;
     --bq-text-soft: #aaa;
     --bq-text-dim:  #888;
-    --bq-gold:      #C9A961;
+    --bq-gold:      var(--gold);   /* or de marque : source unique dans css/style.css */
     --bq-gold-soft: #8a7f66;
     --bq-overlay:   rgba(0,0,0,.75);
     --bq-logo-bg:   rgba(255,255,255,0.04);
@@ -25,7 +25,7 @@ html[data-theme="light"] {
     --bq-text:      #2d1f10;
     --bq-text-soft: #6b5a3a;
     --bq-text-dim:  #8a7d5a;
-    --bq-gold:      #b0852f;
+    --bq-gold:      var(--gold);   /* or de marque : source unique dans css/style.css */
     --bq-gold-soft: #b0852f;
     --bq-overlay:   rgba(45,31,16,0.4);
     --bq-logo-bg:   rgba(0,0,0,0.04);
