@@ -8,15 +8,16 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 /* ── DESIGN TOKENS ────────────────────────────────────────── */
 :root {
-    /* Couleurs principales */
-    --gold:         #c9a84c;
-    --gold-light:   #f0c96a;
-    --gold-dim:     rgba(201, 168, 76, 0.18);
-    --gold-border:  rgba(201, 168, 76, 0.30);
+    /* Accent aligné sur le thème global bleu (--gold conservé comme nom
+       de token interne mais teinté en bleu pour l'unité visuelle). */
+    --gold:         #4facfe;
+    --gold-light:   #00f2fe;
+    --gold-dim:     rgba(79, 172, 254, 0.18);
+    --gold-border:  rgba(79, 172, 254, 0.30);
     --green-accent: #2dd4a0;
 
-    /* Fond & surfaces (dark) */
-    --bg:           #0d1117;
+    /* Fond & surfaces (dark) — dégradé teal du thème global */
+    --bg:           linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     --surface-1:    rgba(22, 30, 44, 0.75);
     --surface-2:    rgba(30, 40, 58, 0.65);
     --surface-hover:rgba(38, 52, 74, 0.80);
@@ -51,7 +52,7 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 }
 
 [data-theme="light"] {
-    --bg:           #f4f6f8;
+    --bg:           linear-gradient(135deg, #eef3f7, #dde6ec, #cdd8e0);
     --surface-1:    rgba(255, 255, 255, 0.80);
     --surface-2:    rgba(255, 255, 255, 0.95);
     --surface-hover:rgba(255, 255, 255, 1);
@@ -63,10 +64,10 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
     --shadow-sm:    0 2px 8px rgba(0,0,0,0.08);
     --shadow-md:    0 8px 24px rgba(0,0,0,0.10);
     --shadow-lg:    0 20px 48px rgba(0,0,0,0.12);
-    --gold:         #b07d1e;
-    --gold-light:   #d4961c;
-    --gold-dim:     rgba(176, 125, 30, 0.10);
-    --gold-border:  rgba(176, 125, 30, 0.25);
+    --gold:         #1f77c9;
+    --gold-light:   #0bb7c4;
+    --gold-dim:     rgba(31, 119, 201, 0.10);
+    --gold-border:  rgba(31, 119, 201, 0.25);
 }
 
 /* ── BODY & LAYOUT ────────────────────────────────────────── */
@@ -74,8 +75,7 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 15px;
     line-height: 1.6;
-    background-color: var(--bg);
-    background-image: var(--bg-noise);
+    background: var(--bg-noise), var(--bg) fixed;
     color: var(--text-1);
     min-height: 100vh;
     padding: 1.5rem 1rem 6rem;
@@ -89,8 +89,8 @@ body::before {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(201,168,76,0.06) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 85% 100%, rgba(45,212,160,0.04) 0%, transparent 60%);
+        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(79,172,254,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 85% 100%, rgba(0,242,254,0.05) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
 }

@@ -1,45 +1,30 @@
-/* marche.css — Refactoré pour respecter le toggle clair/sombre global.
-   Identité ésotérique sombre conservée + variante cream/gold en clair. */
-
-/* ───── MODE SOMBRE (par défaut) ───── */
+/* marche.css — Identité alignée sur le thème global (css/style.css).
+   Les tokens du module pointent vers les tokens partagés « bleu
+   glassmorphism » ; le basculement clair/sombre est géré une seule fois
+   dans css/style.css. Les couleurs sémantiques (prix, vérifié, whatsapp)
+   restent propres au marché. */
 :root {
-    --mk-bg:          #000000;
-    --mk-surface:     #121214;
-    --mk-surface-2:   #1A1A1E;
-    --mk-surface-3:   #0A0A0D;
-    --mk-border:      #1F1F23;
-    --mk-text:        #F5E6C4;
-    --mk-text-soft:   #aaa;
-    --mk-text-dim:    #888;
-    --mk-text-faint:  #666;
-    --mk-gold:        var(--gold);   /* or de marque : source unique dans css/style.css */
-    --mk-overlay:     rgba(0,0,0,0.6);
-    --mk-modal-bg:    rgba(0,0,0,0.85);
-    --mk-soft-2:      rgba(255,255,255,0.03);
-    --mk-soft-3:      rgba(255,255,255,0.05);
-    --mk-price-green: #6bffb8;
-    --mk-verified:    #4CAF50;
+    --mk-bg:          var(--bg-gradient);
+    --mk-surface:     var(--surface);
+    --mk-surface-2:   var(--surface-2);
+    --mk-surface-3:   var(--surface-3);
+    --mk-border:      var(--border);
+    --mk-text:        var(--text-main);
+    --mk-text-soft:   var(--text-muted);
+    --mk-text-dim:    var(--text-dim);
+    --mk-text-faint:  var(--text-faint);
+    --mk-gold:        var(--accent);
+    --mk-overlay:     rgba(0, 0, 0, 0.6);
+    --mk-modal-bg:    rgba(0, 0, 0, 0.85);
+    --mk-soft-2:      var(--surface-2);
+    --mk-soft-3:      var(--surface);
+    --mk-price-green: var(--success);
+    --mk-verified:    var(--success);
     --mk-whatsapp:    #25D366;
 }
 
-/* ───── MODE CLAIR — parchemin crème ───── */
+/* Mode clair : seules les couleurs sémantiques diffèrent du sombre. */
 html[data-theme="light"] {
-    --mk-bg:          #fdf7e6;
-    --mk-surface:     #fffbef;
-    --mk-surface-2:   #f7eed5;
-    --mk-surface-3:   #f0e6c5;
-    --mk-border:      #d6c79a;
-    --mk-text:        #2d1f10;
-    --mk-text-soft:   #5a4a30;
-    --mk-text-dim:    #8a7d5a;
-    --mk-text-faint:  #b0a480;
-    --mk-gold:        var(--gold);   /* or de marque : source unique dans css/style.css */
-    --mk-overlay:     rgba(45,31,16,0.4);
-    --mk-modal-bg:    rgba(45,31,16,0.5);
-    --mk-soft-2:      rgba(0,0,0,0.04);
-    --mk-soft-3:      rgba(0,0,0,0.06);
-    --mk-price-green: #2c9c54;
-    --mk-verified:    #2c9c54;
     --mk-whatsapp:    #2c9c54;
 }
 
