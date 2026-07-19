@@ -340,3 +340,70 @@ input:focus {
 }
 @keyframes asrar-spin { to { transform: rotate(360deg); } }
 #asrar-loader.asrar-loader-hide { opacity: 0; pointer-events: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE — points de rupture partagés
+   Cette feuille pilote les pages d'entrée (connexion index.html + tableau
+   de bord accueil) et fournit les primitives (.container, .glass-panel,
+   .grid-menu, .tab-container…) réutilisées ailleurs. Les réglages ci-dessous
+   évitent que les paddings/tailles fixes ne rognent l'écran sur mobile.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Évite tout débordement horizontal quel que soit le contenu. */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, video { max-width: 100%; height: auto; }
+
+/* ───── Grandes tablettes / petits portables (≤ 900px) ───── */
+@media (max-width: 900px) {
+    .container { max-width: 640px; }
+    .header h1 { font-size: 2.2rem; }
+}
+
+/* ───── Tablettes portrait & grands téléphones (≤ 600px) ───── */
+@media (max-width: 600px) {
+    .container { padding: 16px; }
+    .glass-panel { padding: 22px 18px; border-radius: 16px; }
+    .header { margin-bottom: 22px; }
+    .header h1 { font-size: 1.9rem; letter-spacing: .5px; }
+
+    .grid-menu { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+    .menu-item { padding: 16px; min-height: 104px; }
+    .menu-item h3 { font-size: 1rem; }
+
+    .result-row { font-size: 1rem; }
+    /* Les onglets scrollables gardent une inertie tactile fluide. */
+    .tab-container { -webkit-overflow-scrolling: touch; }
+    .tab { padding: 9px 16px; }
+}
+
+/* ───── Téléphones (≤ 420px) ───── */
+@media (max-width: 420px) {
+    .container { padding: 12px; }
+    .glass-panel { padding: 18px 14px; }
+    .header h1 { font-size: 1.65rem; }
+
+    button { padding: 12px 18px; font-size: .95rem; }
+    input[type="text"], input[type="email"], input[type="password"] { padding: 13px; }
+
+    .grid-menu { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+    .menu-item { min-height: 96px; padding: 14px; }
+    .menu-item h3 { font-size: .92rem; }
+    .back-btn { padding: 7px 14px; font-size: .9rem; }
+}
+
+/* ───── Très petits écrans (≤ 340px) : on passe le menu en 2 colonnes fixes ───── */
+@media (max-width: 340px) {
+    .grid-menu { grid-template-columns: repeat(2, 1fr); }
+    .header h1 { font-size: 1.5rem; }
+}
+
+/* ───── Accessibilité : respecte « réduire les animations » ───── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+    .menu-item:hover, button:hover { transform: none; }
+}
