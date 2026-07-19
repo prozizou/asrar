@@ -221,3 +221,29 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   z-index: 10000;
 }
 .bq-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════ RESPONSIVE ═══════════════════ */
+@media (max-width: 600px) {
+  .container { padding: .75rem; }
+  .glass-panel { padding: 1.1rem; border-radius: 16px; }
+
+  /* Le formulaire prix/devise passe en pleine largeur */
+  .bq-row { grid-template-columns: 1fr; }
+
+  /* Plans : 2 par ligne minimum même sur petit écran */
+  .bq-plans { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+
+  /* La ligne de statut : le lien « renouveler » repasse sous le texte */
+  .bq-renew { margin-left: 0; }
+
+  /* Produit : les actions ne débordent plus, l'image reste alignée en haut */
+  .bq-prod { flex-wrap: wrap; }
+  .bq-prod-actions { margin-left: auto; }
+
+  .bq-modal { padding: 18px; border-radius: 14px; }
+}
+
+@media (max-width: 380px) {
+  .bq-plans { grid-template-columns: 1fr; }
+  .bq-plan-price { font-size: 1.25rem; }
+}
