@@ -20,8 +20,6 @@
 <script src="/js/theme.js"></script>
 <script src="/js/nav.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
-
   :root {
     /* Accents alignés sur l'identité bleue du projet (l'en-tête navy
        et le lapis existants appartiennent déjà à la même famille). */
@@ -43,7 +41,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-ui);
     background: var(--cream);
     color: var(--ink);
     min-height: 100vh;
@@ -66,7 +64,7 @@
     background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), var(--gold-light), transparent);
   }
   .bismillah {
-    font-family: 'Amiri', serif;
+    font-family: var(--font-ar);
     font-size: clamp(1.1rem, 3vw, 1.6rem);
     color: var(--gold-light);
     margin-bottom: 0.8rem;
@@ -146,7 +144,7 @@
     padding: 0.7rem 1rem;
     border: 1.5px solid var(--gold-border);
     border-radius: 9px;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
     font-size: 1rem;
     color: var(--ink);
     background: var(--gold-pale);
@@ -168,7 +166,7 @@
     color: #fff;
     border: none;
     border-radius: 9px;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
@@ -184,7 +182,7 @@
     color: var(--red);
     border: 1.5px solid #fca5a5;
     border-radius: 9px;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
@@ -249,7 +247,7 @@
     to   { opacity: 1; transform: none; }
   }
   .rc-arabic {
-    font-family: 'Amiri', serif;
+    font-family: var(--font-ar);
     font-size: 1.3rem;
     color: var(--deep);
     font-weight: 700;
@@ -263,7 +261,7 @@
     color: var(--lapis);
     font-weight: 600;
     margin-bottom: 0.4rem;
-    font-family: 'Inter', monospace;
+    font-family: monospace;
     background: rgba(44,74,138,0.07);
     display: inline-block;
     padding: 0.15em 0.6em;
@@ -295,7 +293,7 @@
     padding: 0.7rem 1rem;
     border: 1.5px solid var(--gold-border);
     border-radius: 9px;
-    font-family: 'Amiri', serif;
+    font-family: var(--font-ar);
     font-size: 1.15rem;
     background: var(--gold-pale);
     direction: rtl;
@@ -312,7 +310,7 @@
     padding: 0.7rem 0.8rem;
     font-size: 1.3rem;
     font-weight: 700;
-    font-family: 'Inter', monospace;
+    font-family: monospace;
     letter-spacing: 0.05em;
   }
   .calc-note {
@@ -333,7 +331,7 @@
     padding: 0.55rem 0.9rem 0.55rem 2.4rem;
     border: 1.5px solid var(--gold-border);
     border-radius: 8px;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
     font-size: 0.88rem;
     color: var(--ink);
     background: var(--gold-pale);
@@ -390,7 +388,7 @@
     letter-spacing: 0.06em;
     margin-left: 0.5rem;
     vertical-align: middle;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
   }
   .result-card.has-allah {
     border-color: var(--gold);
@@ -416,7 +414,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
     transition: background 0.15s, border-color 0.15s;
   }
   .page-btn:hover:not(:disabled) { background: #f0e4c8; border-color: var(--gold); }
@@ -468,7 +466,7 @@
     box-shadow: 0 2px 8px rgba(184,137,42,0.15);
   }
   .nc-ar {
-    font-family: 'Amiri', serif;
+    font-family: var(--font-ar);
     font-size: 1rem;
     color: var(--deep);
     font-weight: 700;
@@ -535,7 +533,7 @@
     font-weight: 600;
     cursor: pointer;
     border: none;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
   }
   .rb-btn-restore { background: var(--deep); color: var(--gold-light); }
   .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid #d1c9b8; }

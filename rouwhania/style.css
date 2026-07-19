@@ -81,7 +81,7 @@ html[data-theme="light"] {
 
 body {
     background: linear-gradient(to bottom right, var(--bg-gradient-start), var(--bg-gradient-end));
-    font-family: 'Arial', 'Segoe UI', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -459,3 +459,6 @@ body {
 }
 html[data-rw-admin="1"] .result-box  { display: block; }
 html[data-rw-admin="1"] .stats-footer { display: block; }
+
+/* Titres unifiés (Cormorant Garamond) */
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }

@@ -12,13 +12,13 @@
   <!-- Polices mystiques -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* === BASE ÉSOTÉRIQUE === */
     body {
       background: var(--bg-gradient);
       color: var(--text-main);
-      font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+      font-family: var(--font-ui);
       margin: 0;
       transition: background 0.3s;
     }
@@ -44,7 +44,7 @@
     }
     .back-btn:hover { opacity: 1; }
     h2 {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-display);
       font-weight: 600;
       font-size: 2.2rem;
       margin-bottom: 0.5rem;
@@ -141,7 +141,7 @@
       flex-direction: column;
     }
     .book-title {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-display);
       font-weight: 600;
       font-size: 1.1rem;
       margin-bottom: 6px;
@@ -208,7 +208,7 @@
       overflow-y: auto;
       position: relative;
       color: var(--text-main);
-      font-family: 'Carlito', sans-serif;
+      font-family: var(--font-ui);
       transition: background 0.3s, color 0.3s;
     }
     .modal-box.sepia-mode {
@@ -233,7 +233,7 @@
       background: var(--surface-3);
     }
     #modal-title {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-display);
       font-size: 1.6rem;
       margin: 0.5rem 0;
     }

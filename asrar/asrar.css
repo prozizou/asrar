@@ -30,7 +30,7 @@
 body {
   background: var(--asrar-bg) !important;
   margin: 0;
-  font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+  font-family: var(--font-ui);
   color: var(--asrar-text);
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
@@ -151,7 +151,7 @@ body {
 }
 
 .secret-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
@@ -206,7 +206,7 @@ body {
 }
 
 .detail-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--asrar-text);
@@ -222,7 +222,7 @@ body {
 }
 
 .seg-fr {
-  font-family: 'Carlito', sans-serif;
+  font-family: var(--font-ui);
   font-size: 1rem;
   line-height: 1.6;
   margin: 0.5rem 0;
@@ -232,7 +232,7 @@ body {
 }
 
 .seg-ar {
-  font-family: 'Noto Naskh Arabic', serif;
+  font-family: var(--font-ar);
   font-size: 1.25rem;
   line-height: 2.1;
   direction: rtl;

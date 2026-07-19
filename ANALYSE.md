@@ -82,6 +82,20 @@
   sombre) — désormais dans la famille bleue (fond clair froid + en-tête navy +
   accents bleus), mais il ne suit pas encore le toggle clair/sombre global.
 
+- **Typographie unifiée** : l'app mélangeait Poppins, Carlito, Inter, Arial,
+  Segoe UI, Georgia + plusieurs serifs. Système unique désormais, défini dans
+  `css/style.css` via des tokens (`--font-ui`, `--font-display`, `--font-ar`) :
+  - **Corps → Poppins**, **titres → Cormorant Garamond** (appliqué à `h1/h2/h3`
+    partout), **arabe d'interface → Noto Naskh Arabic**.
+  - Pages autonomes (Noms d'Allah, Rouwhanes, Géomancie) : mêmes familles en
+    littéral + chargement des polices ajouté.
+  - **Polices calligraphiques préservées** (comme les couleurs sémantiques) :
+    Alkalami/Scheherazade de **Al Qalam** (outil de calligraphie) et l'affichage
+    arabe des **99 Noms** (Amiri/hudhudh) — ce sont le cœur de ces modules.
+  - Fontes monospace conservées pour les affichages numériques.
+  - Nettoyage : suppression des chargements Google Fonts devenus inutiles
+    (Carlito, Inter).
+
 ## 🚀 Améliorations proposées (suite)
 
 1. **Poursuivre l'unification des tokens** : les fonds/surfaces crème restent

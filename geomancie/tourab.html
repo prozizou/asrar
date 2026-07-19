@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asrar Pro – Géomancie l'art divinatoire</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -28,7 +29,7 @@
             --radius: 16px;
             --radius-sm: 10px;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-            --font: 'Segoe UI', 'Georgia', 'Times New Roman', serif;
+            --font: 'Poppins', system-ui, sans-serif;
             --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             --glass-border: rgba(255, 255, 255, 0.15);
         }
@@ -94,6 +95,8 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius); box-shadow: var(--shadow);
         }
+        /* Titres unifiés (Cormorant Garamond) — cohérence typographique projet */
+        .header h1, .panel h2, .modal h3, .synthesis-card h4 { font-family: 'Cormorant Garamond', serif; }
         .header h1 { font-size: 2rem; letter-spacing: 0.04em; color: var(--gold); font-weight: 700; margin-bottom: 2px; }
         .header .subtitle { font-size: 0.9rem; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; }
 

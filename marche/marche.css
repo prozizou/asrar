@@ -33,7 +33,7 @@ html[data-theme="light"] {
 body {
   background: var(--mk-bg);
   color: var(--mk-text);
-  font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+  font-family: var(--font-ui);
   margin: 0;
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -61,7 +61,7 @@ body {
 }
 
 h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 2.2rem;
   margin-bottom: 0.3rem;
@@ -152,7 +152,7 @@ h2 {
 }
 
 .vendors-section h3 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   margin: 0 0 1rem;
   color: var(--mk-text);
@@ -288,7 +288,7 @@ h2 {
 .prod-body { padding: 14px; flex: 1; color: var(--mk-text); }
 
 .prod-name {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.05rem;
   margin-bottom: 4px;
@@ -342,7 +342,7 @@ h2 {
   max-width: 550px;
   position: relative;
   color: var(--mk-text);
-  font-family: 'Carlito', sans-serif;
+  font-family: var(--font-ui);
   margin: auto;
 }
 

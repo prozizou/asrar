@@ -11,12 +11,12 @@
     <script src="/js/loader.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Carlito:ital,wght@0,400;0,700;1,400&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       background: var(--bg-gradient);
       color: var(--text-main);
-      font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+      font-family: var(--font-ui);
       margin: 0;
     }
     .container {
@@ -44,7 +44,7 @@
     /* Horloge sacrée */
     .time-display {
       font-size: 3.5rem;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-display);
       margin: 20px 0 5px;
       color: var(--accent);
       text-align: center;
@@ -74,7 +74,7 @@
     .planet-name {
       font-size: 1.6rem;
       font-weight: 700;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-display);
     }
     .phase-badge {
       display: inline-block;
@@ -222,7 +222,7 @@
 
     <!-- Panneau principal -->
     <div class="glass-panel" style="text-align:center;">
-      <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; margin-bottom:0;">🌍 Temporalité Mystique</h2>
+      <h2 style="font-family:var(--font-display); font-size:1.8rem; margin-bottom:0;">🌍 Temporalité Mystique</h2>
 
       <div class="time-display" id="timeDisplay">--:--:--</div>
       <div class="date-display" id="dateDisplay">Chargement...</div>
