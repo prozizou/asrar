@@ -7,8 +7,8 @@
 /* ───── MODE SOMBRE (par défaut, conforme au reste du projet) ───── */
 :root {
     /* Gradient de fond */
-    --bg-gradient-start: #1e1e2f;
-    --bg-gradient-end:   #2d2d44;
+    --bg-gradient-start: #0f2027;
+    --bg-gradient-end:   #2c5364;
 
     /* Surfaces verre */
     --glass-bg:     rgba(30, 30, 50, 0.4);
@@ -22,7 +22,7 @@
     /* Badges & UI */
     --badge-bg:        rgba(255, 255, 255, 0.15);
     --badge-border:    rgba(255, 255, 255, 0.3);
-    --btn-primary:     #6c5ce7;
+    --btn-primary:     #4facfe;
     --btn-disabled:     #aaa;
     --result-bg:       rgba(255, 255, 255, 0.08);
     --stat-bg:         rgba(255, 255, 255, 0.1);
@@ -33,8 +33,8 @@
 
     /* Cartes des noms d'Allah */
     --card-bg:         #2c2c3a;
-    --card-border:     #f39c12;
-    --card-title:      #f1c40f;
+    --card-border:     #4facfe;
+    --card-title:      #4facfe;
     --card-text:       #ecf0f1;
     --card-accent:     #3a3a4a;
     --card-green-bg:   #2e4a3a;
@@ -43,8 +43,8 @@
 
 /* ───── MODE CLAIR ───── */
 html[data-theme="light"] {
-    --bg-gradient-start: #FEC153;
-    --bg-gradient-end:   #93A7B8;
+    --bg-gradient-start: #eef3f7;
+    --bg-gradient-end:   #cdd8e0;
 
     --glass-bg:     rgba(255, 255, 255, 0.25);
     --glass-border: rgba(255, 255, 255, 0.4);
@@ -55,7 +55,7 @@ html[data-theme="light"] {
 
     --badge-bg:        #fff;
     --badge-border:    #333;
-    --btn-primary:     #6c5ce7;
+    --btn-primary:     #1f77c9;
     --btn-disabled:     #aaa;
     --result-bg:       rgba(255, 255, 255, 0.7);
     --stat-bg:         rgba(255, 255, 255, 0.4);
@@ -65,8 +65,8 @@ html[data-theme="light"] {
     --scrollbar-thumb: rgba(0, 0, 0, 0.2);
 
     --card-bg:         #fffef9;
-    --card-border:     #f39c12;
-    --card-title:      #d35400;
+    --card-border:     #1f77c9;
+    --card-title:      #1f77c9;
     --card-text:       #2d3436;
     --card-accent:     #ecf0f1;
     --card-green-bg:   #e8f8f5;
@@ -81,7 +81,7 @@ html[data-theme="light"] {
 
 body {
     background: linear-gradient(to bottom right, var(--bg-gradient-start), var(--bg-gradient-end));
-    font-family: 'Arial', 'Segoe UI', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -459,3 +459,6 @@ body {
 }
 html[data-rw-admin="1"] .result-box  { display: block; }
 html[data-rw-admin="1"] .stats-footer { display: block; }
+
+/* Titres unifiés (Cormorant Garamond) */
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }

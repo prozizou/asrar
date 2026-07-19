@@ -1,41 +1,26 @@
-/* boutique.css — Refactoré pour respecter le toggle clair/sombre global.
-   Identité ésotérique sombre conservée + variante cream/gold en clair. */
-
-/* ───── MODE SOMBRE (par défaut) ───── */
+/* boutique.css — Identité alignée sur le thème global (css/style.css).
+   Les tokens du module pointent vers les tokens partagés « bleu
+   glassmorphism » ; le basculement clair/sombre est géré une seule fois
+   dans css/style.css. */
 :root {
-    --bq-bg:        #000;
-    --bq-surface:   #121214;
-    --bq-surface-2: #0A0A0D;
-    --bq-border:    #1F1F23;
-    --bq-text:      #F5E6C4;
-    --bq-text-soft: #aaa;
-    --bq-text-dim:  #888;
-    --bq-gold:      #C9A961;
-    --bq-gold-soft: #8a7f66;
-    --bq-overlay:   rgba(0,0,0,.75);
-    --bq-logo-bg:   rgba(255,255,255,0.04);
-}
-
-/* ───── MODE CLAIR — parchemin crème ───── */
-html[data-theme="light"] {
-    --bq-bg:        #fdf7e6;
-    --bq-surface:   #fffbef;
-    --bq-surface-2: #f7eed5;
-    --bq-border:    #d6c79a;
-    --bq-text:      #2d1f10;
-    --bq-text-soft: #6b5a3a;
-    --bq-text-dim:  #8a7d5a;
-    --bq-gold:      #b0852f;
-    --bq-gold-soft: #b0852f;
-    --bq-overlay:   rgba(45,31,16,0.4);
-    --bq-logo-bg:   rgba(0,0,0,0.04);
+    --bq-bg:        var(--bg-gradient);
+    --bq-surface:   var(--surface);
+    --bq-surface-2: var(--surface-2);
+    --bq-border:    var(--border);
+    --bq-text:      var(--text-main);
+    --bq-text-soft: var(--text-muted);
+    --bq-text-dim:  var(--text-dim);
+    --bq-gold:      var(--accent);
+    --bq-gold-soft: var(--text-dim);
+    --bq-overlay:   rgba(0, 0, 0, 0.75);
+    --bq-logo-bg:   var(--surface-2);
 }
 
 /* ==================== MA BOUTIQUE ==================== */
 body {
   background: var(--bq-bg);
   color: var(--bq-text);
-  font-family: 'Carlito', sans-serif;
+  font-family: var(--font-ui);
   margin: 0;
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -51,7 +36,7 @@ body {
   color: var(--bq-gold); text-decoration: none; font-size: .9rem;
   display: inline-block; margin-bottom: 1rem; opacity: .85;
 }
-h2 { font-family: 'Cormorant Garamond', serif; margin: 0 0 4px; color: var(--bq-text); }
+h2 { font-family: var(--font-display); margin: 0 0 4px; color: var(--bq-text); }
 h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 .subtitle { color: var(--bq-text-dim); margin: 0 0 1rem; }
 .bq-loading { color: var(--bq-text-dim); text-align: center; padding: 2rem; }
@@ -72,12 +57,12 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 .bq-plan-price { margin-top: 6px; font-size: 1.4rem; font-weight: 700; color: var(--bq-gold); }
 .bq-plan-price small { font-size: .7rem; color: var(--bq-text-dim); }
 .bq-plan-btn {
-  margin-top: 12px; width: 100%; background: var(--bq-gold); color: var(--bq-bg); border: none;
+  margin-top: 12px; width: 100%; background: var(--bq-gold); color: var(--text-on-accent); border: none;
   border-radius: 10px; padding: 8px; font-weight: 700; cursor: pointer;
 }
 .bq-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  background: var(--bq-gold); color: var(--bq-bg); font-size: .62rem; font-weight: 700;
+  background: var(--bq-gold); color: var(--text-on-accent); font-size: .62rem; font-weight: 700;
   padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
 
@@ -101,7 +86,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 }
 .bq-form input:focus, .bq-form textarea:focus { outline: none; border-color: var(--bq-gold); }
 .bq-btn {
-  background: var(--bq-gold); color: var(--bq-bg); border: none; border-radius: 10px;
+  background: var(--bq-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
   padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: .95rem;
 }
 .bq-btn:hover { filter: brightness(1.08); }
@@ -188,7 +173,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 }
 .bq-image-main {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,.7); color: var(--bq-gold, #C9A961);
+  background: rgba(0,0,0,.7); color: var(--bq-gold, var(--accent));
   font-size: .58rem; text-align: center;
   border-radius: 0 0 10px 10px; padding: 2px 0;
 }

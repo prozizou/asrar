@@ -3,52 +3,34 @@
    Le mode clair devient une variante "parchemin crème" qui préserve l'esprit
    tout en étant lisible (fond crème, texte brun foncé, or conservé). */
 
-/* ───── MODE SOMBRE (par défaut) ───── */
+/* ───── Identité alignée sur le thème global (css/style.css) ─────
+   Les tokens du module pointent vers les tokens partagés « bleu
+   glassmorphism » ; le basculement clair/sombre est géré une seule
+   fois dans css/style.css, donc plus de bloc data-theme ici. */
 :root {
-    /* On garde l'échelle typographique déjà présente */
     --asrar-scale: 1;
 
-    /* Identité mystique sombre */
-    --asrar-bg:        #000000;
-    --asrar-bg-deep:   #0A0A0D;
-    --asrar-surface:   #121214;
-    --asrar-surface-2: #1A1A1E;
-    --asrar-border:    #1F1F23;
-    --asrar-border-2:  #2a2a2f;
-    --asrar-text:      #F5E6C4;
-    --asrar-text-soft: #E0D7C6;
-    --asrar-text-dim:  #CCCCCC;
-    --asrar-star-off:  #3A3A40;
-    --asrar-overlay:   rgba(0,0,0,0.6);
+    --asrar-bg:        var(--bg-gradient);
+    --asrar-bg-deep:   var(--bg-deep);
+    --asrar-surface:   var(--surface);
+    --asrar-surface-2: var(--surface-2);
+    --asrar-border:    var(--border);
+    --asrar-border-2:  var(--border-strong);
+    --asrar-text:      var(--text-main);
+    --asrar-text-soft: var(--text-muted);
+    --asrar-text-dim:  var(--text-dim);
+    --asrar-star-off:  var(--text-faint);
+    --asrar-overlay:   rgba(0, 0, 0, 0.6);
 
-    /* L'or (utilisé tel quel) */
-    --asrar-gold:      #C9A961;
-    --asrar-cream:     #F5E6C4;
-}
-
-/* ───── MODE CLAIR — parchemin crème ───── */
-html[data-theme="light"] {
-    --asrar-bg:        #fdf7e6;
-    --asrar-bg-deep:   #f5ecd0;
-    --asrar-surface:   #fffbef;
-    --asrar-surface-2: #f7eed5;
-    --asrar-border:    #d6c79a;
-    --asrar-border-2:  #c4b07a;
-    --asrar-text:      #2d1f10;
-    --asrar-text-soft: #4a3a25;
-    --asrar-text-dim:  #6b5a3a;
-    --asrar-star-off:  #c8b98a;
-    --asrar-overlay:   rgba(45,31,16,0.35);
-
-    --asrar-gold:      #b0852f;
-    --asrar-cream:     #2d1f10;
+    --asrar-gold:      var(--accent);
+    --asrar-cream:     var(--accent);
 }
 
 /* ───── Style ───── */
 body {
   background: var(--asrar-bg) !important;
   margin: 0;
-  font-family: 'Carlito', 'Noto Naskh Arabic', sans-serif;
+  font-family: var(--font-ui);
   color: var(--asrar-text);
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
@@ -108,7 +90,7 @@ body {
 
 .cat-item.active {
   background: var(--asrar-cream);
-  color: var(--asrar-bg);
+  color: var(--text-on-accent);
   border-color: var(--asrar-cream);
 }
 
@@ -169,7 +151,7 @@ body {
 }
 
 .secret-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
@@ -224,7 +206,7 @@ body {
 }
 
 .detail-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--asrar-text);
@@ -240,7 +222,7 @@ body {
 }
 
 .seg-fr {
-  font-family: 'Carlito', sans-serif;
+  font-family: var(--font-ui);
   font-size: 1rem;
   line-height: 1.6;
   margin: 0.5rem 0;
@@ -250,7 +232,7 @@ body {
 }
 
 .seg-ar {
-  font-family: 'Noto Naskh Arabic', serif;
+  font-family: var(--font-ar);
   font-size: 1.25rem;
   line-height: 2.1;
   direction: rtl;
@@ -394,7 +376,7 @@ body {
   border-radius: 20px;
   padding: 0 20px;
   font-weight: 600;
-  color: var(--asrar-bg);
+  color: var(--text-on-accent);
   cursor: pointer;
 }
 
@@ -435,7 +417,7 @@ body {
 
 .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .detail-expand {
-  background: var(--asrar-gold); color: var(--asrar-bg); border: none; border-radius: 10px;
+  background: var(--asrar-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
   padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: .82rem;
 }
 .detail-expand:hover { filter: brightness(1.08); }

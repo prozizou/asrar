@@ -53,14 +53,55 @@
 - `boutique/boutique.css` : media queries mobiles — formulaires en pleine
   largeur, grille de plans adaptative, cartes produit qui ne débordent plus,
   modale ajustée.
+- **Tokens de thème — source unique pour l'or de marque** : `--bq-gold`,
+  `--asrar-gold` et `--mk-gold` (valeurs identiques `#C9A961` / `#b0852f`)
+  pointent désormais vers `var(--gold)` de `css/style.css`. Zéro changement
+  visuel (vérifié en clair et sombre), une seule valeur à maintenir.
+- **Lazy-loading des images de listes** : `loading="lazy"` + `decoding="async"`
+  ajoutés aux vignettes de secrets (asrar), au catalogue boutique et aux avatars
+  vendeurs (marché). Les images produits du marché l'avaient déjà.
+
+- **Cohérence visuelle — identité unique « bleu glassmorphism »** : chaque page
+  avait sa propre palette (noir & or, sombre+or, violet, navy…), donnant
+  l'impression de plusieurs applications. Toutes les pages tirent désormais leur
+  fond/accent de l'identité partagée bleu-teal de `css/style.css` :
+  - Modules important la feuille partagée (Secret, Boutique, Marché, Al Qalam,
+    Abajad) : tokens `--asrar-*/--bq-*/--mk-*` remappés vers les tokens partagés ;
+    les surcharges locales (or, crème, verre sombre) supprimées.
+  - Pages à `<style>` intégré (Bibliothèque, Planète) : couleurs or/noir codées
+    en dur remplacées par les tokens partagés.
+  - Pages autonomes (Noms d'Allah, Rouwhanes, Géomancie, Combinaisons) : palette
+    locale réécrite en bleu-teal (accents or/violet/orange → bleu), en
+    conservant les couleurs **sémantiques** (éléments feu/air/eau/terre du tirage
+    géomantique, prix, vérifié, whatsapp, succès/danger).
+  - Correctif associé : les motifs `color: var(--*-bg)` (texte foncé sur pastille
+    or) devenaient invalides une fois le fond passé en dégradé → basculés sur
+    `var(--text-on-accent)` (texte blanc lisible sur l'accent bleu).
+
+  Limite connue : `Combinaisons` reste un thème clair fixe (pas de bascule
+  sombre) — désormais dans la famille bleue (fond clair froid + en-tête navy +
+  accents bleus), mais il ne suit pas encore le toggle clair/sombre global.
+
+- **Typographie unifiée** : l'app mélangeait Poppins, Carlito, Inter, Arial,
+  Segoe UI, Georgia + plusieurs serifs. Système unique désormais, défini dans
+  `css/style.css` via des tokens (`--font-ui`, `--font-display`, `--font-ar`) :
+  - **Corps → Poppins**, **titres → Cormorant Garamond** (appliqué à `h1/h2/h3`
+    partout), **arabe d'interface → Noto Naskh Arabic**.
+  - Pages autonomes (Noms d'Allah, Rouwhanes, Géomancie) : mêmes familles en
+    littéral + chargement des polices ajouté.
+  - **Polices calligraphiques préservées** (comme les couleurs sémantiques) :
+    Alkalami/Scheherazade de **Al Qalam** (outil de calligraphie) et l'affichage
+    arabe des **99 Noms** (Amiri/hudhudh) — ce sont le cœur de ces modules.
+  - Fontes monospace conservées pour les affichages numériques.
+  - Nettoyage : suppression des chargements Google Fonts devenus inutiles
+    (Carlito, Inter).
 
 ## 🚀 Améliorations proposées (suite)
 
-1. **Unifier les tokens de thème** : dériver `--bq-*`, `--asrar-*`, `--mk-*` des
-   variables partagées (ou les fusionner) pour une seule source de vérité.
+1. **Poursuivre l'unification des tokens** : les fonds/surfaces crème restent
+   propres à chaque module par choix d'identité ; on pourrait les dériver d'un
+   sous-jeu partagé « mystique » si l'on veut aller plus loin.
 2. **Fiabiliser les dépendances** : self-héberger Firebase/les polices, ou
    ajouter SRI + `preconnect`/`font-display: swap`.
-3. **Images** : ajouter `loading="lazy"` et `width`/`height` aux visuels
-   produits (marché, boutique) pour la perf et éviter le layout shift.
-4. **Basculer `planete.html` sur le calcul NOAA hors-ligne** déjà présent.
-5. **Ajouter un audit Lighthouse** et quelques tests de non-régression.
+3. **Basculer `planete.html` sur le calcul NOAA hors-ligne** déjà présent.
+4. **Ajouter un audit Lighthouse** et quelques tests de non-régression.
