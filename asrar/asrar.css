@@ -23,7 +23,7 @@
     --asrar-overlay:   rgba(0, 0, 0, 0.6);
 
     --asrar-gold:      var(--accent);
-    --asrar-cream:     var(--text-main);
+    --asrar-cream:     var(--accent);
 }
 
 /* ───── Style ───── */
@@ -90,7 +90,7 @@ body {
 
 .cat-item.active {
   background: var(--asrar-cream);
-  color: var(--asrar-bg);
+  color: var(--text-on-accent);
   border-color: var(--asrar-cream);
 }
 
@@ -376,7 +376,7 @@ body {
   border-radius: 20px;
   padding: 0 20px;
   font-weight: 600;
-  color: var(--asrar-bg);
+  color: var(--text-on-accent);
   cursor: pointer;
 }
 
@@ -417,7 +417,7 @@ body {
 
 .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .detail-expand {
-  background: var(--asrar-gold); color: var(--asrar-bg); border: none; border-radius: 10px;
+  background: var(--asrar-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
   padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: .82rem;
 }
 .detail-expand:hover { filter: brightness(1.08); }

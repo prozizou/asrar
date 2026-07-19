@@ -61,6 +61,27 @@
   ajoutés aux vignettes de secrets (asrar), au catalogue boutique et aux avatars
   vendeurs (marché). Les images produits du marché l'avaient déjà.
 
+- **Cohérence visuelle — identité unique « bleu glassmorphism »** : chaque page
+  avait sa propre palette (noir & or, sombre+or, violet, navy…), donnant
+  l'impression de plusieurs applications. Toutes les pages tirent désormais leur
+  fond/accent de l'identité partagée bleu-teal de `css/style.css` :
+  - Modules important la feuille partagée (Secret, Boutique, Marché, Al Qalam,
+    Abajad) : tokens `--asrar-*/--bq-*/--mk-*` remappés vers les tokens partagés ;
+    les surcharges locales (or, crème, verre sombre) supprimées.
+  - Pages à `<style>` intégré (Bibliothèque, Planète) : couleurs or/noir codées
+    en dur remplacées par les tokens partagés.
+  - Pages autonomes (Noms d'Allah, Rouwhanes, Géomancie, Combinaisons) : palette
+    locale réécrite en bleu-teal (accents or/violet/orange → bleu), en
+    conservant les couleurs **sémantiques** (éléments feu/air/eau/terre du tirage
+    géomantique, prix, vérifié, whatsapp, succès/danger).
+  - Correctif associé : les motifs `color: var(--*-bg)` (texte foncé sur pastille
+    or) devenaient invalides une fois le fond passé en dégradé → basculés sur
+    `var(--text-on-accent)` (texte blanc lisible sur l'accent bleu).
+
+  Limite connue : `Combinaisons` reste un thème clair fixe (pas de bascule
+  sombre) — désormais dans la famille bleue (fond clair froid + en-tête navy +
+  accents bleus), mais il ne suit pas encore le toggle clair/sombre global.
+
 ## 🚀 Améliorations proposées (suite)
 
 1. **Poursuivre l'unification des tokens** : les fonds/surfaces crème restent

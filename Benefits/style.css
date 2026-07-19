@@ -898,7 +898,7 @@ body::before {
     font-weight: 800;
     z-index: 2;
     background: var(--gold);
-    color: var(--bg);
+    color: #fff;
 }
 
 .cell-step.step-left  { left: 0; border-bottom-right-radius: 4px; }
