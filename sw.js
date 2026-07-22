@@ -6,7 +6,7 @@
 // (skipWaiting + clients.claim), purge les anciens caches, et pwa.js recharge la
 // page automatiquement → l'utilisateur voit la nouvelle version sans rien faire.
 
-const SW_VERSION = 'v28.0';                 // ← incrémenter à chaque mise à jour
+const SW_VERSION = 'v29.0';                 // ← incrémenter à chaque mise à jour
 const CACHE = 'asrar-' + SW_VERSION;
 
 // Coquille minimale : pages/ressources clés. Le reste est mis en cache à la volée
