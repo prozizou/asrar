@@ -203,8 +203,18 @@
       color: var(--accent);
       font-weight: bold;
     }
+
+    /* ── Responsive : sur mobile, les deux colonnes de résultats passent
+       en pile verticale et les grands nombres restent contenus. ── */
+    @media (max-width: 560px) {
+      .result-grid { grid-template-columns: 1fr; gap: 14px; }
+      .result-big  { font-size: 1.8rem; }
+      .abajad-input { font-size: 1.2rem; }
+      .compare-row { flex-direction: column; gap: 8px; }
+    }
   </style>
   <script src="/js/theme.js"></script>
+  <script src="/js/viewmode.js"></script>
   <script src="/js/nav.js"></script>
 </head>
 <body>

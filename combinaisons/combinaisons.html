@@ -18,31 +18,58 @@
 <script src="../js/firebase-config.js"></script>
 <script src="../js/api-content.js"></script>
 <script src="/js/theme.js"></script>
+  <script src="/js/viewmode.js"></script>
 <script src="/js/nav.js"></script>
 <style>
+  /* ─── Jetons LOCAUX — désormais SENSIBLES au thème clair/sombre ───
+     :root = valeurs SOMBRES (thème par défaut du projet, cf. css/style.css).
+     Le bloc html[data-theme="light"] plus bas rétablit la palette claire
+     d'origine. --deep / --deep2 restent un navy FIXE : ils ne servent qu'à
+     des FONDS (boutons, badges, afficheurs) toujours surmontés de texte clair,
+     donc lisibles dans les deux thèmes. Les usages « texte » de --deep ont été
+     basculés sur --cc-heading (lui, thémé). */
   :root {
-    /* Accents alignés sur l'identité bleue du projet (l'en-tête navy
-       et le lapis existants appartiennent déjà à la même famille). */
-    --gold: #1f77c9;
-    --gold-light: #4facfe;
-    --gold-pale: #eaf2fb;
+    --gold:        var(--accent);          /* accent bleu, déjà thémé */
+    --gold-light:  #4facfe;                /* bleu clair posé sur navy */
+    --gold-pale:   rgba(255,255,255,0.06); /* fond doux des champs / cartes */
+    --gold-border: var(--border);
+    --deep:        #1a2744;                /* navy FIXE — fonds boutons/badges */
+    --deep2:       #243260;
+    --lapis:       #7fb0ec;                /* bleu texte lisible sur fond sombre */
+    --cream:       transparent;            /* le body laisse voir le dégradé */
+    --ink:         var(--text-main);
+    --muted:       var(--text-dim);
+    --red:         var(--danger);
+    --card-bg:     var(--surface);
+    --shadow:      var(--glass-shadow);
+    --cc-heading:  var(--text-main);       /* titres arabes / mots en gras */
+    --cc-soft:     var(--surface-2);       /* survols / pistes de progression */
+  }
+
+  html[data-theme="light"] {
+    --gold:        #1f77c9;
+    --gold-light:  #4facfe;
+    --gold-pale:   #eaf2fb;
     --gold-border: #a9c7e6;
-    --deep: #1a2744;
-    --deep2: #243260;
-    --lapis: #2c4a8a;
-    --cream: #eef3f7;
-    --ink: #111827;
-    --muted: #6b7280;
-    --red: #991b1b;
-    --card-bg: #ffffff;
-    --shadow: 0 2px 16px rgba(26,39,68,0.1);
+    --deep:        #1a2744;
+    --deep2:       #243260;
+    --lapis:       #2c4a8a;
+    --cream:       #eef3f7;
+    --ink:         #111827;
+    --muted:       #6b7280;
+    --red:         #991b1b;
+    --card-bg:     #ffffff;
+    --shadow:      0 2px 16px rgba(26,39,68,0.1);
+    --cc-heading:  #1a2744;
+    --cc-soft:     #f0e4c8;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: var(--font-ui);
-    background: var(--cream);
+    background: var(--bg-gradient);
+    background-attachment: fixed;
     color: var(--ink);
     min-height: 100vh;
     line-height: 1.5;
@@ -98,7 +125,7 @@
   /* CARD */
   .card {
     background: var(--card-bg);
-    border: 1px solid #e8e0ce;
+    border: 1px solid var(--gold-border);
     border-radius: 14px;
     padding: 1.6rem;
     box-shadow: var(--shadow);
@@ -178,7 +205,7 @@
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-secondary {
     padding: 0.8rem 1.2rem;
-    background: #fff;
+    background: var(--surface-2);
     color: var(--red);
     border: 1.5px solid #fca5a5;
     border-radius: 9px;
@@ -188,12 +215,12 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .btn-secondary:hover { background: #fff5f5; }
+  .btn-secondary:hover { background: var(--surface); }
 
   /* PROGRESS */
   #progress-wrap { display: none; margin-top: 1.2rem; }
   .progress-track {
-    background: #f0e8d8;
+    background: var(--cc-soft);
     border-radius: 99px;
     height: 7px;
     overflow: hidden;
@@ -249,7 +276,7 @@
   .rc-arabic {
     font-family: var(--font-ar);
     font-size: 1.3rem;
-    color: var(--deep);
+    color: var(--cc-heading);
     font-weight: 700;
     direction: rtl;
     text-align: right;
@@ -262,17 +289,17 @@
     font-weight: 600;
     margin-bottom: 0.4rem;
     font-family: monospace;
-    background: rgba(44,74,138,0.07);
+    background: var(--cc-soft);
     display: inline-block;
     padding: 0.15em 0.6em;
     border-radius: 4px;
   }
   .rc-defs {
     font-size: 0.8rem;
-    color: #555;
+    color: var(--muted);
     line-height: 1.65;
   }
-  .rc-defs b { color: var(--deep); font-weight: 600; }
+  .rc-defs b { color: var(--cc-heading); font-weight: 600; }
 
   .empty-state {
     text-align: center;
@@ -392,8 +419,8 @@
   }
   .result-card.has-allah {
     border-color: var(--gold);
-    background: linear-gradient(135deg, #fdf6e8 0%, #fef9f0 100%);
-    box-shadow: 0 0 0 1px var(--gold-border), 0 2px 12px rgba(184,137,42,0.12);
+    background: var(--gold-pale);
+    box-shadow: 0 0 0 1px var(--gold), 0 2px 12px rgba(0,0,0,0.18);
   }
 
   /* PAGINATION */
@@ -410,14 +437,14 @@
     border-radius: 7px;
     border: 1.5px solid var(--gold-border);
     background: var(--gold-pale);
-    color: var(--deep);
+    color: var(--cc-heading);
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     font-family: var(--font-ui);
     transition: background 0.15s, border-color 0.15s;
   }
-  .page-btn:hover:not(:disabled) { background: #f0e4c8; border-color: var(--gold); }
+  .page-btn:hover:not(:disabled) { background: var(--cc-soft); border-color: var(--gold); }
   .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .page-btn.active { background: var(--deep); color: var(--gold-light); border-color: var(--deep); }
   .page-info { font-size: 0.75rem; color: var(--muted); }
@@ -461,14 +488,14 @@
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
   .name-chip:hover {
-    background: #f0e4c8;
+    background: var(--cc-soft);
     border-color: var(--gold);
-    box-shadow: 0 2px 8px rgba(184,137,42,0.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   }
   .nc-ar {
     font-family: var(--font-ar);
     font-size: 1rem;
-    color: var(--deep);
+    color: var(--cc-heading);
     font-weight: 700;
     direction: rtl;
   }
@@ -492,7 +519,7 @@
     padding: 1.5rem 1rem;
     font-size: 0.72rem;
     color: var(--muted);
-    border-top: 1px solid #e8e0ce;
+    border-top: 1px solid var(--gold-border);
   }
 
   /* SPEED BADGE */
@@ -518,7 +545,7 @@
     border-radius: 10px;
     padding: 0.85rem 1.1rem;
     font-size: 0.82rem;
-    color: var(--deep);
+    color: var(--cc-heading);
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
@@ -536,7 +563,7 @@
     font-family: var(--font-ui);
   }
   .rb-btn-restore { background: var(--deep); color: var(--gold-light); }
-  .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid #d1c9b8; }
+  .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid var(--gold-border); }
 </style>
 </head>
 <body>
