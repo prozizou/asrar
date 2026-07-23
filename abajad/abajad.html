@@ -107,6 +107,21 @@
       color: var(--text-main);
     }
     .factor-row strong { color: var(--accent); }
+    /* Décomposition a×b sur deux colonnes (bases différentes) */
+    .factor-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .factor-col { display: flex; flex-direction: column; gap: 6px; }
+    .factor-col-head {
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 2px;
+    }
     /* Bloc d'informations ésotériques */
     .eso-info {
       display: flex;
@@ -390,15 +405,33 @@
       // Analyse ésotérique côte à côte (Mashreqi / Maghrébi)
       renderEsoInfo(mashSum, maghSum);
 
-      // Facteurs mystiques (basé sur la somme Mashreqi)
-      const factorPairs = getFactorPairs(mashSum);
-      const factorsDiv = document.getElementById('mysticFactors');
-      if (factorPairs.length > 0 && mashSum > 0) {
-        factorsDiv.innerHTML = factorPairs.map(([a, b]) =>
-          `<div class="factor-row"><strong>${a}</strong> × <strong>${b}</strong></div>`
-        ).join('');
+      // Facteurs mystiques : côte à côte si les deux bases diffèrent.
+      renderFactors(mashSum, maghSum);
+    }
+
+    // Liste des paires a×b d'une base (ou message si nombre premier).
+    function factorPairsHtml(v) {
+      const pairs = getFactorPairs(v);
+      if (!(pairs.length > 0 && v > 0)) {
+        return '<span style="color:var(--text-muted);">Nombre premier — pas de décomposition.</span>';
+      }
+      return pairs.map(([a, b]) =>
+        `<div class="factor-row"><strong>${a}</strong> × <strong>${b}</strong></div>`
+      ).join('');
+    }
+
+    // Affiche la décomposition a×b : une seule colonne si les deux bases sont
+    // identiques (ex. saisie d'un nombre), deux colonnes sinon.
+    function renderFactors(mash, magh) {
+      const div = document.getElementById('mysticFactors');
+      if (mash === magh) {
+        div.className = 'factor-list';
+        div.innerHTML = factorPairsHtml(mash);
       } else {
-        factorsDiv.innerHTML = '<span style="color:var(--text-muted);">Nombre premier — pas de décomposition.</span>';
+        div.className = 'factor-cols';
+        div.innerHTML =
+          `<div class="factor-col"><div class="factor-col-head">☀️ Mashreqi</div>${factorPairsHtml(mash)}</div>` +
+          `<div class="factor-col"><div class="factor-col-head">🌙 Maghrébi</div>${factorPairsHtml(magh)}</div>`;
       }
     }
 
