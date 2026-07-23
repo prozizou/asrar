@@ -62,15 +62,8 @@
             </div>
             <!-- Barre d'interactions (visible seulement en détail) -->
             <div class="interaction-bar" id="interactionBar" style="display:none;">
-              <div class="rating-stars" id="ratingStars">
-                <span class="star" data-val="1">▯</span>
-                <span class="star" data-val="2">▯</span>
-                <span class="star" data-val="3">▯</span>
-                <span class="star" data-val="4">▯</span>
-                <span class="star" data-val="5">▯</span>
-              </div>
               <div class="meta">
-                <span id="avgRating">⭐ 0.0</span>
+                <span id="likeBtn" class="like-btn" onclick="toggleSecretLike()">🤍 <span id="likeCount">0</span></span>
                 <span id="commentCount" onclick="openCommentSheet()">💬 0</span>
                 <span id="bookmarkBtn" class="bookmark-icon" onclick="toggleBookmark()">🔖</span>
               </div>

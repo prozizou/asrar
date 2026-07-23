@@ -295,6 +295,15 @@ body {
   font-size: 1.2rem;
 }
 
+/* Bouton like (cœur) — remplace l'ancienne notation étoiles */
+.like-btn {
+  transition: transform .15s ease;
+  user-select: none;
+}
+.like-btn:active { transform: scale(1.25); }
+.like-btn.liked { color: #e0245e; font-weight: 600; }
+.like-btn #likeCount { font-variant-numeric: tabular-nums; }
+
 .bookmark-icon.saved {
   color: var(--asrar-text);
   font-weight: bold;

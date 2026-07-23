@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Don de secret — ASRAR PRO</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="/js/loader.js" defer></script>
+  <script src="/js/theme.js"></script>
+  <script src="/js/viewmode.js"></script>
+  <script src="/js/nav.js"></script>
+  <style>
+    .don-wrap { max-width: 640px; margin: 0 auto; padding: 18px 16px 60px; }
+    .don-head { text-align: center; margin-bottom: 18px; }
+    .don-head .ic { font-size: 2.6rem; }
+    .don-head h1 { margin: 6px 0 4px; font-size: 1.5rem; }
+    .don-head p { color: var(--text-muted); font-size: .92rem; line-height: 1.55; margin: 0; }
+    .don-note {
+      background: rgba(0,242,254,.07); border: 1px dashed rgba(0,242,254,.5);
+      color: var(--text); border-radius: 14px; padding: 12px 14px; font-size: .86rem;
+      line-height: 1.55; margin: 14px 0 20px;
+    }
+    .don-note b { color: #00c2d6; }
+    .don-field { margin-bottom: 16px; }
+    .don-field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .92rem; }
+    .don-field select, .don-field input, .don-field textarea {
+      width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border, rgba(128,128,128,.35)); background: var(--card, #fff);
+      color: var(--text); font-size: 1rem; font-family: inherit;
+    }
+    .don-field textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
+    .don-field .hint { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
+    .don-submit {
+      width: 100%; border: none; border-radius: 14px; padding: 15px; cursor: pointer;
+      font-size: 1.02rem; font-weight: 700; color: #04212b;
+      background: linear-gradient(45deg,#4facfe,#00f2fe);
+    }
+    .don-submit:disabled { opacity: .6; cursor: default; }
+    .don-msg { text-align: center; margin-top: 14px; font-size: .92rem; min-height: 20px; }
+    .don-msg.ok { color: #1faa59; }
+    .don-msg.err { color: #e0245e; }
+    .don-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted);
+      text-decoration: none; font-size: .9rem; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div id="asrar-loader"><div class="asrar-spinner"></div><span class="asrar-loader-text">Chargement…</span></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/api-content.js"></script>
+
+  <div class="don-wrap">
+    <a class="don-back" href="../accueil/accueil.html">← Retour à l'accueil</a>
+
+    <div class="don-head">
+      <div class="ic">🤲</div>
+      <h1>Don de secret</h1>
+      <p>Partagez une connaissance (un secret) avec la communauté ASRAR PRO.</p>
+    </div>
+
+    <div class="don-note">
+      🔎 Votre proposition est <b>d'abord vérifiée par l'administration</b> avant
+      d'être publiée. Elle n'apparaît donc pas immédiatement. Merci pour votre contribution 🌙
+    </div>
+
+    <form id="donForm" onsubmit="return soumettreDon(event)">
+      <div class="don-field">
+        <label for="donCat">Catégorie</label>
+        <select id="donCat" required>
+          <option value="deblocage">🔓 Déblocage</option>
+          <option value="domptage">🌀 Domptage</option>
+          <option value="ilham">✨ Ilham</option>
+          <option value="protection">🛡️ Protection</option>
+          <option value="ouverture">🚪 Ouverture</option>
+        </select>
+      </div>
+
+      <div class="don-field">
+        <label for="donTitre">Titre du secret</label>
+        <input type="text" id="donTitre" maxlength="200" required
+               placeholder="Ex. : Secret pour l'ouverture du cœur">
+      </div>
+
+      <div class="don-field">
+        <label for="donContenu">Contenu du secret</label>
+        <textarea id="donContenu" maxlength="8000" required
+                  placeholder="Décrivez le secret, la méthode, les versets ou invocations…"></textarea>
+        <div class="hint">Vous pouvez écrire en français et en arabe. Maximum 8000 caractères.</div>
+      </div>
+
+      <button type="submit" class="don-submit" id="donSubmit">🤲 Proposer ce secret</button>
+      <div class="don-msg" id="donMsg"></div>
+    </form>
+  </div>
+
+  <script>
+    // Réservé aux utilisateurs connectés (redirige vers la connexion sinon).
+    requireAuth(function () {});
+
+    async function soumettreDon(e) {
+      e.preventDefault();
+      const cat     = document.getElementById('donCat').value;
+      const faida   = document.getElementById('donTitre').value.trim();
+      const sirr    = document.getElementById('donContenu').value.trim();
+      const msg     = document.getElementById('donMsg');
+      const btn     = document.getElementById('donSubmit');
+
+      msg.className = 'don-msg';
+      msg.innerText = '';
+
+      if (faida.length < 3)    { msg.className = 'don-msg err'; msg.innerText = 'Le titre est trop court.'; return false; }
+      if (sirr.length < 10)    { msg.className = 'don-msg err'; msg.innerText = 'Le contenu est trop court.'; return false; }
+
+      btn.disabled = true;
+      btn.innerText = 'Envoi…';
+      try {
+        await apiPost('don', { cat, faida, sirr });
+        document.getElementById('donForm').reset();
+        msg.className = 'don-msg ok';
+        msg.innerText = '✅ Merci ! Votre secret a été envoyé pour vérification par l\'administration.';
+      } catch (err) {
+        msg.className = 'don-msg err';
+        msg.innerText = '⚠️ ' + (err.message || 'Envoi impossible. Réessayez.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '🤲 Proposer ce secret';
+      }
+      return false;
+    }
+  </script>
+
+  <script src="/pwa.js" defer></script>
+</body>
+</html>
