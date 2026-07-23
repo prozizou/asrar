@@ -14,7 +14,7 @@
 const { verifyUser } = require("./_lib/access");
 const { app } = require("./_lib/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("./_lib/sellers");
-const { setCors, parseBody } = require("./_lib/http");
+const { setCors, parseBody, safeUrl } = require("./_lib/http");
 
 module.exports = async (req, res) => {
   setCors(req, res);
@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
         phone: digits(shop && shop.phone, 20)
       };
       if (!clean.name) return res.status(400).json({ error: "Nom de boutique requis." });
-      const logo = logoUrl ? str(logoUrl, 500) : "";
+      const logo = logoUrl ? safeUrl(logoUrl, 500) : "";
       if (activeSeller) {
         const upd = { ...clean };
         if (logo) upd.logo = logo;
@@ -116,11 +116,13 @@ module.exports = async (req, res) => {
         : ((boutique && boutique.number) || "");
 
       // Galerie : 2 images minimum, 5 maximum (contrôle aussi côté serveur).
+      // safeUrl() rejette toute URL piégée (quotes, chevrons, javascript:, …) :
+      // impossible d'injecter du code via une URL d'image.
       const images = Array.isArray(product.images)
-        ? product.images.map((u) => str(u, 500)).filter(Boolean).slice(0, 5)
+        ? product.images.map((u) => safeUrl(u, 500)).filter(Boolean).slice(0, 5)
         : [];
       if (images.length < 2) {
-        return res.status(400).json({ error: "Ajoutez au moins 2 images du produit." });
+        return res.status(400).json({ error: "Ajoutez au moins 2 images valides (https) du produit." });
       }
       if (!str(product.description, 1000)) {
         return res.status(400).json({ error: "La description est requise." });
