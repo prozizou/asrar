@@ -107,6 +107,27 @@
       color: var(--text-main);
     }
     .factor-row strong { color: var(--accent); }
+    /* Bloc d'informations ésotériques */
+    .eso-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 15px;
+    }
+    .eso-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      background: rgba(200,160,80,0.08);
+      border: 1px solid var(--glass-border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 9px 14px;
+    }
+    .eso-row .eso-k { color: var(--text-muted); font-size: 0.9rem; }
+    .eso-row .eso-v { color: var(--text-main); font-weight: 600; text-align: right; }
+    .eso-row .eso-v strong { color: var(--accent); }
     .sys-toggle {
       display: flex;
       gap: 10px;
@@ -233,7 +254,7 @@
     <div class="glass-panel">
       <h2>🔢 Calculateur Abjad Ésotérique</h2>
       <p style="margin-bottom:18px;color:var(--text-muted);">
-        Saisie en temps réel · Décomposition · Réduction théosophique · Facteurs mystiques
+        Saisie en temps réel · Faces & Adad · Zodiaque · Facteurs mystiques
       </p>
 
       <input type="text" class="abajad-input" id="abajadInput" dir="rtl"
@@ -255,8 +276,8 @@
         </div>
       </div>
 
-      <!-- Décomposition lettre par lettre -->
-      <div class="breakdown" id="breakdown"></div>
+      <!-- Analyse ésotérique (faces, adad, zodiaque) — basée sur le total Mashreqi -->
+      <div class="eso-info" id="esoInfo"></div>
 
       <!-- Décomposition (paires a×b du total Mashreqi) -->
       <div style="margin-top:15px;">
@@ -338,14 +359,10 @@
 
       const chars = normalized.split('');
       let mashSum = 0, maghSum = 0;
-      const breakdownLetters = [];
 
       chars.forEach(ch => {
-        const mashVal = getLetterValue(ch, 'mashriqi');
-        const maghVal = getLetterValue(ch, 'maghrebi');
-        mashSum += mashVal;
-        maghSum += maghVal;
-        breakdownLetters.push(`${ch} (${mashVal}/${maghVal})`);
+        mashSum += getLetterValue(ch, 'mashriqi');
+        maghSum += getLetterValue(ch, 'maghrebi');
       });
 
       // Mise à jour des totaux
@@ -358,9 +375,8 @@
       document.getElementById('maghrebiReduced').textContent = 
         maghSum > 0 ? `Réduit : ${reduceNumber(maghSum)}` : '';
 
-      // Décomposition lettre par lettre
-      document.getElementById('breakdown').innerHTML = 
-        '<div class="mw-line"><strong>Décomposition :</strong> ' + breakdownLetters.join(' + ') + '</div>';
+      // Analyse ésotérique (faces, adad, zodiaque) — basée sur le total Mashreqi
+      renderEsoInfo(mashSum);
 
       // Facteurs mystiques (basé sur la somme Mashreqi)
       const factorPairs = getFactorPairs(mashSum);
@@ -379,8 +395,53 @@
       document.getElementById('maghrebiResult').textContent = '0';
       document.getElementById('machreqiReduced').textContent = '';
       document.getElementById('maghrebiReduced').textContent = '';
-      document.getElementById('breakdown').innerHTML = '';
+      document.getElementById('esoInfo').innerHTML = '';
       document.getElementById('mysticFactors').innerHTML = '';
+    }
+
+    // --- Analyse ésotérique (faces, adad, zodiaque) ---
+    // Zodiaque indexé de 1 à 12 (ordre = valeur mod 12 ; 0 → 12 = Poissons).
+    const ZODIAC = [
+      null,
+      { nom: 'Bélier',     nature: 'Feu',   intervalle: '21 mars au 19 avril' },
+      { nom: 'Taureau',    nature: 'Terre', intervalle: '20 avril au 20 mai' },
+      { nom: 'Gémeaux',    nature: 'Air',   intervalle: '21 mai au 20 juin' },
+      { nom: 'Cancer',     nature: 'Eau',   intervalle: '21 juin au 22 juillet' },
+      { nom: 'Lion',       nature: 'Feu',   intervalle: '23 juillet au 22 août' },
+      { nom: 'Vierge',     nature: 'Terre', intervalle: '23 août au 22 septembre' },
+      { nom: 'Balance',    nature: 'Air',   intervalle: '23 septembre au 22 octobre' },
+      { nom: 'Scorpion',   nature: 'Eau',   intervalle: '23 octobre au 21 novembre' },
+      { nom: 'Sagittaire', nature: 'Feu',   intervalle: '22 novembre au 21 décembre' },
+      { nom: 'Capricorne', nature: 'Terre', intervalle: '22 décembre au 19 janvier' },
+      { nom: 'Verseau',    nature: 'Air',   intervalle: '20 janvier au 18 février' },
+      { nom: 'Poissons',   nature: 'Eau',   intervalle: '19 février au 20 mars' }
+    ];
+
+    function renderEsoInfo(v) {
+      const el = document.getElementById('esoInfo');
+      if (!v || v <= 0) { el.innerHTML = ''; return; }
+
+      const fmt = (n) => Number(n).toLocaleString('fr-FR');           // 505 521
+      const faceCachee = parseInt(String(v).split('').reverse().join(''), 10) || 0; // 711 → 117
+      const rouwhane   = v * v;                    // Adad rouhâni : V²
+      const lumineux   = (v * (v + 1)) / 2;        // Adad lumineux : V(V+1)/2
+      const ordre      = v % 12;                   // Ordre zodiacal
+      const z          = ZODIAC[ordre === 0 ? 12 : ordre];
+
+      const rows = [
+        ['Face apparente',      `<strong>${fmt(v)}</strong>`],
+        ['Face cachée',         `<strong>${fmt(faceCachee)}</strong>`],
+        ['Adad rouhâni',        `${fmt(v)} × ${fmt(v)} = <strong>${fmt(rouwhane)}</strong>`],
+        ['Adad lumineux',       `(${fmt(v)} × ${fmt(v + 1)}) / 2 = <strong>${fmt(lumineux)}</strong>`],
+        ['Ordre zodiaque',      `${fmt(v)} mod 12 = <strong>${ordre}</strong>`],
+        ['Signe zodiaque',      `<strong>${z.nom}</strong>`],
+        ['Nature zodiaque',     `<strong>${z.nature}</strong>`],
+        ['Intervalle zodiaque', z.intervalle]
+      ];
+
+      el.innerHTML = rows.map(([k, val]) =>
+        `<div class="eso-row"><span class="eso-k">${k}</span><span class="eso-v">${val}</span></div>`
+      ).join('');
     }
 
     // --- Comparateur ---
