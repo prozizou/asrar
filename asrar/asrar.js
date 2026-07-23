@@ -76,8 +76,14 @@ async function loadSecrets(catId) {
     secretsCache[catId] = (items || []).map(val => ({
       key: val._key,
       faida: val.faida || val.title || val.titre || 'Secret sans titre',
-      img: val.img || val.image || null
+      img: val.img || val.image || null,
+      ts: typeof val.updatedAt === 'number' ? val.updatedAt : 0
     }));
+    // Les plus récents EN HAUT (mettre en avant la nouveauté). On trie par
+    // updatedAt décroissant ; à défaut (anciennes entrées sans updatedAt), on
+    // retombe sur l'ordre des clés push Firebase, qui sont chronologiques.
+    secretsCache[catId].sort((a, b) =>
+      (b.ts - a.ts) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
   } catch (e) {
     console.error(e);
     secretsCache[catId] = [];
