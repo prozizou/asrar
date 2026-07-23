@@ -15,7 +15,7 @@
 const { verifyUser, isAdmin, emailKey } = require("./_lib/access");
 const { app } = require("./_lib/grant");
 const { SECRET_CATS } = require("./_lib/sources");
-const { setCors, parseBody } = require("./_lib/http");
+const { setCors, parseBody, safeUrl } = require("./_lib/http");
 
 const DAY_MS = 86400000;
 
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         if (!SECRET_CATS.includes(cat)) return res.status(400).json({ error: "Catégorie inconnue." });
         const faida = str(body.faida, 200);
         if (!faida) return res.status(400).json({ error: "Titre (faida) requis." });
-        const rec = { faida, sirr: str(body.sirr, 8000), img: str(body.img, 500), updatedAt: Date.now() };
+        const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
         const key = body.key || db.ref("db_sirr_" + cat).push().key;
         await db.ref("db_sirr_" + cat + "/" + key).update(rec);
         return res.json({ ok: true, key });
@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
         if (!titre) return res.status(400).json({ error: "Titre requis." });
         const rec = {
           titre, auteur: str(body.auteur, 120), description: str(body.description, 2000),
-          img: str(body.img, 500), pdf: str(body.pdf, 800), updatedAt: Date.now()
+          img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
         const key = body.key || db.ref("almaqtab").push().key;
         await db.ref("almaqtab/" + key).update(rec);
@@ -89,7 +89,7 @@ module.exports = async (req, res) => {
         if (!(prix > 0)) return res.status(400).json({ error: "Prix invalide." });
         const rec = {
           produit, Prix: prix, devise: str(body.devise, 8) || "FCFA",
-          Image: str(body.Image, 500), description: str(body.description, 1000),
+          Image: safeUrl(body.Image, 500), description: str(body.description, 1000),
           number: digits(body.number, 20), chain: str(body.chain, 60),
           vendeur: str(body.vendeur, 80) || "Administration",
           email: str(body.email, 120), updatedAt: Date.now()

@@ -14,7 +14,9 @@ module.exports = async (req, res) => {
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
   const { idToken, folder } = parseBody(req);
-  try { await verifyUser(idToken); }
+
+  let user;
+  try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -24,8 +26,19 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "Cloudinary non configuré (variables d'environnement manquantes)." });
   }
 
+  // On restreint le dossier à une petite liste blanche, puis on le NAMESPACE
+  // avec l'uid : chaque utilisateur ne peut écrire que sous son propre préfixe.
+  // Les uploads restent ainsi tracés et cloisonnés (limite l'abus de stockage).
+  const base = String(folder || "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+  const allowed = new Set(["asrar_uploads", "shop_logos", "products", "logos", "produits", "boutique"]);
+  const rootFolder = allowed.has(base) ? base : "asrar_uploads";
+  const safeFolder = `${rootFolder}/${user.uid}`;
+
+  // NOTE SÉCURITÉ : la signature ne peut pas contraindre `resource_type`
+  // (dans l'URL). Pour un verrouillage complet du format/taille, configurez côté
+  // Cloudinary un « upload preset » signé (formats image uniquement, taille max)
+  // et signez aussi le paramètre `upload_preset` ci-dessous.
   const timestamp = Math.floor(Date.now() / 1000);
-  const safeFolder = String(folder || "asrar_uploads").replace(/[^a-zA-Z0-9_\/-]/g, "_").slice(0, 80);
   const toSign = `folder=${safeFolder}&timestamp=${timestamp}`;
   const signature = crypto.createHash("sha1").update(toSign + apiSecret).digest("hex");
 

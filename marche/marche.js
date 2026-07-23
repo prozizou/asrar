@@ -344,10 +344,16 @@ function openModal(product) {
   const thumbs = document.getElementById('m-thumbs');
   if (thumbs) {
     if (galerie.length > 1) {
+      // Pas de donnée injectée dans un attribut JS (onclick) : on passe par la
+      // délégation d'événement et la miniature lit sa propre `src`. Évite toute
+      // XSS via une URL d'image forgée par un vendeur.
       thumbs.innerHTML = galerie.map((url, i) => `
         <img src="${escapeHtml(url)}" class="m-thumb${i === 0 ? ' active' : ''}"
-             onclick="changerImagePrincipale(this, '${escapeHtml(url)}')"
              onerror="this.style.display='none'" alt="Vue ${i + 1}">`).join('');
+      thumbs.onclick = (e) => {
+        const t = e.target.closest('.m-thumb');
+        if (t) changerImagePrincipale(t, t.getAttribute('src'));
+      };
       thumbs.style.display = 'flex';
     } else {
       thumbs.innerHTML = '';

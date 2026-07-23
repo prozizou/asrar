@@ -16,4 +16,20 @@ function parseBody(req) {
   return {};
 }
 
-module.exports = { setCors, parseBody };
+// Caractères interdits dans une URL affichée : espaces, quotes, chevrons,
+// backtick, antislash — tout ce qui permettrait une évasion d'attribut HTML/JS.
+const BAD_URL_CHARS = /["'<>`\\\s]/;
+
+// URL sûre pour un contexte d'affichage (src d'image, lien PDF).
+// N'autorise QUE https:// / http:// / un chemin relatif "/…", et rejette tout
+// caractère d'évasion. Retourne "" si l'URL est invalide : impossible de stocker
+// un javascript:/data: ni une URL piégée susceptible de casser le HTML.
+function safeUrl(v, max = 800) {
+  const s = (v == null ? "" : String(v)).trim().slice(0, max);
+  if (!s) return "";
+  if (BAD_URL_CHARS.test(s)) return "";
+  if (!/^(https?:\/\/|\/)[^\s]+$/i.test(s)) return "";
+  return s;
+}
+
+module.exports = { setCors, parseBody, safeUrl };
