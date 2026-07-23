@@ -46,6 +46,10 @@
     "analytics":      { ".read": false, ".write": false },
     "activity_feed":  { ".read": false, ".write": false, ".indexOn": ["at"] },
     "geomancie_logs": { ".read": false, ".write": false, ".indexOn": ["at"] },
+
+    "_comment_don": "DON DE SECRET. Propositions envoyées par /api/don (Admin SDK) en statut 'pending'. Le client ne peut ni lire ni écrire directement : l'application d'administration les valide/révoque via l'Admin SDK (qui contourne ces règles). don_meta = anti-spam (dernier envoi par uid).",
+    "don_db":   { ".read": false, ".write": false, ".indexOn": ["at", "status"] },
+    "don_meta": { ".read": false, ".write": false },
     "admins": {
       "$emailKey": {
         ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",

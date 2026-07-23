@@ -11,10 +11,10 @@ const CATS = [
 let currentCat = CATS[0];
 let secretsCache = {};
 let currentSecret = null;
-let userRating = 0;
+let userLiked = false;
 let commentsListener = null;
 let commentsRef = null;
-let ratingsAvgRef = null;
+let likesRef = null;
 
 // Fallbacks pour fonctions externes
 if (typeof ensureAccess !== 'function') {
@@ -208,10 +208,10 @@ function backToList() {
   if (commentsRef && commentsListener) {
     commentsRef.off('child_added', commentsListener);
   }
-  if (ratingsAvgRef) ratingsAvgRef.off('value');
+  if (likesRef) likesRef.off('value');
   commentsListener = null;
   commentsRef = null;
-  ratingsAvgRef = null;
+  likesRef = null;
   currentSecret = null;
   closeCommentSheet();
 }
@@ -264,25 +264,26 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ==================== NOTATION & COMMENTAIRES ====================
+// ==================== LIKE & COMMENTAIRES ====================
 function loadRatingAndComments() {
   if (!currentSecret) return;
   const cat = currentSecret.catId, key = currentSecret.key;
   const uid = firebase.auth().currentUser?.uid;
   if (!uid) return;
 
-  firebase.database().ref(`ratings/${cat}/${key}/${uid}`).once('value').then(snap => {
-    userRating = snap.val() || 0;
-    highlightStars(userRating);
-  });
-
-  if (ratingsAvgRef) ratingsAvgRef.off('value');
-  ratingsAvgRef = firebase.database().ref(`ratings/${cat}/${key}`);
-  ratingsAvgRef.on('value', snap => {
-    const ratings = snap.val() || {};
-    const vals = Object.values(ratings);
-    const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : '0.0';
-    document.getElementById('avgRating').innerText = `⭐ ${avg} (${vals.length})`;
+  // — Likes — on réutilise le nœud `ratings/{cat}/{key}` (déjà autorisé par les
+  // règles) : la PRÉSENCE de l'uid = 1 like. Le compteur = nombre d'uid présents.
+  if (likesRef) likesRef.off('value');
+  likesRef = firebase.database().ref(`ratings/${cat}/${key}`);
+  likesRef.on('value', snap => {
+    const likes = snap.val() || {};
+    userLiked = !!likes[uid];
+    const count = Object.keys(likes).length;
+    const btn = document.getElementById('likeBtn');
+    if (btn) {
+      btn.classList.toggle('liked', userLiked);
+      btn.innerHTML = `${userLiked ? '❤️' : '🤍'} <span id="likeCount">${count}</span>`;
+    }
   });
 
   commentsRef = firebase.database().ref(`comments/${cat}/${key}`);
@@ -299,22 +300,16 @@ function loadRatingAndComments() {
   });
 }
 
-function highlightStars(val) {
-  document.querySelectorAll('#ratingStars .star').forEach(s => {
-    s.classList.toggle('active', parseInt(s.dataset.val) <= val);
-  });
-}
-
-document.getElementById('ratingStars').addEventListener('click', e => {
-  if (!e.target.classList.contains('star')) return;
+// Like / unlike du secret courant. L'écouteur temps réel ci-dessus rafraîchit
+// l'affichage (cœur plein/vide + compteur) automatiquement après l'écriture.
+function toggleSecretLike() {
   if (!currentSecret) return;
   const uid = firebase.auth().currentUser?.uid;
   if (!uid) return;
-  const val = parseInt(e.target.dataset.val);
-  firebase.database().ref(`ratings/${currentSecret.catId}/${currentSecret.key}/${uid}`).set(val);
-  userRating = val;
-  highlightStars(val);
-});
+  const ref = firebase.database().ref(`ratings/${currentSecret.catId}/${currentSecret.key}/${uid}`);
+  if (userLiked) ref.remove();
+  else ref.set(1);
+}
 
 function openCommentSheet() {
   document.getElementById('commentSheet').classList.add('open');
