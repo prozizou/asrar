@@ -115,10 +115,10 @@
       margin-top: 15px;
     }
     .eso-row {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 10px;
       align-items: baseline;
-      gap: 12px;
       background: rgba(200,160,80,0.08);
       border: 1px solid var(--glass-border);
       border-left: 3px solid var(--accent);
@@ -127,7 +127,13 @@
     }
     .eso-row .eso-k { color: var(--text-muted); font-size: 0.9rem; }
     .eso-row .eso-v { color: var(--text-main); font-weight: 600; text-align: right; }
-    .eso-row .eso-v strong { color: var(--accent); }
+    .eso-row.eso-head {
+      background: transparent;
+      border: none;
+      border-left: 3px solid transparent;
+      padding-bottom: 2px;
+    }
+    .eso-row.eso-head .eso-v { color: var(--accent); font-size: 0.85rem; }
     .sys-toggle {
       display: flex;
       gap: 10px;
@@ -375,8 +381,8 @@
       document.getElementById('maghrebiReduced').textContent = 
         maghSum > 0 ? `Réduit : ${reduceNumber(maghSum)}` : '';
 
-      // Analyse ésotérique (faces, adad, zodiaque) — basée sur le total Mashreqi
-      renderEsoInfo(mashSum);
+      // Analyse ésotérique côte à côte (Mashreqi / Maghrébi)
+      renderEsoInfo(mashSum, maghSum);
 
       // Facteurs mystiques (basé sur la somme Mashreqi)
       const factorPairs = getFactorPairs(mashSum);
@@ -417,31 +423,50 @@
       { nom: 'Poissons',   nature: 'Eau',   intervalle: '19 février au 20 mars' }
     ];
 
-    function renderEsoInfo(v) {
+    // Résultats ésotériques d'une base (aucun détail de calcul, juste les valeurs).
+    function computeEso(v) {
+      const fmt = (n) => Number(n).toLocaleString('fr-FR');
+      if (!v || v <= 0) {
+        return { face: '—', cachee: '—', rouhani: '—', lumineux: '—', ordre: '—', signe: '—', nature: '—', intervalle: '—' };
+      }
+      const cachee = parseInt(String(v).split('').reverse().join(''), 10) || 0; // 711 → 117
+      const ordre  = v % 12;
+      const z      = ZODIAC[ordre === 0 ? 12 : ordre];
+      return {
+        face:       fmt(v),
+        cachee:     fmt(cachee),
+        rouhani:    fmt(v * v),
+        lumineux:   fmt((v * (v + 1)) / 2),
+        ordre:      String(ordre),
+        signe:      z.nom,
+        nature:     z.nature,
+        intervalle: z.intervalle
+      };
+    }
+
+    // Affiche les deux bases CÔTE À CÔTE (Mashreqi / Maghrébi), résultats seuls.
+    function renderEsoInfo(mash, magh) {
       const el = document.getElementById('esoInfo');
-      if (!v || v <= 0) { el.innerHTML = ''; return; }
+      if ((!mash || mash <= 0) && (!magh || magh <= 0)) { el.innerHTML = ''; return; }
 
-      const fmt = (n) => Number(n).toLocaleString('fr-FR');           // 505 521
-      const faceCachee = parseInt(String(v).split('').reverse().join(''), 10) || 0; // 711 → 117
-      const rouwhane   = v * v;                    // Adad rouhâni : V²
-      const lumineux   = (v * (v + 1)) / 2;        // Adad lumineux : V(V+1)/2
-      const ordre      = v % 12;                   // Ordre zodiacal
-      const z          = ZODIAC[ordre === 0 ? 12 : ordre];
-
+      const A = computeEso(mash), B = computeEso(magh);
       const rows = [
-        ['Face apparente',      `<strong>${fmt(v)}</strong>`],
-        ['Face cachée',         `<strong>${fmt(faceCachee)}</strong>`],
-        ['Adad rouhâni',        `${fmt(v)} × ${fmt(v)} = <strong>${fmt(rouwhane)}</strong>`],
-        ['Adad lumineux',       `(${fmt(v)} × ${fmt(v + 1)}) / 2 = <strong>${fmt(lumineux)}</strong>`],
-        ['Ordre zodiaque',      `${fmt(v)} mod 12 = <strong>${ordre}</strong>`],
-        ['Signe zodiaque',      `<strong>${z.nom}</strong>`],
-        ['Nature zodiaque',     `<strong>${z.nature}</strong>`],
-        ['Intervalle zodiaque', z.intervalle]
+        ['Face apparente',      A.face,       B.face],
+        ['Face cachée',         A.cachee,     B.cachee],
+        ['Adad rouhâni',        A.rouhani,    B.rouhani],
+        ['Adad lumineux',       A.lumineux,   B.lumineux],
+        ['Ordre zodiaque',      A.ordre,      B.ordre],
+        ['Signe zodiaque',      A.signe,      B.signe],
+        ['Nature zodiaque',     A.nature,     B.nature],
+        ['Intervalle zodiaque', A.intervalle, B.intervalle]
       ];
 
-      el.innerHTML = rows.map(([k, val]) =>
-        `<div class="eso-row"><span class="eso-k">${k}</span><span class="eso-v">${val}</span></div>`
-      ).join('');
+      el.innerHTML =
+        '<div class="eso-row eso-head"><span class="eso-k"></span>' +
+          '<span class="eso-v">☀️ Mashreqi</span><span class="eso-v">🌙 Maghrébi</span></div>' +
+        rows.map(([k, a, b]) =>
+          `<div class="eso-row"><span class="eso-k">${k}</span><span class="eso-v">${a}</span><span class="eso-v">${b}</span></div>`
+        ).join('');
     }
 
     // --- Comparateur ---
