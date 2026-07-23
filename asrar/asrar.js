@@ -314,12 +314,14 @@ function toggleSecretLike() {
 function openCommentSheet() {
   document.getElementById('commentSheet').classList.add('open');
   document.getElementById('overlay').classList.add('show');
+  document.body.classList.add('comment-open');
   document.getElementById('commentInput').focus();
 }
 
 function closeCommentSheet() {
   document.getElementById('commentSheet').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
+  document.body.classList.remove('comment-open');
 }
 
 function postComment() {

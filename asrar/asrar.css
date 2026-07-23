@@ -315,10 +315,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--asrar-bg);
+  max-width: 720px;
+  margin: 0 auto;                 /* centrée sur grand écran */
+  background: var(--asrar-bg-deep, var(--asrar-bg));
   border-radius: 20px 20px 0 0;
   padding: 1.2rem;
-  z-index: 200;
+  z-index: 100001;               /* au-dessus des boutons flottants (99999) */
   transform: translateY(100%);
   transition: transform 0.3s ease;
   max-height: 70vh;
@@ -333,9 +335,15 @@ body {
 
 .comment-sheet-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  color: var(--asrar-text);
 }
+
+/* Masque les boutons flottants (thème / vue) pendant la saisie d'un commentaire */
+body.comment-open #asrarViewBtn,
+body.comment-open #asrarThemeBtn { display: none !important; }
 
 .comment-list {
   flex: 1;
@@ -366,24 +374,37 @@ body {
 
 .comment-input {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .comment-input input {
-  flex: 1;
-  background: var(--asrar-surface);
+  flex: 1 1 auto;
+  min-width: 0;                       /* laisse l'input rétrécir/grandir correctement */
+  background: var(--surface-input);   /* fond dédié aux champs : contrasté en clair ET sombre */
   border: 1px solid var(--asrar-border);
   border-radius: 20px;
-  padding: 10px 16px;
+  padding: 12px 16px;
+  min-height: 44px;
   color: var(--asrar-text);
+  font-size: 0.95rem;
   outline: none;
 }
 
+.comment-input input::placeholder {
+  color: var(--asrar-text-dim);
+  opacity: 1;                         /* évite le placeholder trop pâle en sombre */
+}
+
 .comment-input button {
+  flex: 0 0 auto;                     /* le bouton ne mange plus la place de l'input */
+  white-space: nowrap;
   background: var(--asrar-cream);
   border: none;
   border-radius: 20px;
-  padding: 0 20px;
+  padding: 12px 20px;
+  min-height: 44px;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-on-accent);
   cursor: pointer;
@@ -396,7 +417,7 @@ body {
   right: 0;
   bottom: 0;
   background: var(--asrar-overlay);
-  z-index: 150;
+  z-index: 100000;   /* juste sous la feuille de commentaires (100001) */
   display: none;
 }
 
