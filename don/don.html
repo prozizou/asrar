@@ -20,17 +20,19 @@
     .don-head p { color: var(--text-muted); font-size: .92rem; line-height: 1.55; margin: 0; }
     .don-note {
       background: rgba(0,242,254,.07); border: 1px dashed rgba(0,242,254,.5);
-      color: var(--text); border-radius: 14px; padding: 12px 14px; font-size: .86rem;
+      color: var(--text-main); border-radius: 14px; padding: 12px 14px; font-size: .86rem;
       line-height: 1.55; margin: 14px 0 20px;
     }
     .don-note b { color: #00c2d6; }
     .don-field { margin-bottom: 16px; }
-    .don-field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .92rem; }
+    .don-field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .92rem; color: var(--text-main); }
     .don-field select, .don-field input, .don-field textarea {
       width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
-      border: 1px solid var(--border, rgba(128,128,128,.35)); background: var(--card, #fff);
-      color: var(--text); font-size: 1rem; font-family: inherit;
+      border: 1px solid var(--border, rgba(128,128,128,.35)); background: var(--surface-input, #fff);
+      color: var(--text-main, #1b2634); font-size: 1rem; font-family: inherit;
     }
+    .don-field select option { color: #1b2634; }
+    .don-field ::placeholder { color: var(--text-dim); opacity: 1; }
     .don-field textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
     .don-field .hint { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
     .don-submit {
