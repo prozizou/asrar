@@ -346,30 +346,36 @@ body.comment-open #asrarViewBtn,
 body.comment-open #asrarThemeBtn { display: none !important; }
 
 .comment-list {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 140px;              /* zone de messages toujours visible (façon WhatsApp) */
   overflow-y: auto;
   margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.6rem;
+  padding-right: 2px;
 }
 
 .comment-item {
+  align-self: flex-start;         /* bulles alignées à gauche, comme un fil de groupe */
+  max-width: 85%;
   background: var(--asrar-surface);
-  border-radius: 12px;
-  padding: 0.8rem;
+  border-radius: 4px 14px 14px 14px;
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--asrar-border);
 }
 
 .comment-pseudo {
-  font-weight: 600;
-  color: var(--asrar-text);
-  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--asrar-cream);      /* nom en couleur d'accent, comme WhatsApp */
+  font-size: 0.78rem;
 }
 
 .comment-text {
-  color: var(--asrar-text-dim);
-  margin-top: 4px;
+  color: var(--asrar-text);
+  margin-top: 3px;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .comment-input {
@@ -379,13 +385,14 @@ body.comment-open #asrarThemeBtn { display: none !important; }
 }
 
 .comment-input input {
-  flex: 1 1 auto;
-  min-width: 0;                       /* laisse l'input rétrécir/grandir correctement */
+  flex: 1 1 0;                        /* prend TOUTE la place restante */
+  width: auto;                        /* annule le width:100% global des inputs */
+  min-width: 0;
   background: var(--surface-input);   /* fond dédié aux champs : contrasté en clair ET sombre */
   border: 1px solid var(--asrar-border);
   border-radius: 20px;
   padding: 12px 16px;
-  min-height: 44px;
+  min-height: 46px;
   color: var(--asrar-text);
   font-size: 0.95rem;
   outline: none;
@@ -398,12 +405,14 @@ body.comment-open #asrarThemeBtn { display: none !important; }
 
 .comment-input button {
   flex: 0 0 auto;                     /* le bouton ne mange plus la place de l'input */
+  width: auto !important;             /* annule le width:100% GLOBAL de css/style.css */
+  margin-top: 0 !important;           /* annule le margin-top:15px global (désalignait) */
   white-space: nowrap;
   background: var(--asrar-cream);
   border: none;
   border-radius: 20px;
-  padding: 12px 20px;
-  min-height: 44px;
+  padding: 0 18px;
+  min-height: 46px;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-on-accent);
