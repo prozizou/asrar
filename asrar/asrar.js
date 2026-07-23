@@ -13,6 +13,7 @@ let secretsCache = {};
 let currentSecret = null;
 let userLiked = false;
 let commentsListener = null;
+let commentCountListener = null;
 let commentsRef = null;
 let likesRef = null;
 
@@ -116,6 +117,7 @@ function openSecret(key) {
 }
 
 async function fetchAndShowDetail(key) {
+  showSecretLoader(); // le contenu met quelques secondes à venir → indicateur visuel
   try {
     // Contenu complet (avec sirr) — l'API ne le renvoie qu'aux abonnés actifs.
     const { item } = await apiPost('get-content', { kind: 'secret', cat: currentCat.id, key });
@@ -129,7 +131,22 @@ async function fetchAndShowDetail(key) {
   } catch (e) {
     if (e.status === 403) { showSubscriptionGate(); return; }
     alert("Impossible de charger le secret.");
+  } finally {
+    hideSecretLoader();
   }
+}
+
+// Loader plein écran pendant le chargement d'un secret.
+function showSecretLoader() {
+  if (document.getElementById('secret-loading')) return;
+  const o = document.createElement('div');
+  o.id = 'secret-loading';
+  o.innerHTML = '<div class="sl-spin"></div>';
+  document.body.appendChild(o);
+}
+function hideSecretLoader() {
+  const o = document.getElementById('secret-loading');
+  if (o) o.remove();
 }
 
 function showDetailView(data) {
@@ -154,62 +171,23 @@ function showDetailView(data) {
   const wrap = document.querySelector('.asrar-wrap');
   if (wrap) wrap.classList.add('detail-mode');
 
-  // Alimente le lecteur plein écran et l'ouvre (lecture confortable, plein device).
-  fillReader(data);
-  applyFontScale();
-  openReader();
-
   loadRatingAndComments();
   updateBookmarkIcon();
   window.scrollTo(0,0);
 }
 
-// ==================== LECTEUR PLEIN ÉCRAN ====================
-function fillReader(data) {
-  const img = document.getElementById('rdrImg');
-  if (data && data.img) {
-    img.src = data.img; img.style.display = 'block';
-    img.onerror = () => { img.style.display = 'none'; };
-  } else {
-    img.style.display = 'none';
-  }
-  document.getElementById('rdrTitle').innerHTML = formatMixed((data && data.faida) || '');
-  document.getElementById('rdrSirr').innerHTML = formatMixed((data && data.sirr) || '');
-}
-function openReader() {
-  if (!currentSecret) return;
-  document.getElementById('secretReader').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeReader() {
-  document.getElementById('secretReader').classList.remove('open');
-  document.body.style.overflow = '';
-}
-// Zoom du texte (A− / A+) : 0.8 → 2.2, mémorisé localement.
-function readerFont(delta) {
-  let scale = parseFloat(localStorage.getItem('asrar_font_scale') || '1') + delta * 0.12;
-  scale = Math.max(0.8, Math.min(2.2, scale));
-  localStorage.setItem('asrar_font_scale', scale.toFixed(2));
-  applyFontScale();
-}
-function applyFontScale() {
-  const scale = parseFloat(localStorage.getItem('asrar_font_scale') || '1');
-  document.documentElement.style.setProperty('--asrar-scale', scale);
-}
-
 function backToList() {
-  closeReader();
   const wrap = document.querySelector('.asrar-wrap');
   if (wrap) wrap.classList.remove('detail-mode');
   document.getElementById('detailView').style.display = 'none';
   document.getElementById('listView').style.display = 'block';
   document.getElementById('interactionBar').style.display = 'none';
   // Détache les écouteurs temps réel via les références mémorisées.
-  if (commentsRef && commentsListener) {
-    commentsRef.off('child_added', commentsListener);
-  }
+  if (commentsRef && commentsListener) commentsRef.off('child_added', commentsListener);
+  if (commentsRef && commentCountListener) commentsRef.off('value', commentCountListener);
   if (likesRef) likesRef.off('value');
   commentsListener = null;
+  commentCountListener = null;
   commentsRef = null;
   likesRef = null;
   currentSecret = null;
@@ -294,9 +272,11 @@ function loadRatingAndComments() {
     appendComment(c.pseudo, c.text);
   });
 
-  commentsRef.once('value').then(snap => {
-    const count = snap.numChildren();
-    document.getElementById('commentCount').innerText = `💬 ${count}`;
+  // Compteur de commentaires EN TEMPS RÉEL : se met à jour à chaque nouveau
+  // commentaire, sans recharger la page.
+  if (commentCountListener) commentsRef.off('value', commentCountListener);
+  commentCountListener = commentsRef.on('value', snap => {
+    document.getElementById('commentCount').innerText = `💬 ${snap.numChildren()}`;
   });
 }
 

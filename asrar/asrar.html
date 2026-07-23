@@ -51,7 +51,6 @@
               <button class="detail-back" onclick="backToList()">← Retour aux secrets</button>
               <button class="detail-expand" onclick="partagerSecret()" title="Partager ce secret">📤 Partager</button>
               <button class="detail-expand" onclick="telechargerSecretPdf()" title="Télécharger en PDF">📄 PDF</button>
-              <button class="detail-expand" onclick="openReader()" title="Plein écran">⛶ Plein écran</button>
             </div>
             <div class="detail-card">
               <div class="detail-img-wrap" id="detImgWrap" onclick="openImageFullscreen()">
@@ -70,27 +69,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Lecteur plein écran (espace complet du device, redimensionnable, zoom texte) -->
-  <div class="rdr-overlay" id="secretReader">
-    <div class="rdr-shell" id="rdrShell">
-      <div class="rdr-bar">
-        <button class="rdr-btn" onclick="closeReader()" title="Réduire">⤢ Réduire</button>
-        <span class="rdr-spacer"></span>
-        <button class="rdr-btn" onclick="partagerSecret()" title="Partager">📤</button>
-        <button class="rdr-btn" onclick="readerFont(-1)" title="Réduire le texte">A−</button>
-        <button class="rdr-btn" onclick="readerFont(1)" title="Agrandir le texte">A+</button>
-        <button class="rdr-btn" onclick="closeReader()" title="Fermer">✕</button>
-      </div>
-      <div class="rdr-body" id="rdrBody">
-        <div class="rdr-img-wrap" id="rdrImgWrap" onclick="openImageFullscreen()">
-          <img id="rdrImg" src="" alt="">
-        </div>
-        <div class="rdr-title" id="rdrTitle"></div>
-        <div class="rdr-sirr mix" id="rdrSirr"></div>
       </div>
     </div>
   </div>
