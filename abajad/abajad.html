@@ -126,7 +126,7 @@
       padding: 9px 14px;
     }
     .eso-row .eso-k { color: var(--text-muted); font-size: 0.9rem; }
-    .eso-row .eso-v { color: var(--text-main); font-weight: 600; text-align: right; }
+    .eso-row .eso-v { color: var(--text-main); font-weight: 600; text-align: center; }
     .eso-row.eso-head {
       background: transparent;
       border: none;
@@ -260,7 +260,8 @@
     <div class="glass-panel">
       <h2>🔢 Calculateur Abjad Ésotérique</h2>
       <p style="margin-bottom:18px;color:var(--text-muted);">
-        Saisie en temps réel · Faces & Adad · Zodiaque · Facteurs mystiques
+        Saisie en temps réel · Faces & Adad · Zodiaque · Facteurs mystiques<br>
+        <span style="font-size:.85rem;">💡 Astuce : vous pouvez aussi saisir directement un nombre (ex. 711).</span>
       </p>
 
       <input type="text" class="abajad-input" id="abajadInput" dir="rtl"
@@ -356,20 +357,25 @@
     // --- Calcul principal ---
     function calculateAbajad() {
       const input = document.getElementById('abajadInput').value;
-      const normalized = normalizeArabic(input);
-      
-      if (!normalized) {
-        resetDisplay();
-        return;
-      }
-
-      const chars = normalized.split('');
       let mashSum = 0, maghSum = 0;
 
-      chars.forEach(ch => {
-        mashSum += getLetterValue(ch, 'mashriqi');
-        maghSum += getLetterValue(ch, 'maghrebi');
-      });
+      // Saisie DIRECTE d'un nombre : on l'utilise tel quel (les deux bases = ce
+      // nombre), sans passer par le poids des lettres. Ex. taper « 711 ».
+      // Les chiffres arabes (٠-٩ / ۰-۹) sont convertis en chiffres occidentaux.
+      const ascii = input
+        .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x0660)
+        .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 0x06F0);
+      const numeric = ascii.trim().replace(/[\s.,]/g, '');
+      if (/^\d+$/.test(numeric)) {
+        mashSum = maghSum = parseInt(numeric, 10);
+      } else {
+        const normalized = normalizeArabic(input);
+        if (!normalized) { resetDisplay(); return; }
+        normalized.split('').forEach(ch => {
+          mashSum += getLetterValue(ch, 'mashriqi');
+          maghSum += getLetterValue(ch, 'maghrebi');
+        });
+      }
 
       // Mise à jour des totaux
       document.getElementById('machreqiResult').textContent = mashSum;
