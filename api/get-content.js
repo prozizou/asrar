@@ -33,6 +33,12 @@ module.exports = async (req, res) => {
     const item = snap.val();
     if (!item) return res.status(404).json({ error: "Élément introuvable." });
 
+    // Champs privés (coordonnées vendeur) : jamais exposés au navigateur.
+    // Le contact se fait via /api/wa?product=<clé> (redirection côté serveur).
+    if (Array.isArray(src.privateFields) && item && typeof item === "object") {
+      for (const f of src.privateFields) delete item[f];
+    }
+
     item._key = key;
     return res.status(200).json({ item });
   } catch (e) {

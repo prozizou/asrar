@@ -633,9 +633,7 @@ function renderCart() {
 // de la boutique (son numéro WhatsApp), pré-rempli avec le modèle demandé.
 function commanderProduit() {
   const p = currentModalProduct;
-  if (!p) return;
-  const number = (p.number || '').replace(/\D/g, '');
-  if (!number) { alert("Le numéro WhatsApp de la boutique n'est pas disponible."); return; }
+  if (!p || !p._key) return;
   let email = '';
   try { email = (auth.currentUser && auth.currentUser.email) || ''; } catch (e) {}
   const boutique = p.vendeur || 'la boutique';
@@ -651,7 +649,10 @@ Je souhaite passer une commande sur le Marché (${boutique}).
 • Total : ${total}
 
 Merci de me confirmer la disponibilité et les modalités de paiement.`;
-  window.open('https://wa.me/' + number + '?text=' + encodeURIComponent(msg), '_blank');
+  // Le numéro du vendeur n'est jamais envoyé au navigateur : /api/wa le lit
+  // côté serveur d'après la clé produit puis redirige vers WhatsApp.
+  window.open('/api/wa?product=' + encodeURIComponent(p._key) + '&text=' + encodeURIComponent(msg),
+              '_blank', 'noopener');
 }
 
 // Envoie la commande (détails du panier) à l'administration via WhatsApp.

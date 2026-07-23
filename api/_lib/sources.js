@@ -29,6 +29,10 @@ const SOURCES = {
   product: {
     ref: () => "det_produits",
     secretFields: ["description", "number", "email"],
+    // privateFields : JAMAIS renvoyés au client, même par get-content (fiche détail).
+    // Les coordonnées du vendeur (téléphone, e-mail) restent côté serveur ; le
+    // contact passe par /api/wa?product=<clé> qui redirige sans exposer le numéro.
+    privateFields: ["number", "email"],
     authOnly: true
   },
   // Versets de référence (suggestions numérologie) — lecture seule, aucun champ secret.
