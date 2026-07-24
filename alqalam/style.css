@@ -67,7 +67,7 @@
     .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
     .glass-input:focus { border-color: var(--accent); background: var(--surface-input); }
 
-    .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Alkalami', serif; font-size: 24px; }
+    .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 24px; }
 
     .grid-row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; width: 100%; min-width: 0; }
     .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
@@ -100,7 +100,7 @@
     .slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--border-strong); outline: none; }
     .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
 
-    .output-area { height: 100%; min-height: 200px; max-height: calc(100vh - 80px); overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Alkalami', 'Scheherazade New', serif; font-size: 28px; color: var(--text-main); }
+    .output-area { height: 100%; min-height: 200px; max-height: calc(100vh - 80px); overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Scheherazade New', 'Alkalami', serif; font-size: 28px; color: var(--text-main); }
     .output-area::-webkit-scrollbar { width: 8px; }
     .output-area::-webkit-scrollbar-track { background: var(--surface-3); border-radius: 10px; }
     .output-area::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
@@ -138,7 +138,7 @@
 
     #print-area { display: none; }
 
-    .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Alkalami', serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
+    .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Scheherazade New', serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
     .suggestions-container.show-panel { display: block; }
 
     .suggestion-item { padding: 12px 15px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid var(--border-soft); transition: 0.2s; font-size: 22px; }
@@ -155,10 +155,12 @@
 
 @media print {
     body { background: white !important; color: black !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .app-container, .popup-overlay, .bg-shape, .no-print, #asrarThemeBtn, #asrar-loader { display: none !important; }
-    @page { size: A4 portrait; margin: 15mm 15mm 20mm 15mm; @bottom-center { content: "[ " counter(page) " ]"; font-family: 'Alkalami', serif; font-size: 12pt; } }
+    .app-container, .popup-overlay, .bg-shape, .no-print,
+    #asrarThemeBtn, #asrarViewBtn, #asrar-update-toast, #print-return-container,
+    #asrar-loader, #asrar-install { display: none !important; }
+    @page { size: A4 portrait; margin: 18mm 12mm 20mm 12mm; @bottom-center { content: "[ " counter(page) " ]"; font-family: 'Scheherazade New', serif; font-size: 12pt; } }
 
-    #print-area { display: block !important; font-family: 'Alkalami', serif; direction: rtl; text-align: justify; text-align-last: justify; text-justify: inter-word; font-size: 18pt; line-height: 1.8; color: black; orphans: 1; widows: 1; }
+    #print-area { display: block !important; box-sizing: border-box; padding: 6mm 10mm 0; font-family: 'Scheherazade New', serif; direction: rtl; text-align: justify; text-align-last: justify; text-justify: inter-word; font-size: 18pt; line-height: 1.8; color: black; orphans: 1; widows: 1; }
 
     .mot-rouge { color: #D11015 !important; } .mot-vert { color: #008A3B !important; } .mot-bleu { color: #1B378C !important; }
     .verset-brun { color: #8B0000 !important; }
