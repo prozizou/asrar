@@ -586,6 +586,9 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
         await pauseMainThread();
 
         const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (typeof html2canvas !== 'function' || typeof JsPDF !== 'function') {
+            throw new Error("Bibliothèque PDF non chargée. Vérifiez votre connexion et réessayez.");
+        }
         const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
@@ -643,10 +646,12 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
 
     } catch (error) {
         console.error("Erreur PDF:", error);
-        showToast("Échec de la génération.", "error");
+        showToast(error && error.message ? ("Échec : " + error.message) : "Échec de la génération.", "error");
         progressOverlay.style.display = 'none';
         if (appContainer) appContainer.style.display = '';
+        printArea.style.cssText = '';
         printArea.style.display = '';
+        printArea.setAttribute('aria-hidden', 'true');
         printArea.innerHTML = "";
     }
 }
