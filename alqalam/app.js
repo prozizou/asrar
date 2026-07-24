@@ -556,93 +556,52 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
         progressText.innerText = "Préparation finale...";
         await pauseMainThread();
 
-        // ── Génération PDF A4 (image) : marges et remplissage MAÎTRISÉS ──
-        // Le contenu est rendu en image HAUTE résolution puis découpé en pages
-        // A4 en coupant UNIQUEMENT entre deux lignes. jsPDF fixe le format A4 et
-        // des marges SERRÉES → pages bien remplies, texte pleine largeur, rendu
-        // identique sur tous les appareils (aucune dépendance au navigateur).
+        // ── Génération VECTORIELLE (impression du navigateur) ──
+        // C'est la SEULE méthode qui donne un texte NET (vecteur, sans flou même
+        // au zoom) ET la VRAIE police appliquée (le navigateur rend la police
+        // réelle). Le format A4, les marges serrées et le masquage des icônes
+        // sont gérés par @media print / @page (voir style.css).
         const originalTitle = document.title;
         document.title = docName || 'Al-Qalam';
 
-        const mSide = 8, mTop = 10, mBottom = 12;    // marges A4 serrées (mm)
-        const contentWmm = 210 - 2 * mSide;           // largeur utile (194 mm)
-        const LINE_H = 1.9;
+        // Polices prêtes avant impression (évite une police de repli).
+        try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
 
         if (appContainer) appContainer.style.display = 'none';
+        printArea.style.display = 'block';
         printArea.setAttribute('aria-hidden', 'false');
-        printArea.style.cssText =
-            'display:block; position:relative; box-sizing:border-box;' +
-            'width:' + contentWmm + 'mm; margin:0 auto; padding:0;' +
-            'background:#ffffff; color:#000000;' +
-            "font-family:'Scheherazade New', serif; direction:rtl;" +
-            'text-align:justify; text-align-last:justify;' +
-            'font-size:' + fontSizePx + 'px; line-height:' + LINE_H + ';';
-        window.scrollTo(0, 0);
         void printArea.offsetHeight;
+        window.scrollTo(0, 0);
 
-        progressText.innerText = "Génération du PDF A4…";
-        // Polices prêtes avant capture (sinon police de repli).
-        try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
-        await pauseMainThread();
-
-        const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-        if (typeof html2canvas !== 'function' || typeof JsPDF !== 'function') {
-            throw new Error("Bibliothèque PDF non chargée. Vérifiez votre connexion et réessayez.");
-        }
-        const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const contentHmm = pageH - mTop - mBottom;
-
-        // Mesures en px CSS de la zone d'impression.
-        const elWpx = printArea.offsetWidth;
-        const elHpx = printArea.offsetHeight;
-        const pxPerMmCss = elWpx / contentWmm;                    // px CSS par mm
-        const lineHCss   = parseFloat(getComputedStyle(printArea).lineHeight) || (fontSizePx * LINE_H);
-        const contentHpxCss = contentHmm * pxPerMmCss;
-        const linesPerPage  = Math.max(1, Math.floor(contentHpxCss / lineHCss));
-        const pageHCss = linesPerPage * lineHCss;                 // hauteur de page alignée aux lignes
-        const numPages = Math.max(1, Math.ceil(elHpx / pageHCss));
-
-        // Chaque page est rendue SÉPARÉMENT (petit canvas) → aucune limite de
-        // taille de canvas, mémoire maîtrisée, et haute résolution possible.
-        const scale = 3;
-
-        for (let p = 0; p < numPages; p++) {
-            const yCss = p * pageHCss;
-            const hCss = Math.min(pageHCss, elHpx - yCss);
-            if (hCss <= 0) break;
-
-            const pageCanvas = await html2canvas(printArea, {
-                scale, useCORS: true, backgroundColor: '#ffffff',
-                x: 0, y: yCss, width: elWpx, height: hCss,
-                windowWidth: elWpx, windowHeight: elHpx
-            });
-
-            if (p > 0) pdf.addPage();
-            pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', mSide, mTop, contentWmm, hCss / pxPerMmCss);
-
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(10);
-            pdf.setTextColor(120);
-            pdf.text('[ ' + (p + 1) + ' ]', pageW / 2, pageH - 4, { align: 'center' });
-
-            progressBar.style.width = Math.round(((p + 1) / numPages) * 100) + '%';
-            progressText.innerText = 'Page ' + (p + 1) + ' / ' + numPages + '…';
-            await pauseMainThread();
+        // Bouton de retour (empêche le navigateur de vider la page trop tôt).
+        let returnContainer = document.getElementById('print-return-container');
+        if (!returnContainer) {
+            returnContainer = document.createElement('div');
+            returnContainer.id = 'print-return-container';
+            returnContainer.className = 'no-print';
+            returnContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; text-align: center;';
+            const btn = document.createElement('button');
+            btn.innerText = "❌ Retour à l'application";
+            btn.className = "btn-glass";
+            btn.style.cssText = "background: linear-gradient(135deg, #870000, #190a05); padding: 15px 25px; font-size: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);";
+            btn.onclick = () => {
+                document.title = originalTitle;
+                if (appContainer) appContainer.style.display = '';
+                printArea.style.display = '';
+                printArea.setAttribute('aria-hidden', 'true');
+                printArea.innerHTML = "";
+                returnContainer.style.display = 'none';
+            };
+            returnContainer.appendChild(btn);
+            document.body.appendChild(returnContainer);
+        } else {
+            returnContainer.style.display = 'block';
         }
 
-        const safeName = (docName || 'Al-Qalam').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
-        pdf.save(safeName + '.pdf');
-
-        // Nettoyage.
-        progressOverlay.style.display = 'none';
-        if (appContainer) appContainer.style.display = '';
-        printArea.style.cssText = '';
-        printArea.style.display = '';
-        printArea.setAttribute('aria-hidden', 'true');
-        printArea.innerHTML = '';
-        document.title = originalTitle;
+        setTimeout(() => {
+            progressOverlay.style.display = 'none';
+            window.print();
+        }, 800);
 
     } catch (error) {
         console.error("Erreur PDF:", error);
