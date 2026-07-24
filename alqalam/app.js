@@ -22,16 +22,21 @@ const formules = {
     fermeture: " اللهم صل على سيدنا محمد و على ءاله و صحبه و سلم تسليما فيكون ءامين يا رب العالمين و الحمد لله رب العالمين"
 };
 
-// Police unique : Scheherazade New (par défaut), définie en CSS. Il n'y a plus
-// de sélection de police ni de polices premium.
+// Police par défaut (gratuite) : Scheherazade New. Les autres polices sont
+// chargées depuis Firebase (nœud alqalam_fonts) et fusionnées dynamiquement.
+const POLICE_DEFAUT = { name: 'Police par défaut (Scheherazade)', family: 'Scheherazade New', url: '', level: 0 };
 
 const config = {
     MAX_PREVIEW: 500,          // Répétitions max affichées dans l'aperçu
     CHUNK_SIZE: 10000,         // Taille de chunk pour les opérations lourdes
     MAX_TOTAL_REPEAT: 30000,   // Limite absolue de répétitions (sécurité mobile)
     MAX_DOM_CHARS: 8000,       // Nombre max de caractères dans l'aperçu DOM
-    DEBOUNCE_DELAY: 300        // Délai par défaut pour le debounce (ms)
+    DEBOUNCE_DELAY: 300,       // Délai par défaut pour le debounce (ms)
+    FONT_MIN_LEVEL: 45000      // Palier d'abonnement (FCFA) requis pour les polices premium
 };
+
+// Police actuellement appliquée (au texte à l'écran ET au document Word généré).
+let policeActive = 'Scheherazade New';
 
 // ──────────────────────────────────────────────────────────
 // FORMATAGE (Rasm, couleurs manuscrites, intercalation)   (ex-formatter.js)
@@ -151,23 +156,27 @@ const elements = {
     chkDoc: document.getElementById('chk-doc'),
     chkSearch: document.getElementById('chk-search'),
     chkIntercaler: document.getElementById('chk-intercaler'),
+    chkFont: document.getElementById('chk-font'),
     chkRasm: document.getElementById('chk-rasm'),
 
     panelDoc: document.getElementById('panel-doc'),
     panelSearch: document.getElementById('panel-search'),
     panelIntercaler: document.getElementById('panel-intercaler'),
+    panelFont: document.getElementById('panel-font'),
 
     btnDoc: document.getElementById('btn-doc'),
-    btnEspace: document.getElementById('btn-espace'),
-    
+
     searchInput: document.getElementById('search-input'),
     searchCount: document.getElementById('search-count'),
-    
+
     popupMenu: document.getElementById('popup-menu'),
     docName: document.getElementById('doc-name'),
 
     interSourateSelect: document.getElementById('inter-sourate-select'),
     btnIntercaler: document.getElementById('btn-intercaler'),
+
+    fontSelect: document.getElementById('font-select'),
+    btnApplyFont: document.getElementById('btn-apply-font'),
 
     // NOUVEAUX ÉLÉMENTS
     btnAddTemp: document.getElementById('btn-add-temp'),
@@ -431,7 +440,7 @@ const COLOR_MAP = {
 // l'aperçu écran et au PDF) en une liste de TextRun Word, en conservant les
 // couleurs — pour que le .docx corresponde exactement à ce que l'utilisateur
 // a vu et écrit.
-function htmlToRuns(html, size) {
+function htmlToRuns(html, size, font) {
   const { TextRun } = window.docx;
   const container = document.createElement('div');
   container.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(html) : html;
@@ -440,7 +449,7 @@ function htmlToRuns(html, size) {
   const walk = (node, color) => {
     if (node.nodeType === Node.TEXT_NODE) {
       if (node.textContent) {
-        runs.push(new TextRun({ text: node.textContent, size, rightToLeft: true, color: color || undefined }));
+        runs.push(new TextRun({ text: node.textContent, size, font, rightToLeft: true, color: color || undefined }));
       }
       return;
     }
@@ -455,7 +464,7 @@ function htmlToRuns(html, size) {
   };
   container.childNodes.forEach((n) => walk(n, null));
 
-  return runs.length ? runs : [new TextRun({ text: container.textContent || '', size, rightToLeft: true })];
+  return runs.length ? runs : [new TextRun({ text: container.textContent || '', size, font, rightToLeft: true })];
 }
 
 async function generateDocx(useOuv, useFerm, blocks, docName) {
@@ -479,23 +488,18 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
 
   const px = parseInt(fontSizeSlider ? fontSizeSlider.value : 28, 10) || 28;
   const halfPoints = Math.max(16, Math.round(px * 1.5)); // taille en demi-points (~px*0.75pt*2)
+  const font = policeActive || 'Scheherazade New';       // police appliquée au Word
 
   const paras = [];
-  const pushColored = (html) => {
-    if (!html) return;
-    paras.push(new Paragraph({
-      bidirectional: true,                    // RTL
-      alignment: AlignmentType.JUSTIFIED,     // texte bien justifié
-      spacing: { line: 360 },
-      children: htmlToRuns(html, halfPoints)
-    }));
-  };
 
   try {
     const firstRasm = blocks[0] ? blocks[0].isRasmMode : false;
     const lastRasm = blocks[blocks.length - 1] ? blocks[blocks.length - 1].isRasmMode : false;
 
-    if (useOuv) pushColored(appliquerCouleursManuscrit(formules.ouverture, firstRasm));
+    // TOUT dans un SEUL paragraphe : l'ouverture, le corps et la fermeture
+    // s'enchaînent sans retour à la ligne.
+    const runs = [];
+    if (useOuv) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.ouverture, firstRasm), halfPoints, font));
 
     if (progressBar) progressBar.style.width = '45%';
     await new Promise((r) => setTimeout(r, 0));
@@ -503,10 +507,19 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
     for (const block of blocks) {
       const coloredBase = appliquerCouleursManuscrit(block.texte, block.isRasmMode) + ' ';
       const n = block.totalMultiplier || 1;
-      pushColored(coloredBase.repeat(n).trim());
+      runs.push(...htmlToRuns(coloredBase.repeat(n), halfPoints, font));
     }
 
-    if (useFerm) pushColored(appliquerCouleursManuscrit(formules.fermeture, lastRasm));
+    if (useFerm) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.fermeture, lastRasm), halfPoints, font));
+
+    if (runs.length) {
+      paras.push(new Paragraph({
+        bidirectional: true,                    // RTL
+        alignment: AlignmentType.JUSTIFIED,     // texte bien justifié
+        spacing: { line: 360 },
+        children: runs
+      }));
+    }
 
     if (progressBar) progressBar.style.width = '80%';
     if (progressText) progressText.innerText = 'Assemblage du fichier…';
@@ -777,6 +790,97 @@ function togglePanelGuarded(checkbox, panel, featureName) {
 togglePanelGuarded(elements.chkDoc, elements.panelDoc, "les documents");
 togglePanelGuarded(elements.chkSearch, elements.panelSearch, "la recherche");
 togglePanelGuarded(elements.chkIntercaler, elements.panelIntercaler, "l'intercalation");
+togglePanelGuarded(elements.chkFont, elements.panelFont, "les polices");
+
+// ─── POLICES : par défaut (Scheherazade) + polices Firebase (alqalam_fonts) ───
+let POLICES_DISPO = [POLICE_DEFAUT];
+
+function remplirListePolices() {
+    if (!elements.fontSelect) return;
+    elements.fontSelect.length = 1; // garde le placeholder « par défaut »
+    POLICES_DISPO.forEach((p) => {
+        if (!p.family || p.family === 'Scheherazade New') return; // défaut = placeholder
+        const opt = document.createElement('option');
+        opt.value = p.family;
+        opt.textContent = p.name + (p.level ? ` (${Number(p.level).toLocaleString('fr-FR')} FCFA)` : '');
+        opt.dataset.url = p.url || '';
+        opt.dataset.level = p.level != null ? p.level : config.FONT_MIN_LEVEL;
+        elements.fontSelect.appendChild(opt);
+    });
+}
+remplirListePolices();
+
+// Charge les polices gérées par l'admin (Firebase) et les fusionne.
+(function chargerPolicesAdmin() {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.database) return;
+        firebase.database().ref('alqalam_fonts').once('value').then((snap) => {
+            const val = snap.val() || {};
+            const dynamiques = Object.values(val)
+                .filter((f) => f && f.enabled !== false && f.url && f.name)
+                .map((f) => ({
+                    name: f.name,
+                    family: f.family || ('AdminFont_' + Math.random().toString(36).slice(2, 6)),
+                    url: f.url,
+                    level: f.level != null ? f.level : config.FONT_MIN_LEVEL
+                }));
+            if (dynamiques.length) {
+                POLICES_DISPO = [POLICE_DEFAUT].concat(dynamiques);
+                remplirListePolices();
+            }
+        }).catch(() => {});
+    } catch (e) {}
+})();
+
+// Applique une police à l'aperçu/saisie via un <style> injecté (@font-face si URL).
+function appliquerPolicePreview(nomPolice, url) {
+    const styleId = 'custom-font-style';
+    const old = document.getElementById(styleId);
+    if (old) old.remove();
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML =
+        (url ? `@font-face { font-family: '${nomPolice}'; src: url('${url}'); }\n` : '') +
+        `.top-textarea, .output-area, #inter-sourate-select, .output-area * {
+            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
+        }`;
+    document.head.appendChild(style);
+}
+
+// Applique la police choisie : aperçu + MÉMORISE pour le document Word (policeActive).
+function activerPoliceSelectionnee(silencieux) {
+    const family = elements.fontSelect ? elements.fontSelect.value : '';
+    // Choix vide = retour à la police par défaut.
+    if (!family) {
+        policeActive = 'Scheherazade New';
+        const old = document.getElementById('custom-font-style');
+        if (old) old.remove();
+        if (!silencieux) showToast('Police par défaut appliquée.', 'info');
+        return;
+    }
+    const police = POLICES_DISPO.find((p) => p.family === family);
+    if (!police) { if (!silencieux) showToast('Police introuvable.', 'error'); return; }
+
+    // Palier d'abonnement requis (polices premium).
+    const requis = police.level != null ? Number(police.level) : config.FONT_MIN_LEVEL;
+    const level = (typeof getSubscriptionLevel === 'function') ? getSubscriptionLevel() : 0;
+    if (requis > 0 && level < requis) {
+        showToast(`Cette police nécessite l'abonnement ${requis.toLocaleString('fr-FR')} FCFA.`, 'error');
+        if (!silencieux && typeof showSubscriptionGate === 'function') showSubscriptionGate();
+        if (elements.fontSelect) elements.fontSelect.value = '';
+        return;
+    }
+    appliquerPolicePreview(police.family, police.url);
+    policeActive = police.family; // ← appliquée aussi au .docx
+    if (!silencieux) showToast(`Police « ${police.name} » appliquée.`, 'info');
+}
+
+if (elements.fontSelect) {
+    elements.fontSelect.addEventListener('change', () => activerPoliceSelectionnee(true));
+}
+if (elements.btnApplyFont) {
+    elements.btnApplyFont.addEventListener('click', () => activerPoliceSelectionnee(false));
+}
 
 // Mode Rasm — protégé
 if (elements.chkRasm) {
@@ -810,11 +914,6 @@ elements.btnWrite.addEventListener('click', () => {
         state.intercalatedPhrase = "";
         updateUI();
     }, "l'écriture du texte");
-});
-
-// ─── GRATUIT ───
-elements.btnEspace.addEventListener('click', () => {
-    if (state.baseText) { state.baseText = " " + state.baseText; updateUI(); }
 });
 
 // Copier par appui long sur les zones de texte (plus de boutons Copier).
@@ -862,7 +961,8 @@ elements.btnAddTemp.addEventListener('click', () => {
             return;
         }
         state.accumulatedBlocks.push({
-            texte: formaterTexteIntercale(state.baseText, state.intercalatedPhrase),
+            // Espace avant ET après pour séparer nettement les blocs cumulés.
+            texte: ' ' + formaterTexteIntercale(state.baseText, state.intercalatedPhrase) + ' ',
             totalMultiplier: state.totalMultiplier,
             isRasmMode: state.isRasmMode
         });
