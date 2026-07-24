@@ -22,28 +22,15 @@ const formules = {
     fermeture: " اللهم صل على سيدنا محمد و على ءاله و صحبه و سلم تسليما فيكون ءامين يا رب العالمين و الحمد لله رب العالمين"
 };
 
-// ─── POLICES PREMIUM (hébergées sur Cloudinary) ───────────────────────────
-// Réservées à l'abonnement ≥ FONT_MIN_LEVEL (voir config plus bas), sauf level: 0.
-// Remplacez les `url` par vos vrais fichiers .ttf/.otf/.woff2 hébergés sur
-// Cloudinary (type "raw"), ex :
-//   https://res.cloudinary.com/VOTRE_CLOUD/raw/upload/v1/polices/aljazeera.ttf
-// `name` = nom d'affichage ; `family` = nom CSS interne (unique, sans espace).
-// Seule la police par défaut (Scheherazade) est statique et gratuite. Toutes les
-// autres polices proviennent de Firebase (nœud alqalam_fonts, gérées par l'admin)
-// et sont fusionnées dynamiquement plus bas.
-const POLICES = [
-    { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 }
-];
+// Police unique : Scheherazade New (par défaut), définie en CSS. Il n'y a plus
+// de sélection de police ni de polices premium.
 
 const config = {
     MAX_PREVIEW: 500,          // Répétitions max affichées dans l'aperçu
     CHUNK_SIZE: 10000,         // Taille de chunk pour les opérations lourdes
     MAX_TOTAL_REPEAT: 30000,   // Limite absolue de répétitions (sécurité mobile)
     MAX_DOM_CHARS: 8000,       // Nombre max de caractères dans l'aperçu DOM
-    PDF_CHUNK_SIZE: 100,       // Nombre de répétitions par chunk lors de la génération PDF
-    DEBOUNCE_DELAY: 300,       // Délai par défaut pour le debounce (ms)
-    FONT_MIN_LEVEL: 45000,     // Palier d'abonnement (FCFA) requis pour les polices premium
-    POLICES: POLICES           // Accessible aussi via config.POLICES (import résilient)
+    DEBOUNCE_DELAY: 300        // Délai par défaut pour le debounce (ms)
 };
 
 // ──────────────────────────────────────────────────────────
@@ -164,14 +151,12 @@ const elements = {
     chkDoc: document.getElementById('chk-doc'),
     chkSearch: document.getElementById('chk-search'),
     chkIntercaler: document.getElementById('chk-intercaler'),
-    chkFont: document.getElementById('chk-font'),
     chkRasm: document.getElementById('chk-rasm'),
-    
+
     panelDoc: document.getElementById('panel-doc'),
     panelSearch: document.getElementById('panel-search'),
     panelIntercaler: document.getElementById('panel-intercaler'),
-    panelFont: document.getElementById('panel-font'),
-    
+
     btnDoc: document.getElementById('btn-doc'),
     btnEspace: document.getElementById('btn-espace'),
     
@@ -183,9 +168,6 @@ const elements = {
 
     interSourateSelect: document.getElementById('inter-sourate-select'),
     btnIntercaler: document.getElementById('btn-intercaler'),
-
-    fontSelect: document.getElementById('font-select'),
-    btnApplyFont: document.getElementById('btn-apply-font'),
 
     // NOUVEAUX ÉLÉMENTS
     btnAddTemp: document.getElementById('btn-add-temp'),
@@ -430,191 +412,6 @@ function attacherAppuiLong(element, getTexte) {
     element.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-function injecterPolice(url, nomPolice) {
-    const styleId = "custom-font-style";
-    let oldStyle = document.getElementById(styleId);
-    if (oldStyle) oldStyle.remove();
-
-    const style = document.createElement('style');
-    style.id = styleId;
-    // Le sélecteur cible aussi les DESCENDANTS (`*`) : sans cela, les mots colorés
-    // (<span class="mot-rouge">…) gardaient la police par défaut, à l'écran comme
-    // dans le PDF (#print-area a une font-family en dur dans @media print).
-    style.innerHTML = `
-        @font-face { font-family: '${nomPolice}'; src: url('${url}'); }
-        .top-textarea, .output-area, #print-area, #inter-sourate-select,
-        .output-area *, #print-area * {
-            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// ──────────────────────────────────────────────────────────
-// GÉNÉRATION PDF (impression vectorielle)   (ex-pdf.js)
-// ──────────────────────────────────────────────────────────
-// pdf.js
-
-const pauseMainThread = () => new Promise(resolve => setTimeout(resolve, 0));
-
-async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
-    const popupMenu = document.getElementById('popup-menu');
-    const printArea = document.getElementById('print-area');
-    const progressOverlay = document.getElementById('progress-overlay');
-    const progressBar = document.getElementById('progress-bar-fill');
-    const progressText = document.getElementById('progress-text');
-    const appContainer = document.querySelector('.app-container'); 
-    const fontSizeSlider = document.getElementById('font-size-slider');
-
-    popupMenu.style.display = 'none';
-
-    let globalTotalMultiplier = blocks.reduce((acc, b) => acc + b.totalMultiplier, 0);
-    if (globalTotalMultiplier > config.MAX_TOTAL_REPEAT) {
-        showToast(`Attention : Volume important (${globalTotalMultiplier}). La génération peut prendre du temps.`, "info");
-    }
-
-    progressOverlay.style.display = 'flex';
-    printArea.innerHTML = ""; 
-
-    const fontSizePx = fontSizeSlider ? fontSizeSlider.value : 28;
-    printArea.style.fontSize = fontSizePx + "px";
-
-    progressBar.style.width = '10%';
-    progressText.innerText = "Démarrage...";
-    await pauseMainThread();
-
-    try {
-        const fragment = document.createDocumentFragment();
-
-        if (useOuv) {
-            const firstBlockRasm = blocks[0] ? blocks[0].isRasmMode : false;
-            const spanOuv = document.createElement('span');
-            let rawHTML = appliquerCouleursManuscrit(formules.ouverture, firstBlockRasm);
-            if (typeof DOMPurify !== 'undefined') rawHTML = DOMPurify.sanitize(rawHTML);
-            spanOuv.innerHTML = rawHTML;
-            fragment.appendChild(spanOuv);
-        }
-
-        progressBar.style.width = '20%';
-        progressText.innerText = "Préparation du contenu...";
-        await pauseMainThread();
-
-        const CHUNK = config.PDF_CHUNK_SIZE || 100;
-        let totalChunksToProcess = blocks.reduce((acc, b) => acc + Math.floor(b.totalMultiplier / CHUNK), 0) || 1;
-        let chunksProcessed = 0;
-
-        for (const block of blocks) {
-            // OPTIMISATION MAJEURE : On nettoie et sécurise le texte UNE SEULE FOIS,
-            // AVANT de le multiplier. Cela évite les crashs mémoire sur mobile.
-            let texteDeBaseColore = appliquerCouleursManuscrit(block.texte, block.isRasmMode) + " ";
-            if (typeof DOMPurify !== 'undefined') {
-                texteDeBaseColore = DOMPurify.sanitize(texteDeBaseColore);
-            }
-
-            const fullChunks = Math.floor(block.totalMultiplier / CHUNK);
-            const remainder = block.totalMultiplier % CHUNK;
-
-            // La duplication du texte déjà sécurisé est instantanée
-            const blocPrecalcule = texteDeBaseColore.repeat(CHUNK);
-
-            for (let i = 0; i < fullChunks; i++) {
-                const spanChunk = document.createElement('span');
-                spanChunk.innerHTML = blocPrecalcule;
-                fragment.appendChild(spanChunk);
-                
-                chunksProcessed++;
-                if (chunksProcessed % 20 === 0) {
-                    const pct = 20 + Math.floor((chunksProcessed / totalChunksToProcess) * 50);
-                    progressBar.style.width = `${pct}%`;
-                    await pauseMainThread();
-                }
-            }
-            
-            if (remainder > 0) {
-                const spanRem = document.createElement('span');
-                spanRem.innerHTML = texteDeBaseColore.repeat(remainder);
-                fragment.appendChild(spanRem);
-            }
-        }
-
-        if (useFerm) {
-            const lastBlockRasm = blocks[blocks.length - 1] ? blocks[blocks.length - 1].isRasmMode : false;
-            const spanFerm = document.createElement('span');
-            let rawHTMLFerm = appliquerCouleursManuscrit(formules.fermeture, lastBlockRasm);
-            if (typeof DOMPurify !== 'undefined') rawHTMLFerm = DOMPurify.sanitize(rawHTMLFerm);
-            spanFerm.innerHTML = rawHTMLFerm;
-            fragment.appendChild(spanFerm);
-        }
-
-        progressBar.style.width = '80%';
-        progressText.innerText = "Mise en page...";
-        await pauseMainThread();
-        
-        printArea.appendChild(fragment);
-
-        progressBar.style.width = '100%';
-        progressText.innerText = "Préparation finale...";
-        await pauseMainThread();
-
-        // ── Génération VECTORIELLE (impression du navigateur) ──
-        // C'est la SEULE méthode qui donne un texte NET (vecteur, sans flou même
-        // au zoom) ET la VRAIE police appliquée (le navigateur rend la police
-        // réelle). Le format A4, les marges serrées et le masquage des icônes
-        // sont gérés par @media print / @page (voir style.css).
-        const originalTitle = document.title;
-        document.title = docName || 'Al-Qalam';
-
-        // Polices prêtes avant impression (évite une police de repli).
-        try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
-
-        if (appContainer) appContainer.style.display = 'none';
-        printArea.style.display = 'block';
-        printArea.setAttribute('aria-hidden', 'false');
-        void printArea.offsetHeight;
-        window.scrollTo(0, 0);
-
-        // Bouton de retour (empêche le navigateur de vider la page trop tôt).
-        let returnContainer = document.getElementById('print-return-container');
-        if (!returnContainer) {
-            returnContainer = document.createElement('div');
-            returnContainer.id = 'print-return-container';
-            returnContainer.className = 'no-print';
-            returnContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; text-align: center;';
-            const btn = document.createElement('button');
-            btn.innerText = "❌ Retour à l'application";
-            btn.className = "btn-glass";
-            btn.style.cssText = "background: linear-gradient(135deg, #870000, #190a05); padding: 15px 25px; font-size: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);";
-            btn.onclick = () => {
-                document.title = originalTitle;
-                if (appContainer) appContainer.style.display = '';
-                printArea.style.display = '';
-                printArea.setAttribute('aria-hidden', 'true');
-                printArea.innerHTML = "";
-                returnContainer.style.display = 'none';
-            };
-            returnContainer.appendChild(btn);
-            document.body.appendChild(returnContainer);
-        } else {
-            returnContainer.style.display = 'block';
-        }
-
-        setTimeout(() => {
-            progressOverlay.style.display = 'none';
-            window.print();
-        }, 800);
-
-    } catch (error) {
-        console.error("Erreur PDF:", error);
-        showToast(error && error.message ? ("Échec : " + error.message) : "Échec de la génération.", "error");
-        progressOverlay.style.display = 'none';
-        if (appContainer) appContainer.style.display = '';
-        printArea.style.cssText = '';
-        printArea.style.display = '';
-        printArea.setAttribute('aria-hidden', 'true');
-        printArea.innerHTML = "";
-    }
-}
-
 // ──────────────────────────────────────────────────────────
 // GÉNÉRATION WORD / WPS (.docx)   (ex-docx.js)
 // ──────────────────────────────────────────────────────────
@@ -673,7 +470,7 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
     showToast('Module Word indisponible (connexion internet requise).', 'error');
     return;
   }
-  const { Document, Packer, Paragraph, AlignmentType } = window.docx;
+  const { Document, Packer, Paragraph, AlignmentType, Footer, PageNumber, TextRun } = window.docx;
 
   if (progressOverlay) progressOverlay.style.display = 'flex';
   if (progressBar) progressBar.style.width = '10%';
@@ -687,8 +484,8 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
   const pushColored = (html) => {
     if (!html) return;
     paras.push(new Paragraph({
-      bidirectional: true,
-      alignment: AlignmentType.RIGHT,
+      bidirectional: true,                    // RTL
+      alignment: AlignmentType.JUSTIFIED,     // texte bien justifié
       spacing: { line: 360 },
       children: htmlToRuns(html, halfPoints)
     }));
@@ -715,14 +512,23 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
     if (progressText) progressText.innerText = 'Assemblage du fichier…';
     await new Promise((r) => setTimeout(r, 0));
 
+    // Numérotation des pages « [ n ] » centrée en pied de page.
+    const footer = new Footer({
+      children: [ new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [ new TextRun({ children: ['[ ', PageNumber.CURRENT, ' ]'], size: 20 }) ]
+      }) ]
+    });
+
     const doc = new Document({
       creator: 'ASRAR PRO — Al-Qalam',
       title: docName || 'Document Al-Qalam',
       sections: [{
         properties: {
-          // Marges façon A4 professionnel, cohérentes avec la mise en page du PDF.
-          page: { margin: { top: 850, right: 850, bottom: 1134, left: 850 } }
+          // Marges de 0,3 pouce partout (0,3 × 1440 = 432 twips).
+          page: { margin: { top: 432, right: 432, bottom: 432, left: 432 } }
         },
+        footers: { default: footer },
         children: paras.length ? paras : [new Paragraph('')]
       }]
     });
@@ -971,7 +777,6 @@ function togglePanelGuarded(checkbox, panel, featureName) {
 togglePanelGuarded(elements.chkDoc, elements.panelDoc, "les documents");
 togglePanelGuarded(elements.chkSearch, elements.panelSearch, "la recherche");
 togglePanelGuarded(elements.chkIntercaler, elements.panelIntercaler, "l'intercalation");
-togglePanelGuarded(elements.chkFont, elements.panelFont, "les polices personnalisées");
 
 // Mode Rasm — protégé
 if (elements.chkRasm) {
@@ -1015,111 +820,6 @@ elements.btnEspace.addEventListener('click', () => {
 // Copier par appui long sur les zones de texte (plus de boutons Copier).
 attacherAppuiLong(elements.inputText, () => elements.inputText.value);
 attacherAppuiLong(elements.outputArea, () => (state.baseText + " ").repeat(state.totalMultiplier).trim());
-
-// ─── POLICE — liste premium, réservée à l'abonnement ≥ 45 000 FCFA ───
-// Sources fusionnées : polices statiques (config.POLICES) + polices ajoutées
-// via le panneau d'administration (nœud Firebase `alqalam_fonts`).
-// Fallback intégré : si config.POLICES est absent (ancienne version de config.js),
-// on garde au moins les polices de base pour ne jamais casser le module.
-const POLICES_BASE = (config && Array.isArray(config.POLICES) && config.POLICES.length)
-    ? config.POLICES
-    : [
-        { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 }
-      ];
-let POLICES_DISPO = POLICES_BASE.slice();
-
-function remplirListePolices() {
-    if (!elements.fontSelect) return;
-    // Réinitialise en gardant la 1re option (placeholder)
-    elements.fontSelect.length = 1;
-    POLICES_DISPO.forEach((p) => {
-        const opt = document.createElement('option');
-        opt.value = p.family;
-        opt.textContent = p.name + (p.level ? ` (${Number(p.level).toLocaleString('fr-FR')} FCFA)` : '');
-        opt.dataset.url = p.url || '';
-        opt.dataset.level = p.level != null ? p.level : config.FONT_MIN_LEVEL;
-        elements.fontSelect.appendChild(opt);
-    });
-}
-
-remplirListePolices();
-
-// Charge les polices gérées par l'admin (si Firebase dispo) et les fusionne.
-(function chargerPolicesAdmin() {
-    try {
-        if (typeof firebase === 'undefined' || !firebase.database) return;
-        firebase.database().ref('alqalam_fonts').once('value').then((snap) => {
-            const val = snap.val() || {};
-            const dynamiques = Object.values(val)
-                .filter((f) => f && f.enabled !== false && f.url && f.name)
-                .map((f) => ({
-                    name: f.name,
-                    family: f.family || ('AdminFont_' + Math.random().toString(36).slice(2, 6)),
-                    url: f.url,
-                    level: f.level != null ? f.level : config.FONT_MIN_LEVEL
-                }));
-            if (dynamiques.length) {
-                POLICES_DISPO = POLICES_BASE.concat(dynamiques);
-                remplirListePolices();
-            }
-        }).catch(() => {});
-    } catch (e) {}
-})();
-
-// Applique la police sélectionnée (aperçu immédiat), en vérifiant le palier.
-// `silencieux` : true quand déclenché par le simple choix dans la liste.
-function activerPoliceSelectionnee(silencieux) {
-    const family = elements.fontSelect ? elements.fontSelect.value : '';
-    if (!family) {
-        if (!silencieux) showToast("Veuillez choisir une police.", "error");
-        return;
-    }
-
-    const police = POLICES_DISPO.find((p) => p.family === family);
-    if (!police) {
-        if (!silencieux) showToast("Police introuvable.", "error");
-        return;
-    }
-
-    // Palier d'abonnement requis (défini par police, défaut 45 000 FCFA).
-    const requis = police.level != null ? Number(police.level) : config.FONT_MIN_LEVEL;
-    const level = (typeof getSubscriptionLevel === 'function') ? getSubscriptionLevel() : 0;
-    if (level < requis) {
-        showToast(`Cette police nécessite l'abonnement ${requis.toLocaleString('fr-FR')} FCFA.`, "error");
-        if (!silencieux && typeof showSubscriptionGate === 'function') showSubscriptionGate();
-        if (elements.fontSelect) elements.fontSelect.value = '';   // revient au choix neutre
-        return;
-    }
-
-    if (police.url) {
-        injecterPolice(police.url, police.family);
-    } else {
-        appliquerPoliceParNom(police.family);
-    }
-    if (!silencieux) showToast(`Police « ${police.name} » appliquée.`, "info");
-}
-
-// Aperçu en direct : la police s'applique dès qu'on la choisit dans la liste.
-if (elements.fontSelect) {
-    elements.fontSelect.addEventListener('change', () => activerPoliceSelectionnee(true));
-}
-
-elements.btnApplyFont.addEventListener('click', () => activerPoliceSelectionnee(false));
-
-// Applique une police déjà chargée (sans @font-face) à l'aperçu, la saisie et le PDF.
-function appliquerPoliceParNom(nomPolice) {
-    const styleId = "custom-font-style";
-    let old = document.getElementById(styleId);
-    if (old) old.remove();
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.innerHTML = `
-        .top-textarea, .output-area, #print-area, #inter-sourate-select,
-        .output-area *, #print-area * {
-            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
-        }`;
-    document.head.appendChild(style);
-}
 
 // ─── INTERCALER — PROTÉGÉ ───
 elements.btnIntercaler.addEventListener('click', () => {
@@ -1194,26 +894,7 @@ elements.popupMenu.addEventListener('click', (e) => {
     if (e.target === elements.popupMenu) elements.popupMenu.style.display = 'none';
 });
 
-// Format d'export choisi dans le menu (PDF par défaut).
-let exportFormat = 'pdf';
-(function initFormatButtons() {
-    const bPdf = document.getElementById('fmt-pdf');
-    const bDocx = document.getElementById('fmt-docx');
-    const setFmt = (fmt) => {
-        exportFormat = fmt;
-        if (bPdf) {
-            bPdf.style.background = fmt === 'pdf' ? 'linear-gradient(135deg,#00b894,#00a884)' : 'rgba(255,255,255,0.1)';
-            bPdf.style.border = fmt === 'pdf' ? 'none' : '1px solid var(--glass-border)';
-        }
-        if (bDocx) {
-            bDocx.style.background = fmt === 'docx' ? 'linear-gradient(135deg,#00b894,#00a884)' : 'rgba(255,255,255,0.1)';
-            bDocx.style.border = fmt === 'docx' ? 'none' : '1px solid var(--glass-border)';
-        }
-    };
-    if (bPdf) bPdf.addEventListener('click', () => setFmt('pdf'));
-    if (bDocx) bDocx.addEventListener('click', () => setFmt('docx'));
-})();
-
+// Le seul format d'export est le Word (.docx) : RTL, justifié, numéroté.
 function triggerPDF(useOuv, useFerm) {
     const docNameVal = elements.docName.value.trim();
     let blocksToGenerate = state.accumulatedBlocks.length > 0
@@ -1223,11 +904,7 @@ function triggerPDF(useOuv, useFerm) {
             totalMultiplier: state.totalMultiplier,
             isRasmMode: state.isRasmMode
         }];
-    if (exportFormat === 'docx') {
-        generateDocx(useOuv, useFerm, blocksToGenerate, docNameVal);
-    } else {
-        generateVectorPDF(useOuv, useFerm, blocksToGenerate, docNameVal);
-    }
+    generateDocx(useOuv, useFerm, blocksToGenerate, docNameVal);
 }
 
 document.getElementById('opt-both').addEventListener('click', () => triggerPDF(true, true));
