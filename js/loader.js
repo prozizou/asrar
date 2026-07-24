@@ -9,7 +9,7 @@
 //
 //  ⚠️  ASRAR_VERSION doit rester synchronisé avec SW_VERSION dans /sw.js.
 (function () {
-  var ASRAR_VERSION = 'v42';                   // ← synchroniser avec sw.js
+  var ASRAR_VERSION = 'v43';                   // ← synchroniser avec sw.js
   window.ASRAR_VERSION = ASRAR_VERSION;
 
   var MIN_MS = 350;
