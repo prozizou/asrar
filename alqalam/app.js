@@ -29,8 +29,8 @@ const formules = {
 //   https://res.cloudinary.com/VOTRE_CLOUD/raw/upload/v1/polices/aljazeera.ttf
 // `name` = nom d'affichage ; `family` = nom CSS interne (unique, sans espace).
 const POLICES = [
-    { name: 'Alkalami (par défaut)', family: 'Alkalami',        url: '', level: 0 },   // déjà chargée (Google Fonts)
-    { name: 'Scheherazade New',      family: 'Scheherazade New', url: '', level: 0 },   // déjà chargée (Google Fonts)
+    { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 },     // police par défaut (Google Fonts, gratuite)
+    { name: 'Alkalami',              family: 'Alkalami',        url: '', level: 45000 },  // premium
     { name: 'Amiri',                 family: 'AmiriCloud',       url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/amiri.ttf',       level: 45000 },
     { name: 'Aref Ruqaa',            family: 'ArefRuqaaCloud',   url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/aref-ruqaa.ttf',   level: 45000 },
     { name: 'Lateef',                family: 'LateefCloud',      url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/lateef.ttf',      level: 45000 },
@@ -184,7 +184,6 @@ const elements = {
     docName: document.getElementById('doc-name'),
 
     interSourateSelect: document.getElementById('inter-sourate-select'),
-    interPhrase: document.getElementById('inter-phrase'),
     btnIntercaler: document.getElementById('btn-intercaler'),
 
     fontSelect: document.getElementById('font-select'),
@@ -447,7 +446,7 @@ function injecterPolice(url, nomPolice) {
         @font-face { font-family: '${nomPolice}'; src: url('${url}'); }
         .top-textarea, .output-area, #print-area, #inter-sourate-select,
         .output-area *, #print-area * {
-            font-family: '${nomPolice}', 'Alkalami', serif !important;
+            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
         }
     `;
     document.head.appendChild(style);
@@ -1022,8 +1021,8 @@ attacherAppuiLong(elements.outputArea, () => (state.baseText + " ").repeat(state
 const POLICES_BASE = (config && Array.isArray(config.POLICES) && config.POLICES.length)
     ? config.POLICES
     : [
-        { name: 'Alkalami (par défaut)', family: 'Alkalami',        url: '', level: 0 },
-        { name: 'Scheherazade New',      family: 'Scheherazade New', url: '', level: 0 }
+        { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 },
+        { name: 'Alkalami',              family: 'Alkalami',        url: '', level: 45000 }
       ];
 let POLICES_DISPO = POLICES_BASE.slice();
 
@@ -1115,7 +1114,7 @@ function appliquerPoliceParNom(nomPolice) {
     style.innerHTML = `
         .top-textarea, .output-area, #print-area, #inter-sourate-select,
         .output-area *, #print-area * {
-            font-family: '${nomPolice}', 'Alkalami', serif !important;
+            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
         }`;
     document.head.appendChild(style);
 }
@@ -1124,9 +1123,10 @@ function appliquerPoliceParNom(nomPolice) {
 elements.btnIntercaler.addEventListener('click', () => {
     requireAlQalamAccess(() => {
         const key = elements.interSourateSelect.value;
-        const phrase = elements.interPhrase.value.trim();
+        // L'expression à intercaler vient désormais de la zone de texte principale.
+        const phrase = elements.inputText.value.trim();
         if (!key || !phrase) {
-            showToast("Sélectionnez une sourate et une phrase.", "error");
+            showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", "error");
             return;
         }
         let result = souratesData.get(key);
