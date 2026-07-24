@@ -114,6 +114,9 @@
     .mot-vert    { color: #008A3B; }
     .mot-bleu    { color: #1B378C; }
     .verset-brun { color: #8B0000; }
+    /* Les mots colorés suivent TOUJOURS la police de leur conteneur (donc la
+       police sélectionnée), à l'écran comme dans le PDF. */
+    .mot-rouge, .mot-vert, .mot-bleu, .verset-brun { font-family: inherit; }
     html[data-theme="light"] .mot-rouge   { color: #B00D12; }
     html[data-theme="light"] .mot-vert    { color: #00702F; }
     html[data-theme="light"] .mot-bleu    { color: #16306E; }
@@ -164,4 +167,5 @@
 
     .mot-rouge { color: #D11015 !important; } .mot-vert { color: #008A3B !important; } .mot-bleu { color: #1B378C !important; }
     .verset-brun { color: #8B0000 !important; }
+    .mot-rouge, .mot-vert, .mot-bleu, .verset-brun { font-family: inherit; }
 }

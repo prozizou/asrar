@@ -28,13 +28,11 @@ const formules = {
 // Cloudinary (type "raw"), ex :
 //   https://res.cloudinary.com/VOTRE_CLOUD/raw/upload/v1/polices/aljazeera.ttf
 // `name` = nom d'affichage ; `family` = nom CSS interne (unique, sans espace).
+// Seule la police par défaut (Scheherazade) est statique et gratuite. Toutes les
+// autres polices proviennent de Firebase (nœud alqalam_fonts, gérées par l'admin)
+// et sont fusionnées dynamiquement plus bas.
 const POLICES = [
-    { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 },     // police par défaut (Google Fonts, gratuite)
-    { name: 'Alkalami',              family: 'Alkalami',        url: '', level: 45000 },  // premium
-    { name: 'Amiri',                 family: 'AmiriCloud',       url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/amiri.ttf',       level: 45000 },
-    { name: 'Aref Ruqaa',            family: 'ArefRuqaaCloud',   url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/aref-ruqaa.ttf',   level: 45000 },
-    { name: 'Lateef',                family: 'LateefCloud',      url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/lateef.ttf',      level: 45000 },
-    { name: 'Reem Kufi',             family: 'ReemKufiCloud',    url: 'https://res.cloudinary.com/CHANGEZ_MOI/raw/upload/polices/reem-kufi.ttf',    level: 45000 }
+    { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 }
 ];
 
 const config = {
@@ -558,51 +556,62 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
         progressText.innerText = "Préparation finale...";
         await pauseMainThread();
 
-        const originalTitle = document.title;
-        document.title = docName;
-
+        // ── Génération du PDF au format A4 (html2pdf → jsPDF) ──
+        // Rendu identique sur TOUS les appareils/navigateurs (A4 garanti),
+        // indépendant du réglage d'impression. On applique ici un style ÉCRAN
+        // car les règles @media print ne s'appliquent pas pendant la capture
+        // html2canvas. Largeur = zone utile A4 (210 − 2×12 mm = 186 mm).
         if (appContainer) appContainer.style.display = 'none';
-        printArea.style.display = 'block';
         printArea.setAttribute('aria-hidden', 'false');
-        void printArea.offsetHeight; // Force le navigateur à recalculer l'affichage
+        printArea.style.cssText =
+            'display:block; position:relative; box-sizing:border-box;' +
+            'width:186mm; margin:0 auto; padding:2mm 0;' +
+            'background:#ffffff; color:#000000;' +
+            "font-family:'Scheherazade New', serif; direction:rtl;" +
+            'text-align:justify; text-align-last:justify;' +
+            'font-size:' + fontSizePx + 'px; line-height:1.9;';
         window.scrollTo(0, 0);
+        void printArea.offsetHeight;
 
-        // FIX DU BUG DE PDF VIDE :
-        // Création d'un bouton de retour manuel pour empêcher le navigateur 
-        // de vider la page trop tôt (remplace l'événement capricieux 'afterprint').
-        let returnContainer = document.getElementById('print-return-container');
-        if (!returnContainer) {
-            returnContainer = document.createElement('div');
-            returnContainer.id = 'print-return-container';
-            returnContainer.className = 'no-print'; // Caché lors de l'impression physique
-            returnContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; text-align: center;';
-            
-            const btn = document.createElement('button');
-            btn.innerText = "❌ Retour à l'application";
-            btn.className = "btn-glass";
-            btn.style.cssText = "background: linear-gradient(135deg, #870000, #190a05); padding: 15px 25px; font-size: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);";
-            
-            btn.onclick = () => {
-                document.title = originalTitle;
-                if (appContainer) appContainer.style.display = '';
-                printArea.style.display = ''; // Retour à l'état géré par CSS (display: none)
-                printArea.setAttribute('aria-hidden', 'true');
-                printArea.innerHTML = "";
-                returnContainer.style.display = 'none';
-            };
-            
-            returnContainer.appendChild(btn);
-            document.body.appendChild(returnContainer);
-        } else {
-            returnContainer.style.display = 'block';
-        }
+        progressText.innerText = "Génération du PDF A4…";
+        // Attend que les polices (Scheherazade / police sélectionnée) soient prêtes
+        // pour que la capture n'utilise pas une police de repli.
+        try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+        await pauseMainThread();
 
-        setTimeout(() => {
-            progressOverlay.style.display = 'none';
-            window.print();
-        }, 1000); // 1 seconde de répit pour assurer que le DOM est complètement injecté
+        const safeName = (docName || 'Al-Qalam').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
+        const opt = {
+            margin:      [12, 12, 16, 12],   // mm : haut, gauche, bas, droite
+            filename:    safeName + '.pdf',
+            image:       { type: 'jpeg', quality: 0.96 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:   { mode: ['css', 'legacy'] }
+        };
 
-    } catch (error) { 
+        await html2pdf().set(opt).from(printArea).toPdf().get('pdf').then((pdf) => {
+            // Numéro de page « [ n ] » centré en bas de chaque page A4.
+            const total = pdf.internal.getNumberOfPages();
+            const w = pdf.internal.pageSize.getWidth();
+            const h = pdf.internal.pageSize.getHeight();
+            for (let i = 1; i <= total; i++) {
+                pdf.setPage(i);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(11);
+                pdf.setTextColor(90);
+                pdf.text('[ ' + i + ' ]', w / 2, h - 6, { align: 'center' });
+            }
+        }).save();
+
+        // Retour à l'application.
+        progressOverlay.style.display = 'none';
+        if (appContainer) appContainer.style.display = '';
+        printArea.style.cssText = '';
+        printArea.style.display = '';
+        printArea.setAttribute('aria-hidden', 'true');
+        printArea.innerHTML = '';
+
+    } catch (error) {
         console.error("Erreur PDF:", error);
         showToast("Échec de la génération.", "error");
         progressOverlay.style.display = 'none';
@@ -1021,8 +1030,7 @@ attacherAppuiLong(elements.outputArea, () => (state.baseText + " ").repeat(state
 const POLICES_BASE = (config && Array.isArray(config.POLICES) && config.POLICES.length)
     ? config.POLICES
     : [
-        { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 },
-        { name: 'Alkalami',              family: 'Alkalami',        url: '', level: 45000 }
+        { name: 'Scheherazade New (par défaut)', family: 'Scheherazade New', url: '', level: 0 }
       ];
 let POLICES_DISPO = POLICES_BASE.slice();
 
@@ -1123,21 +1131,26 @@ function appliquerPoliceParNom(nomPolice) {
 elements.btnIntercaler.addEventListener('click', () => {
     requireAlQalamAccess(() => {
         const key = elements.interSourateSelect.value;
-        // L'expression à intercaler vient désormais de la zone de texte principale.
+        // L'expression à intercaler vient de la zone de texte principale.
         const phrase = elements.inputText.value.trim();
         if (!key || !phrase) {
             showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", "error");
             return;
         }
+        // Entre chaque verset, on insère l'expression RÉPÉTÉE N fois
+        // (N = nombre de répétitions) : « le texte écrit autant de fois ».
+        const rep = Math.max(1, Math.min(parseInt(elements.repCount.value, 10) || 1, config.MAX_TOTAL_REPEAT));
+        const bloc = Array(rep).fill(phrase).join(' ');
+
         let result = souratesData.get(key);
-        if (result.includes("﴾")) result = result.split("﴾").join(phrase + " ");
-        if (result.includes("(")) result = result.split("(").join(phrase + " ");
+        if (result.includes("﴾")) result = result.split("﴾").join(' ' + bloc + ' ');
+        if (result.includes("(")) result = result.split("(").join(' ' + bloc + ' ');
         result = result.replace(/[0-9]/g, "").split("ك").join("ک").replace(/\s+/g, ' ').trim();
 
         // Application directe : le texte combiné devient la base et s'affiche
         // immédiatement dans l'aperçu (aucune question posée).
         state.baseText = result;
-        state.intercalatedPhrase = phrase;
+        state.intercalatedPhrase = phrase; // coloration verset par verset
         state.totalMultiplier = 1;
         elements.inputText.value = result;
         elements.chkIntercaler.checked = false;
