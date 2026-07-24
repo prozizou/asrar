@@ -67,6 +67,12 @@
     .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
     .glass-input:focus { border-color: var(--accent); background: var(--surface-input); }
 
+    /* Barre d'actions du champ de saisie (tout sélectionner / copier / supprimer) */
+    .input-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mini-btn { flex: 1 1 auto; min-width: 0; white-space: nowrap; background: var(--surface-3, rgba(255,255,255,0.08)); border: 1px solid var(--glass-border); color: var(--text-main); border-radius: 10px; padding: 8px 10px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+    .mini-btn:hover { background: var(--surface, rgba(255,255,255,0.14)); }
+    .mini-btn:active { transform: scale(0.97); }
+
     .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 24px; }
 
     .grid-row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; width: 100%; min-width: 0; }

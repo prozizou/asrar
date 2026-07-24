@@ -22,21 +22,16 @@ const formules = {
     fermeture: " اللهم صل على سيدنا محمد و على ءاله و صحبه و سلم تسليما فيكون ءامين يا رب العالمين و الحمد لله رب العالمين"
 };
 
-// Police par défaut (gratuite) : Scheherazade New. Les autres polices sont
-// chargées depuis Firebase (nœud alqalam_fonts) et fusionnées dynamiquement.
-const POLICE_DEFAUT = { name: 'Police par défaut (Scheherazade)', family: 'Scheherazade New', url: '', level: 0 };
+// Police unique : Scheherazade New (par défaut), définie en CSS. Pas de
+// sélection de police (elle ne s'applique pas de façon fiable dans MS Word).
 
 const config = {
     MAX_PREVIEW: 500,          // Répétitions max affichées dans l'aperçu
     CHUNK_SIZE: 10000,         // Taille de chunk pour les opérations lourdes
     MAX_TOTAL_REPEAT: 30000,   // Limite absolue de répétitions (sécurité mobile)
     MAX_DOM_CHARS: 8000,       // Nombre max de caractères dans l'aperçu DOM
-    DEBOUNCE_DELAY: 300,       // Délai par défaut pour le debounce (ms)
-    FONT_MIN_LEVEL: 45000      // Palier d'abonnement (FCFA) requis pour les polices premium
+    DEBOUNCE_DELAY: 300        // Délai par défaut pour le debounce (ms)
 };
-
-// Police actuellement appliquée (au texte à l'écran ET au document Word généré).
-let policeActive = 'Scheherazade New';
 
 // ──────────────────────────────────────────────────────────
 // FORMATAGE (Rasm, couleurs manuscrites, intercalation)   (ex-formatter.js)
@@ -156,13 +151,11 @@ const elements = {
     chkDoc: document.getElementById('chk-doc'),
     chkSearch: document.getElementById('chk-search'),
     chkIntercaler: document.getElementById('chk-intercaler'),
-    chkFont: document.getElementById('chk-font'),
     chkRasm: document.getElementById('chk-rasm'),
 
     panelDoc: document.getElementById('panel-doc'),
     panelSearch: document.getElementById('panel-search'),
     panelIntercaler: document.getElementById('panel-intercaler'),
-    panelFont: document.getElementById('panel-font'),
 
     btnDoc: document.getElementById('btn-doc'),
 
@@ -174,9 +167,6 @@ const elements = {
 
     interSourateSelect: document.getElementById('inter-sourate-select'),
     btnIntercaler: document.getElementById('btn-intercaler'),
-
-    fontSelect: document.getElementById('font-select'),
-    btnApplyFont: document.getElementById('btn-apply-font'),
 
     // NOUVEAUX ÉLÉMENTS
     btnAddTemp: document.getElementById('btn-add-temp'),
@@ -440,7 +430,7 @@ const COLOR_MAP = {
 // l'aperçu écran et au PDF) en une liste de TextRun Word, en conservant les
 // couleurs — pour que le .docx corresponde exactement à ce que l'utilisateur
 // a vu et écrit.
-function htmlToRuns(html, size, font) {
+function htmlToRuns(html, size) {
   const { TextRun } = window.docx;
   const container = document.createElement('div');
   container.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(html) : html;
@@ -449,7 +439,7 @@ function htmlToRuns(html, size, font) {
   const walk = (node, color) => {
     if (node.nodeType === Node.TEXT_NODE) {
       if (node.textContent) {
-        runs.push(new TextRun({ text: node.textContent, size, font, rightToLeft: true, color: color || undefined }));
+        runs.push(new TextRun({ text: node.textContent, size, rightToLeft: true, color: color || undefined }));
       }
       return;
     }
@@ -464,7 +454,7 @@ function htmlToRuns(html, size, font) {
   };
   container.childNodes.forEach((n) => walk(n, null));
 
-  return runs.length ? runs : [new TextRun({ text: container.textContent || '', size, font, rightToLeft: true })];
+  return runs.length ? runs : [new TextRun({ text: container.textContent || '', size, rightToLeft: true })];
 }
 
 async function generateDocx(useOuv, useFerm, blocks, docName) {
@@ -488,7 +478,6 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
 
   const px = parseInt(fontSizeSlider ? fontSizeSlider.value : 28, 10) || 28;
   const halfPoints = Math.max(16, Math.round(px * 1.5)); // taille en demi-points (~px*0.75pt*2)
-  const font = policeActive || 'Scheherazade New';       // police appliquée au Word
 
   const paras = [];
 
@@ -499,7 +488,7 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
     // TOUT dans un SEUL paragraphe : l'ouverture, le corps et la fermeture
     // s'enchaînent sans retour à la ligne.
     const runs = [];
-    if (useOuv) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.ouverture, firstRasm), halfPoints, font));
+    if (useOuv) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.ouverture, firstRasm), halfPoints));
 
     if (progressBar) progressBar.style.width = '45%';
     await new Promise((r) => setTimeout(r, 0));
@@ -507,10 +496,10 @@ async function generateDocx(useOuv, useFerm, blocks, docName) {
     for (const block of blocks) {
       const coloredBase = appliquerCouleursManuscrit(block.texte, block.isRasmMode) + ' ';
       const n = block.totalMultiplier || 1;
-      runs.push(...htmlToRuns(coloredBase.repeat(n), halfPoints, font));
+      runs.push(...htmlToRuns(coloredBase.repeat(n), halfPoints));
     }
 
-    if (useFerm) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.fermeture, lastRasm), halfPoints, font));
+    if (useFerm) runs.push(...htmlToRuns(appliquerCouleursManuscrit(formules.fermeture, lastRasm), halfPoints));
 
     if (runs.length) {
       paras.push(new Paragraph({
@@ -790,97 +779,6 @@ function togglePanelGuarded(checkbox, panel, featureName) {
 togglePanelGuarded(elements.chkDoc, elements.panelDoc, "les documents");
 togglePanelGuarded(elements.chkSearch, elements.panelSearch, "la recherche");
 togglePanelGuarded(elements.chkIntercaler, elements.panelIntercaler, "l'intercalation");
-togglePanelGuarded(elements.chkFont, elements.panelFont, "les polices");
-
-// ─── POLICES : par défaut (Scheherazade) + polices Firebase (alqalam_fonts) ───
-let POLICES_DISPO = [POLICE_DEFAUT];
-
-function remplirListePolices() {
-    if (!elements.fontSelect) return;
-    elements.fontSelect.length = 1; // garde le placeholder « par défaut »
-    POLICES_DISPO.forEach((p) => {
-        if (!p.family || p.family === 'Scheherazade New') return; // défaut = placeholder
-        const opt = document.createElement('option');
-        opt.value = p.family;
-        opt.textContent = p.name + (p.level ? ` (${Number(p.level).toLocaleString('fr-FR')} FCFA)` : '');
-        opt.dataset.url = p.url || '';
-        opt.dataset.level = p.level != null ? p.level : config.FONT_MIN_LEVEL;
-        elements.fontSelect.appendChild(opt);
-    });
-}
-remplirListePolices();
-
-// Charge les polices gérées par l'admin (Firebase) et les fusionne.
-(function chargerPolicesAdmin() {
-    try {
-        if (typeof firebase === 'undefined' || !firebase.database) return;
-        firebase.database().ref('alqalam_fonts').once('value').then((snap) => {
-            const val = snap.val() || {};
-            const dynamiques = Object.values(val)
-                .filter((f) => f && f.enabled !== false && f.url && f.name)
-                .map((f) => ({
-                    name: f.name,
-                    family: f.family || ('AdminFont_' + Math.random().toString(36).slice(2, 6)),
-                    url: f.url,
-                    level: f.level != null ? f.level : config.FONT_MIN_LEVEL
-                }));
-            if (dynamiques.length) {
-                POLICES_DISPO = [POLICE_DEFAUT].concat(dynamiques);
-                remplirListePolices();
-            }
-        }).catch(() => {});
-    } catch (e) {}
-})();
-
-// Applique une police à l'aperçu/saisie via un <style> injecté (@font-face si URL).
-function appliquerPolicePreview(nomPolice, url) {
-    const styleId = 'custom-font-style';
-    const old = document.getElementById(styleId);
-    if (old) old.remove();
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.innerHTML =
-        (url ? `@font-face { font-family: '${nomPolice}'; src: url('${url}'); }\n` : '') +
-        `.top-textarea, .output-area, #inter-sourate-select, .output-area * {
-            font-family: '${nomPolice}', 'Scheherazade New', serif !important;
-        }`;
-    document.head.appendChild(style);
-}
-
-// Applique la police choisie : aperçu + MÉMORISE pour le document Word (policeActive).
-function activerPoliceSelectionnee(silencieux) {
-    const family = elements.fontSelect ? elements.fontSelect.value : '';
-    // Choix vide = retour à la police par défaut.
-    if (!family) {
-        policeActive = 'Scheherazade New';
-        const old = document.getElementById('custom-font-style');
-        if (old) old.remove();
-        if (!silencieux) showToast('Police par défaut appliquée.', 'info');
-        return;
-    }
-    const police = POLICES_DISPO.find((p) => p.family === family);
-    if (!police) { if (!silencieux) showToast('Police introuvable.', 'error'); return; }
-
-    // Palier d'abonnement requis (polices premium).
-    const requis = police.level != null ? Number(police.level) : config.FONT_MIN_LEVEL;
-    const level = (typeof getSubscriptionLevel === 'function') ? getSubscriptionLevel() : 0;
-    if (requis > 0 && level < requis) {
-        showToast(`Cette police nécessite l'abonnement ${requis.toLocaleString('fr-FR')} FCFA.`, 'error');
-        if (!silencieux && typeof showSubscriptionGate === 'function') showSubscriptionGate();
-        if (elements.fontSelect) elements.fontSelect.value = '';
-        return;
-    }
-    appliquerPolicePreview(police.family, police.url);
-    policeActive = police.family; // ← appliquée aussi au .docx
-    if (!silencieux) showToast(`Police « ${police.name} » appliquée.`, 'info');
-}
-
-if (elements.fontSelect) {
-    elements.fontSelect.addEventListener('change', () => activerPoliceSelectionnee(true));
-}
-if (elements.btnApplyFont) {
-    elements.btnApplyFont.addEventListener('click', () => activerPoliceSelectionnee(false));
-}
 
 // Mode Rasm — protégé
 if (elements.chkRasm) {
@@ -920,6 +818,39 @@ elements.btnWrite.addEventListener('click', () => {
 attacherAppuiLong(elements.inputText, () => elements.inputText.value);
 attacherAppuiLong(elements.outputArea, () => (state.baseText + " ").repeat(state.totalMultiplier).trim());
 
+// ─── Actions du champ du haut : tout sélectionner / copier / supprimer ───
+const btnSelectAll = document.getElementById('btn-select-all');
+const btnCopyAll   = document.getElementById('btn-copy-all');
+const btnClearAll  = document.getElementById('btn-clear-all');
+
+if (btnSelectAll) btnSelectAll.addEventListener('click', () => {
+    elements.inputText.focus();
+    elements.inputText.select();
+});
+
+if (btnCopyAll) btnCopyAll.addEventListener('click', async () => {
+    const txt = elements.inputText.value;
+    if (!txt) { showToast("Rien à copier.", "info"); return; }
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(txt);
+        } else {
+            elements.inputText.focus(); elements.inputText.select();
+            document.execCommand('copy');
+        }
+        showToast("Texte copié.", "info");
+    } catch (e) { showToast("Copie impossible.", "error"); }
+});
+
+if (btnClearAll) btnClearAll.addEventListener('click', () => {
+    elements.inputText.value = '';
+    state.baseText = '';
+    state.totalMultiplier = 0;
+    state.intercalatedPhrase = '';
+    elements.inputText.focus();
+    updateUI();
+});
+
 // ─── INTERCALER — PROTÉGÉ ───
 elements.btnIntercaler.addEventListener('click', () => {
     requireAlQalamAccess(() => {
@@ -940,12 +871,11 @@ elements.btnIntercaler.addEventListener('click', () => {
         if (result.includes("(")) result = result.split("(").join(' ' + bloc + ' ');
         result = result.replace(/[0-9]/g, "").split("ك").join("ک").replace(/\s+/g, ' ').trim();
 
-        // Application directe : le texte combiné devient la base et s'affiche
-        // immédiatement dans l'aperçu (aucune question posée).
+        // Le texte combiné devient la base et s'affiche dans l'aperçu (le champ
+        // du bas). On N'ÉCRASE PLUS le champ du haut : il garde l'expression saisie.
         state.baseText = result;
         state.intercalatedPhrase = phrase; // coloration verset par verset
         state.totalMultiplier = 1;
-        elements.inputText.value = result;
         elements.chkIntercaler.checked = false;
         elements.panelIntercaler.classList.remove('show-panel');
         updateUI();
