@@ -50,6 +50,7 @@
                 <label class="tool-box"><input type="checkbox" id="chk-doc" aria-label="Afficher les outils de documents"><span>Documents</span></label>
                 <label class="tool-box"><input type="checkbox" id="chk-search" aria-label="Afficher la barre de recherche"><span>Recherche</span></label>
                 <label class="tool-box"><input type="checkbox" id="chk-intercaler" aria-label="Afficher l'outil pour intercaler des phrases"><span>Intercaler</span></label>
+                <label class="tool-box"><input type="checkbox" id="chk-font" aria-label="Afficher les paramètres de police"><span>Police</span></label>
                 <label class="tool-box" style="background: rgba(77, 150, 255, 0.15); border-color: var(--accent-blue);">
                     <input type="checkbox" id="chk-rasm" aria-label="Activer le mode Rasm sans points"><span>Mode Rasm</span>
                 </label>
@@ -57,10 +58,7 @@
 
             <div id="panel-doc" class="hidden-panel">
                 <input type="text" id="doc-name" class="glass-input flex-grow" placeholder="Nom du document" aria-label="Nom du document final">
-                <div class="grid-row-1-1">
-                    <button id="btn-doc" class="btn-glass" aria-label="Ouvrir le menu de génération de document">DOCS</button>
-                    <button id="btn-espace" class="btn-glass" aria-label="Ajouter un espace au début du texte">ESPACE</button>
-                </div>
+                <button id="btn-doc" class="btn-glass" style="width:100%;" aria-label="Ouvrir le menu de génération de document">DOCS</button>
                 <div class="grid-row-1-1" style="margin-top: 10px;">
                     <button id="btn-add-temp" class="btn-glass" style="background: linear-gradient(135deg, #2b5876, #4e4376);" aria-label="Ajouter au document temporaire">➕ Cumuler</button>
                     <button id="btn-clear-temp" class="btn-glass" style="background: linear-gradient(135deg, #870000, #190a05);" aria-label="Vider le document temporaire">🗑️ Vider (<span id="temp-count">0</span>)</button>
@@ -80,6 +78,14 @@
                     ✍️ Entre chaque verset, on insère l'expression de la zone de texte, <b>répétée</b> selon le nombre de « répétitions ».
                 </p>
                 <button id="btn-intercaler" class="btn-glass" style="width: 100%;" aria-label="Combiner la sourate et l'expression">Combiner le texte</button>
+            </div>
+
+            <div id="panel-font" class="hidden-panel">
+                <span style="font-size: 12px; color: var(--text-gray);">Choisir une police (les polices premium requièrent l'abonnement) :</span>
+                <select id="font-select" class="glass-input" aria-label="Choisir une police">
+                    <option value="">— Police par défaut (Scheherazade) —</option>
+                </select>
+                <button id="btn-apply-font" class="btn-glass" style="width: 100%;" aria-label="Appliquer la police sélectionnée">Appliquer la police</button>
             </div>
 
 
