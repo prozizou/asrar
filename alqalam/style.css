@@ -161,9 +161,9 @@
     .app-container, .popup-overlay, .bg-shape, .no-print,
     #asrarThemeBtn, #asrarViewBtn, #asrar-update-toast, #print-return-container,
     #asrar-loader, #asrar-install { display: none !important; }
-    @page { size: A4 portrait; margin: 18mm 12mm 20mm 12mm; @bottom-center { content: "[ " counter(page) " ]"; font-family: 'Scheherazade New', serif; font-size: 12pt; } }
+    @page { size: A4 portrait; margin: 10mm 8mm 14mm 8mm; @bottom-center { content: "[ " counter(page) " ]"; font-family: 'Scheherazade New', serif; font-size: 12pt; } }
 
-    #print-area { display: block !important; box-sizing: border-box; padding: 6mm 10mm 0; font-family: 'Scheherazade New', serif; direction: rtl; text-align: justify; text-align-last: justify; text-justify: inter-word; font-size: 18pt; line-height: 1.8; color: black; orphans: 1; widows: 1; }
+    #print-area { display: block !important; box-sizing: border-box; padding: 0; font-family: 'Scheherazade New', serif; direction: rtl; text-align: justify; text-align-last: justify; text-justify: inter-word; font-size: 18pt; line-height: 1.8; color: black; orphans: 1; widows: 1; }
 
     .mot-rouge { color: #D11015 !important; } .mot-vert { color: #008A3B !important; } .mot-bleu { color: #1B378C !important; }
     .verset-brun { color: #8B0000 !important; }
