@@ -563,13 +563,14 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
         // html2canvas. Largeur = zone utile A4 (210 − 2×12 mm = 186 mm).
         if (appContainer) appContainer.style.display = 'none';
         printArea.setAttribute('aria-hidden', 'false');
+        const LINE_H = 1.9;
         printArea.style.cssText =
             'display:block; position:relative; box-sizing:border-box;' +
-            'width:186mm; margin:0 auto; padding:2mm 0;' +
+            'width:186mm; margin:0 auto; padding:0;' +
             'background:#ffffff; color:#000000;' +
             "font-family:'Scheherazade New', serif; direction:rtl;" +
             'text-align:justify; text-align-last:justify;' +
-            'font-size:' + fontSizePx + 'px; line-height:1.9;';
+            'font-size:' + fontSizePx + 'px; line-height:' + LINE_H + ';';
         window.scrollTo(0, 0);
         void printArea.offsetHeight;
 
@@ -580,28 +581,61 @@ async function generateVectorPDF(useOuv, useFerm, blocks, docName) {
         await pauseMainThread();
 
         const safeName = (docName || 'Al-Qalam').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
-        const opt = {
-            margin:      [12, 12, 16, 12],   // mm : haut, gauche, bas, droite
-            filename:    safeName + '.pdf',
-            image:       { type: 'jpeg', quality: 0.96 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-            jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:   { mode: ['css', 'legacy'] }
-        };
 
-        await html2pdf().set(opt).from(printArea).toPdf().get('pdf').then((pdf) => {
-            // Numéro de page « [ n ] » centré en bas de chaque page A4.
-            const total = pdf.internal.getNumberOfPages();
-            const w = pdf.internal.pageSize.getWidth();
-            const h = pdf.internal.pageSize.getHeight();
-            for (let i = 1; i <= total; i++) {
-                pdf.setPage(i);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(11);
-                pdf.setTextColor(90);
-                pdf.text('[ ' + i + ' ]', w / 2, h - 6, { align: 'center' });
-            }
-        }).save();
+        // Découpage MANUEL aligné sur les lignes : html2canvas rend tout le
+        // contenu en une image, puis on la tranche page par page en coupant
+        // UNIQUEMENT entre deux lignes (jamais au milieu d'une ligne), ce qui
+        // évite le rognage horizontal aux changements de page.
+        const scale = 2;
+        const h2cOpts = { scale, useCORS: true, backgroundColor: '#ffffff' };
+        // html2canvas & jsPDF sont fournis par le bundle html2pdf ; repli via le
+        // worker html2pdf si les globaux ne sont pas exposés.
+        const canvas = (typeof html2canvas === 'function')
+            ? await html2canvas(printArea, h2cOpts)
+            : await html2pdf().set({ html2canvas: h2cOpts }).from(printArea).toCanvas().get('canvas');
+
+        const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const pageW = pdf.internal.pageSize.getWidth();    // 210
+        const pageH = pdf.internal.pageSize.getHeight();   // 297
+        const mTop = 12, mSide = 12, mBottom = 16;
+        const contentWmm = pageW - 2 * mSide;              // 186
+        const contentHmm = pageH - mTop - mBottom;         // hauteur utile
+
+        const pxPerMm = canvas.width / contentWmm;         // le canvas = contentWmm de large
+        const pageContentPx = contentHmm * pxPerMm;        // hauteur de page en px canvas
+        const lineHpx = (parseFloat(getComputedStyle(printArea).lineHeight) || (fontSizePx * LINE_H)) * scale;
+
+        const totalLines   = Math.max(1, Math.round(canvas.height / lineHpx));
+        const linesPerPage = Math.max(1, Math.floor(pageContentPx / lineHpx));
+        const numPages     = Math.ceil(totalLines / linesPerPage);
+
+        const slice = document.createElement('canvas');
+        const sctx  = slice.getContext('2d');
+
+        for (let p = 0; p < numPages; p++) {
+            const y0 = Math.round(p * linesPerPage * lineHpx);
+            const y1 = (p === numPages - 1) ? canvas.height : Math.round((p + 1) * linesPerPage * lineHpx);
+            const sliceH = Math.max(1, y1 - y0);
+
+            slice.width = canvas.width;
+            slice.height = sliceH;
+            sctx.fillStyle = '#ffffff';
+            sctx.fillRect(0, 0, slice.width, sliceH);
+            sctx.drawImage(canvas, 0, y0, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+
+            if (p > 0) pdf.addPage();
+            pdf.addImage(slice.toDataURL('image/jpeg', 0.96), 'JPEG', mSide, mTop, contentWmm, sliceH / pxPerMm);
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(11);
+            pdf.setTextColor(90);
+            pdf.text('[ ' + (p + 1) + ' ]', pageW / 2, pageH - 6, { align: 'center' });
+
+            if (p % 3 === 0) await pauseMainThread();
+        }
+
+        pdf.save(safeName + '.pdf');
 
         // Retour à l'application.
         progressOverlay.style.display = 'none';
