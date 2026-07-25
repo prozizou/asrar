@@ -18,7 +18,7 @@ const GROUPS = [
       { icon: '📜', label: 'Secret Mystique', href: '/asrar' },
       { icon: '🤲', label: 'Don de secret', href: '/don' },
       { icon: '🔢', label: 'Abajad', href: '/abajad' },
-      { icon: '🌍', label: 'Planète', href: `${STATIC_BASE}/planete/planete.html`, external: true },
+      { icon: '🌍', label: 'Planète', href: '/planete' },
       { icon: '✨', label: 'Combinaisons', href: '/combinaisons' },
       { icon: '🕌', label: "Noms d'Allah", href: '/benefits' },
       { icon: '🌀', label: 'Rouwhanes', href: `${STATIC_BASE}/rouwhania/index.html`, external: true },
