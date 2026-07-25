@@ -10,6 +10,8 @@ const PLANS = {
   sub_3m: { label: 'Abonnement 3 Mois', price: '15 000' },
   sub_6m: { label: 'Abonnement 6 Mois', price: '25 000' },
   sub_1y: { label: 'Abonnement 1 An', price: '45 000' },
+  boutique_1m: { label: 'Boutique 1 Mois', price: '10 000' },
+  boutique_3m: { label: 'Boutique 3 Mois', price: '25 000' },
 };
 
 function currentEmail() {
@@ -29,6 +31,7 @@ function accessMessage(opts = {}) {
   const L = ['Assalamou aleykoum 🌙', 'Je souhaite activer mon accès premium sur ' + CONTACT + '.', ''];
   if (opts.email) L.push('• Compte (e-mail) : ' + opts.email);
   if (p) L.push('• Formule souhaitée : ' + p.label + ' — ' + p.price + ' FCFA');
+  if (opts.section) L.push('• Rubrique : ' + opts.section);
   L.push('');
   L.push("Merci de m'indiquer les modalités de paiement et d'activer mon accès. Barakallahou fikoum.");
   return L.join('\n');

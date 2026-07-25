@@ -4,7 +4,8 @@ App **parallèle** qui migre progressivement les modules vers Next.js (App
 Router) + React, **sans toucher** au site statique existant à la racine du
 dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
-l'état » puis l'étendre aux autres modules.
+l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
+*Marché*, *Ma Boutique*.
 
 ## Ce que le pilote démontre
 
@@ -31,11 +32,15 @@ next-app/
 │  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
 │  │  ├─ CommentSheet.js  Bottom-sheet commentaires
 │  │  └─ asrar.css      Styles du module (copie de asrar/asrar.css)
-│  └─ marche/           MODULE MIGRÉ — Marché
-│     ├─ page.js        Produits, vendeurs, filtres/recherche, tri popularité
-│     ├─ ProductModal.js  Modale produit (galerie, social, commande WhatsApp)
-│     ├─ VendorShop.js    Vue boutique d'un vendeur
-│     └─ marche.css     Styles du module (copie de marche/marche.css)
+│  ├─ marche/           MODULE MIGRÉ — Marché
+│  │  ├─ page.js        Produits, vendeurs, filtres/recherche, tri popularité
+│  │  ├─ ProductModal.js  Modale produit (galerie, social, commande WhatsApp)
+│  │  ├─ VendorShop.js    Vue boutique d'un vendeur
+│  │  └─ marche.css     Styles du module (copie de marche/marche.css)
+│  └─ boutique/         MODULE MIGRÉ — Ma Boutique (espace vendeur)
+│     ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
+│     ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
+│     └─ boutique.css   Styles du module (copie de boutique/boutique.css)
 ├─ components/          Coquille partagée réutilisable
 │  ├─ Providers.js      Auth + Accès + Thème
 │  ├─ AuthProvider.js   useAuth() + connexion Google
@@ -44,9 +49,12 @@ next-app/
 │  ├─ ThemeToggle.js
 │  ├─ MixedText.js      Rendu FR/arabe en segments
 │  ├─ useSecretRealtime.js  Likes & commentaires temps réel (secrets)
-│  └─ useProductSocial.js   Likes & commentaires temps réel (produits)
+│  ├─ useProductSocial.js   Likes & commentaires temps réel (produits)
+│  └─ useToast.js       Toast léger piloté par l'état
 └─ lib/                 Logique non-UI (portée 1:1 du js/ existant)
    ├─ firebase.js  api.js  access.js  share.js  whatsapp.js  format.js  pdf.js
+   ├─ market.js    Utilitaires Marché (vendeurs, prix, popularité)
+   └─ cloudinary.js  Upload d'images via signature serveur
 ```
 
 ## Le backend n'est PAS réimplémenté
@@ -72,5 +80,5 @@ Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
 ## Suite possible
 
 Migrer les modules suivants dans le même moule (chacun devient un dossier sous
-`app/`, réutilisant la coquille) : Boutique, Benefits, Al-Qalam, Géomancie… Le
-site statique reste en service pendant toute la transition.
+`app/`, réutilisant la coquille) : Benefits, Al-Qalam, Géomancie, Bibliothèque…
+Le site statique reste en service pendant toute la transition.
