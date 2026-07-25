@@ -5,7 +5,7 @@ Router) + React, **sans toucher** au site statique existant à la racine du
 dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
-*Marché*, *Ma Boutique*.
+*Marché*, *Ma Boutique*, *99 Noms d'Allah*.
 
 ## Ce que le pilote démontre
 
@@ -37,10 +37,17 @@ next-app/
 │  │  ├─ ProductModal.js  Modale produit (galerie, social, commande WhatsApp)
 │  │  ├─ VendorShop.js    Vue boutique d'un vendeur
 │  │  └─ marche.css     Styles du module (copie de marche/marche.css)
-│  └─ boutique/         MODULE MIGRÉ — Ma Boutique (espace vendeur)
-│     ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
-│     ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
-│     └─ boutique.css   Styles du module (copie de boutique/boutique.css)
+│  ├─ boutique/         MODULE MIGRÉ — Ma Boutique (espace vendeur)
+│  │  ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
+│  │  ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
+│  │  └─ boutique.css   Styles du module (copie de boutique/boutique.css)
+│  └─ benefits/         MODULE MIGRÉ — 99 Noms d'Allah
+│     ├─ page.js        Chargement, recherche/suggestions, favoris, modale
+│     ├─ NameCard.js      Carte (verrouillée / complète)
+│     ├─ NameModal.js     Modale d'un nom
+│     ├─ WafqSquares.js   Carrés magiques (awfaq 3×3 / 3×3 vide / 4×4)
+│     ├─ Tasbih.js        Compteur de dhikr (UI)
+│     └─ benefits.css   Styles du module (copie de Benefits/style.css)
 ├─ components/          Coquille partagée réutilisable
 │  ├─ Providers.js      Auth + Accès + Thème
 │  ├─ AuthProvider.js   useAuth() + connexion Google
@@ -50,11 +57,15 @@ next-app/
 │  ├─ MixedText.js      Rendu FR/arabe en segments
 │  ├─ useSecretRealtime.js  Likes & commentaires temps réel (secrets)
 │  ├─ useProductSocial.js   Likes & commentaires temps réel (produits)
-│  └─ useToast.js       Toast léger piloté par l'état
+│  ├─ useToast.js       Toast léger piloté par l'état
+│  └─ useTasbih.js      Compteur de dhikr (séries, progression, localStorage)
 └─ lib/                 Logique non-UI (portée 1:1 du js/ existant)
    ├─ firebase.js  api.js  access.js  share.js  whatsapp.js  format.js  pdf.js
    ├─ market.js    Utilitaires Marché (vendeurs, prix, popularité)
-   └─ cloudinary.js  Upload d'images via signature serveur
+   ├─ cloudinary.js  Upload d'images via signature serveur
+   ├─ benefits.js  Chargement des 99 Noms (cache → API → RTDB → fallback)
+   ├─ abjad.js     Poids abjad, carrés magiques, ordre élémentaire
+   └─ audio.js     Sons synthétisés (grain, objectif) + prononciation
 ```
 
 ## Le backend n'est PAS réimplémenté
