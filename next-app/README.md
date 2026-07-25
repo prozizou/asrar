@@ -5,7 +5,10 @@ Router) + React, **sans toucher** au site statique existant à la racine du
 dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
-*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*.
+*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*, *Don de secret*,
+*Abajad*, *Parrainage*. Le **tableau de bord d'accueil** (accueil des rubriques)
+est lui aussi migré : navigation SPA instantanée vers les modules déjà portés,
+les modules restants pointant encore vers le site statique en service.
 
 ## Ce que le pilote démontre
 
@@ -26,7 +29,13 @@ next-app/
 ├─ app/
 │  ├─ layout.js         Coquille racine + init thème anti-FOUC
 │  ├─ globals.css       Feuille partagée (copie de css/style.css) + styles composants
-│  ├─ page.js           Accueil du pilote (menu → module)
+│  ├─ page.js           Tableau de bord (accueil) — menus groupés, liens SPA
+│  ├─ don/             MODULE MIGRÉ — Don de secret (formulaire → /api/don)
+│  │  └─ page.js
+│  ├─ abajad/          MODULE MIGRÉ — Calculateur Abjad ésotérique
+│  │  └─ page.js        Calcul temps réel, zodiaque, facteurs (logique → lib/abjad)
+│  ├─ parrainage/      MODULE MIGRÉ — Parrainage (points, lien, conversion)
+│  │  └─ page.js
 │  ├─ asrar/            MODULE MIGRÉ — Secrets
 │  │  ├─ page.js        Liste par catégorie + orchestration
 │  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
@@ -94,6 +103,8 @@ Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
 
 ## Suite possible
 
-Migrer les modules suivants dans le même moule (chacun devient un dossier sous
-`app/`, réutilisant la coquille) : Benefits, Al-Qalam, Géomancie, Bibliothèque…
-Le site statique reste en service pendant toute la transition.
+Modules restant à migrer dans le même moule (chacun devient un dossier sous
+`app/`, réutilisant la coquille) : **Planète**, **Combinaisons**, **Al Qalam**,
+**Géomancie (Tourab)**, **Rouwhanes**. En attendant, le tableau de bord pointe
+vers eux sur le site statique (`NEXT_PUBLIC_STATIC_BASE`), qui reste en service
+pendant toute la transition.

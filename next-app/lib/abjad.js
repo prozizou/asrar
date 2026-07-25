@@ -108,6 +108,120 @@ export function generateAllWafq3x3Vide(target) {
     };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Calculateur Abjad ésotérique — port de la logique de abajad/abajad.html.
+// (Tables Mashreqi/Maghrébi, normalisation, réduction, facteurs, zodiaque.)
+// ─────────────────────────────────────────────────────────────────────────
+
+export const ABAJAD_TABLES = {
+  mashriqi: [
+    ['ا', 1], ['ب', 2], ['ج', 3], ['د', 4], ['ه', 5], ['و', 6], ['ز', 7], ['ح', 8], ['ط', 9], ['ي', 10],
+    ['ك', 20], ['ل', 30], ['م', 40], ['ن', 50], ['س', 60], ['ع', 70], ['ف', 80], ['ص', 90],
+    ['ق', 100], ['ر', 200], ['ش', 300], ['ت', 400], ['ث', 500], ['خ', 600], ['ذ', 700], ['ض', 800], ['ظ', 900], ['غ', 1000],
+  ],
+  maghrebi: [
+    ['ا', 1], ['ب', 2], ['ج', 3], ['د', 4], ['ه', 5], ['و', 6], ['ز', 7], ['ح', 8], ['ط', 9], ['ي', 10],
+    ['ك', 20], ['ل', 30], ['م', 40], ['ن', 50], ['ص', 60], ['ع', 70], ['ف', 80], ['ض', 90],
+    ['ق', 100], ['ر', 200], ['س', 300], ['ت', 400], ['ث', 500], ['خ', 600], ['ذ', 700], ['ظ', 800], ['غ', 900], ['ش', 1000],
+  ],
+};
+
+// Normalisation des caractères arabes (suppression diacritiques, variantes).
+export function normalizeArabic(str) {
+  return (str || '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/[ؤئ]/g, 'و')
+    .replace(/ة/g, 'ه')
+    .replace(/[ىئ]/g, 'ي')
+    .replace(/[ً-ْ]/g, '')
+    .replace(/[^ء-ي\s]/g, '')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+export function getLetterValue(char, system) {
+  const table = ABAJAD_TABLES[system];
+  const entry = table.find(([c]) => c === char);
+  return entry ? entry[1] : 0;
+}
+
+// Réduction théosophique (addition itérative jusqu'à 1 chiffre).
+export function reduceNumber(n) {
+  if (n <= 0) return 0;
+  while (n > 9) {
+    n = n.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
+  }
+  return n;
+}
+
+// Toutes les paires de facteurs d'un nombre (a × b).
+export function getFactorPairs(num) {
+  if (num <= 1) return [];
+  const pairs = [];
+  for (let a = num - 1; a >= 2; a--) {
+    if (num % a === 0) pairs.push([a, num / a]);
+  }
+  return pairs;
+}
+
+// Calcule les deux totaux (Mashreqi/Maghrébi) d'une saisie (lettres OU nombre).
+export function computeAbajadSums(input) {
+  const ascii = (input || '')
+    .replace(/[٠-٩]/g, (d) => d.charCodeAt(0) - 0x0660)
+    .replace(/[۰-۹]/g, (d) => d.charCodeAt(0) - 0x06f0);
+  const numeric = ascii.trim().replace(/[\s.,]/g, '');
+  if (/^\d+$/.test(numeric)) {
+    const v = parseInt(numeric, 10);
+    return { mash: v, magh: v };
+  }
+  const normalized = normalizeArabic(input);
+  if (!normalized) return { mash: 0, magh: 0 };
+  let mash = 0, magh = 0;
+  normalized.split('').forEach((ch) => {
+    mash += getLetterValue(ch, 'mashriqi');
+    magh += getLetterValue(ch, 'maghrebi');
+  });
+  return { mash, magh };
+}
+
+// Zodiaque indexé de 1 à 12 (ordre = valeur mod 12 ; 0 → 12 = Poissons).
+export const ZODIAC = [
+  null,
+  { nom: 'Bélier', nature: 'Feu', intervalle: '21 mars au 19 avril' },
+  { nom: 'Taureau', nature: 'Terre', intervalle: '20 avril au 20 mai' },
+  { nom: 'Gémeaux', nature: 'Air', intervalle: '21 mai au 20 juin' },
+  { nom: 'Cancer', nature: 'Eau', intervalle: '21 juin au 22 juillet' },
+  { nom: 'Lion', nature: 'Feu', intervalle: '23 juillet au 22 août' },
+  { nom: 'Vierge', nature: 'Terre', intervalle: '23 août au 22 septembre' },
+  { nom: 'Balance', nature: 'Air', intervalle: '23 septembre au 22 octobre' },
+  { nom: 'Scorpion', nature: 'Eau', intervalle: '23 octobre au 21 novembre' },
+  { nom: 'Sagittaire', nature: 'Feu', intervalle: '22 novembre au 21 décembre' },
+  { nom: 'Capricorne', nature: 'Terre', intervalle: '22 décembre au 19 janvier' },
+  { nom: 'Verseau', nature: 'Air', intervalle: '20 janvier au 18 février' },
+  { nom: 'Poissons', nature: 'Eau', intervalle: '19 février au 20 mars' },
+];
+
+// Résultats ésotériques d'une base (faces, adad, zodiaque).
+export function computeEso(v) {
+  const fmt = (n) => Number(n).toLocaleString('fr-FR');
+  if (!v || v <= 0) {
+    return { face: '—', cachee: '—', rouhani: '—', lumineux: '—', ordre: '—', signe: '—', nature: '—', intervalle: '—' };
+  }
+  const cachee = parseInt(String(v).split('').reverse().join(''), 10) || 0;
+  const ordre = v % 12;
+  const z = ZODIAC[ordre === 0 ? 12 : ordre];
+  return {
+    face: fmt(v),
+    cachee: fmt(cachee),
+    rouhani: fmt(v * v),
+    lumineux: fmt((v * (v + 1)) / 2),
+    ordre: String(ordre),
+    signe: z.nom,
+    nature: z.nature,
+    intervalle: z.intervalle,
+  };
+}
+
 export function generateAllWafq4x4(target) {
     if (target < 34) return null; 
 

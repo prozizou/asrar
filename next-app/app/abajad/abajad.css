@@ -1,0 +1,110 @@
+/* Module Abajad — styles portés de abajad/abajad.html.
+   Les tokens (accent, texte, verre) proviennent de globals.css
+   — identité bleu glassmorphism partagée par tout le projet. */
+.abajad-input {
+  font-size: 1.4rem;
+  text-align: right;
+  direction: rtl;
+  letter-spacing: 2px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  padding: 14px 16px;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+.result-card {
+  background: rgba(0, 0, 0, .25);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 18px;
+}
+.result-card h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+.result-big {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+.result-reduced {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.factor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.factor-row {
+  background: rgba(200, 160, 80, 0.10);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+  color: var(--text-main);
+}
+.factor-row strong { color: var(--accent); }
+/* Décomposition a×b sur deux colonnes (bases différentes) */
+.factor-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+.factor-col { display: flex; flex-direction: column; gap: 6px; }
+.factor-col-head {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 2px;
+}
+/* Bloc d'informations ésotériques */
+.eso-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 15px;
+}
+.eso-row {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 10px;
+  align-items: baseline;
+  background: rgba(200, 160, 80, 0.08);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 9px 14px;
+}
+.eso-row .eso-k { color: var(--text-muted); font-size: 0.9rem; }
+.eso-row .eso-v { color: var(--text-main); font-weight: 600; text-align: center; }
+.eso-row.eso-head {
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  padding-bottom: 2px;
+}
+.eso-row.eso-head .eso-v { color: var(--accent); font-size: 0.85rem; }
+
+/* Responsive : sur mobile, les deux colonnes passent en pile verticale. */
+@media (max-width: 560px) {
+  .result-grid { grid-template-columns: 1fr; gap: 14px; }
+  .result-big { font-size: 1.8rem; }
+  .abajad-input { font-size: 1.2rem; }
+}
