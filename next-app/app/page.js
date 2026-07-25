@@ -23,6 +23,10 @@ export default function Home() {
             <div style={{ fontSize: '2rem' }}>📜</div>
             <h3>Secrets Mystiques</h3>
           </Link>
+          <Link href="/marche" className="menu-item">
+            <div style={{ fontSize: '2rem' }}>🛒</div>
+            <h3>Marché Mystique</h3>
+          </Link>
         </div>
         <button onClick={signOut} style={{ marginTop: 24 }}>
           Se déconnecter

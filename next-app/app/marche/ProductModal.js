@@ -1,0 +1,188 @@
+'use client';
+// Modale produit — port de openModal()/loadProductSocial()/commanderProduit().
+// Galerie, bloc vendeur, barre sociale (like/commentaires temps réel), partage
+// et commande WhatsApp directe au vendeur.
+import { useEffect, useRef, useState } from 'react';
+import { auth } from '@/lib/firebase';
+import { formatPrice } from '@/lib/market';
+import { share as shareLink } from '@/lib/share';
+import { useProductSocial } from '@/components/useProductSocial';
+
+export default function ProductModal({ product, vendor, onClose, onVisitShop }) {
+  const galerie =
+    Array.isArray(product.images) && product.images.length
+      ? product.images.filter(Boolean)
+      : product.Image
+      ? [product.Image]
+      : [];
+
+  const [mainImg, setMainImg] = useState(galerie[0] || '');
+  const [showComments, setShowComments] = useState(false);
+  const [comment, setComment] = useState('');
+  const taRef = useRef(null);
+  const listRef = useRef(null);
+
+  const { liked, likeCount, comments, toggleLike, postComment } = useProductSocial(product._key);
+
+  // Bloque le scroll de l'arrière-plan tant que la modale est ouverte.
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [comments, showComments]);
+
+  const autoGrow = (el) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  };
+
+  const submitComment = () => {
+    const t = comment.trim();
+    if (!t) return;
+    postComment(t);
+    setComment('');
+    if (taRef.current) autoGrow(taRef.current);
+  };
+
+  const doShare = () => {
+    const nom = product.produit || 'Produit';
+    shareLink({ kind: 'product', key: product._key, title: nom, text: '🛒 ' + nom + ' — Marché Mystique sur ASRAR PRO' });
+  };
+
+  // Commande : message pré-rempli envoyé au vendeur. Son numéro reste côté
+  // serveur (/api/wa le lit d'après la clé produit puis redirige).
+  const order = () => {
+    let email = '';
+    try {
+      email = (auth.currentUser && auth.currentUser.email) || '';
+    } catch {}
+    const boutique = product.vendeur || 'la boutique';
+    const article = product.produit || 'Article';
+    const total = formatPrice(product.Prix, product.devise) || (product.Prix || '') + ' FCFA';
+    const msg =
+      `Assalamou aleykoum 🌙\nJe souhaite passer une commande sur le Marché (${boutique}).\n\n` +
+      `• Compte (e-mail) : ${email}\n• Articles :\n   - ${article}\n• Total : ${total}\n\n` +
+      `Merci de me confirmer la disponibilité et les modalités de paiement.`;
+    window.open('/api/wa?product=' + encodeURIComponent(product._key) + '&text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  };
+
+  return (
+    <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <span className="modal-close" onClick={onClose}>
+          ✕
+        </span>
+
+        {mainImg && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="modal-img" src={mainImg} alt={product.produit || ''} onError={(e) => (e.currentTarget.style.display = 'none')} />
+        )}
+
+        {galerie.length > 1 && (
+          <div className="m-thumbs" style={{ display: 'flex' }}>
+            {galerie.map((url, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={i}
+                src={url}
+                className={'m-thumb' + (url === mainImg ? ' active' : '')}
+                alt={'Vue ' + (i + 1)}
+                onClick={() => setMainImg(url)}
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            ))}
+          </div>
+        )}
+
+        <h3>{product.produit || 'Produit'}</h3>
+        <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#6bffb8', margin: '8px 0' }}>
+          {formatPrice(product.Prix, product.devise)}
+        </div>
+
+        {vendor && (
+          <div className="vendor-block" style={{ display: 'flex' }}>
+            {vendor.avatar && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="vendor-block-avatar" src={vendor.avatar} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            )}
+            <div className="vendor-block-info">
+              <div className="vendor-block-name">
+                {vendor.name} {vendor.verified && <span className="verified-badge">✔ Vérifié</span>}
+              </div>
+              <div className="vendor-block-loc">📍 {vendor.location}</div>
+              <div className="vendor-block-meta">⭐ {vendor.rating}</div>
+            </div>
+            <button
+              className="visit-shop-btn"
+              onClick={() => {
+                onVisitShop(vendor.id);
+                onClose();
+              }}
+            >
+              🏪 Visiter la boutique
+            </button>
+          </div>
+        )}
+
+        <div style={{ lineHeight: 1.7, borderTop: '1px solid var(--mk-border)', paddingTop: 14 }}>
+          {product.description || ''}
+        </div>
+
+        <div className="social-bar">
+          <button className={'like-btn' + (liked ? ' liked' : '')} onClick={toggleLike}>
+            <span>{liked ? '❤️' : '🤍'}</span> <span>{likeCount}</span>
+          </button>
+          <button className="comment-toggle-btn" onClick={() => setShowComments((v) => !v)}>
+            💬 <span>{comments.length}</span>
+          </button>
+          <button className="comment-toggle-btn" title="Partager ce produit" onClick={doShare}>
+            📤
+          </button>
+        </div>
+
+        <div className={'comments-panel' + (showComments ? ' open' : '')}>
+          <div className="comment-list" ref={listRef}>
+            {comments.map((c) => (
+              <div key={c.id} className="m-comment-item">
+                <div className="m-comment-pseudo">{c.pseudo}</div>
+                <div className="m-comment-text">{c.text}</div>
+              </div>
+            ))}
+          </div>
+          <div className="comment-input-row">
+            <textarea
+              ref={taRef}
+              maxLength={500}
+              rows={1}
+              placeholder="Écrire un commentaire…"
+              value={comment}
+              onChange={(e) => {
+                setComment(e.target.value);
+                autoGrow(e.target);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  submitComment();
+                }
+              }}
+            />
+            <button className="comment-send" onClick={submitComment} aria-label="Envoyer">
+              ➤
+            </button>
+          </div>
+        </div>
+
+        <button className="add-to-cart-btn" onClick={order}>
+          🛍️ Commander via WhatsApp
+        </button>
+      </div>
+    </div>
+  );
+}
