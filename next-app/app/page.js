@@ -35,6 +35,10 @@ export default function Home() {
             <div style={{ fontSize: '2rem' }}>🕌</div>
             <h3>99 Noms d'Allah</h3>
           </Link>
+          <Link href="/bibliotheque" className="menu-item">
+            <div style={{ fontSize: '2rem' }}>📚</div>
+            <h3>Bibliothèque</h3>
+          </Link>
         </div>
         <button onClick={signOut} style={{ marginTop: 24 }}>
           Se déconnecter

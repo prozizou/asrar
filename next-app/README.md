@@ -5,7 +5,7 @@ Router) + React, **sans toucher** au site statique existant à la racine du
 dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
-*Marché*, *Ma Boutique*, *99 Noms d'Allah*.
+*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*.
 
 ## Ce que le pilote démontre
 
@@ -41,13 +41,17 @@ next-app/
 │  │  ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
 │  │  ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
 │  │  └─ boutique.css   Styles du module (copie de boutique/boutique.css)
-│  └─ benefits/         MODULE MIGRÉ — 99 Noms d'Allah
-│     ├─ page.js        Chargement, recherche/suggestions, favoris, modale
-│     ├─ NameCard.js      Carte (verrouillée / complète)
-│     ├─ NameModal.js     Modale d'un nom
-│     ├─ WafqSquares.js   Carrés magiques (awfaq 3×3 / 3×3 vide / 4×4)
-│     ├─ Tasbih.js        Compteur de dhikr (UI)
-│     └─ benefits.css   Styles du module (copie de Benefits/style.css)
+│  ├─ benefits/         MODULE MIGRÉ — 99 Noms d'Allah
+│  │  ├─ page.js        Chargement, recherche/suggestions, favoris, modale
+│  │  ├─ NameCard.js      Carte (verrouillée / complète)
+│  │  ├─ NameModal.js     Modale d'un nom
+│  │  ├─ WafqSquares.js   Carrés magiques (awfaq 3×3 / 3×3 vide / 4×4)
+│  │  ├─ Tasbih.js        Compteur de dhikr (UI)
+│  │  └─ benefits.css   Styles du module (copie de Benefits/style.css)
+│  └─ bibliotheque/     MODULE MIGRÉ — Bibliothèque Almaqtab
+│     ├─ page.js        Grille de livres, social, ouverture PDF, partage
+│     ├─ CommentModal.js  Modale commentaires
+│     └─ bibliotheque.css Styles (extraits des <style> inline du HTML)
 ├─ components/          Coquille partagée réutilisable
 │  ├─ Providers.js      Auth + Accès + Thème
 │  ├─ AuthProvider.js   useAuth() + connexion Google
