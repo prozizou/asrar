@@ -1,0 +1,530 @@
+/* asrar.css — Refactoré pour respecter le toggle clair/sombre global.
+   Le mode sombre garde l'identité ésotérique (noir + or + crème).
+   Le mode clair devient une variante "parchemin crème" qui préserve l'esprit
+   tout en étant lisible (fond crème, texte brun foncé, or conservé). */
+
+/* ───── Identité alignée sur le thème global (css/style.css) ─────
+   Les tokens du module pointent vers les tokens partagés « bleu
+   glassmorphism » ; le basculement clair/sombre est géré une seule
+   fois dans css/style.css, donc plus de bloc data-theme ici. */
+:root {
+    --asrar-scale: 1;
+
+    --asrar-bg:        var(--bg-gradient);
+    --asrar-bg-deep:   var(--bg-deep);
+    --asrar-surface:   var(--surface);
+    --asrar-surface-2: var(--surface-2);
+    --asrar-border:    var(--border);
+    --asrar-border-2:  var(--border-strong);
+    --asrar-text:      var(--text-main);
+    --asrar-text-soft: var(--text-muted);
+    --asrar-text-dim:  var(--text-dim);
+    --asrar-star-off:  var(--text-faint);
+    --asrar-overlay:   rgba(0, 0, 0, 0.6);
+
+    --asrar-gold:      var(--accent);
+    --asrar-cream:     var(--accent);
+}
+
+/* ───── Style ───── */
+body {
+  background: var(--asrar-bg) !important;
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--asrar-text);
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.back-btn {
+  color: var(--asrar-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.glass-panel {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  padding: 1rem 0;
+}
+
+/* Rail gauche */
+.asrar-wrap {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.cat-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 0 0 100px;
+  position: sticky;
+  top: 1rem;
+}
+
+.cat-item {
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--asrar-text);
+}
+
+.cat-item.active {
+  background: var(--asrar-cream);
+  color: var(--text-on-accent);
+  border-color: var(--asrar-cream);
+}
+
+.cat-item .ic {
+  font-size: 1.8rem;
+  display: block;
+}
+
+.cat-item .lb {
+  font-size: 0.7rem;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* Vue liste */
+.asrar-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.secrets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.secret-card {
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.secret-card:hover {
+  background: var(--asrar-surface-2);
+  transform: translateX(4px);
+}
+
+.secret-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--asrar-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--asrar-text);
+  flex-shrink: 0;
+}
+
+.secret-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  color: var(--asrar-text);
+}
+
+/* Carte avec cover */
+.secret-card.has-cover {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0;
+  overflow: hidden;
+}
+.secret-card.has-cover .secret-thumb {
+  width: 100%;
+  height: 180px;
+  border-radius: 0;
+}
+.secret-card.has-cover .secret-title {
+  padding: 0 1rem 1rem;
+  text-align: center;
+}
+
+/* Vue détail */
+.detail-card {
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.detail-img-wrap {
+  width: 100%;
+  max-height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  background: var(--asrar-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s;
+}
+
+.detail-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--asrar-text);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.mix {
+  background: var(--asrar-surface-2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.seg-fr {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0.5rem 0;
+  color: var(--asrar-text-soft);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.seg-ar {
+  font-family: var(--font-ar);
+  font-size: 1.25rem;
+  line-height: 2.1;
+  direction: rtl;
+  text-align: right;
+  margin: 0.8rem 0;
+  color: var(--asrar-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Barre d'interactions fixe */
+.interaction-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--asrar-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--asrar-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  z-index: 100;
+  color: var(--asrar-text);
+}
+
+.rating-stars {
+  display: flex;
+  gap: 8px;
+}
+
+.rating-stars .star {
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--asrar-star-off);
+  transition: color 0.2s;
+}
+
+.rating-stars .star.active,
+.rating-stars .star:hover {
+  color: var(--asrar-text);
+}
+
+.interaction-bar .meta {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.interaction-bar .meta span {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.bookmark-icon {
+  font-size: 1.2rem;
+}
+
+/* Loader affiché pendant le chargement d'un secret (~quelques secondes) */
+#secret-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--asrar-overlay, rgba(0, 0, 0, 0.6));
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+#secret-loading .sl-spin {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--accent, #4facfe);
+  animation: asrar-spin 0.8s linear infinite;
+}
+@keyframes asrar-spin { to { transform: rotate(360deg); } }
+
+/* Bouton like (cœur) — remplace l'ancienne notation étoiles */
+.like-btn {
+  transition: transform .15s ease;
+  user-select: none;
+}
+.like-btn:active { transform: scale(1.25); }
+.like-btn.liked { color: #e0245e; font-weight: 600; }
+.like-btn #likeCount { font-variant-numeric: tabular-nums; }
+
+.bookmark-icon.saved {
+  color: var(--asrar-text);
+  font-weight: bold;
+}
+
+/* Bottom sheet commentaires */
+.comment-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 720px;
+  margin: 0 auto;                 /* centrée sur grand écran */
+  background: var(--asrar-bg-deep, var(--asrar-bg));
+  border-radius: 20px 20px 0 0;
+  padding: 1.2rem;
+  z-index: 100001;               /* au-dessus des boutons flottants (99999) */
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 20px var(--asrar-overlay);
+}
+
+.comment-sheet.open {
+  transform: translateY(0);
+}
+
+.comment-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: var(--asrar-text);
+}
+
+/* Masque les boutons flottants (thème / vue) pendant la saisie d'un commentaire */
+body.comment-open #asrarViewBtn,
+body.comment-open #asrarThemeBtn { display: none !important; }
+
+.comment-list {
+  flex: 1 1 auto;
+  min-height: 140px;              /* zone de messages toujours visible (façon WhatsApp) */
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-right: 2px;
+}
+
+.comment-item {
+  align-self: flex-start;         /* bulles alignées à gauche, comme un fil de groupe */
+  max-width: 85%;
+  background: var(--asrar-surface);
+  border-radius: 4px 14px 14px 14px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--asrar-border);
+}
+
+.comment-pseudo {
+  font-weight: 700;
+  color: var(--asrar-cream);      /* nom en couleur d'accent, comme WhatsApp */
+  font-size: 0.78rem;
+}
+
+.comment-text {
+  color: var(--asrar-text);
+  margin-top: 3px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.comment-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-input input {
+  flex: 1 1 0;                        /* prend TOUTE la place restante */
+  width: auto;                        /* annule le width:100% global des inputs */
+  min-width: 0;
+  background: var(--surface-input);   /* fond dédié aux champs : contrasté en clair ET sombre */
+  border: 1px solid var(--asrar-border);
+  border-radius: 20px;
+  padding: 12px 16px;
+  min-height: 46px;
+  color: var(--asrar-text);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.comment-input input::placeholder {
+  color: var(--asrar-text-dim);
+  opacity: 1;                         /* évite le placeholder trop pâle en sombre */
+}
+
+.comment-input button {
+  flex: 0 0 auto;                     /* le bouton ne mange plus la place de l'input */
+  width: auto !important;             /* annule le width:100% GLOBAL de css/style.css */
+  margin-top: 0 !important;           /* annule le margin-top:15px global (désalignait) */
+  white-space: nowrap;
+  background: var(--asrar-cream);
+  border: none;
+  border-radius: 20px;
+  padding: 0 18px;
+  min-height: 46px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-on-accent);
+  cursor: pointer;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--asrar-overlay);
+  z-index: 100000;   /* juste sous la feuille de commentaires (100001) */
+  display: none;
+}
+
+.overlay.show {
+  display: block;
+}
+
+.detail-back {
+  background: none;
+  border: none;
+  color: var(--asrar-text);
+  cursor: pointer;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.close-sheet-btn {
+  background: none;
+  border: none;
+  color: var(--asrar-text);
+  font-size: 1.2rem;
+}
+
+/* ==================== LECTEUR PLEIN ÉCRAN ==================== */
+.asrar-wrap.detail-mode .cat-rail { display: none; }
+.asrar-wrap.detail-mode .asrar-main { width: 100%; flex: 1 1 100%; }
+
+.detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.detail-expand {
+  background: var(--asrar-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
+  padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: .82rem;
+}
+.detail-expand:hover { filter: brightness(1.08); }
+
+/* Échelle typographique appliquée à la fiche et au lecteur. */
+#detSirr { font-size: calc(1rem * var(--asrar-scale)); }
+#detSirr .seg-ar, #rdrSirr .seg-ar { font-size: calc(1.7rem * var(--asrar-scale)); line-height: 2.1; }
+#detSirr .seg-fr, #rdrSirr .seg-fr { font-size: calc(1.02rem * var(--asrar-scale)); line-height: 1.8; }
+
+/* Overlay plein écran */
+.rdr-overlay {
+  position: fixed; inset: 0; z-index: 400; display: none;
+  background: var(--asrar-bg-deep);
+}
+.rdr-overlay.open { display: flex; }
+.rdr-shell {
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+  max-width: 1100px; margin: 0 auto;
+}
+@media (min-width: 900px) {
+  .rdr-overlay.open { align-items: center; justify-content: center; padding: 24px; background: var(--asrar-overlay); }
+  .rdr-shell {
+    height: 88vh; border: 1px solid var(--asrar-border); border-radius: 16px; overflow: hidden;
+    resize: both;
+    min-width: 420px; min-height: 320px; max-width: 96vw; max-height: 94vh;
+  }
+}
+.rdr-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--asrar-surface); border-bottom: 1px solid var(--asrar-border);
+  flex-shrink: 0;
+}
+.rdr-spacer { flex: 1; }
+.rdr-btn {
+  background: var(--asrar-border); color: var(--asrar-text); border: 1px solid var(--asrar-border-2);
+  border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: .85rem; font-weight: 600;
+}
+.rdr-btn:hover { border-color: var(--asrar-gold); color: var(--asrar-gold); }
+.rdr-body { flex: 1; overflow-y: auto; padding: 18px 20px 60px; color: var(--asrar-text); }
+.rdr-img-wrap { text-align: center; margin-bottom: 16px; cursor: zoom-in; }
+.rdr-img-wrap img {
+  max-width: 100%; max-height: 60vh; border-radius: 12px; display: none; margin: 0 auto;
+}
+.rdr-title {
+  text-align: center; margin-bottom: 18px; color: var(--asrar-gold);
+  font-size: calc(1.3rem * var(--asrar-scale)); font-weight: 700;
+}
+.rdr-sirr { line-height: 1.9; }

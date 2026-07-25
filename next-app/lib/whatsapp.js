@@ -1,0 +1,40 @@
+'use client';
+// Contact WhatsApp — port de js/whatsapp.js (portion « accès premium »).
+// Le numéro reste côté serveur (/api/wa lit WHATSAPP_NUMBER et redirige).
+import { auth } from './firebase';
+
+const CONTACT = 'ASRAR PRO';
+const ENDPOINT = '/api/wa';
+
+const PLANS = {
+  sub_3m: { label: 'Abonnement 3 Mois', price: '15 000' },
+  sub_6m: { label: 'Abonnement 6 Mois', price: '25 000' },
+  sub_1y: { label: 'Abonnement 1 An', price: '45 000' },
+};
+
+function currentEmail() {
+  try {
+    const u = auth.currentUser;
+    if (u && u.email) return u.email;
+  } catch {}
+  return '';
+}
+
+function link(message) {
+  return ENDPOINT + '?text=' + encodeURIComponent(message || '');
+}
+
+function accessMessage(opts = {}) {
+  const p = opts.planId ? PLANS[opts.planId] : null;
+  const L = ['Assalamou aleykoum 🌙', 'Je souhaite activer mon accès premium sur ' + CONTACT + '.', ''];
+  if (opts.email) L.push('• Compte (e-mail) : ' + opts.email);
+  if (p) L.push('• Formule souhaitée : ' + p.label + ' — ' + p.price + ' FCFA');
+  L.push('');
+  L.push("Merci de m'indiquer les modalités de paiement et d'activer mon accès. Barakallahou fikoum.");
+  return L.join('\n');
+}
+
+export function openAccess(opts = {}) {
+  if (!opts.email) opts.email = currentEmail();
+  window.open(link(accessMessage(opts)), '_blank', 'noopener');
+}
