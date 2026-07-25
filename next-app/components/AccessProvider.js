@@ -14,9 +14,23 @@ export default function AccessProvider({ children }) {
   const { user } = useAuth();
   const cache = useRef(null); // équivalent de _accessStatus (cache par session)
   const [gateOpen, setGateOpen] = useState(false);
+  const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
 
   const openGate = useCallback(() => setGateOpen(true), []);
   const closeGate = useCallback(() => setGateOpen(false), []);
+
+  // Résout l'accès SANS ouvrir le portail (verrouillage passif : cartes « nom
+  // seul » tant que l'abonnement n'est pas confirmé). Met à jour `allowed`.
+  const refreshAccess = useCallback(async () => {
+    if (!user) {
+      setAllowed(false);
+      return false;
+    }
+    const status = cache.current || (await checkAccess(user));
+    cache.current = status;
+    setAllowed(status.allowed);
+    return status.allowed;
+  }, [user]);
 
   // Vérifie l'accès à la demande. Résout true si autorisé, sinon ouvre le
   // portail et résout false. Le résultat est mis en cache pour la session.
@@ -41,7 +55,7 @@ export default function AccessProvider({ children }) {
   }, []);
 
   return (
-    <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate }}>
+    <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, refreshAccess }}>
       {children}
       <SubscriptionGate open={gateOpen} onClose={closeGate} />
     </AccessCtx.Provider>
