@@ -11,7 +11,7 @@ import './marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ref, get, set, remove } from 'firebase/database';
-import { db, auth, ASRAR_CONFIG } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
@@ -181,8 +181,8 @@ export default function MarchePage() {
         <div className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>🛒 Marché Mystique</h2>
-            <a
-              href={ASRAR_CONFIG.siteUrl + '/boutique/boutique.html'}
+            <Link
+              href="/boutique"
               className="shop-link"
               style={{
                 background: 'var(--accent)',
@@ -195,7 +195,7 @@ export default function MarchePage() {
               }}
             >
               🏪 Ma boutique
-            </a>
+            </Link>
           </div>
           <p className="subtitle">Produits ésotériques de nos praticiens certifiés</p>
 
