@@ -24,19 +24,19 @@
     {
       "name": "Noms d'Allah",
       "short_name": "Noms",
-      "url": "/Benefits/index.html",
+      "url": "/benefits",
       "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Rouwhanes",
       "short_name": "Rouwhanes",
-      "url": "/rouwhania/index.html",
+      "url": "/rouwhania",
       "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Secret Mystique",
       "short_name": "Secret",
-      "url": "/asrar/asrar.html",
+      "url": "/asrar",
       "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
