@@ -96,13 +96,23 @@ next-app/
    └─ audio.js     Sons synthétisés (grain, objectif) + prononciation
 ```
 
-## Le backend n'est PAS réimplémenté
+## Backend intégré (app unifiée)
 
-Les fonctions serverless (`/api/*` : paywall, likes, partage, parrainage) restent
-celles de la production. `next.config.mjs` **proxifie** `/api/*` vers
-`NEXT_PUBLIC_API_BASE` (défaut : `https://asrar-hub.vercel.app`) côté serveur —
-donc pas de CORS, et le pilote lit les **vraies données** avec le vrai jeton
-Firebase.
+Les fonctions serverless (`/api/*` : paywall, likes, partage, parrainage, thème…)
+vivent désormais **dans cette app** :
+
+- `pages/api/*.js` — les 12 fonctions (mêmes handlers `(req, res)` qu'avant),
+- `server/*.js` — leur socle partagé (`grant` = init Firebase Admin, `access`,
+  `http`, `sellers`, `sources`).
+
+Plus de proxy externe : l'API est **same-origin**. `next.config.mjs` conserve le
+lien court **`/s`** (aperçu Open Graph + redirection + comptage parrainage) et
+**redirige les anciennes URLs `.html`** du site statique vers les routes React —
+donc **tous les liens déjà partagés** (`/s?…`, pages) continuent de fonctionner.
+
+Les **secrets serveur** (compte de service Firebase Admin, WhatsApp, Cloudinary,
+`SITE_URL`…) sont des **variables d'environnement du projet Vercel** (voir
+`.env.example`), jamais commitées.
 
 ## Démarrer
 
