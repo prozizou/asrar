@@ -1,287 +1,135 @@
-# ASRAR PRO — Hub ésotérique (Firebase + Vercel, activation WhatsApp)
+# ASRAR PRO — Pilote Next.js / React
 
-Site **statique** (HTML/CSS/JS, **sans bundler**) servi par **Vercel**, avec des
-**fonctions serverless** (`/api`) qui protègent le contenu payant. Authentification
-et base de données via **Firebase** (Google Sign-In + Realtime Database).
+App **parallèle** qui migre progressivement les modules vers Next.js (App
+Router) + React, **sans toucher** au site statique existant à la racine du
+dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
+Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
+l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
+*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*, *Don de secret*,
+*Abajad*, *Parrainage*, *Combinaisons*, *Planète*, *Rouwhanes*, *Géomancie*,
+*Al Qalam*. **La migration est complète** : les 17 rubriques du site statique
+sont désormais des routes React sous `app/`, et le **tableau de bord d'accueil**
+relie le tout en navigation SPA instantanée — plus aucun renvoi vers le site
+statique.
 
-**L'activation des accès se fait manuellement, hors ligne, via WhatsApp** — il n'y a
-plus de paiement en ligne intégré. L'utilisateur choisit une offre, envoie sa demande
-sur WhatsApp, et l'administration active l'accès dans Firebase.
+## Ce que le pilote démontre
 
-> Langue de travail : français. Devise affichée : FCFA (XOF). Version : `3.1.0`.
+| Avant (site statique) | Après (ce pilote) |
+|---|---|
+| Chaque page recharge Firebase, `theme.js`, `share.js`, `firebase-config.js`… dans son `<head>` (×17) | **Une seule coquille** (`components/Providers`) : auth, accès, thème montés une fois |
+| Auth via `requireAuth()` + redirection en dur | Contexte `useAuth()` + écran de connexion Google intégré |
+| Paywall : cache global `_accessStatus` + injection DOM du portail | `useAccess()` + `<SubscriptionGate>` piloté par l'état |
+| Likes/commentaires : `ref.on(...)` + nettoyage manuel des écouteurs | Hook `useSecretRealtime()` (attache/détache via `useEffect`) |
+| Vues liste/détail masquées via `style.display` | Rendu conditionnel React |
+| `innerHTML` + `escapeHtml` partout | JSX (`<MixedText>`), plus d'injection HTML |
+| Navigation = rechargement complet | Navigation SPA instantanée (`next/link`) |
 
----
-
-## 1. Vue d'ensemble
-
-ASRAR PRO est un **hub multi-modules** installable en PWA. Chaque module est une page
-(ou un sous-dossier) qui réutilise le même socle d'authentification Google et la même
-barrière d'accès serveur.
-
-Le **contenu premium** (secrets mystiques, bibliothèque, géomancie, rouwhanes…) est
-réservé aux comptes ayant un **accès actif**. Cet accès est accordé à la main par
-l'administration après réception d'une demande WhatsApp.
-
-Trois « portes » distinctes coexistent :
-
-| Porte | Quoi | Comment | Nœud Firebase |
-|---|---|---|---|
-| **Abonnement contenu** | Accès au premium du hub | Demande WhatsApp → activation admin | `purchased_user/{cléEmail}` ou `allowedUsers/{cléEmail}` |
-| **Boutique (vendeur)** | Droit de vendre sur le Marché | Demande WhatsApp → activation admin | `sellers/{uid}` |
-| **Marché (produit)** | Voir/acheter un produit | Auth seule (pas d'abonnement) — contact vendeur | `det_produits/{key}` |
-
----
-
-## 2. Arborescence réelle
+## Architecture
 
 ```
-.
-├── index.html                  # Accueil public / connexion Google
-├── auth/auth.html              # Page d'authentification
-├── accueil/accueil.html        # Tableau de bord (+ bloc parrainage)
-│
-├── asrar/                      # Secrets Mystiques (contenu payant : champ "sirr")
-├── bibliotheque/              # Almaqtab (livres ; champ payant : "pdf"/"pdfUrl" + likes/commentaires)
-├── marche/                    # Marché Mystique (produits + panier ; contact vendeur)
-├── boutique/                  # Ma Boutique (gestion vendeur : boutique + produits)
-├── geomancie/tourab.html      # Tourab (géomancie ; réservée aux abonnés)
-├── planete/planete.html       # Heures planétaires
-├── chiffre/chiffre.html       # Numérologie / Abjad / Istihraj
-├── abajad/abajad.html         # Comparateur Abjad
-├── combinaisons/              # 99 Noms d'Allah — combinaisons par poids mystique
-├── alqalam/                   # Sous-app de calligraphie (modules ES ; même app Firebase compat)
-├── parrainage/                # Parrainage : lien personnel, points, 3 mois offerts
-│
-├── Benefits/                  # « Asma ul-Husna » — 99 Noms d'Allah + compteur de tasbih
-│   ├── index.html, app.js, domManager.js
-│   ├── abjad.js               # table abjad maghrébine
-│   ├── tasbihLogic.js, audio.js
-│   ├── access.js              # contrôle d'accès (SDK modulaire, réplique la logique du hub)
-│   ├── firebase-init.js, firebase.js, firebase-config
-│   ├── manifest.json, sw.js, style.css
-│
-├── rouwhania/                 # « Rouwhanes » — calculateur réservé aux abonnés
-│   ├── index.html, script.js, style.css
-│   └── access.js              # intercepte « Calculer » : gate d'accès si non abonné
-│
-├── css/style.css              # Styles globaux du hub
-├── js/
-│   ├── firebase-config.js     # Init Firebase (SDK compat) + auth + gate d'accès + WhatsApp
-│   ├── api-content.js         # apiPost() : appel /api avec idToken injecté
-│   ├── whatsapp.js            # Construit le message et ouvre /api/wa (remplace PayDunya)
-│   ├── share.js               # Liens partageables (/s) + Web Share + parrainage
-│   ├── main.js                # Utilitaires partagés (calculs astronomiques, etc.)
-│   ├── theme.js               # Bascule clair/sombre globale, persistée
-│   ├── loader.js              # Loader plein écran entre les pages
-│   └── nav.js                 # Bouton « retour » → accueil depuis une section
-│
-├── api/                        # Fonctions Vercel (Node 18+) — un fichier = un endpoint
-│   ├── list-content.js        # Métadonnées d'une liste (sans champ payant) — auth requise
-│   ├── get-content.js         # 1 élément complet — RÉSERVÉ AUX ABONNÉS (sauf Marché)
-│   ├── get-theme.js           # Données géomancie — RÉSERVÉ AUX ABONNÉS
-│   ├── shop.js                # Boutique vendeur (me / save-shop / save-product / delete-product)
-│   ├── cloudinary-sign.js     # Signature d'upload Cloudinary (secret côté serveur)
-│   ├── book-social.js         # Likes & commentaires des livres (counts / list / like / comment)
-│   ├── referral.js            # Parrainage (me / claim / redeem) + crédit des points
-│   ├── share.js               # /s → aperçu Open Graph + redirection vers l'élément
-│   ├── track.js               # Journalisation visites / activité / géomancie (lu par l'admin)
-│   ├── wa.js                  # Redirection 302 vers WhatsApp (numéro côté serveur)
-│   ├── admin.js               # Back-office (super-admin) : stats, CRUD, grant/revoke, sellers…
-│   └── _lib/
-│       ├── access.js          # verifyUser() + hasActiveAccess() + isAdmin() (la vraie barrière)
-│       ├── grant.js           # Init Firebase Admin partagée (app())
-│       ├── sellers.js         # Statut vendeur : sellers/{uid} + boutiques "profil"
-│       ├── sources.js         # Liste blanche des nœuds + champs sensibles
-│       └── http.js            # CORS + parsing du body
-│
-├── rules/purchases.rules.json # Règles RTDB à FUSIONNER (voir rules/README.md)
-├── assets/                    # Jeu d'icônes complet (192/512, maskable, apple-touch, favicon, logos)
-├── sw.js                      # Service Worker RACINE (scope "/") — contrôle tout le site
-├── pwa.js                     # Contrôleur PWA (enregistre le SW, MAJ sur place, invite d'installation)
-├── manifest.json              # Manifest PWA (icônes + raccourcis Noms / Rouwhanes / Secret)
-├── package.json               # dépendance : firebase-admin ^12.7.0
-├── vercel.json                # maxDuration des fonctions + réécriture /s → /api/share
-└── … docs (voir §10)
+next-app/
+├─ app/
+│  ├─ layout.js         Coquille racine + init thème anti-FOUC
+│  ├─ globals.css       Feuille partagée (copie de css/style.css) + styles composants
+│  ├─ page.js           Tableau de bord (accueil) — menus groupés, liens SPA
+│  ├─ don/             MODULE MIGRÉ — Don de secret (formulaire → /api/don)
+│  │  └─ page.js
+│  ├─ abajad/          MODULE MIGRÉ — Calculateur Abjad ésotérique
+│  │  └─ page.js        Calcul temps réel, zodiaque, facteurs (logique → lib/abjad)
+│  ├─ parrainage/      MODULE MIGRÉ — Parrainage (points, lien, conversion)
+│  │  └─ page.js
+│  ├─ combinaisons/    MODULE MIGRÉ — Combinaisons des 99 Noms par poids Abjad
+│  │  └─ page.js        Recherche (backtracking + élagage), filtre, pagination,
+│  │                    calculatrice, restauration (logique → lib/combinaisons)
+│  ├─ planete/         MODULE MIGRÉ — Horloge & heures planétaires chaldéennes
+│  │  └─ page.js        GPS + horloge 1 s + soleil NOAA hors-ligne (→ lib/planete)
+│  ├─ rouwhania/       MODULE MIGRÉ — Rouwhanes (noms des anges + noms d'Allah)
+│  │  └─ page.js        Poids Abjad (3 méthodes), génération, vœu (→ lib/rouwhania)
+│  ├─ geomancie/       MODULE MIGRÉ — Écu géomantique (Tourab)
+│  │  └─ page.js        4 Mères → 16 Maisons, بزدح, juge, synthèse, modale
+│  │                    d'interprétation (logique → lib/geomancie)
+│  ├─ alqalam/         MODULE MIGRÉ — Al-Qalam (calligraphie)
+│  │  └─ page.js        Aperçu coloré live, mode Rasm, intercalation, cumul,
+│  │                    export Word .docx (logique → lib/alqalam)
+│  ├─ asrar/            MODULE MIGRÉ — Secrets
+│  │  ├─ page.js        Liste par catégorie + orchestration
+│  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
+│  │  ├─ CommentSheet.js  Bottom-sheet commentaires
+│  │  └─ asrar.css      Styles du module (copie de asrar/asrar.css)
+│  ├─ marche/           MODULE MIGRÉ — Marché
+│  │  ├─ page.js        Produits, vendeurs, filtres/recherche, tri popularité
+│  │  ├─ ProductModal.js  Modale produit (galerie, social, commande WhatsApp)
+│  │  ├─ VendorShop.js    Vue boutique d'un vendeur
+│  │  └─ marche.css     Styles du module (copie de marche/marche.css)
+│  ├─ boutique/         MODULE MIGRÉ — Ma Boutique (espace vendeur)
+│  │  ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
+│  │  ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
+│  │  └─ boutique.css   Styles du module (copie de boutique/boutique.css)
+│  ├─ benefits/         MODULE MIGRÉ — 99 Noms d'Allah
+│  │  ├─ page.js        Chargement, recherche/suggestions, favoris, modale
+│  │  ├─ NameCard.js      Carte (verrouillée / complète)
+│  │  ├─ NameModal.js     Modale d'un nom
+│  │  ├─ WafqSquares.js   Carrés magiques (awfaq 3×3 / 3×3 vide / 4×4)
+│  │  ├─ Tasbih.js        Compteur de dhikr (UI)
+│  │  └─ benefits.css   Styles du module (copie de Benefits/style.css)
+│  └─ bibliotheque/     MODULE MIGRÉ — Bibliothèque Almaqtab
+│     ├─ page.js        Grille de livres, social, ouverture PDF, partage
+│     ├─ CommentModal.js  Modale commentaires
+│     └─ bibliotheque.css Styles (extraits des <style> inline du HTML)
+├─ components/          Coquille partagée réutilisable
+│  ├─ Providers.js      Auth + Accès + Thème
+│  ├─ AuthProvider.js   useAuth() + connexion Google
+│  ├─ AccessProvider.js useAccess() + portail d'abonnement
+│  ├─ SubscriptionGate.js
+│  ├─ ThemeToggle.js
+│  ├─ MixedText.js      Rendu FR/arabe en segments
+│  ├─ useSecretRealtime.js  Likes & commentaires temps réel (secrets)
+│  ├─ useProductSocial.js   Likes & commentaires temps réel (produits)
+│  ├─ useToast.js       Toast léger piloté par l'état
+│  └─ useTasbih.js      Compteur de dhikr (séries, progression, localStorage)
+└─ lib/                 Logique non-UI (portée 1:1 du js/ existant)
+   ├─ firebase.js  api.js  access.js  share.js  whatsapp.js  format.js  pdf.js
+   ├─ market.js    Utilitaires Marché (vendeurs, prix, popularité)
+   ├─ cloudinary.js  Upload d'images via signature serveur
+   ├─ benefits.js  Chargement des 99 Noms (cache → API → RTDB → fallback)
+   ├─ abjad.js     Poids abjad, carrés magiques, ordre élémentaire
+   └─ audio.js     Sons synthétisés (grain, objectif) + prononciation
 ```
 
----
+## Backend intégré (app unifiée)
 
-## 3. Modèle d'accès & d'activation
+Les fonctions serverless (`/api/*` : paywall, likes, partage, parrainage, thème…)
+vivent désormais **dans cette app** :
 
-### La barrière réelle est côté serveur
+- `pages/api/*.js` — les 12 fonctions (mêmes handlers `(req, res)` qu'avant),
+- `server/*.js` — leur socle partagé (`grant` = init Firebase Admin, `access`,
+  `http`, `sellers`, `sources`).
 
-`api/_lib/access.js → hasActiveAccess()` est la **seule** vraie barrière. Un utilisateur
-a accès s'il est, dans l'ordre :
+Plus de proxy externe : l'API est **same-origin**. `next.config.mjs` conserve le
+lien court **`/s`** (aperçu Open Graph + redirection + comptage parrainage) et
+**redirige les anciennes URLs `.html`** du site statique vers les routes React —
+donc **tous les liens déjà partagés** (`/s?…`, pages) continuent de fonctionner.
 
-1. **super-admin** (`SUPER_ADMIN_EMAIL`, défaut `prozizou298@gmail.com`) ;
-2. **admin** : `admins/{cléEmail} === true` ;
-3. **VIP** : `vip_users/{uid}` existe ;
-4. **accès activé** : `purchased_user/{cléEmail}.token` présent **et** non expiré
-   (`expiresAt` : `"lifetime"`, nombre futur, ou absent = compat) ;
-5. **grant manuel** : `allowedUsers/{cléEmail}` = `true` ou timestamp futur.
+Les **secrets serveur** (compte de service Firebase Admin, WhatsApp, Cloudinary,
+`SITE_URL`…) sont des **variables d'environnement du projet Vercel** (voir
+`.env.example`), jamais commitées.
 
-`cléEmail` = e-mail avec les points remplacés par des virgules (`.` → `,`), **partout**
-(client, `access.js`, règles RTDB).
+## Démarrer
 
-### Activation via WhatsApp (le vrai flux)
-
-1. L'utilisateur ouvre le **portail d'offres** (au clic sur un élément protégé, via
-   `showSubscriptionGate()`). Le portail affiche 3 formules de contenu :
-   **3 Mois — 15 000**, **6 Mois — 25 000**, **1 An — 45 000** (marquée « Populaire »).
-2. `startSubscription(planId)` appelle `window.ASRAR_WA.openAccess(...)`, qui construit
-   un message et ouvre **`/api/wa`**. La fonction `wa.js` lit le numéro dans la variable
-   d'environnement **`WHATSAPP_NUMBER`** (jamais en clair dans le code) et redirige (302)
-   vers `wa.me/<numéro>` avec le message pré-rempli.
-3. Après contact/règlement hors ligne, **l'administration active l'accès** :
-   `api/admin.js → grant-access` (écrit `purchased_user` / `allowedUsers`) ou directement
-   la console Firebase.
-
-> **Boutique / vendeur** : même principe. L'admin écrit `sellers/{uid}` (via
-> `admin.js → seller-action`). Un vendeur actif gère ensuite sa boutique et ses produits
-> via `/api/shop`. Statut vérifié par `_lib/sellers.js`.
-
-### Contenu verrouillé au niveau des règles
-
-Le contenu payant (`db_sirr_*`, `almaqtab`, `det_produits`, `theme_fondamental`) est en
-**lecture serveur uniquement** dans les règles RTDB : le navigateur ne peut pas le lire
-directement. Il transite par `list-content` (aperçu, auth seule) et
-`get-content` / `get-theme` (complet, accès vérifié). La liste blanche `_lib/sources.js`
-interdit toute demande de chemin Firebase arbitraire.
-
----
-
-## 4. Référence des endpoints (`/api`)
-
-`api/<nom>.js` → `POST /api/<nom>`. Toutes les routes (sauf `wa`) exigent un `idToken`
-Firebase valide dans le corps JSON ; l'identité vient du jeton vérifié serveur
-(`verifyUser`), jamais du corps. Détail complet : `api/README.md`.
-
-**Contenu (paywall)**
-- `list-content` `{ idToken, kind, cat? }` — aperçu, champs sensibles retirés. `kind` ∈ `secret | book | product | verset | asma`.
-- `get-content` `{ idToken, kind, cat?, key }` — élément complet, réservé aux abonnés (sauf sources `authOnly`).
-- `get-theme` `{ idToken }` — tableau géomancie `theme_fondamental` (abonnés).
-
-**Boutique / Marché**
-- `shop` `{ idToken, action, … }` — `me | save-shop | save-product | delete-product`. Écrit dans `det_produits`, réservé au vendeur actif et à SES produits.
-- `cloudinary-sign` `{ idToken, folder? }` — signature d'upload Cloudinary (le secret reste serveur).
-
-**Social & télémétrie**
-- `book-social` `{ idToken, action, bookKey?, keys?, text? }` — `counts | list | like | comment`.
-- `track` `{ idToken, type, page?, lat?, lng?, city? }` — visites / activité / géomancie (renvoie toujours 200).
-
-**Partage & parrainage**
-- `share` (via réécriture `/s`) — page d'aperçu Open Graph + redirection ; compte le clic.
-- `referral` `{ idToken, action, code? }` — `me | claim | redeem`.
-
-**WhatsApp**
-- `wa` `GET|POST` — redirection 302 vers WhatsApp (numéro lu dans `WHATSAPP_NUMBER`).
-
-**Administration (super-admin / admin)**
-- `admin` `{ idToken, action, … }` — `stats`, `list-secrets`, `delete-secret`, `list-books`, `delete-book`, `list-products`, `delete-product`, `list-sellers`, `seller-action`, `list-orders`, `list-activity`, `list-geomancie`, `grant-access`, `revoke-access`, `list-access`.
-
-> **Sources de contenu** (`_lib/sources.js`) : `secret` → `db_sirr_<cat>` (cats :
-> `deblocage`, `domptage`, `ilham`, `protection`, `ouverture`) · `book` → `almaqtab`
-> (champs masqués `pdf`/`pdfUrl`) · `product` → `det_produits` (`authOnly`) ·
-> `verset` → `versetRef` · `asma` → `data/appData/asmaUlHusna`.
-
----
-
-## 5. Pattern d'une page du hub
-
-Chaque page charge le socle **dans cet ordre** (scripts classiques), puis sa logique :
-
-```html
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="../js/firebase-config.js"></script>   <!-- auth + gate + WhatsApp -->
-<script src="../js/api-content.js"></script>       <!-- apiPost() -->
-<!-- … puis whatsapp.js, theme.js, loader.js, nav.js, pwa.js selon la page … -->
+```bash
+cd next-app
+npm install
+cp .env.example .env.local   # ajuster NEXT_PUBLIC_API_BASE au besoin
+npm run dev                  # http://localhost:3000
 ```
 
-`firebase-config.js` expose en global : `requireAuth`, `requireAccess`, `ensureAccess`,
-`checkAccess`, `startSubscription`, `showSubscriptionGate`, `invalidateAccessCache`,
-`getRoot`, `signOut`. `api-content.js` expose `apiPost()`, qui injecte automatiquement
-l'`idToken` Firebase. **Al-Qalam** et **Benefits** réutilisent la même app Firebase
-(Benefits en SDK modulaire via `firebase-init.js`).
+Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
+**Secrets Mystiques** ou **Marché Mystique**.
 
----
+## Migration terminée
 
-## 6. Déploiement (Vercel)
-
-1. Pousser le dépôt sur Vercel (ou `vercel --prod`). Front **100 % statique, aucun build**.
-2. `/api` est routé automatiquement (un fichier = un endpoint).
-3. Renseigner les **variables d'environnement** (§7) dans *Settings → Environment Variables*.
-4. **Fusionner** les règles RTDB : voir `rules/README.md`.
-5. Côté Firebase : activer **Google** comme fournisseur d'auth et autoriser le domaine de
-   production dans *Authentication → Settings → Authorized domains*.
-
----
-
-## 7. Variables d'environnement
-
-**WhatsApp (activation)**
-- `WHATSAPP_NUMBER` — numéro au format international, sans `+` ni espaces (ex. `221771234567`). Lu par `api/wa.js`. **Requis** pour le portail d'accès. Voir `DEPLOIEMENT_WHATSAPP.md`.
-
-**Firebase Admin (serveur)**
-- `FIREBASE_SERVICE_ACCOUNT` — JSON **brut** OU base64 du compte de service.
-- `FIREBASE_DB_URL` — URL de la Realtime Database.
-
-**Accès / administration**
-- `SUPER_ADMIN_EMAIL` — e-mail super-admin (défaut codé dans `access.js`).
-
-**Uploads (boutique)**
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — pour `cloudinary-sign.js`.
-
-**Site**
-- `SITE_URL` — URL de production (utilisée pour le CORS et les liens de partage). À défaut, l'origine de la requête est utilisée.
-
-> ⚠️ Le **compte de service** ne doit JAMAIS être commité ni collé en clair. En cas de
-> fuite, le révoquer et le régénérer immédiatement dans la console Firebase.
-
-> Les variables `PAYDUNYA_*` / `STORE_*` ne sont **plus** nécessaires : le paiement en
-> ligne a été retiré (voir §9).
-
----
-
-## 8. Partage & parrainage
-
-Chaque élément a un lien court **`/s?k=<type>&c=<cat>&i=<clé>&r=<code>`** (réécrit vers
-`api/share.js`) : aperçu Open Graph pour WhatsApp / Facebook / TikTok / Telegram, puis
-redirection vers la page du hub. La page d'aperçu est **publique** mais n'expose que le
-titre + l'image (le paywall reste intact).
-
-Le **parrainage** (`api/referral.js`, `/parrainage/`) crédite **10 points** par **nouveau
-compte** inscrit depuis le lien (jamais au simple clic : falsifiable) ; **1000 points =
-3 mois d'abonnement** (`sub_3m`, 90 jours). Anti-triche : 1 crédit par filleul,
-auto-parrainage refusé, comptes trop anciens refusés. Détails : `PARTAGE_ET_PARRAINAGE.md`.
-
----
-
-## 9. Note sur PayDunya (héritage retiré)
-
-Le projet utilisait auparavant un paiement en ligne PayDunya. **Ce flux a été remplacé
-par l'activation manuelle via WhatsApp.** Les fichiers du flux PayDunya
-(`js/paydunya-client.js`, `api/_lib/paydunya.js`, `api/_lib/orders.js`, `api/_lib/plans.js`)
-ainsi que les endpoints `create-invoice`, `create-order`, `confirm-invoice` et
-`paydunya-ipn` **ont été supprimés**. Le catalogue prix/durée est aujourd'hui rappelé
-dans `js/whatsapp.js` et le portail d'offres.
-
----
-
-## 10. PWA & sécurité
-
-- **PWA** : service worker racine `sw.js` (scope `/`, contrôle hub + Benefits + Rouwhania + sous-apps), contrôleur `pwa.js` (mise à jour sur place + invite d'installation). Manifest avec raccourcis Noms / Rouwhanes / Secret.
-- **Sécurité** : identité toujours dérivée du jeton Firebase vérifié serveur ; contenu payant inaccessible au client (règles RTDB `.read:false`) ; liste blanche des nœuds ; secrets (Firebase Admin, Cloudinary, numéro WhatsApp) uniquement côté serveur.
-
----
-
-## 11. Pour aller plus loin
-- `CHANGELOG.md` — historique des sessions (dernière : liens partageables & parrainage).
-- `api/README.md` — référence des endpoints.
-- `rules/README.md` — fusion des règles RTDB.
-- `DEPLOIEMENT_WHATSAPP.md` — configuration du numéro WhatsApp.
-- `INTEGRATION_PAIEMENT.md` — flux d'authentification et d'accès.
-- `PARTAGE_ET_PARRAINAGE.md` — liens partageables & programme de parrainage.
-- `REVUE.md` — revue technique (asrar / marché / planète / chiffre).
-- `boutique/README.md`, `marche/README.md`, `alqalam/README.md` — notes par module.
+Tous les modules du site statique ont été portés sous `app/` en réutilisant la
+coquille partagée. Le site statique historique n'est plus nécessaire à la
+navigation ; il peut rester en ligne comme repli le temps de valider la bascule
+en production. Chaque module garde sa **logique pure dans `lib/`** (testable
+hors UI) et ses **styles scopés** pour éviter toute fuite entre pages.
