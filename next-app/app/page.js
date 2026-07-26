@@ -34,7 +34,7 @@ const GROUPS = [
   },
   {
     title: 'Géomancie',
-    items: [{ icon: '🪨', label: 'Tourab', href: `${STATIC_BASE}/geomancie/tourab.html`, external: true }],
+    items: [{ icon: '🪨', label: 'Tourab', href: '/geomancie' }],
   },
 ];
 
