@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
+import { optimImg } from '@/lib/img';
 import SecretDetail from './SecretDetail';
 
 const CATS = [
@@ -157,7 +158,7 @@ export default function AsrarPage() {
                         {item.img ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={item.img}
+                            src={optimImg(item.img, 400)}
                             alt=""
                             loading="lazy"
                             decoding="async"

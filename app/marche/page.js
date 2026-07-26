@@ -15,6 +15,7 @@ import { db, auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
+import { optimImg } from '@/lib/img';
 import ProductModal from './ProductModal';
 import VendorShop from './VendorShop';
 
@@ -221,7 +222,7 @@ export default function MarchePage() {
                         {v.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={v.avatar}
+                            src={optimImg(v.avatar, 120)}
                             alt=""
                             loading="lazy"
                             decoding="async"
@@ -289,9 +290,10 @@ export default function MarchePage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         className="prod-img"
-                        src={p.Image}
+                        src={optimImg(p.Image, 400)}
                         alt={p.produit || ''}
                         loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.outerHTML = '<div class="prod-img-placeholder">🔮</div>';
                         }}
@@ -312,8 +314,10 @@ export default function MarchePage() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               className="prod-vendor-avatar"
-                              src={vendor.avatar}
+                              src={optimImg(vendor.avatar, 80)}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => (e.currentTarget.style.display = 'none')}
                             />
                           )}

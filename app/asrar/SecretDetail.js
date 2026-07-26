@@ -8,6 +8,7 @@ import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, toast } from '@/lib/share';
+import { optimImg } from '@/lib/img';
 import { downloadSecretPdf, PDF_MIN_LEVEL } from '@/lib/pdf';
 
 export default function SecretDetail({ secret, onBack }) {
@@ -82,7 +83,7 @@ export default function SecretDetail({ secret, onBack }) {
         {img && (
           <div className="detail-img-wrap" onClick={() => setFullscreen(true)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img} alt={data.faida || ''} />
+            <img src={optimImg(img, 800)} alt={data.faida || ''} decoding="async" />
           </div>
         )}
         <MixedText className="detail-title" text={data.faida || ''} />
@@ -123,7 +124,7 @@ export default function SecretDetail({ secret, onBack }) {
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt="" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
+          <img src={optimImg(img)} alt="" decoding="async" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
         </div>
       )}
     </div>

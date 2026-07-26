@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, deepLink, cleanUrl } from '@/lib/share';
+import { optimImg } from '@/lib/img';
 import CommentModal from './CommentModal';
 
 export default function BibliothequePage() {
@@ -168,9 +169,10 @@ export default function BibliothequePage() {
                   {book.img ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={book.img}
+                      src={optimImg(book.img, 300)}
                       alt={book.text}
                       loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.parentElement.innerHTML = '📖';
                       }}
