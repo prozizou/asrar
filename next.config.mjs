@@ -28,6 +28,38 @@ const LEGACY = [
 
 const nextConfig = {
   reactStrictMode: true,
+
+  // --- Minification / poids des bundles ---
+  // swcMinify (JS/CSS) est actif par défaut sur Next 14 ; on ajoute :
+  compress: true, // compression gzip/brotli des réponses servies par Next.
+  productionBrowserSourceMaps: false, // pas de source maps publiques en prod (bundle plus léger).
+  compiler: {
+    // On retire les console.* en production (sauf error/warn) → moins de JS livré.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+
+  // --- Images : formats modernes (WebP/AVIF) pour <Image> et hôtes distants autorisés ---
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 jours de cache pour l'optimiseur d'images.
+  },
+
+  async headers() {
+    return [
+      // Assets versionnés Next : immuables → cache navigateur d'un an.
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      // Assets statiques de l'app (logos, icônes) : cache long + revalidation.
+      {
+        source: '/assets/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' }],
+      },
+    ];
+  },
+
   async rewrites() {
     return [
       // Lien court de partage : /s?k=…&i=…&r=… → fonction api/share (OG + redirect).

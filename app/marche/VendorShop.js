@@ -1,6 +1,7 @@
 'use client';
 // Vue boutique d'un vendeur — port d'openVendorShop().
 import { formatPrice } from '@/lib/market';
+import { optimImg } from '@/lib/img';
 
 export default function VendorShop({ vendor, products, onBack, onOpenProduct }) {
   return (
@@ -26,8 +27,10 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
           {vendor.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={vendor.avatar}
+              src={optimImg(vendor.avatar, 200)}
               alt=""
+              loading="lazy"
+              decoding="async"
               style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />
@@ -53,9 +56,10 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 className="prod-img"
-                src={p.Image}
+                src={optimImg(p.Image, 400)}
                 alt={p.produit || ''}
                 loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.outerHTML = '<div class="prod-img-placeholder">🔮</div>';
                 }}

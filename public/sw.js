@@ -6,13 +6,32 @@
 //   • Navigations (pages) → NETWORK-FIRST : on tente le réseau (dernière version),
 //     repli sur le cache si hors-ligne. → pas de page figée en ligne.
 //   • Assets versionnés (/_next/static/*, /assets/*) → CACHE-FIRST (immuables).
+//   • Images distantes Cloudinary → STALE-WHILE-REVALIDATE : on sert l'image
+//     depuis le cache immédiatement (pas de re-téléchargement) tout en la
+//     rafraîchissant en arrière-plan. Cache borné (IMG_MAX) → on garde les
+//     dernières images sans faire grossir le stockage indéfiniment.
 //   • /api/*, /s, Firebase/Google et APIs tierces → JAMAIS mis en cache.
 //
 // Mise à jour : incrémenter SW_VERSION à chaque changement de stratégie de cache.
 // skipWaiting + clients.claim → le nouveau SW prend la main immédiatement.
 
-const SW_VERSION = 'v1';
+const SW_VERSION = 'v2';
 const CACHE = 'asrar-pwa-' + SW_VERSION;
+const IMG_CACHE = 'asrar-img-' + SW_VERSION; // cache dédié aux images distantes.
+const IMG_MAX = 60; // nombre d'images conservées (LRU approximatif).
+
+// Image hébergée sur Cloudinary (cross-origin) → éligible au cache images.
+function isCloudinaryImage(url) {
+  return /(^|\.)res\.cloudinary\.com$/.test(url.hostname);
+}
+
+// Limite la taille d'un cache : supprime les entrées les plus anciennes (FIFO).
+async function trimCache(cacheName, max) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length <= max) return;
+  for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+}
 
 // Coquille minimale précachée (tolérante : un manquant ne casse pas l'install).
 const CORE = [
@@ -54,7 +73,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null))))
+      .then((keys) =>
+        Promise.all(keys.map((k) => (k !== CACHE && k !== IMG_CACHE ? caches.delete(k) : null)))
+      )
       .then(() => self.clients.claim())
   );
 });
@@ -69,6 +90,28 @@ self.addEventListener('fetch', (event) => {
   } catch {
     return;
   }
+  // Images Cloudinary (cross-origin) → stale-while-revalidate dans un cache borné.
+  if (isCloudinaryImage(url)) {
+    event.respondWith(
+      caches.open(IMG_CACHE).then((cache) =>
+        cache.match(req).then((cached) => {
+          const network = fetch(req)
+            .then((res) => {
+              // On ne met en cache que les réponses exploitables (200 ou opaques).
+              if (res && (res.ok || res.type === 'opaque')) {
+                cache.put(req, res.clone());
+                trimCache(IMG_CACHE, IMG_MAX);
+              }
+              return res;
+            })
+            .catch(() => cached); // hors-ligne → on garde la version en cache.
+          return cached || network; // cache d'abord (rapide), sinon réseau.
+        })
+      )
+    );
+    return;
+  }
+
   if (url.origin !== self.location.origin) return; // cross-origin → laisser passer
   if (isBypassed(url)) return;
 

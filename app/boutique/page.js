@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
+import { optimImg } from '@/lib/img';
 import { openAccess } from '@/lib/whatsapp';
 import { useToast } from '@/components/useToast';
 import ProductForm from './ProductForm';
@@ -210,7 +211,7 @@ export default function BoutiquePage() {
                     <div className="bq-prod-img">
                       {p.Image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.Image} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.parentElement.innerHTML = '🔮')} />
+                        <img src={optimImg(p.Image, 300)} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.parentElement.innerHTML = '🔮')} />
                       ) : (
                         '🔮'
                       )}

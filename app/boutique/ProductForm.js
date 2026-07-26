@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
+import { optimImg } from '@/lib/img';
 
 const MAX_IMAGES = 5;
 const MIN_IMAGES = 2;
@@ -199,7 +200,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
                 images.map((im, i) => (
                   <div key={i} className="bq-image-item">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={im.url} alt="" />
+                    <img src={optimImg(im.url, 200)} alt="" loading="lazy" decoding="async" />
                     <button type="button" onClick={() => removeImage(i)} aria-label="Retirer">
                       ✕
                     </button>

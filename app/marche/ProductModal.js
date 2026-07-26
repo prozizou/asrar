@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { formatPrice } from '@/lib/market';
+import { optimImg } from '@/lib/img';
 import { share as shareLink } from '@/lib/share';
 import { useProductSocial } from '@/components/useProductSocial';
 
@@ -81,7 +82,7 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
 
         {mainImg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="modal-img" src={mainImg} alt={product.produit || ''} onError={(e) => (e.currentTarget.style.display = 'none')} />
+          <img className="modal-img" src={optimImg(mainImg, 800)} alt={product.produit || ''} decoding="async" onError={(e) => (e.currentTarget.style.display = 'none')} />
         )}
 
         {galerie.length > 1 && (
@@ -90,9 +91,11 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={i}
-                src={url}
+                src={optimImg(url, 150)}
                 className={'m-thumb' + (url === mainImg ? ' active' : '')}
                 alt={'Vue ' + (i + 1)}
+                loading="lazy"
+                decoding="async"
                 onClick={() => setMainImg(url)}
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
@@ -109,7 +112,7 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
           <div className="vendor-block" style={{ display: 'flex' }}>
             {vendor.avatar && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="vendor-block-avatar" src={vendor.avatar} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              <img className="vendor-block-avatar" src={optimImg(vendor.avatar, 120)} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.style.display = 'none')} />
             )}
             <div className="vendor-block-info">
               <div className="vendor-block-name">
