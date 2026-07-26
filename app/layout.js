@@ -1,14 +1,28 @@
 import './globals.css';
 import Providers from '@/components/Providers';
+import PwaGate from '@/components/PwaGate';
 
 export const metadata = {
   title: 'ASRAR PRO',
-  description: "Les noms d'Allah & géométrie mystique — pilote Next.js",
+  description: "Les noms d'Allah, numérologie abjad, heures planétaires, géomancie, Rouwhanes et bibliothèque mystique.",
+  manifest: '/manifest.json',
+  applicationName: 'ASRAR PRO',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ASRAR PRO',
+  },
+  icons: {
+    icon: '/assets/favicon.png',
+    apple: '/assets/apple-touch-icon.png',
+  },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#1a1712',
 };
 
 // Anti-FOUC : pose data-theme sur <html> AVANT le premier rendu (comme le
@@ -22,7 +36,9 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <PwaGate>
+          <Providers>{children}</Providers>
+        </PwaGate>
       </body>
     </html>
   );
