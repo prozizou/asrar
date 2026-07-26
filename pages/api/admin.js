@@ -19,7 +19,7 @@ const { setCors, parseBody, safeUrl } = require("../../server/http");
 
 const DAY_MS = 86400000;
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
