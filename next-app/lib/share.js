@@ -46,7 +46,7 @@ function cleanCode(c) {
   return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
 }
 
-async function post(action, extra) {
+export async function post(action, extra) {
   const u = auth.currentUser;
   if (!u) throw new Error('Non connecté.');
   const t = await u.getIdToken();
@@ -115,7 +115,7 @@ export function toast(msg) {
   setTimeout(() => el.remove(), 3100);
 }
 
-function copy(url) {
+export function copy(url) {
   const done = () => toast('🔗 Lien copié : ' + url);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(url).then(done).catch(() => prompt('Copiez le lien :', url));

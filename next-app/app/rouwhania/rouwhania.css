@@ -1,0 +1,335 @@
+/* Module Rouwhanes — styles portés de rouwhania/style.css.
+   Scopé sous .rw-page : le module définit ses propres tokens (dont --glass-bg /
+   --glass-border / --glass-shadow, qui portent les mêmes noms que les tokens
+   globaux) et emploie des classes génériques — le scoping évite toute fuite. */
+
+.rw-page {
+  --bg-gradient-start: #0f2027;
+  --bg-gradient-end: #2c5364;
+  --glass-bg: rgba(30, 30, 50, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --text-primary: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --btn-primary: #4facfe;
+  --btn-disabled: #aaa;
+  --result-bg: rgba(255, 255, 255, 0.08);
+  --stat-bg: rgba(255, 255, 255, 0.1);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --card-bg: #2c2c3a;
+  --card-border: #4facfe;
+  --card-title: #4facfe;
+  --card-text: #ecf0f1;
+  --card-accent: #3a3a4a;
+  --card-green-bg: #2e4a3a;
+  --card-green-text: #2ecc71;
+
+  color: var(--text-primary);
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+html[data-theme='light'] .rw-page {
+  --bg-gradient-start: #eef3f7;
+  --bg-gradient-end: #cdd8e0;
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --text-primary: #2d3436;
+  --text-secondary: #636e72;
+  --btn-primary: #1f77c9;
+  --btn-disabled: #aaa;
+  --result-bg: rgba(255, 255, 255, 0.7);
+  --stat-bg: rgba(255, 255, 255, 0.4);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --card-bg: #fffef9;
+  --card-border: #1f77c9;
+  --card-title: #1f77c9;
+  --card-text: #2d3436;
+  --card-accent: #ecf0f1;
+  --card-green-bg: #e8f8f5;
+  --card-green-text: #27ae60;
+}
+
+.rw-page * { box-sizing: border-box; }
+.rw-page h1, .rw-page h2, .rw-page h3 { font-family: 'Cormorant Garamond', serif; }
+
+.rw-page .main-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  direction: rtl;
+}
+
+/* ── Composants verre ── */
+.rw-page .badge,
+.rw-page #editor,
+.rw-page .intent-select,
+.rw-page .result-box,
+.rw-page .stats-footer,
+.rw-page .angel-btn,
+.rw-page .angel-names-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-primary);
+}
+
+.rw-page .top-bar { display: flex; justify-content: center; }
+.rw-page .badge {
+  border-radius: 50px;
+  padding: 8px 25px;
+  font-weight: bold;
+  font-size: 18px;
+  text-align: center;
+  min-width: 80px;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.rw-page .input-container { width: 100%; position: relative; }
+.rw-page #editor {
+  padding: 12px;
+  font-size: 18px;
+  text-align: right;
+  min-height: 70px;
+  outline: none;
+  word-break: break-word;
+  border-radius: 15px;
+  transition: box-shadow 0.3s;
+}
+.rw-page #editor:focus { box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.5); }
+
+.rw-page .intent-select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 12px;
+  text-align: left;
+  direction: ltr;
+  outline: none;
+}
+.rw-page .intent-select:focus { box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.5); }
+
+.rw-page .button-row { display: flex; gap: 5px; }
+.rw-page .primary-btn,
+.rw-page .angel-btn {
+  width: 100%;
+  background: var(--btn-primary);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.rw-page .primary-btn:disabled,
+.rw-page .angel-btn:disabled { background: var(--btn-disabled); cursor: not-allowed; box-shadow: none; }
+.rw-page .primary-btn:hover:not(:disabled),
+.rw-page .angel-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.rw-page .result-box { min-height: 100px; padding: 15px; position: relative; border-radius: 15px; }
+.rw-page .scroll-text {
+  text-align: right;
+  font-size: 18px;
+  padding-top: 25px;
+  word-wrap: break-word;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+.rw-page .total-indicator {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  font-weight: bold;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 8px;
+  z-index: 2;
+  direction: ltr;
+  unicode-bidi: isolate;
+  border: 1px solid var(--glass-border);
+}
+
+.rw-page .stats-footer { text-align: center; font-size: 14px; padding: 15px; border-radius: 15px; }
+.rw-page .stat-line { margin: 6px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rw-page .stat-line span {
+  font-family: 'Courier New', monospace;
+  direction: ltr;
+  background: var(--stat-bg);
+  padding: 2px 8px;
+  border-radius: 5px;
+  color: var(--text-primary);
+}
+.rw-page .total-final {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--text-secondary);
+}
+
+.rw-page .angel-names-container { padding: 20px 15px; margin-top: 10px; border-radius: 16px; }
+.rw-page .angel-names-container h3 { text-align: center; margin-bottom: 15px; font-size: 18px; color: var(--text-primary); }
+.rw-page .angel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 0;
+  gap: 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.rw-page .angel-row:last-child { border-bottom: none; }
+.rw-page .angel-row:hover { background: var(--stat-bg); }
+.rw-page .angel-number { font-weight: bold; font-size: 15px; flex: 0 0 25%; text-align: left; color: var(--text-secondary); }
+.rw-page .angel-arabic { font-size: 22px; color: var(--text-primary); flex: 1; text-align: center; font-weight: bold; }
+.rw-page .angel-transcript { font-size: 14px; color: var(--text-secondary); flex: 0 0 35%; text-align: right; word-break: break-word; }
+
+/* Carte d'un nom d'Allah */
+.rw-page .allah-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  background: var(--card-bg);
+  padding: 20px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--glass-shadow);
+}
+.rw-page .allah-card-head { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 15px; }
+.rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 28px; }
+.rw-page .allah-card-letter {
+  font-size: 16px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+}
+.rw-page .allah-card-body { width: 100%; border-top: 1px dashed var(--card-border); padding-top: 15px; }
+.rw-page .allah-card-translit { text-align: left; color: var(--text-secondary); margin-bottom: 15px; font-weight: bold; }
+.rw-page .allah-card-section-title { text-align: center; font-weight: bold; margin-bottom: 8px; border-radius: 8px; padding: 6px; }
+.rw-page .allah-card-section-title.sens { color: var(--card-text); background: var(--card-accent); }
+.rw-page .allah-card-section-title.secret { color: var(--card-green-text); background: var(--card-green-bg); }
+.rw-page .allah-card-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+.rw-page .allah-card-empty span:first-child { font-size: 18px; }
+.rw-page .mixed-rtl { text-align: right; line-height: 1.6; margin-bottom: 8px; }
+.rw-page .mixed-ltr { text-align: left; line-height: 1.6; margin-bottom: 8px; }
+
+/* Suggestions de versets */
+.rw-page .verses-suggestions {
+  position: absolute;
+  z-index: 1000;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+  width: 100%;
+  box-shadow: var(--glass-shadow);
+  direction: rtl;
+  text-align: right;
+  color: var(--text-primary);
+}
+.rw-page .verses-suggestions li { padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 16px; }
+.rw-page .verses-suggestions li:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Visuel d'attente (colonne droite avant calcul) — masqué sur mobile */
+.rw-page .rw-hint { display: none; }
+
+/* Colonnes : neutres sur mobile (display:contents) */
+.rw-page .rw-left,
+.rw-page .rw-right { display: contents; }
+
+@media (max-width: 480px) {
+  .rw-page .main-container { gap: 12px; }
+  .rw-page .angel-arabic { font-size: 20px; }
+  .rw-page .angel-transcript { font-size: 12px; }
+  .rw-page .angel-number { font-size: 13px; }
+  .rw-page .scroll-text { font-size: 16px; }
+  .rw-page .angel-row { gap: 5px; }
+}
+
+/* Version desktop (≥1024px) : deux colonnes */
+@media (min-width: 1024px) {
+  .rw-page .main-container {
+    max-width: 1160px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    align-items: start;
+    gap: 28px;
+  }
+  .rw-page .rw-left {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: sticky;
+    top: 40px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    padding: 24px;
+  }
+  .rw-page .rw-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .rw-page .angel-names-list { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 32px; }
+  .rw-page .rw-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 340px;
+    padding: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px dashed var(--glass-border);
+    border-radius: 20px;
+  }
+  .rw-page .rw-hint-icon { font-size: 3rem; opacity: 0.8; }
+  .rw-page .rw-hint-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+  .rw-page .rw-hint-text { font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
+}

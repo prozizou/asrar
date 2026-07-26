@@ -1,0 +1,135 @@
+/* Module Al-Qalam — styles portés de alqalam/style.css.
+   Scopé sous .alq-page : le module redéfinit des tokens partagés
+   (--glass-bg/--glass-border/--glass-shadow) via des alias locaux. Les polices
+   calligraphiques (Scheherazade New, Alkalami) sont préservées — cœur du module. */
+@import url('https://fonts.googleapis.com/css2?family=Alkalami&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@700&display=swap');
+
+.alq-page {
+  --accent-blue: var(--accent, #4d96ff);
+  --text-white: var(--text-main, #ffffff);
+  --text-gray: var(--text-muted, #d0d0d0);
+  --text-red: var(--danger, #ff6b6b);
+  --glass-bg: var(--surface, rgba(255, 255, 255, 0.08));
+  --glass-border: var(--border, rgba(255, 255, 255, 0.15));
+  --glass-shadow: var(--glass-shadow, 0 8px 32px 0 rgba(0, 0, 0, 0.3));
+  --accent-hover: var(--accent-hover, #2176ff);
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+.alq-page * { box-sizing: border-box; }
+.alq-page *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.alq-page .bg-shape { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.4; }
+.alq-page .shape1 { width: 300px; height: 300px; background: var(--accent); top: -100px; left: -100px; }
+html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
+.alq-page .shape2 { width: 400px; height: 400px; background: var(--danger); bottom: -150px; right: -100px; opacity: 0.2; }
+
+.alq-page .app-container { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; margin-top: 10px; overflow: visible; }
+
+.alq-page .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
+.alq-page .controls-section { display: flex; flex-direction: column; gap: 15px; background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
+.alq-page .output-section { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+.alq-page .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--surface-3); border: 1px solid var(--border); color: var(--text-main); padding: 5px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; z-index: 10; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
+.alq-page .copy-btn:hover { background: var(--accent); color: var(--text-on-accent); }
+.alq-page .top-textarea { padding-top: 40px; }
+.alq-page .output-area { padding-top: 40px; }
+
+.alq-page .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
+.alq-page .glass-input:focus { border-color: var(--accent); }
+
+.alq-page .input-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.alq-page .mini-btn { flex: 1 1 auto; min-width: 0; white-space: nowrap; background: var(--surface-3, rgba(255, 255, 255, 0.08)); border: 1px solid var(--glass-border); color: var(--text-main); border-radius: 10px; padding: 8px 10px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+.alq-page .mini-btn:hover { background: var(--surface, rgba(255, 255, 255, 0.14)); }
+.alq-page .mini-btn:active { transform: scale(0.97); }
+
+.alq-page .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 24px; }
+
+.alq-page .grid-row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+.alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+.alq-page .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; min-width: 0; }
+
+.alq-page .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
+.alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
+
+.alq-page .tool-box { min-width: 0; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 2px; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: 0.3s; user-select: none; }
+.alq-page .tool-box:hover { background: var(--surface); }
+.alq-page .tool-box input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; flex-shrink: 0; }
+.alq-page .tool-box span { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+
+.alq-page .hidden-panel { display: none; width: 100%; gap: 10px; }
+.alq-page .show-panel { display: flex; flex-direction: column; }
+.alq-page .show-panel.grid-row-2-1 { display: grid; }
+
+.alq-page .search-container { display: none; align-items: center; padding-right: 15px; }
+.alq-page .search-container.show-panel { display: flex; flex-direction: row; }
+.alq-page .search-input-inner { background: transparent; border: none; color: var(--text-main); flex: 1; outline: none; }
+.alq-page .search-count-text { color: var(--danger); font-size: 14px; font-weight: bold; white-space: nowrap; }
+
+.alq-page .slider-container { width: 100%; padding: 0 5px; }
+.alq-page .slider-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px; }
+.alq-page .slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--border-strong); outline: none; }
+.alq-page .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+
+.alq-page .output-area { height: 100%; min-height: 200px; max-height: calc(100vh - 80px); overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Scheherazade New', 'Alkalami', serif; font-size: 28px; color: var(--text-main); }
+
+.alq-page .highlight { background-color: rgba(255, 255, 0, 0.35); color: var(--text-main); border-radius: 4px; padding: 0 4px; }
+html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215, 0, 0.4); }
+
+.alq-page .mot-rouge { color: #d11015; }
+.alq-page .mot-vert { color: #008a3b; }
+.alq-page .mot-bleu { color: #1b378c; }
+.alq-page .verset-brun { color: #8b0000; }
+.alq-page .mot-rouge, .alq-page .mot-vert, .alq-page .mot-bleu, .alq-page .verset-brun { font-family: inherit; }
+html[data-theme='light'] .alq-page .mot-rouge { color: #b00d12; }
+html[data-theme='light'] .alq-page .mot-vert { color: #00702f; }
+html[data-theme='light'] .alq-page .mot-bleu { color: #16306e; }
+html[data-theme='light'] .alq-page .verset-brun { color: #7a0000; }
+
+.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; }
+
+.alq-page .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Scheherazade New', serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: none; }
+.alq-page .suggestions-container.show-panel { display: block; }
+.alq-page .suggestion-item { padding: 12px 15px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid var(--border-soft); transition: 0.2s; font-size: 22px; }
+.alq-page .suggestion-item:last-child { border-bottom: none; }
+.alq-page .suggestion-item:hover { background: var(--surface); padding-right: 25px; }
+
+/* Overlays (popups) rendus dans l'arbre .alq-page — position fixe */
+.alq-page .popup-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60, 0.35); }
+.alq-page .popup-content { padding: 20px; width: 90%; max-width: 350px; overflow: hidden; }
+.alq-page .popup-item { padding: 18px 20px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--glass-border); transition: 0.3s; margin: -20px -20px 0 -20px; color: var(--text-main); background: none; border-left: none; border-right: none; border-top: none; width: 100%; text-align: left; }
+.alq-page .popup-item:last-child { border-bottom: none; }
+.alq-page .popup-item:hover { background: var(--surface); padding-left: 25px; }
+
+.alq-page .progress-bar-container { width: 100%; height: 12px; background: var(--surface-3); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; margin: 20px 0; }
+.alq-page .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.1s linear; }
+
+.alq-page .toast-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--text-on-accent); padding: 12px 24px; border-radius: 8px; z-index: 9999; font-family: sans-serif; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
+.alq-page .toast-error { background-color: rgba(217, 83, 79, 0.95); border: 1px solid var(--danger); }
+.alq-page .toast-info { background-color: rgba(79, 172, 254, 0.95); border: 1px solid var(--accent); }
+
+.alq-page .flex-grow { flex: 1; }
+
+@media (max-width: 899px) {
+  .alq-page .app-container { max-width: 600px; }
+  .alq-page .output-area { max-height: 40vh; }
+}
+@media (max-width: 480px) {
+  .alq-page .controls-section { padding: 15px; }
+  .alq-page .grid-row-2-1, .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
+  .alq-page .tools-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px) {
+  .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; height: calc(100vh - 40px); margin: 0 auto; }
+  .alq-page .controls-section { width: 380px; flex-shrink: 0; height: 100%; overflow-y: auto; }
+  .alq-page .output-section { flex-grow: 1; height: 100%; }
+  .alq-page .output-area { height: 100%; max-height: 100%; }
+}

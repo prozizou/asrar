@@ -5,7 +5,12 @@ Router) + React, **sans toucher** au site statique existant à la racine du
 dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
-*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*.
+*Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*, *Don de secret*,
+*Abajad*, *Parrainage*, *Combinaisons*, *Planète*, *Rouwhanes*, *Géomancie*,
+*Al Qalam*. **La migration est complète** : les 17 rubriques du site statique
+sont désormais des routes React sous `app/`, et le **tableau de bord d'accueil**
+relie le tout en navigation SPA instantanée — plus aucun renvoi vers le site
+statique.
 
 ## Ce que le pilote démontre
 
@@ -26,7 +31,26 @@ next-app/
 ├─ app/
 │  ├─ layout.js         Coquille racine + init thème anti-FOUC
 │  ├─ globals.css       Feuille partagée (copie de css/style.css) + styles composants
-│  ├─ page.js           Accueil du pilote (menu → module)
+│  ├─ page.js           Tableau de bord (accueil) — menus groupés, liens SPA
+│  ├─ don/             MODULE MIGRÉ — Don de secret (formulaire → /api/don)
+│  │  └─ page.js
+│  ├─ abajad/          MODULE MIGRÉ — Calculateur Abjad ésotérique
+│  │  └─ page.js        Calcul temps réel, zodiaque, facteurs (logique → lib/abjad)
+│  ├─ parrainage/      MODULE MIGRÉ — Parrainage (points, lien, conversion)
+│  │  └─ page.js
+│  ├─ combinaisons/    MODULE MIGRÉ — Combinaisons des 99 Noms par poids Abjad
+│  │  └─ page.js        Recherche (backtracking + élagage), filtre, pagination,
+│  │                    calculatrice, restauration (logique → lib/combinaisons)
+│  ├─ planete/         MODULE MIGRÉ — Horloge & heures planétaires chaldéennes
+│  │  └─ page.js        GPS + horloge 1 s + soleil NOAA hors-ligne (→ lib/planete)
+│  ├─ rouwhania/       MODULE MIGRÉ — Rouwhanes (noms des anges + noms d'Allah)
+│  │  └─ page.js        Poids Abjad (3 méthodes), génération, vœu (→ lib/rouwhania)
+│  ├─ geomancie/       MODULE MIGRÉ — Écu géomantique (Tourab)
+│  │  └─ page.js        4 Mères → 16 Maisons, بزدح, juge, synthèse, modale
+│  │                    d'interprétation (logique → lib/geomancie)
+│  ├─ alqalam/         MODULE MIGRÉ — Al-Qalam (calligraphie)
+│  │  └─ page.js        Aperçu coloré live, mode Rasm, intercalation, cumul,
+│  │                    export Word .docx (logique → lib/alqalam)
 │  ├─ asrar/            MODULE MIGRÉ — Secrets
 │  │  ├─ page.js        Liste par catégorie + orchestration
 │  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
@@ -92,8 +116,10 @@ npm run dev                  # http://localhost:3000
 Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
 **Secrets Mystiques** ou **Marché Mystique**.
 
-## Suite possible
+## Migration terminée
 
-Migrer les modules suivants dans le même moule (chacun devient un dossier sous
-`app/`, réutilisant la coquille) : Benefits, Al-Qalam, Géomancie, Bibliothèque…
-Le site statique reste en service pendant toute la transition.
+Tous les modules du site statique ont été portés sous `app/` en réutilisant la
+coquille partagée. Le site statique historique n'est plus nécessaire à la
+navigation ; il peut rester en ligne comme repli le temps de valider la bascule
+en production. Chaque module garde sa **logique pure dans `lib/`** (testable
+hors UI) et ses **styles scopés** pour éviter toute fuite entre pages.
