@@ -1,9 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/*.js": { "maxDuration": 15 }
-  },
-  "rewrites": [
-    { "source": "/s", "destination": "/api/share" }
-  ]
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm install"
 }
