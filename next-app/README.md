@@ -6,7 +6,7 @@ dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
 *Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*, *Don de secret*,
-*Abajad*, *Parrainage*, *Combinaisons*, *Planète*. Le **tableau de bord d'accueil** (accueil des rubriques)
+*Abajad*, *Parrainage*, *Combinaisons*, *Planète*, *Rouwhanes*. Le **tableau de bord d'accueil** (accueil des rubriques)
 est lui aussi migré : navigation SPA instantanée vers les modules déjà portés,
 les modules restants pointant encore vers le site statique en service.
 
@@ -41,6 +41,8 @@ next-app/
 │  │                    calculatrice, restauration (logique → lib/combinaisons)
 │  ├─ planete/         MODULE MIGRÉ — Horloge & heures planétaires chaldéennes
 │  │  └─ page.js        GPS + horloge 1 s + soleil NOAA hors-ligne (→ lib/planete)
+│  ├─ rouwhania/       MODULE MIGRÉ — Rouwhanes (noms des anges + noms d'Allah)
+│  │  └─ page.js        Poids Abjad (3 méthodes), génération, vœu (→ lib/rouwhania)
 │  ├─ asrar/            MODULE MIGRÉ — Secrets
 │  │  ├─ page.js        Liste par catégorie + orchestration
 │  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
@@ -109,7 +111,7 @@ Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
 ## Suite possible
 
 Modules restant à migrer dans le même moule (chacun devient un dossier sous
-`app/`, réutilisant la coquille) : **Al Qalam**, **Géomancie (Tourab)**,
-**Rouwhanes**. En attendant, le tableau de bord pointe
+`app/`, réutilisant la coquille) : **Al Qalam**, **Géomancie (Tourab)**.
+En attendant, le tableau de bord pointe
 vers eux sur le site statique (`NEXT_PUBLIC_STATIC_BASE`), qui reste en service
 pendant toute la transition.
