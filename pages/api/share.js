@@ -35,7 +35,7 @@ const IMG_FIELDS   = ["img", "image", "Image", "cover"];
 
 const CRAWLER = /(facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|discordbot|linkedinbot|slackbot|pinterest|tiktok|bytespider|bot|crawler|spider|preview)/i;
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const site = siteUrl(req);
   const q = req.query || {};
 

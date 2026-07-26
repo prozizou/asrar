@@ -34,7 +34,7 @@ const MAX_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60 * 1000; // filleul = compte créé r
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans I, O, 0, 1 (dictée facile)
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });

@@ -23,7 +23,7 @@ function htmlMessage(res, status, msg) {
   return res.end("<meta charset='utf-8'><p style='font-family:system-ui;padding:24px'>" + msg + "</p>");
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const q = (req.query && typeof req.query.text === "string") ? req.query.text : "";
   const text = q.slice(0, 1500); // garde-fou longueur
 
