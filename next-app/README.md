@@ -6,9 +6,11 @@ dépôt. Modules déjà migrés : *Secrets Mystiques* et *Marché Mystique*.
 Objectif : prouver le pattern « coquille partagée unique + UI pilotée par
 l'état » puis l'étendre aux autres modules. Modules migrés : *Secrets*,
 *Marché*, *Ma Boutique*, *99 Noms d'Allah*, *Bibliothèque*, *Don de secret*,
-*Abajad*, *Parrainage*, *Combinaisons*, *Planète*, *Rouwhanes*, *Géomancie*. Le **tableau de bord d'accueil** (accueil des rubriques)
-est lui aussi migré : navigation SPA instantanée vers les modules déjà portés,
-les modules restants pointant encore vers le site statique en service.
+*Abajad*, *Parrainage*, *Combinaisons*, *Planète*, *Rouwhanes*, *Géomancie*,
+*Al Qalam*. **La migration est complète** : les 17 rubriques du site statique
+sont désormais des routes React sous `app/`, et le **tableau de bord d'accueil**
+relie le tout en navigation SPA instantanée — plus aucun renvoi vers le site
+statique.
 
 ## Ce que le pilote démontre
 
@@ -46,6 +48,9 @@ next-app/
 │  ├─ geomancie/       MODULE MIGRÉ — Écu géomantique (Tourab)
 │  │  └─ page.js        4 Mères → 16 Maisons, بزدح, juge, synthèse, modale
 │  │                    d'interprétation (logique → lib/geomancie)
+│  ├─ alqalam/         MODULE MIGRÉ — Al-Qalam (calligraphie)
+│  │  └─ page.js        Aperçu coloré live, mode Rasm, intercalation, cumul,
+│  │                    export Word .docx (logique → lib/alqalam)
 │  ├─ asrar/            MODULE MIGRÉ — Secrets
 │  │  ├─ page.js        Liste par catégorie + orchestration
 │  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
@@ -111,10 +116,10 @@ npm run dev                  # http://localhost:3000
 Connectez-vous avec Google (même projet Firebase que la prod), puis ouvrez
 **Secrets Mystiques** ou **Marché Mystique**.
 
-## Suite possible
+## Migration terminée
 
-Modules restant à migrer dans le même moule (chacun devient un dossier sous
-`app/`, réutilisant la coquille) : **Al Qalam** — dernier module restant.
-En attendant, le tableau de bord pointe
-vers lui sur le site statique (`NEXT_PUBLIC_STATIC_BASE`), qui reste en service
-pendant toute la transition.
+Tous les modules du site statique ont été portés sous `app/` en réutilisant la
+coquille partagée. Le site statique historique n'est plus nécessaire à la
+navigation ; il peut rester en ligne comme repli le temps de valider la bascule
+en production. Chaque module garde sa **logique pure dans `lib/`** (testable
+hors UI) et ses **styles scopés** pour éviter toute fuite entre pages.

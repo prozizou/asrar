@@ -1,15 +1,11 @@
 'use client';
 // Tableau de bord (accueil) — port de accueil/accueil.html.
 // Une seule coquille : la barre utilisateur, le thème et l'accès sont déjà
-// montés par les Providers. Les modules DÉJÀ migrés sont des liens SPA
-// instantanés (next/link) ; ceux encore sur le site statique pointent vers le
-// déploiement en service (NEXT_PUBLIC_STATIC_BASE) le temps de la transition.
+// montés par les Providers. TOUS les modules sont désormais migrés : chaque
+// entrée est un lien SPA instantané (next/link) — plus aucun rechargement de
+// page complet ni renvoi vers le site statique.
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
-
-// Base du site statique historique (modules pas encore migrés). Par défaut : la
-// production. À la fin de la migration, ces entrées deviendront des liens SPA.
-const STATIC_BASE = process.env.NEXT_PUBLIC_STATIC_BASE || 'https://asrar-hub.vercel.app';
 
 const GROUPS = [
   {
@@ -30,7 +26,7 @@ const GROUPS = [
   },
   {
     title: 'Al Qalam',
-    items: [{ icon: '🖋️', label: 'Al Qalam', href: `${STATIC_BASE}/alqalam/index.html?mode=simple`, external: true }],
+    items: [{ icon: '🖋️', label: 'Al Qalam', href: '/alqalam' }],
   },
   {
     title: 'Géomancie',
@@ -39,22 +35,10 @@ const GROUPS = [
 ];
 
 function MenuItem({ item }) {
-  const inner = (
-    <>
-      <div style={{ fontSize: '2rem' }}>{item.icon}</div>
-      <h3>{item.label}</h3>
-    </>
-  );
-  if (item.external) {
-    return (
-      <a href={item.href} className="menu-item">
-        {inner}
-      </a>
-    );
-  }
   return (
     <Link href={item.href} className="menu-item">
-      {inner}
+      <div style={{ fontSize: '2rem' }}>{item.icon}</div>
+      <h3>{item.label}</h3>
     </Link>
   );
 }
