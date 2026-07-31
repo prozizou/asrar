@@ -5,6 +5,7 @@
 import AuthProvider from './AuthProvider';
 import AccessProvider from './AccessProvider';
 import ThemeToggle from './ThemeToggle';
+import PushForeground from './PushForeground';
 
 export default function Providers({ children }) {
   return (
@@ -13,6 +14,7 @@ export default function Providers({ children }) {
         <AccessProvider>{children}</AccessProvider>
       </AuthProvider>
       <ThemeToggle />
+      <PushForeground />
     </>
   );
 }
