@@ -3,8 +3,8 @@
 // Galerie, bloc vendeur, barre sociale (like/commentaires temps réel), partage
 // et commande WhatsApp directe au vendeur.
 import { useEffect, useRef, useState } from 'react';
-import { ref, set, serverTimestamp, runTransaction } from 'firebase/database';
-import { db, auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
+import { apiPost } from '@/lib/api';
 import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import { share as shareLink } from '@/lib/share';
@@ -38,12 +38,11 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [comments, showComments]);
 
-  // Vue produit : un enregistrement par visiteur (comptage unique côté
-  // statistiques boutique), même nœud style que ratings/comments.
+  // Vue produit : journalisée côté serveur (Admin SDK, contourne les règles
+  // RTDB) — un enregistrement par visiteur, pour les statistiques boutique.
   useEffect(() => {
-    const uid = auth.currentUser?.uid;
-    if (!product._key || !uid) return;
-    set(ref(db, `views/product/${product._key}/${uid}`), serverTimestamp()).catch(() => {});
+    if (!product._key || !auth.currentUser) return;
+    apiPost('track', { type: 'product_view', productKey: product._key }).catch(() => {});
   }, [product._key]);
 
   const autoGrow = (el) => {
@@ -79,10 +78,9 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
       `Assalamou aleykoum 🌙\nJe souhaite passer une commande sur le Marché (${boutique}).\n\n` +
       `• Compte (e-mail) : ${email}\n• Articles :\n   - ${article}\n• Total : ${total}\n\n` +
       `Merci de me confirmer la disponibilité et les modalités de paiement.`;
+    // Le comptage de commande se fait côté serveur (api/wa.js), pas ici :
+    // évite toute dépendance aux règles RTDB pour l'écriture du compteur.
     window.open('/api/wa?product=' + encodeURIComponent(product._key) + '&text=' + encodeURIComponent(msg), '_blank', 'noopener');
-    if (product._key) {
-      runTransaction(ref(db, `orders_count/${product._key}`), (c) => (c || 0) + 1).catch(() => {});
-    }
   };
 
   return (
