@@ -3,7 +3,8 @@
 // Galerie, bloc vendeur, barre sociale (like/commentaires temps réel), partage
 // et commande WhatsApp directe au vendeur.
 import { useEffect, useRef, useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { ref, set, serverTimestamp, runTransaction } from 'firebase/database';
+import { db, auth } from '@/lib/firebase';
 import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import { share as shareLink } from '@/lib/share';
@@ -36,6 +37,14 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [comments, showComments]);
+
+  // Vue produit : un enregistrement par visiteur (comptage unique côté
+  // statistiques boutique), même nœud style que ratings/comments.
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!product._key || !uid) return;
+    set(ref(db, `views/product/${product._key}/${uid}`), serverTimestamp()).catch(() => {});
+  }, [product._key]);
 
   const autoGrow = (el) => {
     if (!el) return;
@@ -71,6 +80,9 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
       `• Compte (e-mail) : ${email}\n• Articles :\n   - ${article}\n• Total : ${total}\n\n` +
       `Merci de me confirmer la disponibilité et les modalités de paiement.`;
     window.open('/api/wa?product=' + encodeURIComponent(product._key) + '&text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    if (product._key) {
+      runTransaction(ref(db, `orders_count/${product._key}`), (c) => (c || 0) + 1).catch(() => {});
+    }
   };
 
   return (

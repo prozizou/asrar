@@ -8,6 +8,7 @@ import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
+import { askAI } from '@/lib/ai';
 import {
   config,
   buildPreview,
@@ -60,6 +61,9 @@ export default function AlQalamPage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [progress, setProgress] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
 
   const inputRef = useRef(null);
   const sugTimer = useRef(null);
@@ -243,6 +247,84 @@ export default function AlQalamPage() {
     }
   };
 
+  // ─── Assistant IA (pilote les actions ci-dessus depuis un prompt) ───
+  const applyAIAction = async (action) => {
+    if (!action || action.action === 'unclear') {
+      showToast(action?.message || "Je n'ai pas compris la demande.", 'error');
+      return;
+    }
+    if (action.action === 'write') {
+      const text = String(action.text || '').trim();
+      if (!text) return showToast('Précisez le texte à écrire.', 'error');
+      const count = Math.max(1, Math.min(parseInt(action.repCount, 10) || parseInt(repCount, 10) || 100, config.MAX_TOTAL_REPEAT));
+      setInputText(text);
+      setRepCount(String(count));
+      savePref('repCount', String(count));
+      setBaseText(text);
+      setTotalMultiplier(count);
+      setIntercalatedPhrase('');
+      if (action.rasmOn === true) {
+        setIsRasmMode(true);
+        savePref('isRasmMode', 'true');
+      } else if (action.rasmOn === false) {
+        setIsRasmMode(false);
+        savePref('isRasmMode', 'false');
+      }
+      showToast(action.message || '✅ Texte généré.', 'info');
+      return;
+    }
+    if (action.action === 'toggle_rasm') {
+      setIsRasmMode(!!action.rasmOn);
+      savePref('isRasmMode', action.rasmOn ? 'true' : 'false');
+      showToast(action.message || 'Mode Rasm mis à jour.', 'info');
+      return;
+    }
+    if (action.action === 'intercalate') {
+      const match = sourates.find((s) => s.name === action.sourate);
+      const phrase = String(action.text || inputText).trim();
+      if (!match || !phrase) {
+        showToast("Précisez la sourate et l'expression à intercaler.", 'error');
+        return;
+      }
+      const rep = Math.max(1, Math.min(parseInt(action.repCount, 10) || parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
+      const result = buildIntercalatedText(souratesContent[match.key], phrase, rep);
+      setInputText(phrase);
+      setInterKey(match.key);
+      setBaseText(result);
+      setIntercalatedPhrase(phrase);
+      setTotalMultiplier(1);
+      setShowIntercaler(true);
+      showToast(action.message || 'Texte combiné généré.', 'info');
+      return;
+    }
+    if (action.action === 'export_doc') {
+      if (totalMultiplier === 0 && accumulatedBlocks.length === 0) {
+        showToast("Générez d'abord un texte avant d'exporter.", 'error');
+        return;
+      }
+      const name = String(action.docName || docName || 'document').trim();
+      setDocName(name);
+      savePref('docName', name);
+      await triggerDocx(action.useOuverture !== false, action.useFermeture !== false);
+    }
+  };
+
+  const runAI = async () => {
+    const q = aiPrompt.trim();
+    if (!q || aiBusy) return;
+    const ok = await ensureAccess();
+    if (!ok) return;
+    setAiBusy(true);
+    try {
+      const action = await askAI('alqalam', q, { sourates: sourates.map((s) => s.name) });
+      await applyAIAction(action);
+    } catch (e) {
+      showToast(e.message || 'Assistant IA indisponible.', 'error');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   return (
     <div className="alq-page">
       <div className="bg-shape shape1" />
@@ -254,6 +336,27 @@ export default function AlQalamPage() {
           <Link href="/" className="mini-btn" style={{ textAlign: 'center', textDecoration: 'none' }}>
             ← Retour
           </Link>
+
+          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+            <input
+              type="text"
+              className="glass-input"
+              style={{ flex: 1 }}
+              placeholder="🤖 Demandez à l'IA : « écris Allah 100 fois en mode rasm »"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  runAI();
+                }
+              }}
+              aria-label="Demande à l'assistant IA"
+            />
+            <button type="button" className="mini-btn" onClick={runAI} disabled={aiBusy || !aiPrompt.trim()}>
+              {aiBusy ? '⏳' : '🤖'}
+            </button>
+          </div>
 
           <div style={{ position: 'relative', width: '100%' }}>
             <textarea

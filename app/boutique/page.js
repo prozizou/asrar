@@ -7,10 +7,13 @@
 import './boutique.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ref, get } from 'firebase/database';
+import { db } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
 import { openAccess } from '@/lib/whatsapp';
+import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
 import ProductForm from './ProductForm';
 
@@ -35,6 +38,9 @@ export default function BoutiquePage() {
 
   // Formulaire produit (null = fermé)
   const [formProduct, setFormProduct] = useState(undefined); // undefined=fermé, null=ajout, obj=édition
+
+  // Statistiques (propriétaire seulement) : vues/likes/commentaires/commandes
+  const [stats, setStats] = useState(null);
 
   const bootRef = useRef(false);
 
@@ -73,6 +79,54 @@ export default function BoutiquePage() {
     } catch {}
     loadStatus();
   }, [loadStatus]);
+
+  // Statistiques : lues depuis les nœuds déjà utilisés par le Marché (vues,
+  // ratings, commentaires, commandes), filtrées aux produits DU vendeur.
+  // Pas de nouvel endpoint serveur : ces nœuds sont déjà en lecture publique
+  // pour le calcul de popularité du Marché.
+  useEffect(() => {
+    if (view !== 'shop' || products.length === 0) {
+      setStats(null);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [viewsSnap, likesSnap, comsSnap, ordersSnap] = await Promise.all([
+          get(ref(db, 'views/product')),
+          get(ref(db, 'ratings/product')),
+          get(ref(db, 'comments/product')),
+          get(ref(db, 'orders_count')),
+        ]);
+        const views = viewsSnap.val() || {};
+        const likes = likesSnap.val() || {};
+        const coms = comsSnap.val() || {};
+        const orders = ordersSnap.val() || {};
+        const perProduct = {};
+        let totalViews = 0;
+        let totalLikes = 0;
+        let totalComments = 0;
+        let totalOrders = 0;
+        products.forEach((p) => {
+          const v = Object.keys(views[p._key] || {}).length;
+          const l = Object.keys(likes[p._key] || {}).length;
+          const c = Object.keys(coms[p._key] || {}).length;
+          const o = Number(orders[p._key] || 0);
+          perProduct[p._key] = { views: v, likes: l, comments: c, orders: o };
+          totalViews += v;
+          totalLikes += l;
+          totalComments += c;
+          totalOrders += o;
+        });
+        if (!cancelled) setStats({ totalViews, totalLikes, totalComments, totalOrders, perProduct });
+      } catch {
+        /* statistiques non bloquantes */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [products, view]);
 
   const souscrire = (planId) => {
     const email = seller?.email;
@@ -165,6 +219,30 @@ export default function BoutiquePage() {
               </a>
             </div>
 
+            {stats && (
+              <div className="bq-stats">
+                <h3>📊 Statistiques de la boutique</h3>
+                <div className="bq-stats-grid">
+                  <div className="bq-stat">
+                    <span className="bq-stat-num">{formatCount(stats.totalViews)}</span>
+                    <span className="bq-stat-label">👁 Vues</span>
+                  </div>
+                  <div className="bq-stat">
+                    <span className="bq-stat-num">{formatCount(stats.totalLikes)}</span>
+                    <span className="bq-stat-label">❤️ Likes</span>
+                  </div>
+                  <div className="bq-stat">
+                    <span className="bq-stat-num">{formatCount(stats.totalComments)}</span>
+                    <span className="bq-stat-label">💬 Commentaires</span>
+                  </div>
+                  <div className="bq-stat">
+                    <span className="bq-stat-num">{formatCount(stats.totalOrders)}</span>
+                    <span className="bq-stat-label">🛍️ Commandes</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <h3>Informations de la boutique</h3>
             <div className="bq-form">
               <label>
@@ -222,6 +300,12 @@ export default function BoutiquePage() {
                         {Number(p.Prix || 0).toLocaleString('fr-FR')} {p.devise || 'FCFA'}
                       </div>
                       <div className="bq-prod-chain">{p.chain || ''}</div>
+                      {stats && stats.perProduct[p._key] && (
+                        <div className="bq-prod-stats">
+                          👁 {formatCount(stats.perProduct[p._key].views)} · ❤️ {formatCount(stats.perProduct[p._key].likes)} · 💬{' '}
+                          {formatCount(stats.perProduct[p._key].comments)} · 🛍️ {formatCount(stats.perProduct[p._key].orders)}
+                        </div>
+                      )}
                     </div>
                     <div className="bq-prod-actions">
                       <button onClick={() => setFormProduct(p)}>✏️</button>

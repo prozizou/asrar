@@ -6,6 +6,7 @@
 // page complet ni renvoi vers le site statique.
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
+import PushToggle from '@/components/PushToggle';
 
 const GROUPS = [
   {
@@ -70,9 +71,12 @@ export default function Home() {
             <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{user?.email}</div>
           </div>
         </div>
-        <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
-          ⏻
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <PushToggle />
+          <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
+            ⏻
+          </button>
+        </div>
       </div>
 
       <div className="header">
