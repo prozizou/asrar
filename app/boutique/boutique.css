@@ -76,6 +76,20 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 .bq-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--success); display: inline-block; }
 .bq-renew { color: var(--bq-gold); cursor: pointer; text-decoration: underline; margin-left: auto; }
 
+/* Statistiques (propriétaire seulement) */
+.bq-stats { margin: 1rem 0; }
+.bq-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: .5rem; }
+.bq-stat {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--bq-surface-2); border: 1px solid var(--bq-border); border-radius: 12px; padding: 10px 6px;
+}
+.bq-stat-num { font-size: 1.2rem; font-weight: 700; color: var(--bq-gold); }
+.bq-stat-label { font-size: .72rem; color: var(--bq-text-dim); text-align: center; }
+.bq-prod-stats { color: var(--bq-text-dim); font-size: .74rem; margin-top: 2px; }
+@media (max-width: 420px) {
+  .bq-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* Formulaires */
 .bq-form { display: flex; flex-direction: column; gap: 12px; }
 .bq-form label { display: flex; flex-direction: column; gap: 5px; font-size: .82rem; color: var(--bq-text-soft); }
