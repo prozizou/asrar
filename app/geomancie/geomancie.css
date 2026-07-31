@@ -155,6 +155,7 @@ html[data-theme='light'] .geo-page::before {
 .geo-page .dot-row.double-row .dot { width: 11px; height: 11px; }
 
 .geo-page .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.geo-page .btn-row .btn { width: auto; margin-top: 0; }
 .geo-page .btn {
   padding: 10px 20px;
   border-radius: 30px;
