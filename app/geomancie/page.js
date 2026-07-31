@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { useAccess } from '@/components/AccessProvider';
+import { askAI } from '@/lib/ai';
 import {
   generateAllHouses,
   checkJudgeParity,
@@ -80,6 +81,9 @@ export default function GeomanciePage() {
   const [modalIndex, setModalIndex] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
 
   const houses = useMemo(() => generateAllHouses(mothers), [mothers]);
   const synth = calculated ? synthesis(houses) : null;
@@ -171,6 +175,52 @@ export default function GeomanciePage() {
     }
   };
 
+  // ─── Assistant IA (pilote les actions ci-dessus depuis un prompt) ───
+  const applyAIAction = async (action) => {
+    if (!action || action.action === 'unclear') {
+      showToast(action?.message || "Je n'ai pas compris la demande.");
+      return;
+    }
+    if (action.action === 'random_draw') {
+      setMothers(randomMothers());
+      setActiveFig(null);
+      await onCalculate();
+      showToast(action.message || '🎲 Nouveau tirage calculé.');
+      return;
+    }
+    if (action.action === 'reset') {
+      onReset();
+      return;
+    }
+    if (action.action === 'calculate') {
+      await onCalculate();
+      if (action.message) showToast(action.message);
+      return;
+    }
+    if (action.action === 'open_house') {
+      if (!calculated) {
+        showToast("Calculez d'abord l'écu avant de consulter une maison.");
+        return;
+      }
+      const idx = Math.min(Math.max(parseInt(action.house, 10) - 1, 0), 15);
+      openHouseModal(idx);
+    }
+  };
+
+  const runAI = async () => {
+    const q = aiPrompt.trim();
+    if (!q || aiBusy) return;
+    setAiBusy(true);
+    try {
+      const action = await askAI('geomancie', q);
+      await applyAIAction(action);
+    } catch (e) {
+      showToast(e.message || 'Assistant IA indisponible.');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   return (
     <div className="geo-page">
       <div className="app-container">
@@ -215,6 +265,25 @@ export default function GeomanciePage() {
             </button>
             <button className="btn" onClick={onReset}>
               🔄 Réinitialiser
+            </button>
+          </div>
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <input
+              type="text"
+              className="geo-ai-input"
+              placeholder="🤖 Demandez à l'IA : « fais-moi un tirage »"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  runAI();
+                }
+              }}
+              aria-label="Demande à l'assistant IA"
+            />
+            <button type="button" className="btn" onClick={runAI} disabled={aiBusy || !aiPrompt.trim()}>
+              {aiBusy ? '⏳' : '🤖 Demander'}
             </button>
           </div>
         </div>
