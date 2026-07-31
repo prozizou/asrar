@@ -7,8 +7,6 @@
 import './boutique.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ref, get } from 'firebase/database';
-import { db } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
@@ -80,49 +78,22 @@ export default function BoutiquePage() {
     loadStatus();
   }, [loadStatus]);
 
-  // Statistiques : lues depuis les nœuds déjà utilisés par le Marché (vues,
-  // ratings, commentaires, commandes), filtrées aux produits DU vendeur.
-  // Pas de nouvel endpoint serveur : ces nœuds sont déjà en lecture publique
-  // pour le calcul de popularité du Marché.
+  // Statistiques : agrégées côté serveur (Admin SDK, api/shop.js action="stats")
+  // — pas de lecture RTDB directe côté client, donc aucune dépendance à des
+  // règles de sécurité pour un nœud comme views/product.
   useEffect(() => {
     if (view !== 'shop' || products.length === 0) {
       setStats(null);
       return undefined;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const [viewsSnap, likesSnap, comsSnap, ordersSnap] = await Promise.all([
-          get(ref(db, 'views/product')),
-          get(ref(db, 'ratings/product')),
-          get(ref(db, 'comments/product')),
-          get(ref(db, 'orders_count')),
-        ]);
-        const views = viewsSnap.val() || {};
-        const likes = likesSnap.val() || {};
-        const coms = comsSnap.val() || {};
-        const orders = ordersSnap.val() || {};
-        const perProduct = {};
-        let totalViews = 0;
-        let totalLikes = 0;
-        let totalComments = 0;
-        let totalOrders = 0;
-        products.forEach((p) => {
-          const v = Object.keys(views[p._key] || {}).length;
-          const l = Object.keys(likes[p._key] || {}).length;
-          const c = Object.keys(coms[p._key] || {}).length;
-          const o = Number(orders[p._key] || 0);
-          perProduct[p._key] = { views: v, likes: l, comments: c, orders: o };
-          totalViews += v;
-          totalLikes += l;
-          totalComments += c;
-          totalOrders += o;
-        });
-        if (!cancelled) setStats({ totalViews, totalLikes, totalComments, totalOrders, perProduct });
-      } catch {
+    apiPost('shop', { action: 'stats' })
+      .then((data) => {
+        if (!cancelled) setStats(data);
+      })
+      .catch(() => {
         /* statistiques non bloquantes */
-      }
-    })();
+      });
     return () => {
       cancelled = true;
     };

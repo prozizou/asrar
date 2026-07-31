@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, type, page, lat, lng, city } = parseBody(req);
+  const { idToken, type, page, lat, lng, city, productKey } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -48,6 +48,15 @@ export default async function handler(req, res) {
       });
     }
 
+    // 4) Vue produit (Marché) : un enregistrement par visiteur, pour les
+    // statistiques boutique (api/shop.js action="stats"). Écrit ici (Admin
+    // SDK) car un nœud client direct dépendrait de règles RTDB non gérées
+    // dans ce dépôt.
+    if (kind === "product_view") {
+      const key = safeKey(productKey);
+      if (key) await db.ref("views/product/" + key + "/" + user.uid).set(now);
+    }
+
     return res.status(200).json({ ok: true });
   } catch (e) {
     // Le tracking ne doit jamais casser l'expérience : on renvoie 200 malgré l'erreur.
@@ -56,6 +65,8 @@ export default async function handler(req, res) {
   }
 };
 
+// Clé Firebase valide (les clés produit ne contiennent jamais . # $ / [ ]).
+function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
 function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max || 120); }
 // Champ libre journalisé PUIS affiché dans le tableau de bord admin : on retire
 // les caractères d'évasion HTML (chevrons, quotes, backtick, esperluette) pour

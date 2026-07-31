@@ -73,6 +73,32 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Abonnement boutique requis ou expiré." });
     }
 
+    if (action === "stats") {
+      const products = await myProducts(db, user.uid, user.email);
+      const keys = products.map((p) => p._key);
+      const [viewsSnap, likesSnap, comsSnap, ordersSnap] = await Promise.all([
+        db.ref("views/product").once("value"),
+        db.ref("ratings/product").once("value"),
+        db.ref("comments/product").once("value"),
+        db.ref("orders_count").once("value")
+      ]);
+      const views = viewsSnap.val() || {};
+      const likes = likesSnap.val() || {};
+      const coms = comsSnap.val() || {};
+      const orders = ordersSnap.val() || {};
+      const perProduct = {};
+      let totalViews = 0, totalLikes = 0, totalComments = 0, totalOrders = 0;
+      keys.forEach((k) => {
+        const v = views[k] ? Object.keys(views[k]).length : 0;
+        const l = likes[k] ? Object.keys(likes[k]).length : 0;
+        const c = coms[k] ? Object.keys(coms[k]).length : 0;
+        const o = Number(orders[k] || 0);
+        perProduct[k] = { views: v, likes: l, comments: c, orders: o };
+        totalViews += v; totalLikes += l; totalComments += c; totalOrders += o;
+      });
+      return res.status(200).json({ ok: true, totalViews, totalLikes, totalComments, totalOrders, perProduct });
+    }
+
     if (action === "save-shop") {
       const { shop, logoUrl } = parseBody(req);
       const clean = {

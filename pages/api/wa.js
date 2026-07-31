@@ -33,8 +33,14 @@ export default async function handler(req, res) {
   if (productKey) {
     // — Contact d'un VENDEUR : numéro lu côté serveur, jamais exposé au client —
     try {
-      const snap = await app().database().ref("det_produits/" + productKey + "/number").once("value");
+      const db = app().database();
+      const snap = await db.ref("det_produits/" + productKey + "/number").once("value");
       number = String(snap.val() || "").replace(/\D/g, "");
+      if (number) {
+        // Compteur de commandes (statistiques boutique) : incrémenté ici,
+        // pas côté client, pour ne dépendre d'aucune règle RTDB d'écriture.
+        db.ref("orders_count/" + productKey).transaction((c) => (c || 0) + 1).catch(() => {});
+      }
     } catch (e) {
       return htmlMessage(res, 500, "Service indisponible, réessayez plus tard.");
     }

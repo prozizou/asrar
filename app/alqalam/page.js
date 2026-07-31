@@ -337,11 +337,11 @@ export default function AlQalamPage() {
             ← Retour
           </Link>
 
-          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+          <div style={{ display: 'flex', gap: 6, width: '100%', minWidth: 0 }}>
             <input
               type="text"
               className="glass-input"
-              style={{ flex: 1 }}
+              style={{ flex: '1 1 auto', minWidth: 0, width: 'auto' }}
               placeholder="🤖 Demandez à l'IA : « écris Allah 100 fois en mode rasm »"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
@@ -353,7 +353,13 @@ export default function AlQalamPage() {
               }}
               aria-label="Demande à l'assistant IA"
             />
-            <button type="button" className="mini-btn" onClick={runAI} disabled={aiBusy || !aiPrompt.trim()}>
+            <button
+              type="button"
+              className="mini-btn"
+              style={{ flex: '0 0 auto', width: 'auto' }}
+              onClick={runAI}
+              disabled={aiBusy || !aiPrompt.trim()}
+            >
               {aiBusy ? '⏳' : '🤖'}
             </button>
           </div>
