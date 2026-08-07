@@ -14,7 +14,6 @@ const GROUPS = [
     title: 'ASRAR PRO',
     items: [
       { icon: '📜', label: 'Secret Mystique', href: '/asrar' },
-      { icon: '🤲', label: 'Don de secret', href: '/don' },
       { icon: '🔢', label: 'Abajad', href: '/abajad' },
       { icon: '🌍', label: 'Planète', href: '/planete' },
       { icon: '✨', label: 'Combinaisons', href: '/combinaisons' },

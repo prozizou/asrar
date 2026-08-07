@@ -864,6 +864,7 @@ body::before {
 
 /* Grilles carrés magiques */
 .wafq-grid {
+    position: relative; /* pour que .wafq-center-dot se centre sur la grille elle-même, pas sur toute la carte (.wafq-slide) */
     display: grid;
     gap: 1px;
     background: var(--border-strong);
