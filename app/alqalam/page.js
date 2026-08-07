@@ -6,7 +6,6 @@
 // Les fonctionnalités premium passent par ensureAccess.
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import {
   config,
@@ -105,22 +104,30 @@ export default function AlQalamPage() {
     }, config.DEBOUNCE_DELAY);
   };
 
-  // ─── Panneaux protégés ───
-  const togglePanel = async (checked, setter) => {
-    if (!checked) return setter(false);
-    const ok = await ensureAccess();
-    setter(ok);
-  };
-  const toggleRasm = async (checked) => {
-    if (!checked) {
-      setIsRasmMode(false);
-      savePref('isRasmMode', 'false');
+  // ─── Panneau d'outils (sélecteur unique, protégé) ───
+  const activeTool = showDoc ? 'doc' : showSearch ? 'search' : showIntercaler ? 'intercaler' : isRasmMode ? 'rasm' : '';
+  const onToolSelect = async (value) => {
+    if (!value) {
+      setShowDoc(false);
+      setShowSearch(false);
+      setShowIntercaler(false);
+      if (isRasmMode) {
+        setIsRasmMode(false);
+        savePref('isRasmMode', 'false');
+      }
       return;
     }
     const ok = await ensureAccess();
-    if (ok) {
+    if (!ok) return;
+    setShowDoc(value === 'doc');
+    setShowSearch(value === 'search');
+    setShowIntercaler(value === 'intercaler');
+    if (value === 'rasm') {
       setIsRasmMode(true);
       savePref('isRasmMode', 'true');
+    } else if (isRasmMode) {
+      setIsRasmMode(false);
+      savePref('isRasmMode', 'false');
     }
   };
 
@@ -134,25 +141,6 @@ export default function AlQalamPage() {
     setBaseText(text);
     setTotalMultiplier(Math.min(count, config.MAX_TOTAL_REPEAT));
     setIntercalatedPhrase('');
-  };
-
-  // ─── Actions du champ ───
-  const clearAll = () => {
-    setInputText('');
-    setBaseText('');
-    setTotalMultiplier(0);
-    setIntercalatedPhrase('');
-    inputRef.current?.focus();
-  };
-  const copyOutput = async () => {
-    const txt = (baseText + ' ').repeat(totalMultiplier).trim();
-    if (!txt) return;
-    try {
-      await navigator.clipboard.writeText(txt);
-      showToast('✅ Texte copié !', 'info');
-    } catch {
-      showToast('Impossible de copier', 'error');
-    }
   };
 
   // ─── Intercalation (protégé) ───
@@ -238,10 +226,6 @@ export default function AlQalamPage() {
       <div className="app-container">
         {/* Panneau de contrôle */}
         <div className="controls-section">
-          <Link href="/" className="mini-btn" style={{ textAlign: 'center', textDecoration: 'none' }}>
-            ← Retour
-          </Link>
-
           <div style={{ position: 'relative', width: '100%' }}>
             <textarea
               ref={inputRef}
@@ -252,15 +236,6 @@ export default function AlQalamPage() {
               onChange={(e) => onInput(e.target.value)}
               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
             />
-            <button
-              type="button"
-              className="clear-input-btn"
-              onClick={clearAll}
-              aria-label="Supprimer le texte"
-              title="Supprimer le texte"
-            >
-              ❌
-            </button>
             {suggestions.length > 0 && (
               <div className="suggestions-container show-panel" role="listbox">
                 {suggestions.map((match, i) => (
@@ -299,28 +274,18 @@ export default function AlQalamPage() {
             </button>
           </div>
 
-          <div className="tools-grid" role="group" aria-label="Outils d'édition">
-            <label className="tool-box">
-              <input type="checkbox" checked={showDoc} onChange={(e) => togglePanel(e.target.checked, setShowDoc)} />
-              <span>Documents</span>
-            </label>
-            <label className="tool-box">
-              <input type="checkbox" checked={showSearch} onChange={(e) => togglePanel(e.target.checked, setShowSearch)} />
-              <span>Recherche</span>
-            </label>
-            <label className="tool-box">
-              <input
-                type="checkbox"
-                checked={showIntercaler}
-                onChange={(e) => togglePanel(e.target.checked, setShowIntercaler)}
-              />
-              <span>Intercaler</span>
-            </label>
-            <label className="tool-box" style={{ background: 'rgba(77, 150, 255, 0.15)', borderColor: 'var(--accent-blue)' }}>
-              <input type="checkbox" checked={isRasmMode} onChange={(e) => toggleRasm(e.target.checked)} />
-              <span>Mode Rasm</span>
-            </label>
-          </div>
+          <select
+            className="glass-input"
+            aria-label="Outils d'édition"
+            value={activeTool}
+            onChange={(e) => onToolSelect(e.target.value)}
+          >
+            <option value="">🛠️ Outils</option>
+            <option value="doc">📄 Documents</option>
+            <option value="search">🔍 Recherche</option>
+            <option value="intercaler">🔗 Intercaler</option>
+            <option value="rasm">✒️ Mode Rasm</option>
+          </select>
 
           {showDoc && (
             <div className="hidden-panel show-panel">
@@ -410,9 +375,6 @@ export default function AlQalamPage() {
 
         {/* Aperçu */}
         <div className="output-section">
-          <button className="copy-btn" onClick={copyOutput} aria-label="Copier le texte" title="Copier le texte">
-            ✅
-          </button>
           <div
             className="output-area glass-panel"
             style={{ fontSize: fontSize + 'px' }}
