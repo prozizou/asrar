@@ -39,37 +39,19 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .controls-section { display: flex; flex-direction: column; gap: 15px; background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
 .alq-page .output-section { display: flex; flex-direction: column; height: 100%; position: relative; }
 
-.alq-page .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--surface-3); border: 1px solid var(--border); color: var(--text-main); padding: 5px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; z-index: 10; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
-.alq-page .copy-btn:hover { background: var(--accent); color: var(--text-on-accent); }
-.alq-page .clear-input-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: var(--surface-3); border: 1px solid var(--border); color: var(--text-main); border-radius: 50%; font-size: 12px; line-height: 1; cursor: pointer; z-index: 10; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; }
-.alq-page .clear-input-btn:hover { background: var(--danger); color: #fff; }
-.alq-page .top-textarea { padding-top: 40px; }
-.alq-page .output-area { padding-top: 40px; }
-
 .alq-page .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
 .alq-page .glass-input:focus { border-color: var(--accent); }
 
-.alq-page .mini-btn { flex: 1 1 auto; min-width: 0; white-space: nowrap; background: var(--surface-3, rgba(255, 255, 255, 0.08)); border: 1px solid var(--glass-border); color: var(--text-main); border-radius: 10px; padding: 8px 10px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
-.alq-page .mini-btn:hover { background: var(--surface, rgba(255, 255, 255, 0.14)); }
-.alq-page .mini-btn:active { transform: scale(0.97); }
-
 .alq-page .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 24px; }
 
-.alq-page .grid-row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+.alq-page .grid-row-2-1 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; width: 100%; min-width: 0; }
 .alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
-.alq-page .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; min-width: 0; }
 
 .alq-page .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
 .alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
 
-.alq-page .tool-box { min-width: 0; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 2px; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: 0.3s; user-select: none; }
-.alq-page .tool-box:hover { background: var(--surface); }
-.alq-page .tool-box input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; flex-shrink: 0; }
-.alq-page .tool-box span { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
-
 .alq-page .hidden-panel { display: none; width: 100%; gap: 10px; }
 .alq-page .show-panel { display: flex; flex-direction: column; }
-.alq-page .show-panel.grid-row-2-1 { display: grid; }
 
 .alq-page .search-container { display: none; align-items: center; padding-right: 15px; }
 .alq-page .search-container.show-panel { display: flex; flex-direction: row; }
@@ -127,8 +109,7 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 }
 @media (max-width: 480px) {
   .alq-page .controls-section { padding: 15px; }
-  .alq-page .grid-row-2-1, .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
-  .alq-page .tools-grid { grid-template-columns: repeat(2, 1fr); }
+  .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
 }
 @media (min-width: 900px) {
   .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; height: calc(100vh - 40px); margin: 0 auto; }
