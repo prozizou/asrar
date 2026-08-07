@@ -257,6 +257,18 @@ input:focus {
     border: 1px solid var(--glass-border);
 }
 
+/* Boutons « Retour » (toutes pages) : réservés au PC. Sur mobile/tablette,
+   le retour se fait uniquement via le backpress natif (Android) / geste
+   navigateur — cohérent avec le comportement des apps mobiles. Les 2
+   panneaux ouverts en state React (détail secret, fiche boutique vendeur)
+   restent joignables via useHistoryClose (components/useHistoryClose.js),
+   qui pousse une entrée d'historique pour que le backpress fonctionne aussi. */
+@media (max-width: 900px) {
+    .back-btn, .detail-back, .geo-back {
+        display: none !important;
+    }
+}
+
 /* ───────────── Résultats & loader ───────────── */
 .result-box {
     margin-top: 20px;
