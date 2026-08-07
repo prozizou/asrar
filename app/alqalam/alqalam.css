@@ -33,11 +33,13 @@
 html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .shape2 { width: 400px; height: 400px; background: var(--danger); bottom: -150px; right: -100px; opacity: 0.2; }
 
-.alq-page .app-container { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; margin-top: 10px; overflow: visible; }
+.alq-page .app-container { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; margin-top: 10px; overflow: visible; min-height: calc(100vh - 40px); }
 
 .alq-page .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
 .alq-page .controls-section { display: flex; flex-direction: column; gap: 15px; background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); padding: 20px; min-width: 0; }
-.alq-page .output-section { display: flex; flex-direction: column; height: 100%; position: relative; }
+/* flex: 1 (au lieu d'une hauteur figée) : l'aperçu occupe tout l'espace bas
+   restant sous les contrôles, à toutes les largeurs — plus seulement ≥900px. */
+.alq-page .output-section { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; position: relative; }
 
 .alq-page .glass-input { width: 100%; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); padding: 12px 15px; font-size: 16px; outline: none; transition: 0.3s; }
 .alq-page .glass-input:focus { border-color: var(--accent); }
@@ -63,7 +65,7 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--border-strong); outline: none; }
 .alq-page .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
 
-.alq-page .output-area { height: 100%; min-height: 200px; max-height: calc(100vh - 80px); overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Scheherazade New', 'Alkalami', serif; font-size: 28px; color: var(--text-main); }
+.alq-page .output-area { height: 100%; min-height: 200px; overflow-y: auto; direction: rtl; text-align: justify; line-height: 1.8; font-family: 'Scheherazade New', 'Alkalami', serif; font-size: 28px; color: var(--text-main); }
 
 .alq-page .highlight { background-color: rgba(255, 255, 0, 0.35); color: var(--text-main); border-radius: 4px; padding: 0 4px; }
 html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215, 0, 0.4); }
@@ -105,15 +107,12 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 
 @media (max-width: 899px) {
   .alq-page .app-container { max-width: 600px; }
-  .alq-page .output-area { max-height: 40vh; }
 }
 @media (max-width: 480px) {
   .alq-page .controls-section { padding: 15px; }
   .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
 }
 @media (min-width: 900px) {
-  .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; height: calc(100vh - 40px); margin: 0 auto; }
-  .alq-page .controls-section { width: 380px; flex-shrink: 0; height: 100%; overflow-y: auto; }
-  .alq-page .output-section { flex-grow: 1; height: 100%; }
-  .alq-page .output-area { height: 100%; max-height: 100%; }
+  .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; margin: 0 auto; }
+  .alq-page .controls-section { width: 380px; flex-shrink: 0; overflow-y: auto; }
 }
