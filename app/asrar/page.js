@@ -9,6 +9,7 @@ import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
+import { useHistoryClose } from '@/components/useHistoryClose';
 import SecretDetail from './SecretDetail';
 
 const CATS = [
@@ -116,6 +117,9 @@ export default function AsrarPage() {
   }, [loadSecrets, openSecret]);
 
   const inDetail = !!currentSecret;
+  const closeSecret = useCallback(() => setCurrentSecret(null), []);
+  // Backpress Android : ferme le détail (pas de vraie navigation de page ici).
+  const goBackFromSecret = useHistoryClose(inDetail, closeSecret);
 
   return (
     <div className="container">
@@ -140,7 +144,7 @@ export default function AsrarPage() {
 
           <div className="asrar-main">
             {inDetail ? (
-              <SecretDetail secret={currentSecret} onBack={() => setCurrentSecret(null)} />
+              <SecretDetail secret={currentSecret} onBack={goBackFromSecret} />
             ) : (
               <div className="secrets-list">
                 {loadingList ? (

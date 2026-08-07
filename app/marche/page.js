@@ -16,6 +16,7 @@ import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
 import { optimImg } from '@/lib/img';
+import { useHistoryClose } from '@/components/useHistoryClose';
 import ProductModal from './ProductModal';
 import VendorShop from './VendorShop';
 
@@ -165,6 +166,10 @@ export default function MarchePage() {
   const shopVendor = vendorShopId ? allVendors.find((v) => v.id === vendorShopId) : null;
   const shopProducts = vendorShopId ? allProducts.filter((p) => vendorKey(p) === vendorShopId) : [];
 
+  const closeVendorShop = useCallback(() => setVendorShopId(null), []);
+  // Backpress Android : ferme la fiche boutique (pas de vraie navigation de page ici).
+  const goBackFromShop = useHistoryClose(!!shopVendor, closeVendorShop);
+
   return (
     <div className="container">
       <Link href="/" className="back-btn">
@@ -175,7 +180,7 @@ export default function MarchePage() {
         <VendorShop
           vendor={shopVendor}
           products={shopProducts}
-          onBack={() => setVendorShopId(null)}
+          onBack={goBackFromShop}
           onOpenProduct={(key) => gatedOpenProduct(key)}
         />
       ) : (
