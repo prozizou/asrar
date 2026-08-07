@@ -420,15 +420,57 @@ img, svg, video { max-width: 100%; height: auto; }
    Composants de la coquille React (portés de theme.js + firebase-config.js)
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Bouton flottant clair/sombre (ex-theme.js, injecté en JS auparavant) */
-#asrarThemeBtn {
-  position: fixed; right: 16px; bottom: 16px; z-index: 99999;
-  width: 46px; height: 46px; border-radius: 50%;
-  border: 1px solid rgba(150,150,150,.4); background: rgba(40,40,45,.85);
-  color: #f5e6c4; font-size: 1.2rem; cursor: pointer;
-  backdrop-filter: blur(6px); box-shadow: 0 4px 14px rgba(0,0,0,.3);
-  width: 46px; margin-top: 0; padding: 0;
+/* Drawer principal de l'accueil (ex-bouton flottant clair/sombre, retiré) :
+   thème (contrôle désormais unique de l'app), paramètres, version. */
+.drawer-overlay {
+  position: fixed; inset: 0; z-index: 10000; display: flex;
+  background: rgba(0, 0, 0, .55); backdrop-filter: blur(3px);
 }
+.drawer-panel {
+  width: min(320px, 86vw); height: 100%; overflow-y: auto;
+  background: var(--bg-deep); border-right: 1px solid var(--glass-border);
+  box-shadow: 0 0 40px rgba(0, 0, 0, .5);
+  display: flex; flex-direction: column;
+  animation: drawer-slide-in .25s ease;
+}
+@keyframes drawer-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-bottom: 1px solid var(--glass-border);
+}
+.drawer-header h3 {
+  margin: 0; font-family: var(--font-display); color: var(--text-main); letter-spacing: .5px;
+}
+.drawer-close {
+  background: transparent; border: 1px solid var(--glass-border);
+  width: 34px; height: 34px; border-radius: 50%; color: var(--text-muted);
+  font-size: 1rem; cursor: pointer; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.drawer-close:hover { background: var(--glass-bg); color: var(--text-main); transform: none; }
+
+.drawer-body { padding: 10px 12px 24px; display: flex; flex-direction: column; gap: 6px; }
+.drawer-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 12px; border-radius: 12px; color: var(--text-main);
+}
+.drawer-row-static { color: var(--text-muted); }
+.drawer-row-label { display: flex; align-items: center; gap: 12px; font-size: .95rem; }
+.drawer-row-icon { font-size: 1.2rem; width: 26px; text-align: center; }
+.drawer-row-hint { font-size: .82rem; color: var(--text-muted); }
+
+.theme-switch {
+  position: relative; width: 46px; height: 26px; border-radius: 30px; flex-shrink: 0;
+  background: var(--surface-3); border: 1px solid var(--glass-border); cursor: pointer; padding: 0;
+}
+.theme-switch-thumb {
+  position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); transition: transform .25s ease;
+}
+.theme-switch.is-light .theme-switch-thumb { transform: translateX(20px); }
 
 /* Portail « abonnement requis » (ex-showSubscriptionGate) */
 .sg-overlay {
