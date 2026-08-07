@@ -363,9 +363,8 @@ body {
   color: var(--asrar-text);
 }
 
-/* Masque les boutons flottants (thème / vue) pendant la saisie d'un commentaire */
-body.comment-open #asrarViewBtn,
-body.comment-open #asrarThemeBtn { display: none !important; }
+/* Masque le bouton flottant de vue pendant la saisie d'un commentaire */
+body.comment-open #asrarViewBtn { display: none !important; }
 
 .comment-list {
   flex: 1 1 auto;

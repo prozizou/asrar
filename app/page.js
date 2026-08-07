@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import PushToggle from '@/components/PushToggle';
+import AppDrawer from '@/components/AppDrawer';
 
 const GROUPS = [
   {
@@ -73,6 +74,7 @@ export default function Home() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <PushToggle />
+          <AppDrawer />
           <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
             ⏻
           </button>
