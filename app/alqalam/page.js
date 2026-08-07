@@ -137,19 +137,6 @@ export default function AlQalamPage() {
   };
 
   // ─── Actions du champ ───
-  const selectAll = () => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-  };
-  const copyAll = async () => {
-    if (!inputText) return showToast('Rien à copier.', 'info');
-    try {
-      await navigator.clipboard.writeText(inputText);
-      showToast('Texte copié.', 'info');
-    } catch {
-      showToast('Copie impossible.', 'error');
-    }
-  };
   const clearAll = () => {
     setInputText('');
     setBaseText('');
@@ -265,6 +252,15 @@ export default function AlQalamPage() {
               onChange={(e) => onInput(e.target.value)}
               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
             />
+            <button
+              type="button"
+              className="clear-input-btn"
+              onClick={clearAll}
+              aria-label="Supprimer le texte"
+              title="Supprimer le texte"
+            >
+              ❌
+            </button>
             {suggestions.length > 0 && (
               <div className="suggestions-container show-panel" role="listbox">
                 {suggestions.map((match, i) => (
@@ -283,18 +279,6 @@ export default function AlQalamPage() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="input-actions">
-            <button type="button" className="mini-btn" onClick={selectAll}>
-              🔲 Tout sélectionner
-            </button>
-            <button type="button" className="mini-btn" onClick={copyAll}>
-              📋 Tout copier
-            </button>
-            <button type="button" className="mini-btn" onClick={clearAll}>
-              🗑️ Tout supprimer
-            </button>
           </div>
 
           <div className="grid-row-2-1">
@@ -426,8 +410,8 @@ export default function AlQalamPage() {
 
         {/* Aperçu */}
         <div className="output-section">
-          <button className="copy-btn" onClick={copyOutput}>
-            📋 Copier
+          <button className="copy-btn" onClick={copyOutput} aria-label="Copier le texte" title="Copier le texte">
+            ✅
           </button>
           <div
             className="output-area glass-panel"
