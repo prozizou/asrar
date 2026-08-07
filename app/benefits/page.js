@@ -19,7 +19,6 @@ export default function BenefitsPage() {
   const [showFavs, setShowFavs] = useState(false);
   const [favorites, setFavorites] = useState(() => new Set());
   const [modalItem, setModalItem] = useState(null);
-  const [theme, setTheme] = useState('dark');
   const [toastMsg, setToastMsg] = useState('');
   const [toastShow, setToastShow] = useState(false);
   const toastTimer = useRef(null);
@@ -37,7 +36,6 @@ export default function BenefitsPage() {
   useEffect(() => {
     if (bootRef.current) return;
     bootRef.current = true;
-    setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
     try {
       setFavorites(new Set(JSON.parse(localStorage.getItem('favorites')) || []));
     } catch {}
@@ -46,17 +44,6 @@ export default function BenefitsPage() {
       .catch(() => showToast('⚠️ Données locales utilisées'));
     refreshAccess().catch(() => {});
   }, [refreshAccess, showToast]);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    document.documentElement.style.colorScheme = next;
-    try {
-      localStorage.setItem('asrar_theme', next);
-      localStorage.setItem('theme', next); // compat clé Benefits
-    } catch {}
-    setTheme(next);
-  };
 
   const toggleFav = useCallback(
     (id) => {
@@ -119,9 +106,6 @@ export default function BenefitsPage() {
             </div>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" aria-label="Changer le thème" onClick={toggleTheme}>
-              <i className={theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'} />
-            </button>
             <button
               className={'icon-btn' + (showFavs ? ' active' : '')}
               aria-label="Voir les favoris"
