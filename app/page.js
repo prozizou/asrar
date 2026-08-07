@@ -22,7 +22,6 @@ const GROUPS = [
       { icon: '🌀', label: 'Rouwhanes', href: '/rouwhania' },
       { icon: '📚', label: 'Bibliothèque', href: '/bibliotheque' },
       { icon: '🛒', label: 'Marché Mystique', href: '/marche' },
-      { icon: '🏪', label: 'Ma Boutique', href: '/boutique' },
       { icon: '🎁', label: 'Parrainage', href: '/parrainage' },
     ],
   },
