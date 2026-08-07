@@ -175,19 +175,6 @@ html[data-theme='light'] .geo-page::before {
 .geo-page .btn.primary { background: rgba(79, 172, 254, 0.2); border-color: var(--gold); color: var(--gold); font-weight: 700; }
 .geo-page .btn.primary:hover { background: rgba(79, 172, 254, 0.35); box-shadow: 0 0 28px rgba(79, 172, 254, 0.35); }
 
-.geo-page .geo-ai-input {
-  flex: 1;
-  min-width: 160px;
-  padding: 10px 16px;
-  border-radius: 30px;
-  border: 1px solid var(--glass-border);
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 0.9rem;
-}
-.geo-page .geo-ai-input:focus { outline: none; border-color: var(--gold2); }
-
 .geo-page .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-x: auto; padding: 8px 0; }
 .geo-page .shield-row { display: flex; gap: 7px; justify-content: space-around; width: 100%; margin-bottom: 12px; }
 .geo-page .w-100 { width: 100%; }
