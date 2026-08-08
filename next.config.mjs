@@ -26,6 +26,38 @@ const LEGACY = [
   ['/Benefits/index.html', '/benefits'],
 ];
 
+// Content-Security-Policy : restreint script/style/connexions aux origines
+// réellement utilisées par l'app (Firebase Auth/Realtime DB/Messaging,
+// Google Fonts, Cloudinary pour les images boutique/marché, popup Google
+// Sign-In). 'unsafe-inline' reste nécessaire pour script-src (script anti-FOUC
+// du thème dans app/layout.js) et style-src (attribut style="" posé par le
+// rendu serveur de React) — sans nonce/middleware, c'est le compromis standard
+// Next.js ; l'apport réel est d'empêcher le chargement de script/style/appels
+// réseau depuis un domaine tiers non listé (le principal vecteur XSS).
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com",
+  "frame-src 'self' https://asrar-bc059.firebaseapp.com https://accounts.google.com",
+  "worker-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
+const SECURITY_HEADERS = [
+  { key: 'Content-Security-Policy', value: CSP },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), payment=(), usb=(), geolocation=(self)' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+];
+
 const nextConfig = {
   reactStrictMode: true,
 
@@ -47,6 +79,8 @@ const nextConfig = {
 
   async headers() {
     return [
+      // En-têtes de sécurité : sur toutes les routes.
+      { source: '/:path*', headers: SECURITY_HEADERS },
       // Assets versionnés Next : immuables → cache navigateur d'un an.
       {
         source: '/_next/static/:path*',
