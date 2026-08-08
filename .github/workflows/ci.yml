@@ -1,0 +1,37 @@
+name: CI
+
+# Attrape les erreurs de lint/build avant qu'elles n'arrivent en production,
+# sur chaque push et chaque pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+        env:
+          # Valeurs factices : aucune route /api n'est exécutée pendant
+          # `next build` (fonctions serverless, pas de génération statique
+          # qui les appelle) — seules les pages sont compilées.
+          FIREBASE_SERVICE_ACCOUNT: '{}'
+          FIREBASE_DB_URL: https://example.firebaseio.com
+          SITE_URL: https://example.com
+          SUPER_ADMIN_EMAIL: admin@example.com
+          WHATSAPP_NUMBER: '000000000'
+          CLOUDINARY_CLOUD_NAME: example
+          CLOUDINARY_API_KEY: example
+          CLOUDINARY_API_SECRET: example

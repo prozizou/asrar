@@ -17,7 +17,7 @@ export function useToast() {
   }, []);
 
   const node = (
-    <div className={'bq-toast' + (show ? ' show' : '')} role="status">
+    <div className={'toast' + (show ? ' show' : '')} role="status">
       {msg}
     </div>
   );
