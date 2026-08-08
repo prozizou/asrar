@@ -140,6 +140,16 @@ body {
     margin: 0 auto;
 }
 
+/* Centre verticalement l'écran de connexion (Google) dans la fenêtre,
+   au lieu de le laisser collé en haut avec un grand vide en dessous. */
+.login-screen {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
