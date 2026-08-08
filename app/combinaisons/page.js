@@ -51,7 +51,7 @@ export default function CombinaisonsPage() {
 
   const calcWeight = useMemo(() => abjadWeight(calcInput), [calcInput]);
 
-  const results = outcome ? outcome.results : [];
+  const results = useMemo(() => (outcome ? outcome.results : []), [outcome]);
   // Tri : combinaisons contenant « الله » d'abord.
   const sortedResults = useMemo(
     () => [...results].sort((a, b) => (hasAllah(a) ? 0 : 1) - (hasAllah(b) ? 0 : 1)),
