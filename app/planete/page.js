@@ -1,65 +1,16 @@
 'use client';
 // Module « Planète » — port de planete/planete.html.
 // Horloge sacrée + heures planétaires chaldéennes. La position vient du GPS ;
-// le lever/coucher est calculé localement (NOAA, lib/planete.js) puis affiné
-// via l'API Sunrise-Sunset (avec repli hors-ligne). Toute la logique astro/
-// planétaire est dans lib/planete.js ; ici, l'UI React et les effets (GPS,
-// horloge 1 s, recalcul aux bascules de journée planétaire).
+// le lever/coucher est calculé entièrement en local (formule NOAA, voir
+// sunTimesFor dans lib/planete.js) — aucun appel réseau tiers, donc aucune
+// latence, panne possible ni envoi de la position GPS à un service externe.
+// Toute la logique astro/planétaire est dans lib/planete.js ; ici, l'UI React
+// et les effets (GPS, horloge 1 s, recalcul aux bascules de journée planétaire).
 import './planete.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
-import {
-  DAY_PLANETS,
-  CHALDEAN_EMOJIS,
-  computePday,
-  currentHour,
-  phaseOf,
-  natureOf,
-  buildHourList,
-  dateKey,
-} from '@/lib/planete';
-
-// API publique Sunrise-Sunset (plus précise) — remplit le cache pour J-1/J/J+1.
-async function prefetchSunAPI(lat, lng, cache) {
-  if (lat == null) return;
-  const base = new Date();
-  const days = [-1, 0, 1].map((off) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + off);
-    return d;
-  });
-  await Promise.all(
-    days.map(async (d) => {
-      const key = dateKey(d);
-      if (cache[key]) return;
-      try {
-        const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${key}&formatted=0`;
-        const r = await fetch(url);
-        const j = await r.json();
-        if (j && j.status === 'OK' && j.results && j.results.sunrise && j.results.sunset) {
-          cache[key] = { sunrise: new Date(j.results.sunrise), sunset: new Date(j.results.sunset) };
-        }
-      } catch {
-        /* repli local via sunOrDefault */
-      }
-    })
-  );
-}
-
-// Nom de ville (réseau, AFFICHAGE seulement — la position vient du GPS).
-async function reverseGeocode(lat, lng) {
-  try {
-    const r = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=fr`
-    );
-    if (!r.ok) return null;
-    const d = await r.json();
-    return d.city || d.locality || null;
-  } catch {
-    return null;
-  }
-}
+import { DAY_PLANETS, CHALDEAN_EMOJIS, computePday, currentHour, phaseOf, natureOf, buildHourList } from '@/lib/planete';
 
 const fmtHM = (date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
@@ -68,7 +19,7 @@ export default function PlanetePage() {
   const sunCache = useRef({});
 
   const [now, setNow] = useState(() => new Date());
-  const [geo, setGeo] = useState({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
+  const [geo, setGeo] = useState({ lat: null, lng: null, accuracy: null, ready: false, error: null });
   const [pday, setPday] = useState(null);
   const [todaySun, setTodaySun] = useState(null);
   const [hours, setHours] = useState(null); // { dayName, day[], night[] }
@@ -87,16 +38,12 @@ export default function PlanetePage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const acc = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
-        setGeo({ lat, lng, city: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, accuracy: acc, named: false, ready: true, error: null });
-        recompute(lat, lng); // 1) calcul local immédiat
-        await prefetchSunAPI(lat, lng, sunCache.current);
-        recompute(lat, lng); // 2) affiné via l'API
-        const city = await reverseGeocode(lat, lng);
-        if (city) setGeo((g) => ({ ...g, city, named: true }));
+        setGeo({ lat, lng, accuracy: acc, ready: true, error: null });
+        recompute(lat, lng); // calcul entièrement local (NOAA), aucun réseau requis
       },
       (err) => {
         const msg =
@@ -200,11 +147,7 @@ export default function PlanetePage() {
                   </button>
                 </>
               ) : geo.ready ? (
-                geo.named ? (
-                  `📡 ${geo.city} (GPS)`
-                ) : (
-                  `📡 GPS : ${geo.city}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
-                )
+                `📡 GPS : ${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
               ) : (
                 '—'
               )}
