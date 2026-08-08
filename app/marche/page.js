@@ -17,10 +17,12 @@ import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import { useHistoryClose } from '@/components/useHistoryClose';
+import { useToast } from '@/components/useToast';
 import ProductModal from './ProductModal';
 import VendorShop from './VendorShop';
 
 export default function MarchePage() {
+  const { notify, toast } = useToast();
   const [allProducts, setAllProducts] = useState([]);
   const [allVendors, setAllVendors] = useState([]);
   const [query, setQuery] = useState('');
@@ -86,10 +88,10 @@ export default function MarchePage() {
         const { item } = await apiPost('get-content', { kind: 'product', key });
         setModalProduct({ _key: key, ...meta, ...item });
       } catch (e) {
-        alert('Erreur : ' + (e.message || e));
+        notify('Erreur : ' + (e.message || e));
       }
     },
-    [allProducts]
+    [allProducts, notify]
   );
 
   // Boot : charge produits, vendeurs, popularité, likes boutiques, deep link.
@@ -111,14 +113,14 @@ export default function MarchePage() {
         if (deep && deep.key) {
           cleanUrl();
           if (products.some((p) => p._key === deep.key)) gatedOpenProduct(deep.key, products);
-          else alert("Ce produit n'est plus disponible.");
+          else notify("Ce produit n'est plus disponible.");
         }
       } catch (e) {
         setLoading(false);
         setError(e.message || 'Erreur de chargement des produits.');
       }
     })();
-  }, [loadPopularite, loadVendorLikes, gatedOpenProduct]);
+  }, [loadPopularite, loadVendorLikes, gatedOpenProduct, notify]);
 
   const toggleVendorLike = (vendorId, ev) => {
     if (ev) {
@@ -348,6 +350,8 @@ export default function MarchePage() {
           onVisitShop={(id) => setVendorShopId(id)}
         />
       )}
+
+      {toast}
     </div>
   );
 }

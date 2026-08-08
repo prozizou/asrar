@@ -167,6 +167,32 @@ body {
     margin-bottom: 30px;
 }
 
+/* ───── Toast (message flash bas d'écran) — partagé par tous les modules,
+   remplace les alert()/confirm() natifs bloquants et non stylés. ───── */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(16px);
+    max-width: min(90vw, 420px);
+    background: var(--surface);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: .9rem;
+    line-height: 1.4;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 10000;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 h1, h2, h3 {
     font-family: var(--font-display);
     font-weight: 600;
