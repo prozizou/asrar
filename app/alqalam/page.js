@@ -15,6 +15,7 @@ import {
   generateDocx,
   loadSourates,
   loadVersets,
+  htmlToPlainText,
 } from '@/lib/alqalam';
 
 const savePref = (k, v) => {
@@ -30,6 +31,25 @@ const getPref = (k) => {
   }
 };
 
+// Blocs cumulés ("➕ Cumuler") : sauvegardés à chaque changement pour ne rien
+// perdre si l'utilisateur ferme l'onglet/l'app avant de générer le Word.
+const ACC_KEY = 'cali_accumulated_blocks';
+const loadAccumulated = () => {
+  try {
+    const raw = localStorage.getItem(ACC_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+const saveAccumulated = (blocks) => {
+  try {
+    if (blocks.length > 0) localStorage.setItem(ACC_KEY, JSON.stringify(blocks));
+    else localStorage.removeItem(ACC_KEY);
+  } catch {}
+};
+
 export default function AlQalamPage() {
   const { ensureAccess } = useAccess();
 
@@ -43,6 +63,9 @@ export default function AlQalamPage() {
   const [isRasmMode, setIsRasmMode] = useState(false);
 
   const [accumulatedBlocks, setAccumulatedBlocks] = useState([]);
+  const [showAccList, setShowAccList] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editDraft, setEditDraft] = useState({ texte: '', totalMultiplier: 1, isRasmMode: false });
   const [docName, setDocName] = useState('');
 
   const [showDoc, setShowDoc] = useState(false);
@@ -80,6 +103,12 @@ export default function AlQalamPage() {
     if (dn !== null) setDocName(dn);
     // Le mode Rasm n'est réactivé qu'après vérification d'accès (au clic).
 
+    const savedBlocks = loadAccumulated();
+    if (savedBlocks.length > 0) {
+      setAccumulatedBlocks(savedBlocks);
+      showToast(`${savedBlocks.length} bloc(s) cumulé(s) restauré(s).`, 'info');
+    }
+
     loadSourates().then((s) => {
       setSourates(s.list);
       setSouratesContent(s.content);
@@ -87,6 +116,11 @@ export default function AlQalamPage() {
     });
     loadVersets().then(setVersets);
   }, [showToast]);
+
+  // Sauvegarde automatique des blocs cumulés à chaque changement (ajout/vidage).
+  useEffect(() => {
+    saveAccumulated(accumulatedBlocks);
+  }, [accumulatedBlocks]);
 
   const preview = useMemo(
     () => buildPreview({ baseText, totalMultiplier, intercalatedPhrase, isRasmMode, searchTerm }),
@@ -180,8 +214,52 @@ export default function AlQalamPage() {
   };
   const onClearTemp = () => {
     if (accumulatedBlocks.length === 0) return;
+    setEditingIndex(null);
     setAccumulatedBlocks([]);
     showToast('Le document temporaire a été vidé.', 'info');
+  };
+
+  // ─── Liste des blocs cumulés : réordonner, modifier, supprimer ───
+  const moveBlock = (index, dir) => {
+    setEditingIndex(null);
+    setAccumulatedBlocks((prev) => {
+      const to = index + dir;
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[to]] = [next[to], next[index]];
+      return next;
+    });
+  };
+
+  const removeBlock = (index) => {
+    setEditingIndex(null);
+    setAccumulatedBlocks((prev) => prev.filter((_, i) => i !== index));
+    showToast('Bloc supprimé.', 'info');
+  };
+
+  const startEdit = (index) => {
+    const block = accumulatedBlocks[index];
+    setEditDraft({
+      texte: htmlToPlainText(block.texte).trim(),
+      totalMultiplier: block.totalMultiplier,
+      isRasmMode: !!block.isRasmMode,
+    });
+    setEditingIndex(index);
+  };
+
+  const cancelEdit = () => setEditingIndex(null);
+
+  const saveEdit = () => {
+    const texte = editDraft.texte.trim();
+    if (!texte) return showToast('Le texte du bloc ne peut pas être vide.', 'error');
+    const rep = Math.max(1, Math.min(parseInt(editDraft.totalMultiplier, 10) || 1, config.MAX_TOTAL_REPEAT));
+    setAccumulatedBlocks((prev) =>
+      prev.map((b, i) =>
+        i === editingIndex ? { texte: ' ' + texte + ' ', totalMultiplier: rep, isRasmMode: editDraft.isRasmMode } : b
+      )
+    );
+    setEditingIndex(null);
+    showToast('Bloc mis à jour.', 'info');
   };
 
   // ─── Génération Word (protégé) ───
@@ -310,6 +388,103 @@ export default function AlQalamPage() {
                   🗑️ Vider ({accumulatedBlocks.length})
                 </button>
               </div>
+
+              {accumulatedBlocks.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-glass"
+                    style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,.08)' }}
+                    onClick={() => setShowAccList((v) => !v)}
+                  >
+                    {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
+                  </button>
+
+                  {showAccList && (
+                    <div className="acc-list">
+                      {accumulatedBlocks.map((block, i) => (
+                        <div className="acc-item" key={i}>
+                          {editingIndex === i ? (
+                            <>
+                              <textarea
+                                className="glass-input acc-edit-textarea"
+                                value={editDraft.texte}
+                                onChange={(e) => setEditDraft((d) => ({ ...d, texte: e.target.value }))}
+                                aria-label={`Texte du bloc ${i + 1}`}
+                              />
+                              <div className="acc-edit-row">
+                                <input
+                                  type="number"
+                                  className="glass-input"
+                                  style={{ maxWidth: 110 }}
+                                  value={editDraft.totalMultiplier}
+                                  min={1}
+                                  max={config.MAX_TOTAL_REPEAT}
+                                  onChange={(e) => setEditDraft((d) => ({ ...d, totalMultiplier: e.target.value }))}
+                                  aria-label={`Répétitions du bloc ${i + 1}`}
+                                />
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-gray)' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={editDraft.isRasmMode}
+                                    onChange={(e) => setEditDraft((d) => ({ ...d, isRasmMode: e.target.checked }))}
+                                  />
+                                  Mode Rasm
+                                </label>
+                              </div>
+                              <div className="acc-item-actions">
+                                <button type="button" className="acc-btn" onClick={saveEdit}>
+                                  💾 Enregistrer
+                                </button>
+                                <button type="button" className="acc-btn" onClick={cancelEdit}>
+                                  ✖️ Annuler
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="acc-item-head">
+                                <span className="acc-item-index">{i + 1}.</span>
+                                <span className="acc-item-text">{htmlToPlainText(block.texte)}</span>
+                              </div>
+                              <span className="acc-item-meta">
+                                ×{Number(block.totalMultiplier || 0).toLocaleString('fr-FR')}
+                                {block.isRasmMode ? ' · ✒️ Rasm' : ''}
+                              </span>
+                              <div className="acc-item-actions">
+                                <button
+                                  type="button"
+                                  className="acc-btn"
+                                  onClick={() => moveBlock(i, -1)}
+                                  disabled={i === 0}
+                                  aria-label={`Monter le bloc ${i + 1}`}
+                                >
+                                  ⬆️
+                                </button>
+                                <button
+                                  type="button"
+                                  className="acc-btn"
+                                  onClick={() => moveBlock(i, 1)}
+                                  disabled={i === accumulatedBlocks.length - 1}
+                                  aria-label={`Descendre le bloc ${i + 1}`}
+                                >
+                                  ⬇️
+                                </button>
+                                <button type="button" className="acc-btn" onClick={() => startEdit(i)}>
+                                  ✏️ Modifier
+                                </button>
+                                <button type="button" className="acc-btn acc-btn-danger" onClick={() => removeBlock(i)}>
+                                  🗑️ Supprimer
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

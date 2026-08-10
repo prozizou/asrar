@@ -105,6 +105,21 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 
 .alq-page .flex-grow { flex: 1; }
 
+/* Liste des blocs cumulés : réordonner / modifier / supprimer avant export. */
+.alq-page .acc-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; width: 100%; margin-top: 10px; }
+.alq-page .acc-item { display: flex; flex-direction: column; gap: 6px; background: var(--surface-input); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 12px; }
+.alq-page .acc-item-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.alq-page .acc-item-index { flex: 0 0 auto; font-size: 12px; font-weight: bold; color: var(--text-gray); }
+.alq-page .acc-item-text { flex: 1 1 auto; min-width: 0; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 17px; color: var(--text-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alq-page .acc-item-meta { font-size: 11px; color: var(--text-gray); }
+.alq-page .acc-item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.alq-page .acc-btn { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-white); cursor: pointer; padding: 6px 10px; font-size: 13px; line-height: 1.2; transition: 0.2s; }
+.alq-page .acc-btn:hover:not(:disabled) { background: var(--accent); }
+.alq-page .acc-btn:disabled { opacity: 0.35; cursor: default; }
+.alq-page .acc-btn-danger { border-color: var(--danger); color: var(--text-red); }
+.alq-page .acc-edit-textarea { min-height: 70px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 17px; }
+.alq-page .acc-edit-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
 @media (max-width: 899px) {
   .alq-page .app-container { max-width: 600px; }
 }
