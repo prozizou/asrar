@@ -15,7 +15,6 @@ const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
-const { notifyNewContent } = require("../../server/push");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -160,7 +159,6 @@ export default async function handler(req, res) {
 
       // Clé existante (édition) si elle nous appartient, sinon nouvelle.
       let key = str(product.key, 64);
-      const isNew = !key;
       if (key) {
         const cur = (await db.ref("det_produits/" + key).once("value")).val();
         if (!cur) return res.status(404).json({ error: "Produit introuvable." });
@@ -189,7 +187,6 @@ export default async function handler(req, res) {
         updatedAt: Date.now()
       };
       await db.ref("det_produits/" + key).update(record);
-      if (isNew) notifyNewContent({ title: "🛍️ Nouveau produit", body: nom, url: "/marche" });
       return res.status(200).json({ ok: true, key, product: { _key: key, ...record } });
     }
 

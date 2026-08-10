@@ -16,7 +16,6 @@ const { verifyUser, isAdmin, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
-const { notifyNewContent } = require("../../server/push");
 
 const DAY_MS = 86400000;
 
@@ -53,10 +52,8 @@ export default async function handler(req, res) {
         const faida = str(body.faida, 200);
         if (!faida) return res.status(400).json({ error: "Titre (faida) requis." });
         const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
-        const isNew = !body.key;
         const key = body.key || db.ref("db_sirr_" + cat).push().key;
         await db.ref("db_sirr_" + cat + "/" + key).update(rec);
-        if (isNew) notifyNewContent({ title: "✨ Nouveau secret", body: faida, url: "/asrar" });
         return res.json({ ok: true, key });
       }
       case "delete-secret": {
@@ -74,10 +71,8 @@ export default async function handler(req, res) {
           titre, auteur: str(body.auteur, 120), description: str(body.description, 2000),
           img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
-        const isNew = !body.key;
         const key = body.key || db.ref("almaqtab").push().key;
         await db.ref("almaqtab/" + key).update(rec);
-        if (isNew) notifyNewContent({ title: "📚 Nouveau document", body: titre, url: "/bibliotheque" });
         return res.json({ ok: true, key });
       }
       case "delete-book": {
@@ -100,10 +95,8 @@ export default async function handler(req, res) {
           email: str(body.email, 120), updatedAt: Date.now()
         };
         if (body.uid) rec.uid = str(body.uid, 64);
-        const isNew = !body.key;
         const key = body.key || db.ref("det_produits").push().key;
         await db.ref("det_produits/" + key).update(rec);
-        if (isNew) notifyNewContent({ title: "🛍️ Nouveau produit", body: produit, url: "/marche" });
         return res.json({ ok: true, key });
       }
       case "delete-product": {
