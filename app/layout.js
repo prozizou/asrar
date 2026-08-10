@@ -12,6 +12,12 @@ export const metadata = {
     statusBarStyle: 'black-translucent',
     title: 'ASRAR PRO',
   },
+  // Next.js n'émet que <meta name="apple-mobile-web-app-capable"> via
+  // appleWebApp — désormais dépréciée par Chrome au profit du nom standard
+  // mobile-web-app-capable. On garde les deux (Safari lit encore l'ancienne).
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   icons: {
     icon: '/assets/favicon.png',
     apple: '/assets/apple-touch-icon.png',
