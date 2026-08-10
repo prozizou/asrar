@@ -30,6 +30,25 @@ const getPref = (k) => {
   }
 };
 
+// Blocs cumulés ("➕ Cumuler") : sauvegardés à chaque changement pour ne rien
+// perdre si l'utilisateur ferme l'onglet/l'app avant de générer le Word.
+const ACC_KEY = 'cali_accumulated_blocks';
+const loadAccumulated = () => {
+  try {
+    const raw = localStorage.getItem(ACC_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+const saveAccumulated = (blocks) => {
+  try {
+    if (blocks.length > 0) localStorage.setItem(ACC_KEY, JSON.stringify(blocks));
+    else localStorage.removeItem(ACC_KEY);
+  } catch {}
+};
+
 export default function AlQalamPage() {
   const { ensureAccess } = useAccess();
 
@@ -80,6 +99,12 @@ export default function AlQalamPage() {
     if (dn !== null) setDocName(dn);
     // Le mode Rasm n'est réactivé qu'après vérification d'accès (au clic).
 
+    const savedBlocks = loadAccumulated();
+    if (savedBlocks.length > 0) {
+      setAccumulatedBlocks(savedBlocks);
+      showToast(`${savedBlocks.length} bloc(s) cumulé(s) restauré(s).`, 'info');
+    }
+
     loadSourates().then((s) => {
       setSourates(s.list);
       setSouratesContent(s.content);
@@ -87,6 +112,11 @@ export default function AlQalamPage() {
     });
     loadVersets().then(setVersets);
   }, [showToast]);
+
+  // Sauvegarde automatique des blocs cumulés à chaque changement (ajout/vidage).
+  useEffect(() => {
+    saveAccumulated(accumulatedBlocks);
+  }, [accumulatedBlocks]);
 
   const preview = useMemo(
     () => buildPreview({ baseText, totalMultiplier, intercalatedPhrase, isRasmMode, searchTerm }),
