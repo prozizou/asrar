@@ -1,17 +1,14 @@
 'use client';
-// PwaGate — rend l'app installable (PWA) et, tant qu'elle n'est pas installée,
-// affiche un écran d'installation BLOQUANT (l'app ne s'ouvre qu'une fois lancée
-// depuis l'écran d'accueil).
+// PwaGate — rend l'app installable (PWA).
 //   • Enregistre le service worker (/sw.js) pour tous les visiteurs.
-//   • Android/Chromium : capte `beforeinstallprompt` → bouton « Installer ».
-//   • iOS/Safari : instructions « Partager → Sur l'écran d'accueil ».
-//   • Navigateurs sans installation possible (Firefox/Safari desktop) : on ne
-//     bloque pas (sinon on exclurait ces utilisateurs) → lien « Continuer ».
-//
-// Pour NE PLUS bloquer (juste proposer), passez FORCE_INSTALL à false.
+//   • Android/Chromium : capte `beforeinstallprompt` (utilisable plus tard via
+//     un bouton dans l'app, ex. `promptInstall`).
+//   • L'écran d'installation plein écran BLOQUANT au démarrage est désactivé
+//     (FORCE_INSTALL = false) : l'app s'ouvre toujours directement dans le
+//     navigateur, installée ou non. Repasser à true pour le réactiver.
 import { useEffect, useState } from 'react';
 
-const FORCE_INSTALL = true;
+const FORCE_INSTALL = false;
 
 function isStandalone() {
   if (typeof window === 'undefined') return false;
