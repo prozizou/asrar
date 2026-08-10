@@ -34,14 +34,21 @@ const LEGACY = [
 // rendu serveur de React) — sans nonce/middleware, c'est le compromis standard
 // Next.js ; l'apport réel est d'empêcher le chargement de script/style/appels
 // réseau depuis un domaine tiers non listé (le principal vecteur XSS).
+//
+// script-src : GAPI (chargé par signInWithPopup) injecte dynamiquement des
+// scripts/iframes de relais (postMessage) depuis PLUSIEURS sous-domaines
+// Google selon la région/le compte (constaté : blocages CSP en prod avec un
+// allowlist restreint à www.gstatic.com/apis.google.com seuls) — wildcard sur
+// gstatic.com et google.com, comme recommandé par Google pour l'intégration
+// GAPI/Google Identity Services.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com",
+  "script-src 'self' 'unsafe-inline' https://apis.google.com https://*.gstatic.com https://www.google.com https://accounts.google.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com",
-  "frame-src 'self' https://asrar-bc059.firebaseapp.com https://accounts.google.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com https://*.gstatic.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com https://accounts.google.com",
+  "frame-src 'self' https://asrar-bc059.firebaseapp.com https://accounts.google.com https://content.googleapis.com",
   "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
