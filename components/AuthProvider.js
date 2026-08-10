@@ -16,7 +16,6 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { captureRef, claimRef } from '@/lib/share';
-import { enablePush, isPushEnabled } from '@/lib/push';
 
 const AuthCtx = createContext({ user: null, loading: true, signOut: () => {} });
 export const useAuth = () => useContext(AuthCtx);
@@ -53,7 +52,6 @@ export default function AuthProvider({ children }) {
         } catch {}
         claimRef(); // transmet le parrainage au serveur (une seule fois)
         trackVisit(u);
-        autoEnablePush(); // demande la permission de notifications (une seule fois)
       }
     });
     return unsub;
@@ -135,20 +133,6 @@ function LoginScreen({ onLogin, status, error }) {
       </div>
     </div>
   );
-}
-
-// Demande automatique de la permission de notifications à la connexion (une
-// seule fois par session) : plus besoin d'un bouton cloche dans l'accueil.
-// Si l'utilisateur a déjà refusé, le navigateur ne réaffiche pas la popup
-// (Notification.requestPermission() renvoie directement "denied") — on évite
-// donc l'appel réseau inutile dans ce cas.
-let _pushRequested = false;
-function autoEnablePush() {
-  if (_pushRequested) return;
-  _pushRequested = true;
-  if (typeof Notification === 'undefined') return;
-  if (Notification.permission === 'denied' || isPushEnabled()) return;
-  enablePush().catch(() => {});
 }
 
 // Journalisation légère des visites (alimente le tableau de bord admin).
