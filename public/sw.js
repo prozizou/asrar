@@ -15,7 +15,7 @@
 // Mise à jour : incrémenter SW_VERSION à chaque changement de stratégie de cache.
 // skipWaiting + clients.claim → le nouveau SW prend la main immédiatement.
 
-const SW_VERSION = 'v5';
+const SW_VERSION = 'v6';
 const CACHE = 'asrar-pwa-' + SW_VERSION;
 const IMG_CACHE = 'asrar-img-' + SW_VERSION; // cache dédié aux images distantes.
 const IMG_MAX = 60; // nombre d'images conservées (LRU approximatif).
@@ -23,6 +23,15 @@ const IMG_MAX = 60; // nombre d'images conservées (LRU approximatif).
 // Image hébergée sur Cloudinary (cross-origin) → éligible au cache images.
 function isCloudinaryImage(url) {
   return /(^|\.)res\.cloudinary\.com$/.test(url.hostname);
+}
+
+// Repli ultime : garantit TOUJOURS un vrai Response à respondWith(), même si
+// le réseau ET le cache échouent tous les deux. Sans ça, une chaîne qui finit
+// par résoudre `undefined` fait planter le navigateur avec
+// "TypeError: Failed to convert value to 'Response'" au lieu d'une simple
+// erreur réseau propre.
+function offlineFallback() {
+  return new Response('', { status: 503, statusText: 'Offline' });
 }
 
 // Limite la taille d'un cache : supprime les entrées les plus anciennes (FIFO).
@@ -104,7 +113,7 @@ self.addEventListener('fetch', (event) => {
               }
               return res;
             })
-            .catch(() => cached); // hors-ligne → on garde la version en cache.
+            .catch(() => cached || offlineFallback()); // hors-ligne, rien en cache → repli garanti.
           return cached || network; // cache d'abord (rapide), sinon réseau.
         })
       )
@@ -141,11 +150,16 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((c) => c.put(req, copy));
           return res;
         })
-        .catch(() => caches.match(req).then((c) => c || caches.match('/')))
+        .catch(() =>
+          caches
+            .match(req)
+            .then((c) => c || caches.match('/'))
+            .then((c) => c || offlineFallback())
+        )
     );
     return;
   }
 
   // Reste → réseau, repli cache.
-  event.respondWith(fetch(req).catch(() => caches.match(req)));
+  event.respondWith(fetch(req).catch(() => caches.match(req).then((c) => c || offlineFallback())));
 });
