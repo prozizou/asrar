@@ -3,13 +3,15 @@
 // Saisie des 4 Mères (lignes à 1 ou 2 points) → calcul de l'écu (16 Maisons),
 // figures binaires, بزدح, parité du Juge, synthèse (vœu / repérage) et modale
 // d'interprétation par maison. La logique vit dans lib/geomancie.js ; ici l'UI
-// React et les données premium (via /api/get-theme, gated par ensureAccess).
+// React et les données premium (via /api/get-theme, réservées au forfait 1 An —
+// PREMIUM_LEVEL — vérifié côté client (ensureAccess) ET côté serveur (get-theme)).
 import './geomancie.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { useAccess } from '@/components/AccessProvider';
+import { PREMIUM_LEVEL } from '@/lib/access';
 import {
   generateAllHouses,
   checkJudgeParity,
@@ -117,8 +119,8 @@ export default function GeomanciePage() {
       return res.data || [];
     } catch (error) {
       if (error && error.status === 403) {
-        showToast('🔒 Géomancie réservée aux abonnés.');
-        openGate();
+        showToast('🔒 Géomancie réservée au forfait 1 An (45 000 FCFA).');
+        openGate('level');
       } else {
         showToast('❌ Échec du chargement (' + (error.message || 'erreur') + ')');
       }
@@ -127,7 +129,7 @@ export default function GeomanciePage() {
   }, [showToast, openGate]);
 
   const onCalculate = async () => {
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     if (!fbData || fbData.length === 0) await fetchFirebaseData();
     setCalculated(true);

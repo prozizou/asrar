@@ -4,10 +4,10 @@
 //
 // Body (JSON) : { idToken }
 //
-// La géomancie est désormais réservée aux abonnés (même barrière que get-content) :
-// identité vérifiée + abonnement actif, sinon 403.
+// La géomancie (comme Al Qalam) est réservée au palier « 1 An / 45 000 FCFA »
+// (PREMIUM_LEVEL) : identité vérifiée + palier suffisant, sinon 403.
 
-const { verifyUser, hasActiveAccess } = require("../../server/access");
+const { verifyUser, getAccessLevel, PREMIUM_LEVEL } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 
@@ -21,8 +21,10 @@ export default async function handler(req, res) {
   try {
     const user = await verifyUser(idToken);
 
-    const ok = await hasActiveAccess(user);
-    if (!ok) return res.status(403).json({ error: "Abonnement requis." });
+    const level = await getAccessLevel(user);
+    if (level < PREMIUM_LEVEL) {
+      return res.status(403).json({ error: "Réservé au forfait 1 An (45 000 FCFA)." });
+    }
 
     const snap = await app().database().ref("theme_fondamental").once("value");
     return res.status(200).json({ data: snap.val() });

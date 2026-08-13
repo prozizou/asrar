@@ -3,10 +3,12 @@
 // Outil de calligraphie : saisie arabe, répétition, aperçu coloré live, mode
 // Rasm, recherche, intercalation de sourates, cumul de blocs et export Word
 // (.docx). La logique vit dans lib/alqalam.js ; ici l'UI React et les effets.
-// Les fonctionnalités premium passent par ensureAccess.
+// Les fonctionnalités premium passent par ensureAccess(PREMIUM_LEVEL) : réservées
+// au forfait 1 An (45 000 FCFA), comme la Géomancie.
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAccess } from '@/components/AccessProvider';
+import { PREMIUM_LEVEL } from '@/lib/access';
 import {
   config,
   buildPreview,
@@ -151,7 +153,7 @@ export default function AlQalamPage() {
       }
       return;
     }
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     setShowDoc(value === 'doc');
     setShowSearch(value === 'search');
@@ -167,7 +169,7 @@ export default function AlQalamPage() {
 
   // ─── Écrire (protégé) ───
   const onWrite = async () => {
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     const text = inputText.trim();
     const count = parseInt(repCount, 10);
@@ -179,7 +181,7 @@ export default function AlQalamPage() {
 
   // ─── Intercalation (protégé) ───
   const onIntercaler = async () => {
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     const phrase = inputText.trim();
     if (!interKey || !phrase) {
@@ -196,7 +198,7 @@ export default function AlQalamPage() {
 
   // ─── Cumuler (protégé) ───
   const onAddTemp = async () => {
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     if (!baseText || totalMultiplier === 0) {
       return showToast("Générez d'abord un texte avant de l'ajouter.", 'error');
@@ -264,7 +266,7 @@ export default function AlQalamPage() {
 
   // ─── Génération Word (protégé) ───
   const onDoc = async () => {
-    const ok = await ensureAccess();
+    const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     if (!docName.trim() || (totalMultiplier === 0 && accumulatedBlocks.length === 0)) {
       return showToast('Générez un texte ou cumulez des blocs, et nommez le document.', 'error');

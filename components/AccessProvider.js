@@ -14,9 +14,13 @@ export default function AccessProvider({ children }) {
   const { user } = useAuth();
   const cache = useRef(null); // équivalent de _accessStatus (cache par session)
   const [gateOpen, setGateOpen] = useState(false);
+  const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
 
-  const openGate = useCallback(() => setGateOpen(true), []);
+  const openGate = useCallback((reason) => {
+    setGateReason(reason || null);
+    setGateOpen(true);
+  }, []);
   const closeGate = useCallback(() => setGateOpen(false), []);
 
   // Résout l'accès SANS ouvrir le portail (verrouillage passif : cartes « nom
@@ -32,18 +36,21 @@ export default function AccessProvider({ children }) {
     return status.allowed;
   }, [user]);
 
-  // Vérifie l'accès à la demande. Résout true si autorisé, sinon ouvre le
-  // portail et résout false. Le résultat est mis en cache pour la session.
+  // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
+  // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL
+  // pour Al Qalam / Géomancie, réservés au forfait 1 An). Sinon ouvre le
+  // portail (avec un motif adapté) et résout false. Résultat mis en cache
+  // pour la session.
   const ensureAccess = useCallback(
-    async () => {
+    async (minLevel = 0) => {
       if (!user) return false;
       let status = cache.current;
       if (!status) {
         status = await checkAccess(user);
         cache.current = status;
       }
-      if (status.allowed) return true;
-      openGate();
+      if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
+      openGate(status.allowed && minLevel ? 'level' : null);
       return false;
     },
     [user, openGate]
@@ -57,7 +64,7 @@ export default function AccessProvider({ children }) {
   return (
     <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, refreshAccess }}>
       {children}
-      <SubscriptionGate open={gateOpen} onClose={closeGate} />
+      <SubscriptionGate open={gateOpen} reason={gateReason} onClose={closeGate} />
     </AccessCtx.Provider>
   );
 }

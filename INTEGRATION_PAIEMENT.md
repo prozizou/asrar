@@ -19,9 +19,18 @@ Site statique + fonctions Vercel (`/api`). RTDB Firebase.
    avec le numéro stocké côté serveur (`WHATSAPP_NUMBER`). Le message inclut
    l'e-mail du compte et la formule souhaitée.
 4. **L'administration active l'accès manuellement** après réception de la demande,
-   via `/api/admin` (`grant-access {email, days?}` — `days` absent/0 = accès à vie).
-   L'écriture se fait dans `purchased_user/{cléEmail}` / le nœud d'accès manuel.
-5. `checkAccess()` lit l'accès de l'utilisateur : accès si une entrée active existe.
+   via `/api/admin` (`grant-access {email, days?, level?}` — `days` absent/0 = accès
+   à vie). L'écriture se fait dans `purchased_user/{cléEmail}` / le nœud d'accès manuel
+   (`allowedUsers/{cléEmail}`).
+   > **`level`** = palier réellement payé, **en FCFA** (`15000` | `25000` | `45000`,
+   > cf. `SUB_PLANS` dans `lib/access.js`). Il ne s'agit **pas** d'un simple rang
+   > 1/2/3. Omis ou `0` → accès général accordé mais **modules premium verrouillés**
+   > (Al Qalam, Géomancie — réservés à `level: 45000`, cf. `PREMIUM_LEVEL`).
+   > **Toujours préciser `level: 45000`** quand la demande WhatsApp concerne le
+   > forfait 1 An, sinon l'utilisateur n'aura pas accès à Al Qalam / Géomancie
+   > malgré un accès actif.
+5. `checkAccess()` lit l'accès de l'utilisateur : accès si une entrée active existe
+   (le palier `level` conditionne en plus l'accès à Al Qalam et à la Géomancie).
 
 `cléEmail` = email avec `.` remplacé par `,`.
 
@@ -33,6 +42,9 @@ Site statique + fonctions Vercel (`/api`). RTDB Firebase.
 - Auth : `index.html` (Google). `auth/auth.html` redirige vers `index.html`.
 - Protégées par abonnement (`requireAccess`) : accueil, asrar, abajad, chiffre,
   planete, bibliotheque, marche.
+- Réservées au **forfait 1 An / 45 000 FCFA** (`level: 45000`, PREMIUM_LEVEL) :
+  **Al Qalam** et **Géomancie**. Un abonnement 3 ou 6 mois donne accès aux autres
+  modules mais pas à ceux-ci.
 
 ## Offres (catalogue rappelé dans `js/whatsapp.js`)
 | planId | offre | montant |

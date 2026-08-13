@@ -549,6 +549,9 @@ img, svg, video { max-width: 100%; height: auto; }
   box-shadow: 0 8px 22px rgba(79,172,254,.35);
 }
 .sg-card.best { border-color: #00f2fe; }
+/* Palier insuffisant pour le module demandé (voir SubscriptionGate reason='level') :
+   les formules qui ne suffisent pas sont estompées, seule « best » reste mise en avant. */
+.sg-card-dim { opacity: .45; }
 .sg-dur { font-size: 1.1rem; font-weight: 600; }
 .sg-price {
   margin-top: 8px; font-size: 1.3rem; font-weight: 700;

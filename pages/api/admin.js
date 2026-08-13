@@ -9,7 +9,7 @@
 //   list-books · save-book {key?,titre,auteur,description,img,pdf} · delete-book {key}
 //   list-products · save-product {key?,produit,Prix,...} · delete-product {key}
 //   list-sellers · seller-action {uid, op:'extend'|'suspend'|'activate', days?}
-//   grant-access {email, days?} · revoke-access {email} · list-access
+//   grant-access {email, days?, level?} · revoke-access {email} · list-access
 //   list-orders · list-activity · list-geomancie
 
 const { verifyUser, isAdmin, emailKey } = require("../../server/access");
@@ -139,14 +139,23 @@ export default async function handler(req, res) {
         return res.json({ items: await readFeed(db, "geomancie_logs", 150) });
 
       // ── Accès abonnés : activation MANUELLE par l'administration (par e-mail) ──
-      // grant-access {email, days?}  → days absent/0 = accès À VIE ; sinon N jours.
+      // grant-access {email, days?, level?}
+      //   days  absent/0 = accès À VIE ; sinon N jours.
+      //   level = palier réellement payé, EN FCFA (15000 | 25000 | 45000, cf.
+      //           SUB_PLANS dans lib/access.js) ; absent/0 = palier non précisé
+      //           (accès accordé mais modules premium — Al Qalam, Géomancie —
+      //           RESTENT verrouillés tant que le palier 45000 n'est pas indiqué).
       case "grant-access": {
         const email = normEmail(body.email);
         if (!email) return res.status(400).json({ error: "E-mail invalide." });
         const days = parseInt(body.days, 10);
-        const value = Number.isFinite(days) && days > 0 ? Date.now() + days * DAY_MS : true;
-        await db.ref("allowedUsers/" + emailKey(email)).set(value);
-        return res.json({ ok: true, email, expiresAt: value === true ? "lifetime" : value });
+        const until = Number.isFinite(days) && days > 0 ? Date.now() + days * DAY_MS : true;
+        const level = parseInt(body.level, 10);
+        await db.ref("allowedUsers/" + emailKey(email)).set({
+          until,
+          level: Number.isFinite(level) && level > 0 ? level : 0
+        });
+        return res.json({ ok: true, email, expiresAt: until === true ? "lifetime" : until, level: level || 0 });
       }
       // revoke-access {email} → retire l'accès manuel ET neutralise un ancien achat.
       case "revoke-access": {
@@ -164,10 +173,14 @@ export default async function handler(req, res) {
         const items = [];
         snap.forEach((c) => {
           const v = c.val();
+          const isObj = v && typeof v === "object";
+          const until = isObj ? v.until : v;
           items.push({
             email: String(c.key).replace(/,/g, "."),
-            active: v === true || (typeof v === "number" && v > Date.now()),
-            expiresAt: v === true ? "lifetime" : v
+            active: until === true || (typeof until === "number" && until > Date.now()),
+            expiresAt: until === true ? "lifetime" : until,
+            // level 0 = palier non précisé (accès legacy) → modules premium verrouillés.
+            level: isObj ? (Number(v.level) || 0) : 0
           });
         });
         return res.json({ items });
