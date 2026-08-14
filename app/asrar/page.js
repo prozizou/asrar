@@ -9,6 +9,7 @@ import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import SecretDetail from './SecretDetail';
 
@@ -160,13 +161,12 @@ export default function AsrarPage() {
                     >
                       <div className="secret-thumb">
                         {item.img ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <SmartImage
                             src={optimImg(item.img, 400)}
                             alt=""
-                            loading="lazy"
-                            decoding="async"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            fill
+                            sizes="(max-width: 640px) 90vw, 48px"
+                            style={{ objectFit: 'cover' }}
                           />
                         ) : (
                           '📜'

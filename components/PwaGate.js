@@ -7,6 +7,7 @@
 //     (FORCE_INSTALL = false) : l'app s'ouvre toujours directement dans le
 //     navigateur, installée ou non. Repasser à true pour le réactiver.
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 const FORCE_INSTALL = false;
 
@@ -85,8 +86,13 @@ export default function PwaGate({ children }) {
       {showGate && (
         <div style={ov}>
           <div style={card}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo-mark.png" alt="ASRAR PRO" style={{ width: 84, height: 84, borderRadius: 18, marginBottom: 12 }} />
+            <Image
+              src="/assets/logo-mark.png"
+              alt="ASRAR PRO"
+              width={84}
+              height={84}
+              style={{ borderRadius: 18, marginBottom: 12 }}
+            />
             <h1 style={{ fontSize: '1.35rem', margin: '0 0 6px', color: '#fff' }}>ASRAR PRO</h1>
 
             {installed ? (

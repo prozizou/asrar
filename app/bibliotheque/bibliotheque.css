@@ -104,6 +104,7 @@
       border-color: var(--border-strong);
     }
     .book-cover {
+      position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
       height: 220px;
       background: var(--surface-3);
       display: flex;

@@ -1,9 +1,13 @@
 'use client';
 // Vue boutique d'un vendeur — port d'openVendorShop().
+import { useCallback, useState } from 'react';
 import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 
 export default function VendorShop({ vendor, products, onBack, onOpenProduct }) {
+  const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
+  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
   return (
     <div className="glass-panel">
       <button className="back-btn" onClick={onBack} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
@@ -13,6 +17,7 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <div
           style={{
+            position: 'relative', // nécessaire à next/image (fill) — voir SmartImage
             width: 80,
             height: 80,
             borderRadius: '50%',
@@ -25,13 +30,12 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
           }}
         >
           {vendor.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <SmartImage
               src={optimImg(vendor.avatar, 200)}
               alt=""
-              loading="lazy"
-              decoding="async"
-              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              fill
+              sizes="80px"
+              style={{ objectFit: 'cover' }}
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />
           ) : (
@@ -52,18 +56,17 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
       <div className="prod-grid">
         {products.map((p) => (
           <div key={p._key} className="prod-card" onClick={() => onOpenProduct(p._key)}>
-            {p.Image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                className="prod-img"
-                src={optimImg(p.Image, 400)}
-                alt={p.produit || ''}
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  e.currentTarget.outerHTML = '<div class="prod-img-placeholder">🔮</div>';
-                }}
-              />
+            {p.Image && !imgErrors[p._key] ? (
+              <div className="prod-img">
+                <SmartImage
+                  src={optimImg(p.Image, 400)}
+                  alt={p.produit || ''}
+                  fill
+                  sizes="220px"
+                  style={{ objectFit: 'cover' }}
+                  onError={() => markImgError(p._key)}
+                />
+              </div>
             ) : (
               <div className="prod-img-placeholder">🔮</div>
             )}

@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import AppDrawer from '@/components/AppDrawer';
+import SmartImage from '@/components/SmartImage';
 
 const GROUPS = [
   {
@@ -53,12 +54,13 @@ export default function Home() {
         <div className="user-info">
           <div className="avatar">
             {user?.photoURL ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <SmartImage
                 src={user.photoURL}
                 alt=""
+                fill
+                sizes="42px"
                 referrerPolicy="no-referrer"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                style={{ objectFit: 'cover', borderRadius: '50%' }}
               />
             ) : (
               name.charAt(0).toUpperCase()

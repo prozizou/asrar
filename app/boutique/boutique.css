@@ -116,6 +116,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   color: var(--bq-text);
 }
 .bq-prod-img {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 56px; height: 56px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; background: var(--bq-bg); font-size: 1.6rem;
   color: var(--bq-gold-soft);
@@ -152,6 +153,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 
 /* Aperçu logo / image produit */
 .bq-logo-preview {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   margin-top: 8px; width: 110px; height: 110px; border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--bq-gold) 35%, transparent);
   background: var(--bq-logo-bg);
