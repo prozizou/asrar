@@ -80,7 +80,13 @@ const nextConfig = {
   // --- Images : formats modernes (WebP/AVIF) pour <Image> et hôtes distants autorisés ---
   images: {
     formats: ['image/avif', 'image/webp'],
-    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }],
+    // Hôtes que l'optimiseur next/image est autorisé à traiter (cf. components/SmartImage.js) :
+    // Cloudinary (boutique/marché/secrets) + avatars Google (auth). Toute autre URL externe
+    // (legacy, saisie libre côté admin) passe en `unoptimized` plutôt que planter.
+    remotePatterns: [
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: '*.googleusercontent.com' },
+    ],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 jours de cache pour l'optimiseur d'images.
   },
 

@@ -577,6 +577,7 @@ img, svg, video { max-width: 100%; height: auto; }
 }
 .user-info { display: flex; align-items: center; gap: 12px; }
 .avatar {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
   background: var(--accent); display: flex; align-items: center;
   justify-content: center; font-size: 1.2rem; font-weight: bold;

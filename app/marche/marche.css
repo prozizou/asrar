@@ -186,6 +186,8 @@ h2 {
 }
 
 .vendor-avatar {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+  overflow: hidden; /* clippe l'image fill sur le cercle (le border-radius était posé en inline sur l'<img>) */
   width: 70px;
   height: 70px;
   border-radius: 50%;
@@ -269,6 +271,7 @@ h2 {
 .prod-card:hover { transform: translateY(-4px); background: var(--mk-surface-2); }
 
 .prod-img {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
   height: 180px;
   object-fit: cover;
@@ -308,11 +311,14 @@ h2 {
 }
 
 .prod-vendor-avatar {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+  overflow: hidden; /* clippe l'image fill sur le cercle */
   width: 24px;
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--mk-border);
+  flex-shrink: 0;
 }
 
 .verified-badge { color: var(--mk-verified); font-size: 0.7rem; }
@@ -356,12 +362,14 @@ h2 {
 }
 
 .modal-img {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
-  max-height: 250px;
+  height: 250px;
   object-fit: contain;
   border-radius: 12px;
   margin-bottom: 16px;
   background: var(--mk-surface-3);
+  overflow: hidden;
 }
 
 .vendor-block {
@@ -375,11 +383,13 @@ h2 {
 }
 
 .vendor-block-avatar {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 50px;
   height: 50px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--mk-border);
+  flex-shrink: 0;
 }
 
 .vendor-block-info { flex: 1; }
@@ -478,6 +488,8 @@ h2 {
 /* Galerie du produit : miniatures sous l'image principale */
 .m-thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 4px; }
 .m-thumb {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+  overflow: hidden;
   width: 60px; height: 60px; flex: 0 0 auto;
   object-fit: cover; border-radius: 10px; cursor: pointer;
   border: 2px solid transparent; opacity: 0.7; transition: 0.2s;

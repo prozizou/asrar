@@ -7,6 +7,7 @@ import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import { share as shareLink } from '@/lib/share';
 import { useProductSocial } from '@/components/useProductSocial';
 
@@ -91,24 +92,35 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
         </span>
 
         {mainImg && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="modal-img" src={optimImg(mainImg, 800)} alt={product.produit || ''} decoding="async" onError={(e) => (e.currentTarget.style.display = 'none')} />
+          <div className="modal-img">
+            <SmartImage
+              src={optimImg(mainImg, 800)}
+              alt={product.produit || ''}
+              fill
+              sizes="(max-width: 640px) 100vw, 500px"
+              style={{ objectFit: 'contain' }}
+              onError={(e) => (e.currentTarget.style.display = 'none')}
+            />
+          </div>
         )}
 
         {galerie.length > 1 && (
           <div className="m-thumbs" style={{ display: 'flex' }}>
             {galerie.map((url, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <div
                 key={i}
-                src={optimImg(url, 150)}
                 className={'m-thumb' + (url === mainImg ? ' active' : '')}
-                alt={'Vue ' + (i + 1)}
-                loading="lazy"
-                decoding="async"
                 onClick={() => setMainImg(url)}
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
+              >
+                <SmartImage
+                  src={optimImg(url, 150)}
+                  alt={'Vue ' + (i + 1)}
+                  fill
+                  sizes="60px"
+                  style={{ objectFit: 'cover' }}
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -121,8 +133,16 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
         {vendor && (
           <div className="vendor-block" style={{ display: 'flex' }}>
             {vendor.avatar && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="vendor-block-avatar" src={optimImg(vendor.avatar, 120)} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              <div className="vendor-block-avatar">
+                <SmartImage
+                  src={optimImg(vendor.avatar, 120)}
+                  alt=""
+                  fill
+                  sizes="50px"
+                  style={{ objectFit: 'cover', borderRadius: '50%' }}
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              </div>
             )}
             <div className="vendor-block-info">
               <div className="vendor-block-name">

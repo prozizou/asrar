@@ -9,6 +9,7 @@
 import './rouwhania.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { useAccess } from '@/components/AccessProvider';
 import {
@@ -100,11 +101,12 @@ export default function RouwhaniaPage() {
           {/* Colonne gauche : saisie */}
           <div className="rw-left">
             <div style={{ textAlign: 'center', margin: '4px 0 10px' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/assets/logo-mark.png"
                 alt="ASRAR PRO"
-                style={{ width: 64, height: 64, borderRadius: 14, display: 'inline-block' }}
+                width={64}
+                height={64}
+                style={{ borderRadius: 14, display: 'inline-block' }}
               />
             </div>
             <div className="top-bar">

@@ -10,6 +10,7 @@ import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import CommentModal from './CommentModal';
 
 export default function BibliothequePage() {
@@ -19,6 +20,8 @@ export default function BibliothequePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [highlightKey, setHighlightKey] = useState(null);
+  const [imgErrors, setImgErrors] = useState({}); // { [bookKey]: true } — couverture indisponible → repli 📖
+  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
 
   const [commentBook, setCommentBook] = useState(null); // objet livre ou null
   const [comments, setComments] = useState([]);
@@ -166,16 +169,14 @@ export default function BibliothequePage() {
             return (
               <div key={book._key} className={'book-card' + (highlightKey === book._key ? ' book-highlight' : '')} id={'book-' + book._key}>
                 <div className="book-cover" onClick={() => openBook(book._key)}>
-                  {book.img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                  {book.img && !imgErrors[book._key] ? (
+                    <SmartImage
                       src={optimImg(book.img, 300)}
                       alt={book.text}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.parentElement.innerHTML = '📖';
-                      }}
+                      fill
+                      sizes="(max-width: 640px) 45vw, 220px"
+                      style={{ objectFit: 'cover' }}
+                      onError={() => markImgError(book._key)}
                     />
                   ) : (
                     '📖'

@@ -9,6 +9,7 @@ import { useSecretRealtime } from '@/components/useSecretRealtime';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, toast } from '@/lib/share';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import { downloadSecretPdf, PDF_MIN_LEVEL } from '@/lib/pdf';
 
 export default function SecretDetail({ secret, onBack }) {
@@ -82,8 +83,13 @@ export default function SecretDetail({ secret, onBack }) {
       <div className="detail-card">
         {img && (
           <div className="detail-img-wrap" onClick={() => setFullscreen(true)}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={optimImg(img, 800)} alt={data.faida || ''} decoding="async" />
+            <SmartImage
+              src={optimImg(img, 800)}
+              alt={data.faida || ''}
+              fill
+              sizes="(max-width: 640px) 100vw, 700px"
+              style={{ objectFit: 'contain' }}
+            />
           </div>
         )}
         <MixedText className="detail-title" text={data.faida || ''} />
@@ -123,6 +129,9 @@ export default function SecretDetail({ secret, onBack }) {
             cursor: 'zoom-out',
           }}
         >
+          {/* Visionneuse plein écran : taille naturelle bornée par le viewport (pas de
+              conteneur dimensionné) — cas non couvert par next/image (fill), et ouverte
+              à la demande (pas de liste à optimiser). Volontairement laissée en <img>. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={optimImg(img)} alt="" decoding="async" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
         </div>

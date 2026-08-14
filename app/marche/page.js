@@ -16,6 +16,7 @@ import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useToast } from '@/components/useToast';
 import ProductModal from './ProductModal';
@@ -33,6 +34,8 @@ export default function MarchePage() {
   const [vendorShopId, setVendorShopId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
+  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
   const bootRef = useRef(false);
 
   // — Popularité (likes + commentaires + achats) : chargée après l'affichage —
@@ -227,13 +230,12 @@ export default function MarchePage() {
                     <div key={v.id} className="vendor-card" onClick={() => setVendorShopId(v.id)}>
                       <div className="vendor-avatar">
                         {v.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <SmartImage
                             src={optimImg(v.avatar, 120)}
                             alt=""
-                            loading="lazy"
-                            decoding="async"
-                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                            fill
+                            sizes="70px"
+                            style={{ objectFit: 'cover' }}
                             onError={(e) => (e.currentTarget.style.display = 'none')}
                           />
                         ) : (
@@ -293,18 +295,17 @@ export default function MarchePage() {
                 const s = popularite[p._key] || { likes: 0, comments: 0 };
                 return (
                   <div key={p._key} className="prod-card" onClick={() => gatedOpenProduct(p._key)}>
-                    {p.Image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        className="prod-img"
-                        src={optimImg(p.Image, 400)}
-                        alt={p.produit || ''}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          e.currentTarget.outerHTML = '<div class="prod-img-placeholder">🔮</div>';
-                        }}
-                      />
+                    {p.Image && !imgErrors[p._key] ? (
+                      <div className="prod-img">
+                        <SmartImage
+                          src={optimImg(p.Image, 400)}
+                          alt={p.produit || ''}
+                          fill
+                          sizes="220px"
+                          style={{ objectFit: 'cover' }}
+                          onError={() => markImgError(p._key)}
+                        />
+                      </div>
                     ) : (
                       <div className="prod-img-placeholder">🔮</div>
                     )}
@@ -318,15 +319,16 @@ export default function MarchePage() {
                       {vendor && (
                         <div className="prod-vendor-line">
                           {vendor.avatar && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              className="prod-vendor-avatar"
-                              src={optimImg(vendor.avatar, 80)}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                              onError={(e) => (e.currentTarget.style.display = 'none')}
-                            />
+                            <div className="prod-vendor-avatar">
+                              <SmartImage
+                                src={optimImg(vendor.avatar, 80)}
+                                alt=""
+                                fill
+                                sizes="24px"
+                                style={{ objectFit: 'cover' }}
+                                onError={(e) => (e.currentTarget.style.display = 'none')}
+                              />
+                            </div>
                           )}
                           <span>
                             {vendor.name} {vendor.verified && <span className="verified-badge">✔ Vérifié</span>}

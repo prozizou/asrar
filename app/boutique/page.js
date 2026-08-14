@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
+import SmartImage from '@/components/SmartImage';
 import { openAccess } from '@/lib/whatsapp';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
@@ -33,6 +34,8 @@ export default function BoutiquePage() {
   const [shopPhone, setShopPhone] = useState('');
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
+  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
 
   // Formulaire produit (null = fermé)
   const [formProduct, setFormProduct] = useState(undefined); // undefined=fermé, null=ajout, obj=édition
@@ -221,8 +224,7 @@ export default function BoutiquePage() {
                 <input type="file" accept="image/*" onChange={onLogoChange} />
                 <div className="bq-logo-preview">
                   {logoPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <SmartImage src={logoPreview} alt="" fill sizes="110px" style={{ objectFit: 'cover' }} />
                   ) : (
                     <span>Aucun logo</span>
                   )}
@@ -258,9 +260,15 @@ export default function BoutiquePage() {
                 products.map((p) => (
                   <div key={p._key} className="bq-prod">
                     <div className="bq-prod-img">
-                      {p.Image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={optimImg(p.Image, 300)} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.parentElement.innerHTML = '🔮')} />
+                      {p.Image && !imgErrors[p._key] ? (
+                        <SmartImage
+                          src={optimImg(p.Image, 300)}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          style={{ objectFit: 'cover' }}
+                          onError={() => markImgError(p._key)}
+                        />
                       ) : (
                         '🔮'
                       )}

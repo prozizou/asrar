@@ -137,6 +137,7 @@ body {
 }
 
 .secret-thumb {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 48px;
   height: 48px;
   border-radius: 8px;
@@ -186,7 +187,9 @@ body {
 }
 
 .detail-img-wrap {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
+  height: 300px;
   max-height: 300px;
   border-radius: 12px;
   overflow: hidden;
