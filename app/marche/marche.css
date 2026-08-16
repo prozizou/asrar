@@ -201,6 +201,17 @@ h2 {
   color: var(--mk-text);
 }
 
+.vendor-you-badge {
+  display: inline-block;
+  background: var(--mk-gold);
+  color: var(--text-on-accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+
 .vendor-name {
   font-weight: 600;
   font-size: 0.95rem;
@@ -409,6 +420,22 @@ h2 {
   cursor: pointer;
   font-size: 0.8rem;
 }
+
+/* Grand bouton « Accéder au menu » en bas de la page d'accueil (Marché) : */
+.menu-cta-bottom {
+  display: block;
+  text-align: center;
+  background: var(--mk-gold);
+  color: var(--text-on-accent);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 16px 24px;
+  border-radius: 14px;
+  margin-top: 28px;
+  text-decoration: none;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.menu-cta-bottom:hover { transform: translateY(-2px); opacity: 0.92; }
 
 .add-to-cart-btn {
   background: var(--mk-gold);
