@@ -26,12 +26,15 @@ export function useSecretRealtime(catId, key) {
     });
 
     // — Commentaires : liste complète (ordre chronologique des push) —
+    // Affiche l'email + la photo de profil de l'auteur (plus de pseudo
+    // anonyme) ; repli sur l'ancien pseudo pour les commentaires déjà postés
+    // avant ce changement (ils n'ont pas de champ email/photo).
     const commentsRef = ref(db, `comments/${catId}/${key}`);
     const unsubComments = onValue(commentsRef, (snap) => {
       const out = [];
       snap.forEach((child) => {
         const c = child.val() || {};
-        out.push({ id: child.key, pseudo: c.pseudo, text: c.text });
+        out.push({ id: child.key, email: c.email || c.pseudo || 'Utilisateur', photo: c.photo || '', text: c.text });
       });
       setComments(out);
     });
@@ -53,12 +56,12 @@ export function useSecretRealtime(catId, key) {
   const postComment = useCallback(
     (text) => {
       const t = (text || '').trim();
-      const uid = auth.currentUser?.uid;
-      if (!t || !uid || !catId || !key) return;
-      const pseudo = '@Initié_' + uid.substring(0, 4).toUpperCase();
+      const user = auth.currentUser;
+      if (!t || !user || !catId || !key) return;
       push(ref(db, `comments/${catId}/${key}`), {
-        uid,
-        pseudo,
+        uid: user.uid,
+        email: user.email || '',
+        photo: user.photoURL || '',
         text: t,
         timestamp: serverTimestamp(),
       });

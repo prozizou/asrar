@@ -383,16 +383,37 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .comment-item {
   align-self: flex-start;         /* bulles alignées à gauche, comme un fil de groupe */
   max-width: 85%;
+  display: flex;
+  gap: 8px;
   background: var(--asrar-surface);
   border-radius: 4px 14px 14px 14px;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--asrar-border);
 }
 
+.comment-avatar {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--asrar-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--asrar-text);
+}
+
+.comment-body { min-width: 0; }
+
 .comment-pseudo {
   font-weight: 700;
   color: var(--asrar-cream);      /* nom en couleur d'accent, comme WhatsApp */
   font-size: 0.78rem;
+  word-break: break-all;          /* l'email peut être long */
 }
 
 .comment-text {

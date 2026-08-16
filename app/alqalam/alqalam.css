@@ -1,6 +1,6 @@
 /* Module Al-Qalam — styles portés de alqalam/style.css.
-   Scopé sous .alq-page : le module redéfinit des tokens partagés
-   (--glass-bg/--glass-border/--glass-shadow) via des alias locaux. Les polices
+   Scopé sous .alq-page : le module redéfinit certains tokens partagés
+   (--glass-bg/--glass-border) via des alias locaux. Les polices
    calligraphiques (Scheherazade New, Alkalami) sont préservées — cœur du module. */
 @import url('https://fonts.googleapis.com/css2?family=Alkalami&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@700&display=swap');
@@ -12,8 +12,15 @@
   --text-red: var(--danger, #ff6b6b);
   --glass-bg: var(--surface, rgba(255, 255, 255, 0.08));
   --glass-border: var(--border, rgba(255, 255, 255, 0.15));
-  --glass-shadow: var(--glass-shadow, 0 8px 32px 0 rgba(0, 0, 0, 0.3));
-  --accent-hover: var(--accent-hover, #2176ff);
+  /* --glass-shadow et --accent-hover NE SONT PAS redéclarées ici : elles
+     existent déjà comme tokens globaux (globals.css, adaptés clair/sombre).
+     Un alias local `--x: var(--x, repli)` comme pour les tokens ci-dessus
+     serait ici une AUTO-référence : le navigateur la traite comme une
+     boucle (valeur invalide), et `--repli` n'est alors PAS utilisé (ce
+     n'est pas comme une variable JS non définie — la propriété devient
+     simplement vide). C'était le bug des boutons invisibles en thème clair
+     (var(--accent-hover) vide → background dégradé invalide → transparent).
+     Voir aussi .btn-glass plus bas. */
 
   display: flex;
   justify-content: center;
@@ -115,6 +122,21 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 
 .alq-page .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
 .alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
+
+/* Variante secondaire (action alternative, moins mise en avant que .btn-glass) */
+.alq-page .btn-glass-outline {
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  color: var(--accent);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.alq-page .btn-glass-outline:hover { background: var(--glass-bg); }
 
 .alq-page .hidden-panel { display: none; width: 100%; gap: 10px; }
 .alq-page .show-panel { display: flex; flex-direction: column; }

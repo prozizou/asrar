@@ -1,6 +1,7 @@
 'use client';
 // Bottom-sheet des commentaires — port du bloc #commentSheet + postComment().
 import { useEffect, useRef, useState } from 'react';
+import SmartImage from '@/components/SmartImage';
 
 export default function CommentSheet({ open, comments, onClose, onPost }) {
   const [value, setValue] = useState('');
@@ -42,8 +43,17 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
         <div className="comment-list" ref={listRef}>
           {comments.map((c) => (
             <div key={c.id} className="comment-item">
-              <div className="comment-pseudo">{c.pseudo}</div>
-              <div className="comment-text">{c.text}</div>
+              <div className="comment-avatar">
+                {c.photo ? (
+                  <SmartImage src={c.photo} alt="" fill sizes="28px" style={{ objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                ) : (
+                  (c.email || '?').charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="comment-body">
+                <div className="comment-pseudo">{c.email}</div>
+                <div className="comment-text">{c.text}</div>
+              </div>
             </div>
           ))}
         </div>

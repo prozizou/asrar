@@ -2,7 +2,8 @@
 // Likes & commentaires temps réel d'un produit — port de loadProductSocial()
 // /toggleProductLike()/postProductComment() de marche.js. Réutilise les nœuds
 // partagés ratings/product/{key} (like = présence de l'uid, valeur 5) et
-// comments/product/{key} (pseudo « @Client_XXXX »).
+// comments/product/{key} (email + photo de profil de l'auteur, plus de
+// pseudo anonyme).
 import { useCallback, useEffect, useState } from 'react';
 import { ref, onValue, get, set, remove, push, serverTimestamp } from 'firebase/database';
 import { db, auth } from '@/lib/firebase';
@@ -23,12 +24,15 @@ export function useProductSocial(productKey) {
       setLiked(!!(uid && likes[uid]));
     });
 
+    // Affiche l'email + la photo de profil de l'auteur (plus de pseudo
+    // anonyme) ; repli sur l'ancien pseudo pour les commentaires déjà postés
+    // avant ce changement (ils n'ont pas de champ email/photo).
     const commentsRef = ref(db, `comments/product/${productKey}`);
     const unsubComments = onValue(commentsRef, (snap) => {
       const out = [];
       snap.forEach((child) => {
         const c = child.val() || {};
-        out.push({ id: child.key, pseudo: c.pseudo || '@Client', text: c.text || '' });
+        out.push({ id: child.key, email: c.email || c.pseudo || 'Client', photo: c.photo || '', text: c.text || '' });
       });
       setComments(out);
     });
@@ -52,12 +56,12 @@ export function useProductSocial(productKey) {
   const postComment = useCallback(
     (text) => {
       const t = (text || '').trim();
-      const uid = auth.currentUser?.uid;
-      if (!productKey || !t || !uid) return;
-      const pseudo = '@Client_' + uid.substring(0, 4).toUpperCase();
+      const user = auth.currentUser;
+      if (!productKey || !t || !user) return;
       push(ref(db, `comments/product/${productKey}`), {
-        uid,
-        pseudo,
+        uid: user.uid,
+        email: user.email || '',
+        photo: user.photoURL || '',
         text: t,
         timestamp: serverTimestamp(),
       });

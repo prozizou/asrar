@@ -242,17 +242,13 @@ export default function AlQalamPage() {
     setQuranUthmani(data);
   };
 
-  const onIntercaler = async () => {
-    const ok = await ensureAccess(PREMIUM_LEVEL);
-    if (!ok) return;
-    const phrase = inputText.trim();
-    if (!interKey || !phrase) {
-      return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
-    }
+  // Résout le contenu de la sourate sélectionnée selon la version choisie
+  // (sans/avec voyelles) — commun à « Combiner le texte » et « Sourate seule ».
+  const resolveSourateContent = () => {
     let content = souratesContent[interKey];
     if (textVersion === 'voyelles') {
       if (!quranUthmani) {
-        return showToast('Chargement du texte avec voyelles en cours, réessayez dans un instant.', 'error');
+        return { error: 'Chargement du texte avec voyelles en cours, réessayez dans un instant.' };
       }
       const sourateName = sourates.find((s) => s.key === interKey)?.name;
       const matched = matchUthmaniSourate(quranUthmani, sourateName);
@@ -262,12 +258,45 @@ export default function AlQalamPage() {
         content = matched;
       }
     }
+    return { content };
+  };
+
+  const onIntercaler = async () => {
+    const ok = await ensureAccess(PREMIUM_LEVEL);
+    if (!ok) return;
+    const phrase = inputText.trim();
+    if (!interKey || !phrase) {
+      return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
+    }
+    const { content, error } = resolveSourateContent();
+    if (error) return showToast(error, 'error');
     const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
     const result = buildIntercalatedText(content, phrase, rep);
     setBaseText(result);
     setIntercalatedPhrase(phrase);
     setTotalMultiplier(1);
     showToast('Texte combiné généré.', 'info');
+  };
+
+  // ─── Sourate seule, sans intercalation (protégé) ───
+  // Réutilise buildIntercalatedText avec une phrase vide : les marqueurs de
+  // verset sont retirés (même nettoyage que l'intercalation) sans rien
+  // insérer entre les versets. Le nombre de « répétitions » s'applique alors
+  // à la sourate entière (comme en Écriture simple), pas à une phrase.
+  const onSourateSeule = async () => {
+    const ok = await ensureAccess(PREMIUM_LEVEL);
+    if (!ok) return;
+    if (!interKey) {
+      return showToast('Choisissez une sourate.', 'error');
+    }
+    const { content, error } = resolveSourateContent();
+    if (error) return showToast(error, 'error');
+    const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
+    const result = buildIntercalatedText(content, '', 0);
+    setBaseText(result);
+    setIntercalatedPhrase('');
+    setTotalMultiplier(rep);
+    showToast('Sourate insérée.', 'info');
   };
 
   // ─── Cumuler (protégé) ───
@@ -504,6 +533,15 @@ export default function AlQalamPage() {
                   </p>
                   <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
                     Combiner le texte
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-glass-outline"
+                    style={{ width: '100%' }}
+                    onClick={onSourateSeule}
+                    title="Insère la sourate seule, sans y intercaler d'expression"
+                  >
+                    📖 Sourate seule (sans intercaler)
                   </button>
                 </div>
               )}
