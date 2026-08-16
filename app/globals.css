@@ -10,9 +10,10 @@
 
 /* ───────────── :root = MODE SOMBRE (valeurs par défaut) ───────────── */
 :root {
-    /* Fonds & surfaces */
-    --bg-gradient:    linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    --bg-deep:        #0a0a14;
+    /* Fonds & surfaces — sombre profond à halo violet (maquette de référence),
+       remplace le dégradé bleu-sarcelle précédent. */
+    --bg-gradient:    linear-gradient(135deg, #0c0713, #180d28, #241639);
+    --bg-deep:        #09050f;
     --bg-alt:         #000000;
     --surface:        rgba(255, 255, 255, 0.1);
     --surface-2:      rgba(255, 255, 255, 0.05);
@@ -31,15 +32,18 @@
     --text-faint:     #888888;
     --text-on-accent: #ffffff;
 
-    /* Accents génériques */
-    --accent:         #4facfe;
-    --accent-hover:   #00f2fe;
-    --accent-glow:    rgba(79, 172, 254, 0.4);
+    /* Accents génériques — dégradé violet → rose magenta (maquette de
+       référence), remplace le bleu-cyan précédent. */
+    --accent:         #a78bfa;
+    --accent-hover:   #f472b6;
+    --accent-glow:    rgba(167, 139, 250, 0.4);
 
-    /* Or / mystique (asrar, boutique, marche, geomancie, Benefits) */
-    --gold:           #C9A961;
-    --gold-hover:     #F5E6C4;
-    --gold-soft:      #d4a745;
+    /* Or / mystique (asrar, boutique, marche, geomancie, Benefits) — aligné
+       sur le même violet-magenta pour une identité cohérente dans toute
+       l'app, plutôt qu'un accent doré séparé. */
+    --gold:           #a78bfa;
+    --gold-hover:     #f472b6;
+    --gold-soft:      #c9a8f5;
     --gold-ink:       #2d1f10;
 
     /* Sémantique */
@@ -47,10 +51,10 @@
     --danger:         #d9534f;
 
     /* Cartes (Benefits, rouwhania) */
-    --card-bg:        #2c2c3a;
-    --card-border:    #f39c12;
+    --card-bg:        #241639;
+    --card-border:    #a78bfa;
     --card-text:      #ecf0f1;
-    --card-accent:    #3a3a4a;
+    --card-accent:    #2e1d47;
     --card-green-bg:  #2e4a3a;
     --card-green-text:#2ecc71;
 
@@ -557,7 +561,7 @@ img, svg, video { max-width: 100%; height: auto; }
   background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
 }
 .sg-box {
-  background: #0f2027; border: 1px solid rgba(255,255,255,.2);
+  background: #150c24; border: 1px solid rgba(255,255,255,.2);
   border-radius: 20px; padding: 30px 24px; text-align: center; max-width: 560px;
   width: 100%; position: relative; font-family: var(--font-ui); color: #fff;
 }
@@ -575,23 +579,23 @@ img, svg, video { max-width: 100%; height: auto; }
   transition: transform .25s, box-shadow .25s, border-color .25s;
 }
 .sg-card:hover {
-  transform: translateY(-4px); border-color: #4facfe;
-  box-shadow: 0 8px 22px rgba(79,172,254,.35);
+  transform: translateY(-4px); border-color: #a78bfa;
+  box-shadow: 0 8px 22px rgba(167,139,250,.35);
 }
-.sg-card.best { border-color: #00f2fe; }
+.sg-card.best { border-color: #f472b6; }
 /* Palier insuffisant pour le module demandé (voir SubscriptionGate reason='level') :
    les formules qui ne suffisent pas sont estompées, seule « best » reste mise en avant. */
 .sg-card-dim { opacity: .45; }
 .sg-dur { font-size: 1.1rem; font-weight: 600; }
 .sg-price {
   margin-top: 8px; font-size: 1.3rem; font-weight: 700;
-  background: -webkit-linear-gradient(45deg, #4facfe, #00f2fe);
+  background: -webkit-linear-gradient(45deg, #a78bfa, #f472b6);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .sg-price small { font-size: .7rem; color: #cfd8dc; -webkit-text-fill-color: #cfd8dc; }
 .sg-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  background: linear-gradient(45deg, #4facfe, #00f2fe); color: #fff; font-size: .62rem;
+  background: linear-gradient(45deg, #a78bfa, #f472b6); color: #fff; font-size: .62rem;
   font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
 .sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }

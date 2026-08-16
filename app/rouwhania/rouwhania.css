@@ -4,24 +4,24 @@
    globaux) et emploie des classes génériques — le scoping évite toute fuite. */
 
 .rw-page {
-  --bg-gradient-start: #0f2027;
-  --bg-gradient-end: #2c5364;
-  --glass-bg: rgba(30, 30, 50, 0.4);
+  --bg-gradient-start: #0c0713;
+  --bg-gradient-end: #241639;
+  --glass-bg: rgba(60, 40, 80, 0.4);
   --glass-border: rgba(255, 255, 255, 0.15);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --text-primary: #f0f0f0;
   --text-secondary: #b0b0b0;
-  --btn-primary: #4facfe;
+  --btn-primary: #a78bfa;
   --btn-disabled: #aaa;
   --result-bg: rgba(255, 255, 255, 0.08);
   --stat-bg: rgba(255, 255, 255, 0.1);
   --border-color: rgba(255, 255, 255, 0.2);
   --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --card-bg: #2c2c3a;
-  --card-border: #4facfe;
-  --card-title: #4facfe;
+  --card-bg: #241639;
+  --card-border: #a78bfa;
+  --card-title: #a78bfa;
   --card-text: #ecf0f1;
-  --card-accent: #3a3a4a;
+  --card-accent: #2e1d47;
   --card-green-bg: #2e4a3a;
   --card-green-text: #2ecc71;
 

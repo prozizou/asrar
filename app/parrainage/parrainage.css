@@ -12,7 +12,7 @@
 /* Progression */
 .pr-points {
   font-size: 2.2rem; font-weight: 700; line-height: 1;
-  background: -webkit-linear-gradient(45deg, #4facfe, #00f2fe);
+  background: -webkit-linear-gradient(45deg, var(--accent), var(--accent-hover));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .pr-goal { color: var(--text-muted); font-size: .85rem; margin-top: 4px; }
@@ -22,7 +22,7 @@
 }
 .pr-bar span {
   display: block; height: 100%; width: 0;
-  background: linear-gradient(90deg, #4facfe, #00f2fe); transition: width .6s ease;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width .6s ease;
 }
 
 /* Lien */
@@ -39,7 +39,7 @@
   border: 1px solid var(--glass-border); color: #fff;
 }
 .pr-btn:hover { background: rgba(255, 255, 255, .2); }
-.pr-btn.main { background: linear-gradient(45deg, #4facfe, #00f2fe); border: none; color: #04222c; }
+.pr-btn.main { background: linear-gradient(45deg, var(--accent), var(--accent-hover)); border: none; color: var(--text-on-accent); }
 .pr-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Stats */
@@ -51,7 +51,7 @@
 .pr-stat b { display: block; font-size: 1.25rem; }
 .pr-stat small { color: var(--text-muted); font-size: .72rem; }
 
-.pr-code { font-family: monospace; font-size: 1.35rem; letter-spacing: 3px; font-weight: 700; color: #00f2fe; }
+.pr-code { font-family: monospace; font-size: 1.35rem; letter-spacing: 3px; font-weight: 700; color: var(--accent-hover); }
 .pr-rules { color: var(--text-muted); font-size: .85rem; line-height: 1.65; padding-left: 18px; margin: 0; }
 .pr-rules li { margin-bottom: 5px; }
 .pr-msg { min-height: 20px; font-size: .88rem; text-align: center; margin-top: 10px; color: #cfd8dc; }
