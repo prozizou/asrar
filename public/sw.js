@@ -69,6 +69,15 @@ function isBypassed(url) {
   );
 }
 
+// Répond à une demande de version depuis la page (voir components/AppDrawer.js
+// « Version de l'app » — reflète désormais la version du SW réellement actif
+// sur l'appareil, plus fidèle que package.json qui n'est presque jamais bumpé).
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'GET_VERSION' && event.ports && event.ports[0]) {
+    event.ports[0].postMessage({ version: SW_VERSION });
+  }
+});
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(

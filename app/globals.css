@@ -531,6 +531,8 @@ img, svg, video { max-width: 100%; height: auto; }
 .drawer-row-label { display: flex; align-items: center; gap: 12px; font-size: .95rem; }
 .drawer-row-icon { font-size: 1.2rem; width: 26px; text-align: center; }
 .drawer-row-hint { font-size: .82rem; color: var(--text-muted); }
+.drawer-row-link { text-decoration: none; cursor: pointer; transition: background .15s; }
+.drawer-row-link:hover { background: var(--glass-bg); }
 
 .theme-switch {
   position: relative; width: 46px; height: 26px; border-radius: 30px; flex-shrink: 0;

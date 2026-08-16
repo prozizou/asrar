@@ -175,7 +175,11 @@ html[data-theme='light'] .geo-page::before {
 .geo-page .btn.primary { background: rgba(79, 172, 254, 0.2); border-color: var(--gold); color: var(--gold); font-weight: 700; }
 .geo-page .btn.primary:hover { background: rgba(79, 172, 254, 0.35); box-shadow: 0 0 28px rgba(79, 172, 254, 0.35); }
 
-.geo-page .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-x: auto; padding: 8px 0; }
+/* padding horizontal : la rangée à 8 cases (w-100) déborde souvent de la
+   largeur visible sur mobile (défilement horizontal nécessaire) — sans
+   marge, la case en bout de défilement touchait directement le bord du
+   panneau/de l'écran (retour : « très coincé sur les bords »). */
+.geo-page .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-x: auto; padding: 8px 14px; }
 .geo-page .shield-row { display: flex; gap: 7px; justify-content: space-around; width: 100%; margin-bottom: 12px; }
 .geo-page .w-100 { width: 100%; }
 .geo-page .w-80 { width: 80%; }
@@ -308,4 +312,14 @@ html[data-theme='light'] .geo-page::before {
   .geo-page .fig-name { font-size: 0.5rem; }
   .geo-page .shield-row { gap: 3px; }
   .geo-page .house-cell.sentence-cell { right: 0%; }
+}
+
+/* Sous 400px, la rangée à 8 cases (w-100) dépasse encore largement — cases
+   resserrées davantage pour réduire la part qui reste hors écran. */
+@media (max-width: 400px) {
+  .geo-page .app-container { gap: 14px; }
+  .geo-page .panel { padding: 16px 12px; }
+  .geo-page .house-cell { min-width: 38px; padding: 4px 3px; }
+  .geo-page .fig-name { font-size: 0.46rem; }
+  .geo-page .bzdh-badge { font-size: 0.5rem; }
 }
