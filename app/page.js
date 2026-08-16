@@ -9,29 +9,23 @@ import { useAuth } from '@/components/AuthProvider';
 import AppDrawer from '@/components/AppDrawer';
 import SmartImage from '@/components/SmartImage';
 
-const GROUPS = [
-  {
-    title: 'ASRAR PRO',
-    items: [
-      { icon: '📜', label: 'Secret Mystique', href: '/asrar' },
-      { icon: '🔢', label: 'Abajad', href: '/abajad' },
-      { icon: '🌍', label: 'Planète', href: '/planete' },
-      { icon: '✨', label: 'Combinaisons', href: '/combinaisons' },
-      { icon: '🕌', label: "Noms d'Allah", href: '/benefits' },
-      { icon: '🌀', label: 'Rouwhanes', href: '/rouwhania' },
-      { icon: '📚', label: 'Bibliothèque', href: '/bibliotheque' },
-      { icon: '🛒', label: 'Marché Mystique', href: '/marche' },
-      { icon: '🎁', label: 'Parrainage', href: '/parrainage' },
-    ],
-  },
-  {
-    title: 'Al Qalam',
-    items: [{ icon: '🖋️', label: 'Al Qalam', href: '/alqalam' }],
-  },
-  {
-    title: 'Géomancie',
-    items: [{ icon: '🪨', label: 'Tourab', href: '/geomancie' }],
-  },
+// Un seul groupe : Al Qalam et Géomancie formaient chacun un « groupe » d'un
+// seul élément, ce qui suggérait une hiérarchie inexistante sans rien
+// apporter. Chaque module porte une courte description en clair — la plupart
+// des noms (Abajad, Rouwhanes, Tourab…) sont des termes du domaine que les
+// nouveaux venus ne devinent pas au premier coup d'œil.
+const MODULES = [
+  { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
+  { icon: '🔢', label: 'Abajad', desc: 'Calculer le poids numérique des lettres arabes', href: '/abajad' },
+  { icon: '🌍', label: 'Planète', desc: "Voir l'heure planétaire du moment", href: '/planete' },
+  { icon: '✨', label: 'Combinaisons', desc: 'Associer les 99 Noms par calcul', href: '/combinaisons' },
+  { icon: '🕌', label: "Noms d'Allah", desc: "Découvrir les 99 Noms d'Allah", href: '/benefits' },
+  { icon: '🌀', label: 'Rouwhanes', desc: 'Générer des noms d\'anges et un vœu', href: '/rouwhania' },
+  { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
+  { icon: '🛒', label: 'Marché Mystique', desc: 'Acheter auprès de vendeurs vérifiés', href: '/marche' },
+  { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
+  { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
+  { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
 ];
 
 function MenuItem({ item }) {
@@ -39,6 +33,7 @@ function MenuItem({ item }) {
     <Link href={item.href} className="menu-item">
       <div style={{ fontSize: '2rem' }}>{item.icon}</div>
       <h3>{item.label}</h3>
+      <p className="menu-item-desc">{item.desc}</p>
     </Link>
   );
 }
@@ -84,16 +79,13 @@ export default function Home() {
         <p style={{ color: 'var(--text-muted)' }}>Tableau de bord</p>
       </div>
 
-      {GROUPS.map((g) => (
-        <section className="menu-group" key={g.title}>
-          <h2 className="group-title">{g.title}</h2>
-          <div className="sub-grid">
-            {g.items.map((it) => (
-              <MenuItem item={it} key={it.label} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <section className="menu-group">
+        <div className="sub-grid">
+          {MODULES.map((it) => (
+            <MenuItem item={it} key={it.label} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

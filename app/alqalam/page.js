@@ -7,6 +7,7 @@
 // au forfait 1 An (45 000 FCFA), comme la Géomancie.
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import {
@@ -304,6 +305,10 @@ export default function AlQalamPage() {
       <div className="bg-shape shape2" />
 
       <div className="app-container">
+        <Link href="/" className="back-btn">
+          ← Retour
+        </Link>
+
         {/* Panneau de contrôle */}
         <div className="controls-section">
           <div style={{ position: 'relative', width: '100%' }}>
