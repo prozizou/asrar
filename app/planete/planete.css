@@ -105,18 +105,38 @@
 }
 .planete-page .access-btn:hover { filter: brightness(1.1); }
 
-/* Tableau des heures */
-.planete-page .planetary-hours-table { margin-top: 20px; overflow-x: auto; }
-.planete-page .planetary-hours-table table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-.planete-page .planetary-hours-table th, .planete-page .planetary-hours-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
+/* Heures planétaires : onglets Jour/Nuit + grille de cartes (remplace les
+   deux tableaux de 12 lignes empilés — vue jugée trop linéaire). */
+.planete-page .hours-tabs { display: flex; gap: 8px; justify-content: center; margin: 14px 0 4px; }
+.planete-page .hours-tab {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 8px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
-.planete-page .planetary-hours-table th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
-.planete-page .planetary-hours-table .planet-name { font-weight: 600; color: var(--text-main); }
-.planete-page .planetary-hours-table tr.now-hour { background: rgba(79, 172, 254, 0.14); }
-.planete-page .planetary-hours-table tr.now-hour td { color: var(--text-main); font-weight: 700; }
+.planete-page .hours-tab.active { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
+
+.planete-page .hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.planete-page .hour-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+.planete-page .hour-card-planet { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
+.planete-page .hour-card-interval { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+.planete-page .hour-card-nature { font-size: 0.75rem; margin-top: 4px; font-weight: 600; }
+.planete-page .hour-card.now-hour { background: rgba(79, 172, 254, 0.14); border-color: var(--accent); }
 
 .planete-page .loading-text { color: var(--text-dim); text-align: center; padding: 20px; }
 .planete-page .error-text { color: #d9534f; text-align: center; }
