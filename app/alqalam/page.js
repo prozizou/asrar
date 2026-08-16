@@ -161,6 +161,23 @@ export default function AlQalamPage() {
     }, config.DEBOUNCE_DELAY);
   };
 
+  // Ferme la liste de suggestions au clic/toucher en dehors — le seul repli
+  // sur onBlur (délai de 150 ms) pouvait la laisser affichée si le blur du
+  // textarea ne se déclenchait pas comme attendu (notamment tactile).
+  useEffect(() => {
+    if (suggestions.length === 0) return undefined;
+    const onOutside = (e) => {
+      const wrap = inputRef.current && inputRef.current.parentElement;
+      if (wrap && !wrap.contains(e.target)) setSuggestions([]);
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('touchstart', onOutside);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('touchstart', onOutside);
+    };
+  }, [suggestions.length]);
+
   // ─── Panneau d'outils (Documents / Recherche — sélecteur unique, protégé).
   // Intercaler et Mode Rasm sont désormais choisis en amont via le menu de
   // sélection (writingMode), pas ici. ───
@@ -504,20 +521,22 @@ export default function AlQalamPage() {
 
               {showDoc && (
                 <div className="hidden-panel show-panel">
-                  <input
-                    type="text"
-                    className="glass-input flex-grow"
-                    placeholder="Nom du document"
-                    value={docName}
-                    onChange={(e) => {
-                      setDocName(e.target.value);
-                      savePref('docName', e.target.value);
-                    }}
-                  />
-                  <button className="btn-glass" style={{ width: '100%' }} onClick={onDoc}>
-                    DOCS
-                  </button>
-                  <div className="grid-row-1-1" style={{ marginTop: 10 }}>
+                  <div className="doc-name-row">
+                    <input
+                      type="text"
+                      className="glass-input flex-grow"
+                      placeholder="Nom du document"
+                      value={docName}
+                      onChange={(e) => {
+                        setDocName(e.target.value);
+                        savePref('docName', e.target.value);
+                      }}
+                    />
+                    <button className="btn-glass" onClick={onDoc}>
+                      DOCS
+                    </button>
+                  </div>
+                  <div className="grid-row-1-1">
                     <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
                       ➕ Cumuler
                     </button>

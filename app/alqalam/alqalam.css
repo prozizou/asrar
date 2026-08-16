@@ -57,6 +57,11 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .grid-row-2-1 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; width: 100%; min-width: 0; }
 .alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
 
+/* Nom du document + bouton DOCS sur une seule ligne (au lieu de 2 lignes
+   pleine largeur empilées) — panneau Documents plus compact. */
+.alq-page .doc-name-row { display: flex; gap: 10px; align-items: stretch; width: 100%; }
+.alq-page .doc-name-row .btn-glass { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 12px 18px; }
+
 /* Menu de sélection (précède l'outil) : simple / intercalée / rasmique. */
 .alq-page .mode-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; }
 .alq-page .mode-card {
@@ -133,7 +138,9 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
    #8b0000 (bordeaux foncé) était illisible sur fond sombre. */
 .alq-page .verset-brun { color: var(--text-red); font-family: inherit; font-weight: 700; }
 
-.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; }
+/* direction: ltr — sinon ce texte français hérite du RTL de .output-area
+   (prévu pour l'arabe) et s'affiche à l'envers. */
+.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; direction: ltr; }
 
 .alq-page .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Scheherazade New', serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: none; }
 .alq-page .suggestions-container.show-panel { display: block; }
@@ -178,7 +185,9 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 }
 @media (max-width: 480px) {
   .alq-page .controls-section { padding: 15px; }
-  .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
+  /* Reste sur 2 colonnes (au lieu d'empiler en pleine largeur, qui prenait
+     énormément de place) — juste un texte/padding un peu plus compact. */
+  .alq-page .grid-row-1-1 .btn-glass, .alq-page .doc-name-row .btn-glass { font-size: 0.8rem; padding: 10px 8px; }
 }
 @media (min-width: 900px) {
   .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; margin: 0 auto; }
