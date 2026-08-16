@@ -17,6 +17,7 @@ import {
   formaterTexteIntercale,
   buildIntercalatedText,
   generateDocx,
+  generatePdf,
   loadSourates,
   loadVersets,
   htmlToPlainText,
@@ -104,6 +105,7 @@ export default function AlQalamPage() {
 
   const [suggestions, setSuggestions] = useState([]);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [popupFormat, setPopupFormat] = useState('docx'); // 'docx' | 'pdf' — quel export le popup ouverture/fermeture déclenche
   const [progress, setProgress] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -368,28 +370,32 @@ export default function AlQalamPage() {
     showToast('Bloc mis à jour.', 'info');
   };
 
-  // ─── Génération Word (protégé) ───
-  const onDoc = async () => {
+  // ─── Génération Word / PDF (protégé) ───
+  const openExportPopup = async (format) => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     if (!docName.trim() || (totalMultiplier === 0 && accumulatedBlocks.length === 0)) {
       return showToast('Générez un texte ou cumulez des blocs, et nommez le document.', 'error');
     }
+    setPopupFormat(format);
     setPopupOpen(true);
   };
+  const onDoc = () => openExportPopup('docx');
+  const onPdf = () => openExportPopup('pdf');
+
+  const currentBlocks = () =>
+    accumulatedBlocks.length > 0
+      ? accumulatedBlocks
+      : [{ texte: formaterTexteIntercale(baseText, intercalatedPhrase), totalMultiplier, isRasmMode }];
 
   const triggerDocx = async (useOuv, useFerm) => {
     setPopupOpen(false);
-    const blocks =
-      accumulatedBlocks.length > 0
-        ? accumulatedBlocks
-        : [{ texte: formaterTexteIntercale(baseText, intercalatedPhrase), totalMultiplier, isRasmMode }];
     setProgress({ pct: 0, text: 'Préparation...' });
     try {
       await generateDocx({
         useOuv,
         useFerm,
-        blocks,
+        blocks: currentBlocks(),
         docName: docName.trim(),
         fontPx: fontSize,
         onProgress: (pct, text) => setProgress({ pct, text }),
@@ -401,6 +407,28 @@ export default function AlQalamPage() {
       setProgress(null);
     }
   };
+
+  const triggerPdf = async (useOuv, useFerm) => {
+    setPopupOpen(false);
+    setProgress({ pct: 0, text: 'Préparation...' });
+    try {
+      await generatePdf({
+        useOuv,
+        useFerm,
+        blocks: currentBlocks(),
+        docName: docName.trim(),
+        onProgress: (pct, text) => setProgress({ pct, text }),
+      });
+      showToast('Document PDF généré.', 'info');
+    } catch (e) {
+      showToast('Échec de la génération PDF.', 'error');
+    } finally {
+      setProgress(null);
+    }
+  };
+
+  const triggerExport = (useOuv, useFerm) =>
+    popupFormat === 'pdf' ? triggerPdf(useOuv, useFerm) : triggerDocx(useOuv, useFerm);
 
   return (
     <div className="alq-page">
@@ -580,6 +608,9 @@ export default function AlQalamPage() {
                     <button className="btn-glass" onClick={onDoc}>
                       DOCS
                     </button>
+                    <button className="btn-glass" onClick={onPdf}>
+                      PDF
+                    </button>
                   </div>
                   <div className="grid-row-1-1">
                     <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
@@ -738,23 +769,23 @@ export default function AlQalamPage() {
         </div>
       </div>
 
-      {/* Popup options Word */}
+      {/* Popup options Word / PDF — même choix ouverture/fermeture pour les deux formats. */}
       {popupOpen && (
         <div className="popup-overlay" onClick={(e) => e.target === e.currentTarget && setPopupOpen(false)}>
           <div className="popup-content glass-panel">
             <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 12, color: 'var(--accent-blue)' }}>
-              📝 Générer le document Word (.docx)
+              {popupFormat === 'pdf' ? '📄 Générer le document PDF' : '📝 Générer le document Word (.docx)'}
             </div>
-            <button className="popup-item" onClick={() => triggerDocx(true, true)}>
+            <button className="popup-item" onClick={() => triggerExport(true, true)}>
               Avec ouverture et fermeture
             </button>
-            <button className="popup-item" onClick={() => triggerDocx(true, false)}>
+            <button className="popup-item" onClick={() => triggerExport(true, false)}>
               Avec ouverture seulement
             </button>
-            <button className="popup-item" onClick={() => triggerDocx(false, true)}>
+            <button className="popup-item" onClick={() => triggerExport(false, true)}>
               Avec fermeture seulement
             </button>
-            <button className="popup-item" onClick={() => triggerDocx(false, false)}>
+            <button className="popup-item" onClick={() => triggerExport(false, false)}>
               Sans ouverture ni fermeture
             </button>
           </div>
