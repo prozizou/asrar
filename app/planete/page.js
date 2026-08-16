@@ -323,27 +323,58 @@ function InfoRow({ label, valueClass, children }) {
   );
 }
 
+// Colonnes fixes de .hours-grid (voir planete.css) — un vrai boustrophédon
+// (ligne suivante lue en sens inverse) suppose de connaître le nombre de
+// colonnes à l'avance ; incompatible avec l'ancien
+// `repeat(auto-fill, minmax(130px, 1fr))` responsive, remplacé par 2 fixes.
+const HOURS_GRID_COLS = 2;
+
+// Réordonne l'affichage en boustrophédon : les lignes d'indice impair sont
+// inversées, si bien que deux heures consécutives sont TOUJOURS des cases
+// physiquement adjacentes (jamais de saut en diagonale d'un bout de ligne à
+// l'autre) — reproduit exactement le tracé « en zigzag à angles droits »
+// dessiné à la main par l'utilisateur, plutôt qu'un simple ordre de lecture
+// classique (gauche→droite puis retour chariot).
+function boustrophedon(items, cols) {
+  const out = [];
+  for (let i = 0; i < items.length; i += cols) {
+    const row = items.slice(i, i + cols);
+    if ((i / cols) % 2 === 1) row.reverse();
+    out.push(...row);
+  }
+  return out;
+}
+
 // Grille de cartes plutôt qu'un tableau de 12 lignes : plus rapide à
 // parcourir d'un coup d'œil que la vue linéaire précédente (deux tableaux
 // empilés de 12 lignes chacun).
 //
 // Retour utilisateur : on se perd dans l'ordre des heures en parcourant la
-// grille (screenshot avec un cheminement tracé à la main entre les cartes).
-// Deux aides, redondantes et complémentaires :
-//   1) un numéro d'ordre (①…⑫) sur chaque carte — fiable à 100 %, ne dépend
-//      d'aucune mesure du DOM.
-//   2) une ligne de cheminement (SVG) reliant les cartes dans l'ordre
-//      chronologique, comme le trait dessiné à la main. Impossible à faire
-//      en CSS pur : .hours-grid utilise `grid-template-columns:
-//      repeat(auto-fill, …)`, donc le nombre de colonnes par ligne dépend de
-//      la largeur d'écran et n'est pas prévisible à l'avance → on mesure la
-//      position réelle des cartes (getBoundingClientRect) et on redessine à
-//      chaque changement de taille (ResizeObserver).
+// grille (capture avec un cheminement tracé à la main entre les cartes, en
+// zigzag à angles droits). Trois aides, redondantes et complémentaires :
+//   1) l'affichage lui-même suit ce zigzag (boustrophedon ci-dessus) — les
+//      cartes consécutives sont toujours voisines, jamais en diagonale.
+//   2) un numéro d'ordre (①…⑫) sur chaque carte, TOUJOURS l'heure
+//      chronologique réelle (pas la position d'affichage) — fiable à 100 %,
+//      ne dépend d'aucune mesure du DOM.
+//   3) une ligne de cheminement (SVG) reliant les cartes DANS L'ORDRE
+//      CHRONOLOGIQUE (via cardRefs indexé par heure réelle, pas par position
+//      d'affichage) — position réelle mesurée (getBoundingClientRect) et
+//      redessinée à chaque changement de taille (ResizeObserver), puisque
+//      impossible à prévoir en CSS pur.
 function HourGrid({ rows }) {
   const wrapRef = useRef(null);
-  const cardRefs = useRef([]);
+  const cardRefs = useRef([]); // indexé par heure CHRONOLOGIQUE (rows[i]), pas par position affichée
   const [pathD, setPathD] = useState('');
   const [viewBox, setViewBox] = useState('0 0 0 0');
+
+  const displayRows = useMemo(
+    () => boustrophedon(
+      rows.map((r, i) => ({ ...r, trueIndex: i })),
+      HOURS_GRID_COLS
+    ),
+    [rows]
+  );
 
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
@@ -391,15 +422,15 @@ function HourGrid({ rows }) {
         )}
       </svg>
       <div className="hours-grid">
-        {rows.map((r, i) => (
+        {displayRows.map((r) => (
           <div
-            key={i}
+            key={r.trueIndex}
             ref={(el) => {
-              cardRefs.current[i] = el;
+              cardRefs.current[r.trueIndex] = el;
             }}
             className={'hour-card' + (r.isNow ? ' now-hour' : '')}
           >
-            <span className="hour-card-order">{i + 1}</span>
+            <span className="hour-card-order">{r.trueIndex + 1}</span>
             <div className="hour-card-planet">
               {r.emoji} {r.planet}
               {r.isNow ? ' ◀' : ''}

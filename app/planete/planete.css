@@ -23,7 +23,7 @@
   text-align: center;
   letter-spacing: 3px;
   font-weight: 600;
-  text-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .planete-page .date-display {
   text-align: center;
@@ -49,7 +49,7 @@
   margin-top: 10px;
   font-size: 0.9rem;
   font-weight: 600;
-  background: rgba(167, 139, 250, 0.15);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
   border: 1px solid var(--accent);
 }
@@ -96,7 +96,7 @@
   border: 1px solid transparent;
   transition: all 0.2s;
 }
-.planete-page .day-row.today { background: rgba(167, 139, 250, 0.08); border-color: var(--accent); }
+.planete-page .day-row.today { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: var(--accent); }
 .planete-page .day-name { font-weight: 500; }
 .planete-page .day-planet { color: var(--accent); font-weight: 600; }
 
@@ -143,11 +143,15 @@
   pointer-events: none;
   z-index: 1;
 }
+/* 2 colonnes FIXES (pas de repeat(auto-fill, ...) responsive) : le
+   boustrophédon (page.js, HOURS_GRID_COLS) a besoin d'un nombre de colonnes
+   connu à l'avance pour inverser une ligne sur deux — un nombre de colonnes
+   qui varierait selon la largeur d'écran casserait le zigzag. */
 .planete-page .hours-grid {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 .planete-page .hour-card {
@@ -179,7 +183,7 @@
 .planete-page .hour-card-planet { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
 .planete-page .hour-card-interval { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
 .planete-page .hour-card-nature { font-size: 0.75rem; margin-top: 4px; font-weight: 600; }
-.planete-page .hour-card.now-hour { background: rgba(167, 139, 250, 0.14); border-color: var(--accent); }
+.planete-page .hour-card.now-hour { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); }
 
 .planete-page .loading-text { color: var(--text-dim); text-align: center; padding: 20px; }
 .planete-page .error-text { color: #d9534f; text-align: center; }

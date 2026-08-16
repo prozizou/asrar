@@ -60,13 +60,22 @@ export default function LatestCommitModal({ onClose }) {
         ) : (
           <div className="commit-modal-body">
             <p className="commit-modal-title">{commit.title}</p>
-            {commit.body && <p className="commit-modal-desc">{commit.body}</p>}
             <div className="commit-modal-meta">
               {commit.author && <span>{commit.author}</span>}
               {commit.author && commit.date && <span>·</span>}
               {commit.date && <span>{fmtDate(commit.date)}</span>}
+              {commit.shortSha && <code className="commit-modal-sha">{commit.shortSha}</code>}
             </div>
-            {commit.shortSha && <code className="commit-modal-sha">{commit.shortSha}</code>}
+            {/* Description technique détaillée : repliée par défaut — le
+                titre seul suffit à la plupart des lectures, le détail reste
+                disponible pour qui le veut (retour : le corps complet
+                s'affichait toujours, wall of text peu lisible). */}
+            {commit.body && (
+              <details className="commit-modal-details">
+                <summary>Détails</summary>
+                <p className="commit-modal-desc">{commit.body}</p>
+              </details>
+            )}
           </div>
         )}
       </div>

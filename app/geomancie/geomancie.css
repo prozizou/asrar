@@ -35,19 +35,19 @@
 }
 
 html[data-theme='light'] .geo-page {
-  --bg: #f5ecd0;
+  --bg: #eaf6f2;
   --surface: rgba(255, 255, 255, 0.65);
   --surface2: rgba(255, 255, 255, 0.85);
   --surface3: rgba(0, 0, 0, 0.06);
-  --text: #2d1f10;
-  --text2: #5a4a30;
-  --gold: #1f77c9;
-  --gold2: #0bb7c4;
-  --accent: #1f77c9;
+  --text: #16302c;
+  --text2: #4a635e;
+  --gold: #0f766e;
+  --gold2: #14b8a6;
+  --accent: #0f766e;
   --danger: #b53a37;
-  --shadow: 0 8px 32px rgba(60, 80, 110, 0.18);
-  --glass-border: rgba(30, 40, 60, 0.18);
-  background: radial-gradient(ellipse at 50% 20%, #f7eed5 0%, #ecdfb6 70%);
+  --shadow: 0 8px 32px rgba(20, 100, 90, 0.18);
+  --glass-border: rgba(20, 60, 55, 0.18);
+  background: radial-gradient(ellipse at 50% 20%, #f0faf7 0%, #dcf0ea 70%);
 }
 
 .geo-page::before {
@@ -56,21 +56,21 @@ html[data-theme='light'] .geo-page {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(1px 1px at 10% 20%, rgba(167, 139, 250, 0.35), transparent),
-    radial-gradient(1px 1px at 30% 60%, rgba(167, 139, 250, 0.25), transparent),
-    radial-gradient(1px 1px at 55% 15%, rgba(167, 139, 250, 0.3), transparent),
-    radial-gradient(1px 1px at 70% 75%, rgba(167, 139, 250, 0.2), transparent),
-    radial-gradient(1px 1px at 85% 40%, rgba(167, 139, 250, 0.3), transparent),
+  background: radial-gradient(1px 1px at 10% 20%, color-mix(in srgb, var(--gold) 35%, transparent), transparent),
+    radial-gradient(1px 1px at 30% 60%, color-mix(in srgb, var(--gold) 25%, transparent), transparent),
+    radial-gradient(1px 1px at 55% 15%, color-mix(in srgb, var(--gold) 30%, transparent), transparent),
+    radial-gradient(1px 1px at 70% 75%, color-mix(in srgb, var(--gold) 20%, transparent), transparent),
+    radial-gradient(1px 1px at 85% 40%, color-mix(in srgb, var(--gold) 30%, transparent), transparent),
     radial-gradient(1.5px 1.5px at 20% 80%, rgba(255, 255, 255, 0.25), transparent),
     radial-gradient(1px 1px at 60% 50%, rgba(255, 255, 255, 0.2), transparent),
     radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.2), transparent);
 }
 html[data-theme='light'] .geo-page::before {
-  background: radial-gradient(1px 1px at 10% 20%, rgba(31, 119, 201, 0.18), transparent),
-    radial-gradient(1px 1px at 30% 60%, rgba(31, 119, 201, 0.14), transparent),
-    radial-gradient(1px 1px at 55% 15%, rgba(31, 119, 201, 0.16), transparent),
-    radial-gradient(1px 1px at 70% 75%, rgba(31, 119, 201, 0.12), transparent),
-    radial-gradient(1px 1px at 85% 40%, rgba(31, 119, 201, 0.16), transparent),
+  background: radial-gradient(1px 1px at 10% 20%, rgba(15, 118, 110, 0.18), transparent),
+    radial-gradient(1px 1px at 30% 60%, rgba(15, 118, 110, 0.14), transparent),
+    radial-gradient(1px 1px at 55% 15%, rgba(15, 118, 110, 0.16), transparent),
+    radial-gradient(1px 1px at 70% 75%, rgba(15, 118, 110, 0.12), transparent),
+    radial-gradient(1px 1px at 85% 40%, rgba(15, 118, 110, 0.16), transparent),
     radial-gradient(1.5px 1.5px at 20% 80%, rgba(0, 0, 0, 0.06), transparent),
     radial-gradient(1px 1px at 60% 50%, rgba(0, 0, 0, 0.05), transparent),
     radial-gradient(1px 1px at 90% 10%, rgba(0, 0, 0, 0.05), transparent);
@@ -151,7 +151,7 @@ html[data-theme='light'] .geo-page::before {
   justify-content: center;
 }
 .geo-page .dot-row:hover { background: rgba(255, 255, 255, 0.08); }
-.geo-page .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(167, 139, 250, 0.5); transition: all 0.2s; }
+.geo-page .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 50%, transparent); transition: all 0.2s; }
 .geo-page .dot-row.double-row .dot { width: 11px; height: 11px; }
 
 .geo-page .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -171,9 +171,9 @@ html[data-theme='light'] .geo-page::before {
   font-weight: 500;
   white-space: nowrap;
 }
-.geo-page .btn:hover { background: var(--surface3); border-color: var(--gold2); box-shadow: 0 0 20px rgba(167, 139, 250, 0.2); transform: translateY(-1px); }
-.geo-page .btn.primary { background: rgba(167, 139, 250, 0.2); border-color: var(--gold); color: var(--gold); font-weight: 700; }
-.geo-page .btn.primary:hover { background: rgba(167, 139, 250, 0.35); box-shadow: 0 0 28px rgba(167, 139, 250, 0.35); }
+.geo-page .btn:hover { background: var(--surface3); border-color: var(--gold2); box-shadow: 0 0 20px color-mix(in srgb, var(--gold) 20%, transparent); transform: translateY(-1px); }
+.geo-page .btn.primary { background: color-mix(in srgb, var(--gold) 20%, transparent); border-color: var(--gold); color: var(--gold); font-weight: 700; }
+.geo-page .btn.primary:hover { background: color-mix(in srgb, var(--gold) 35%, transparent); box-shadow: 0 0 28px color-mix(in srgb, var(--gold) 35%, transparent); }
 
 /* padding horizontal : la rangée à 8 cases (w-100) déborde souvent de la
    largeur visible sur mobile (défilement horizontal nécessaire) — sans
@@ -196,25 +196,25 @@ html[data-theme='light'] .geo-page::before {
   transition: all 0.2s;
   min-width: 62px;
 }
-.geo-page .house-cell:hover { border-color: var(--gold2); background: var(--surface3); box-shadow: 0 0 18px rgba(167, 139, 250, 0.25); transform: translateY(-2px); z-index: 2; }
+.geo-page .house-cell:hover { border-color: var(--gold2); background: var(--surface3); box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 25%, transparent); transform: translateY(-2px); z-index: 2; }
 .geo-page .house-cell.voie-active {
   border-color: var(--gold) !important;
-  box-shadow: 0 0 22px rgba(167, 139, 250, 0.55) !important;
-  background: rgba(167, 139, 250, 0.18) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 55%, transparent) !important;
+  background: color-mix(in srgb, var(--gold) 18%, transparent) !important;
   animation: geo-pulse-gold 1.2s ease-in-out infinite;
 }
 @keyframes geo-pulse-gold {
-  0%, 100% { box-shadow: 0 0 18px rgba(167, 139, 250, 0.4); }
-  50% { box-shadow: 0 0 35px rgba(167, 139, 250, 0.7); }
+  0%, 100% { box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 40%, transparent); }
+  50% { box-shadow: 0 0 35px color-mix(in srgb, var(--gold) 70%, transparent); }
 }
 .geo-page .house-num { font-size: 0.65rem; color: var(--text2); letter-spacing: 0.03em; font-weight: 600; margin-bottom: 2px; }
 .geo-page .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-page .mini-row { display: flex; gap: 3px; justify-content: center; }
-.geo-page .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px rgba(167, 139, 250, 0.5); }
+.geo-page .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
 .geo-page .fig-name { font-size: 0.6rem; color: var(--text2); margin-top: 3px; font-style: italic; }
-.geo-page .bzdh-badge { font-size: 0.55rem; color: #a78bfa; font-weight: bold; margin-top: 4px; padding: 2px 4px; background: rgba(167, 139, 250, 0.1); border-radius: 8px; border: 1px solid rgba(167, 139, 250, 0.3); }
-.geo-page .house-cell.judge-cell { border: 2px solid rgba(167, 139, 250, 0.5); background: rgba(167, 139, 250, 0.08); }
-.geo-page .house-cell.sentence-cell { border: 2px solid rgba(167, 139, 250, 0.4); background: rgba(167, 139, 250, 0.05); position: absolute; right: 5%; top: 0; }
+.geo-page .bzdh-badge { font-size: 0.55rem; color: var(--gold); font-weight: bold; margin-top: 4px; padding: 2px 4px; background: color-mix(in srgb, var(--gold) 10%, transparent); border-radius: 8px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); }
+.geo-page .house-cell.judge-cell { border: 2px solid color-mix(in srgb, var(--gold) 50%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+.geo-page .house-cell.sentence-cell { border: 2px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 5%, transparent); position: absolute; right: 5%; top: 0; }
 
 .geo-page .parity-badge { display: inline-block; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; margin-top: 6px; font-weight: 600; letter-spacing: 0.04em; }
 .geo-page .parity-badge.ok { background: rgba(122, 158, 107, 0.3); color: #a0d89b; }
@@ -222,8 +222,8 @@ html[data-theme='light'] .geo-page::before {
 
 .geo-page .synthesis-container { display: flex; gap: 15px; justify-content: center; margin-top: 25px; flex-wrap: wrap; animation: geo-fadeIn 0.5s ease-in-out; }
 .geo-page .synthesis-card {
-  background: rgba(167, 139, 250, 0.05);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+  background: color-mix(in srgb, var(--gold) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
   border-radius: var(--radius-sm);
   padding: 15px 20px;
   text-align: center;
@@ -232,7 +232,7 @@ html[data-theme='light'] .geo-page::before {
   cursor: pointer;
   transition: var(--transition);
 }
-.geo-page .synthesis-card:hover { background: rgba(167, 139, 250, 0.1); border-color: var(--gold); box-shadow: 0 0 30px rgba(167, 139, 250, 0.4); transform: translateY(-3px); }
+.geo-page .synthesis-card:hover { background: color-mix(in srgb, var(--gold) 10%, transparent); border-color: var(--gold); box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 40%, transparent); transform: translateY(-3px); }
 .geo-page .synthesis-card h4 { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; }
 .geo-page .synthesis-card p { font-size: 0.9rem; color: var(--text); margin-top: 8px; font-weight: bold; }
 
@@ -277,7 +277,7 @@ html[data-theme='light'] .geo-page::before {
 .geo-modal .step-fig { background: rgba(255, 255, 255, 0.09); border-radius: 10px; padding: 10px; text-align: center; min-width: 55px; }
 .geo-modal .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-modal .mini-row { display: flex; gap: 3px; justify-content: center; }
-.geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; box-shadow: 0 0 4px rgba(167, 139, 250, 0.5); }
+.geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
 .geo-modal .modal-block { border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
 .geo-modal .modal-block.blue { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); }
 .geo-modal .modal-block.gold { background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); }
