@@ -23,11 +23,12 @@ const { SOURCES } = require("../../server/sources");
 
 const SHARE_SHOW_TITLES = true;
 
-// Types partageables → page cible (doit rester aligné avec js/share.js).
+// Types partageables → page cible (doit rester aligné avec lib/share.js).
+// product → "/" : le Marché Mystique est désormais la page d'accueil.
 const TARGETS = {
   secret:  { page: "/asrar",                 rubrique: "Secrets Mystiques" },
   book:    { page: "/bibliotheque",   rubrique: "Bibliothèque Almaqtab" },
-  product: { page: "/marche",               rubrique: "Marché Mystique" }
+  product: { page: "/",                     rubrique: "Marché Mystique" }
 };
 
 const TITLE_FIELDS = ["faida", "title", "titre", "text", "produit", "name"];

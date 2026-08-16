@@ -7,12 +7,16 @@
 // fonctionner.
 
 // Anciennes pages statiques → nouvelles routes SPA.
+// Le Marché Mystique est désormais la page d'accueil (/) : l'ancienne route
+// /marche n'existe plus, d'où les deux entrées qui pointent vers / (au lieu
+// de /marche) — pour les favoris/liens déjà partagés avant ce changement.
 const LEGACY = [
   ['/index.html', '/'],
   ['/auth/auth.html', '/'],
   ['/accueil/accueil.html', '/'],
   ['/asrar/asrar.html', '/asrar'],
-  ['/marche/marche.html', '/marche'],
+  ['/marche/marche.html', '/'],
+  ['/marche', '/'],
   ['/boutique/boutique.html', '/boutique'],
   ['/bibliotheque/bibliotheque.html', '/bibliotheque'],
   ['/don/don.html', '/don'],

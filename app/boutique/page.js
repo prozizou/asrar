@@ -147,7 +147,7 @@ export default function BoutiquePage() {
 
   return (
     <div className="container">
-      <Link href="/marche" className="back-btn">
+      <Link href="/" className="back-btn">
         ← Marché
       </Link>
 
