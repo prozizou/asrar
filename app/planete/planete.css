@@ -120,18 +120,49 @@
 }
 .planete-page .hours-tab.active { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
 
+/* Enveloppe positionnée : sert de repère pour le SVG de cheminement, dessiné
+   par-dessus la grille (position absolute, inset 0) sans bloquer les clics. */
+.planete-page .hours-grid-wrap { position: relative; margin-top: 14px; }
+.planete-page .hours-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
 .planete-page .hours-grid {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 10px;
-  margin-top: 14px;
 }
 .planete-page .hour-card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px;
   text-align: center;
+}
+/* Numéro d'ordre chronologique — repère fiable qui ne dépend d'aucune mesure
+   du DOM (contrairement au tracé SVG), pour toujours savoir où on en est. */
+.planete-page .hour-card-order {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .planete-page .hour-card-planet { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
 .planete-page .hour-card-interval { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
