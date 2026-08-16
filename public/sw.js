@@ -15,7 +15,7 @@
 // Mise à jour : incrémenter SW_VERSION à chaque changement de stratégie de cache.
 // skipWaiting + clients.claim → le nouveau SW prend la main immédiatement.
 
-const SW_VERSION = 'v9';
+const SW_VERSION = 'v10';
 const CACHE = 'asrar-pwa-' + SW_VERSION;
 const IMG_CACHE = 'asrar-img-' + SW_VERSION; // cache dédié aux images distantes.
 const IMG_MAX = 60; // nombre d'images conservées (LRU approximatif).
