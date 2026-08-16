@@ -4,7 +4,14 @@
 // de l'accueil. Chaque tuile porte une courte description en clair : plusieurs
 // noms de modules sont des termes du domaine (Abajad, Rouwhanes, Tourab…) que
 // quelqu'un de nouveau ne devine pas avant d'avoir cliqué.
+//
+// Porte aussi les contrôles de compte (avatar, thème, déconnexion) : ils
+// vivaient sur l'accueil avant que celui-ci ne devienne le Marché, épuré
+// depuis de tout ce qui n'est pas la liste des vendeurs/produits.
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';
+import AppDrawer from '@/components/AppDrawer';
+import SmartImage from '@/components/SmartImage';
 
 const MODULES = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
@@ -30,11 +37,44 @@ function MenuItem({ item }) {
 }
 
 export default function MenuPage() {
+  const { user, signOut } = useAuth();
+  const name = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Utilisateur');
+
   return (
     <div className="container">
       <Link href="/" className="back-btn">
         ← Retour
       </Link>
+
+      {/* Barre utilisateur (ex-accueil) : compte, thème, déconnexion */}
+      <div className="user-bar">
+        <div className="user-info">
+          <div className="avatar">
+            {user?.photoURL ? (
+              <SmartImage
+                src={user.photoURL}
+                alt=""
+                fill
+                sizes="42px"
+                referrerPolicy="no-referrer"
+                style={{ objectFit: 'cover', borderRadius: '50%' }}
+              />
+            ) : (
+              name.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600 }}>{name}</div>
+            <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{user?.email}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <AppDrawer />
+          <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
+            ⏻
+          </button>
+        </div>
+      </div>
 
       <div className="header">
         <h1>Menu</h1>

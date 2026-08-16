@@ -1,11 +1,13 @@
 'use client';
 // Page d'accueil = Marché Mystique (décision produit : le module le plus
 // utilisé devient la porte d'entrée de l'app). Le tableau de bord — la liste
-// des autres modules — est déplacé sur /menu, accessible via le bouton
-// « ☰ Accéder au menu » ci-dessous. Port de marche.html/marche.js en React.
+// des autres modules — est déplacé sur /menu, accessible via le grand bouton
+// « ☰ Accéder au menu » en bas de page (compte/thème/déconnexion ont suivi
+// sur /menu, cf. app/menu/page.js). Port de marche.html/marche.js en React.
 // Produits (via /api/list-content kind=product), vendeurs reconstruits depuis
-// les métadonnées, filtres/recherche, tri par popularité, modale produit et
-// boutique vendeur.
+// les métadonnées, tri par popularité, modale produit et boutique vendeur.
+// Volontairement épuré : pas de barre de recherche ni de filtre par
+// catégorie — juste la liste des vendeurs puis les produits.
 //
 // NB : le panier de marche.js ciblait des éléments DOM absents du HTML (code
 // mort) ; la commande réelle se fait par produit via WhatsApp. On porte donc
@@ -22,31 +24,13 @@ import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useToast } from '@/components/useToast';
-import { useAuth } from '@/components/AuthProvider';
-import AppDrawer from '@/components/AppDrawer';
 import ProductModal from './marche/ProductModal';
 import VendorShop from './marche/VendorShop';
 
-const menuBtnStyle = {
-  background: 'var(--surface)',
-  color: 'var(--text-main)',
-  textDecoration: 'none',
-  fontWeight: 700,
-  padding: '8px 14px',
-  borderRadius: 10,
-  fontSize: '.85rem',
-  border: '1px solid var(--glass-border)',
-};
-
 export default function Home() {
-  const { user, signOut } = useAuth();
-  const name = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Utilisateur');
-
   const { notify, toast } = useToast();
   const [allProducts, setAllProducts] = useState([]);
   const [allVendors, setAllVendors] = useState([]);
-  const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
   const [popularite, setPopularite] = useState({});
   const [vendorLikes, setVendorLikes] = useState({});
   const [modalProduct, setModalProduct] = useState(null);
@@ -171,29 +155,14 @@ export default function Home() {
     return v.id === email || v.id === me.uid;
   }, []);
 
-  const chains = useMemo(
-    () => [...new Set(allProducts.map((p) => p.chain).filter(Boolean))].sort(),
-    [allProducts]
-  );
-
-  // Liste filtrée + triée par popularité (achats > likes > commentaires,
-  // puis plus récents à score égal).
+  // Triés par popularité (achats > likes > commentaires, puis plus récents à
+  // score égal) — plus de recherche ni de filtre par catégorie (retirés).
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    let out = allProducts;
-    if (activeFilter) out = out.filter((p) => p.chain === activeFilter);
-    out = out.filter(
-      (p) =>
-        (p.produit || '').toLowerCase().includes(q) ||
-        (p.chain || '').toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q) ||
-        (p.vendeur || '').toLowerCase().includes(q)
-    );
-    return out.slice().sort((a, b) => {
+    return allProducts.slice().sort((a, b) => {
       const d = scorePopularite(popularite, b._key) - scorePopularite(popularite, a._key);
       return d !== 0 ? d : Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
     });
-  }, [allProducts, activeFilter, query, popularite]);
+  }, [allProducts, popularite]);
 
   const modalVendor = modalProduct ? allVendors.find((v) => v.id === vendorKey(modalProduct)) : null;
   const shopVendor = vendorShopId ? allVendors.find((v) => v.id === vendorShopId) : null;
@@ -205,36 +174,6 @@ export default function Home() {
 
   return (
     <div className="container">
-      {/* Barre utilisateur (ex-tableau de bord) : compte, thème, déconnexion */}
-      <div className="user-bar">
-        <div className="user-info">
-          <div className="avatar">
-            {user?.photoURL ? (
-              <SmartImage
-                src={user.photoURL}
-                alt=""
-                fill
-                sizes="42px"
-                referrerPolicy="no-referrer"
-                style={{ objectFit: 'cover', borderRadius: '50%' }}
-              />
-            ) : (
-              name.charAt(0).toUpperCase()
-            )}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600 }}>{name}</div>
-            <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{user?.email}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <AppDrawer />
-          <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
-            ⏻
-          </button>
-        </div>
-      </div>
-
       {shopVendor ? (
         <VendorShop
           vendor={shopVendor}
@@ -244,24 +183,6 @@ export default function Home() {
         />
       ) : (
         <div className="glass-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>🛒 Marché Mystique</h2>
-            <Link href="/menu" className="shop-link" style={menuBtnStyle}>
-              ☰ Accéder au menu
-            </Link>
-          </div>
-          <p className="subtitle">Produits ésotériques de nos praticiens certifiés</p>
-
-          <div className="market-nav">
-            <input
-              type="text"
-              className="search-bar"
-              placeholder="🔍 Rechercher un produit..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-
           <div className="vendors-section">
             <h3>🌙 Nos praticiens et vendeurs certifiés</h3>
             <div className="vendors-scroll">
@@ -322,21 +243,6 @@ export default function Home() {
                 </Link>
               )}
             </div>
-          </div>
-
-          <div className="filters">
-            <div className={'filter-tag' + (activeFilter === '' ? ' active' : '')} onClick={() => setActiveFilter('')}>
-              Tous
-            </div>
-            {chains.map((chain) => (
-              <div
-                key={chain}
-                className={'filter-tag' + (activeFilter === chain ? ' active' : '')}
-                onClick={() => setActiveFilter(chain)}
-              >
-                {chain}
-              </div>
-            ))}
           </div>
 
           <div className="prod-grid">
