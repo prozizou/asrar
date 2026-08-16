@@ -1,83 +1,54 @@
 'use client';
 // PwaGate — rend l'app installable (PWA).
 //   • Enregistre le service worker (/sw.js) pour tous les visiteurs.
-//   • Android/Chromium : capte `beforeinstallprompt` (utilisable plus tard via
-//     un bouton dans l'app, ex. `promptInstall`).
+//   • Android/Chromium : capte `beforeinstallprompt` — voir lib/installPrompt.js
+//     (capture PARTAGÉE : le bouton « Installer l'application » du menu,
+//     components/AppDrawer.js, déclenche la même invite native).
 //   • L'écran d'installation plein écran BLOQUANT au démarrage est désactivé
 //     (FORCE_INSTALL = false) : l'app s'ouvre toujours directement dans le
 //     navigateur, installée ou non. Repasser à true pour le réactiver.
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall as promptInstallShared } from '@/lib/installPrompt';
 
 const FORCE_INSTALL = false;
-
-function isStandalone() {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    window.matchMedia('(display-mode: minimal-ui)').matches ||
-    window.navigator.standalone === true
-  );
-}
-
-function isIOS() {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  const iOSDevice = /iphone|ipad|ipod/i.test(ua);
-  const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-  return iOSDevice || iPadOS;
-}
 
 export default function PwaGate({ children }) {
   const [mounted, setMounted] = useState(false);
   const [standalone, setStandalone] = useState(true); // optimiste → pas de flash pour les installés
-  const [deferred, setDeferred] = useState(null); // événement beforeinstallprompt
-  const [installed, setInstalled] = useState(false); // installé pendant la session
+  const [installState, setInstallState] = useState(getInstallState); // { canInstall, installed }
   const [webFallback, setWebFallback] = useState(false); // échappatoire si install impossible
 
   useEffect(() => {
     setMounted(true);
     setStandalone(isStandalone());
+    setInstallState(getInstallState());
 
     // Enregistrement du service worker (tous les visiteurs).
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    const onBIP = (e) => {
-      e.preventDefault();
-      setDeferred(e);
-    };
-    const onInstalled = () => setInstalled(true);
     const mql = window.matchMedia('(display-mode: standalone)');
     const onDisplay = () => setStandalone(isStandalone());
-
-    window.addEventListener('beforeinstallprompt', onBIP);
-    window.addEventListener('appinstalled', onInstalled);
     if (mql.addEventListener) mql.addEventListener('change', onDisplay);
 
+    const unsubscribe = subscribeInstallState(() => setInstallState(getInstallState()));
+
     return () => {
-      window.removeEventListener('beforeinstallprompt', onBIP);
-      window.removeEventListener('appinstalled', onInstalled);
       if (mql.removeEventListener) mql.removeEventListener('change', onDisplay);
+      unsubscribe();
     };
   }, []);
 
-  const promptInstall = async () => {
-    if (!deferred) return;
-    deferred.prompt();
-    try {
-      await deferred.userChoice;
-    } catch {}
-    setDeferred(null);
-  };
+  const promptInstall = () => promptInstallShared();
 
   // Déjà installé, ou pas encore monté (SSR/hydratation) → app normale.
   const showGate = mounted && !standalone && FORCE_INSTALL && !webFallback;
 
   const ios = mounted && isIOS();
-  const canPrompt = !!deferred;
+  const canPrompt = installState.canInstall;
+  const installed = installState.installed;
   const cannotInstall = mounted && !ios && !canPrompt; // desktop/navigateur non supporté
 
   return (

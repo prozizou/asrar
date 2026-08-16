@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import pkg from '@/package.json';
 import LatestCommitModal from './LatestCommitModal';
+import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
 
 const APP_VERSION = pkg.version;
 // SHA court du commit déployé (voir next.config.mjs) — change à chaque
@@ -38,9 +39,21 @@ export default function AppDrawer() {
   const [theme, setTheme] = useState('dark');
   const [swVersion, setSwVersion] = useState(null);
   const [commitModalOpen, setCommitModalOpen] = useState(false);
+  const [standalone, setStandalone] = useState(true); // optimiste → pas de flash de la ligne pour les installés
+  const [installState, setInstallState] = useState(getInstallState); // { canInstall, installed }
+  const [ios, setIos] = useState(false);
 
   useEffect(() => {
     setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+  }, []);
+
+  // Voir lib/installPrompt.js : capture PARTAGÉE avec PwaGate (un seul
+  // listener global), on ne fait ici que s'abonner à son état.
+  useEffect(() => {
+    setStandalone(isStandalone());
+    setIos(isIOS());
+    setInstallState(getInstallState());
+    return subscribeInstallState(() => setInstallState(getInstallState()));
   }, []);
 
   useEffect(() => {
@@ -126,6 +139,26 @@ export default function AppDrawer() {
                 </span>
                 <span className="drawer-row-hint">Dernier commit</span>
               </button>
+
+              {!standalone &&
+                (installState.canInstall ? (
+                  <button type="button" className="drawer-row drawer-row-link" onClick={promptInstall}>
+                    <span className="drawer-row-label">
+                      <span className="drawer-row-icon">📲</span>
+                      Installer l'application
+                    </span>
+                  </button>
+                ) : (
+                  <div className="drawer-row drawer-row-static">
+                    <span className="drawer-row-label">
+                      <span className="drawer-row-icon">📲</span>
+                      Installer l'application
+                    </span>
+                    <span className="drawer-row-hint">
+                      {ios ? 'Partager ⎋ → Écran d’accueil' : 'Non proposé par ce navigateur'}
+                    </span>
+                  </div>
+                ))}
 
               <div className="drawer-row drawer-row-static">
                 <span className="drawer-row-label">
