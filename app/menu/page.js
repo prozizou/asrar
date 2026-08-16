@@ -46,10 +46,13 @@ export default function MenuPage() {
         ← Retour
       </Link>
 
-      {/* Barre utilisateur (ex-accueil) : compte, thème, déconnexion */}
+      {/* Barre utilisateur (ex-accueil) : compte, thème, déconnexion.
+          Deux groupes bien dissociés (séparateur vertical) : à gauche le
+          profil (avatar seul, plus de nom/e-mail affichés) + le menu ; à
+          droite, seul, le bouton de déconnexion. */}
       <div className="user-bar">
-        <div className="user-info">
-          <div className="avatar">
+        <div className="user-bar-left">
+          <div className="avatar" title={user?.email || name} aria-label={name}>
             {user?.photoURL ? (
               <SmartImage
                 src={user.photoURL}
@@ -63,15 +66,18 @@ export default function MenuPage() {
               name.charAt(0).toUpperCase()
             )}
           </div>
-          <div>
-            <div style={{ fontWeight: 600 }}>{name}</div>
-            <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{user?.email}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <AppDrawer />
+        </div>
+        <div className="user-bar-right">
           <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
-            ⏻
+            {/* Icône SVG (fiable sur tous les appareils) plutôt que le
+                glyphe Unicode ⏻, absent de certaines polices système →
+                s'affichait comme un carré vide ("tofu"). */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </button>
         </div>
       </div>

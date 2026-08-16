@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { me, share as shareApp, copy, post } from '@/lib/share';
 import { useAccess } from '@/components/AccessProvider';
+import Spinner from '@/components/Spinner';
 
 export default function ParrainagePage() {
   const { invalidate } = useAccess();
@@ -57,7 +58,11 @@ export default function ParrainagePage() {
   const need = d ? d.pointsForReward : 0;
   const pts = d ? d.points : 0;
   const goalText = !d
-    ? error || 'Chargement…'
+    ? error || (
+        <>
+          <Spinner /> Chargement…
+        </>
+      )
     : pts >= need
     ? `🎉 Objectif atteint — activez vos ${d.rewardDays} jours !`
     : `${(need - pts).toLocaleString('fr-FR')} points restants sur ${need.toLocaleString('fr-FR')} (soit ${Math.ceil(
@@ -80,7 +85,7 @@ export default function ParrainagePage() {
         {/* Progression */}
         <div className="pr-card">
           <h3>MES POINTS</h3>
-          <div className="pr-points">{d ? pts.toLocaleString('fr-FR') : '—'}</div>
+          <div className="pr-points">{d ? pts.toLocaleString('fr-FR') : <Spinner size={18} />}</div>
           <div className="pr-bar">
             <span style={{ width: d ? Math.min(100, (pts / need) * 100) + '%' : 0 }} />
           </div>
@@ -99,7 +104,15 @@ export default function ParrainagePage() {
         <div className="pr-card">
           <h3>MON LIEN DE PARRAINAGE</h3>
           <div className="pr-link-row">
-            <div className="pr-link">{d ? d.link : 'Chargement…'}</div>
+            <div className="pr-link">
+              {d ? (
+                d.link
+              ) : (
+                <>
+                  <Spinner /> Chargement…
+                </>
+              )}
+            </div>
           </div>
           <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: '.82rem' }}>
             Mon code : <span className="pr-code">{d ? d.code : '—'}</span>

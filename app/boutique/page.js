@@ -14,6 +14,7 @@ import SmartImage from '@/components/SmartImage';
 import { openAccess } from '@/lib/whatsapp';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
+import Spinner from '@/components/Spinner';
 import ProductForm from './ProductForm';
 
 const PLANS = [
@@ -155,7 +156,11 @@ export default function BoutiquePage() {
         <h2>🏪 Ma Boutique</h2>
         <p className="subtitle">Vendez vos produits sur le Marché Mystique.</p>
 
-        {view === 'loading' && <div className="bq-loading">Chargement…</div>}
+        {view === 'loading' && (
+          <div className="bq-loading">
+            <Spinner size={20} /> Chargement…
+          </div>
+        )}
 
         {view === 'error' && <p className="bq-error">Erreur : {errorMsg}</p>}
 

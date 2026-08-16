@@ -350,6 +350,21 @@ input:focus {
     100% { transform: rotate(360deg); }
 }
 
+/* Spinner inline (composant Spinner.js) : une valeur, un bouton, une ligne de
+   texte en cours de chargement — versant compact du .loader ci-dessus, qui
+   lui est pensé pour occuper toute une zone de page. */
+.mini-spinner {
+    display: inline-block;
+    vertical-align: -2px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border, rgba(127, 127, 127, .35));
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    flex: 0 0 auto;
+}
+
 /* ───────────── Onglets ───────────── */
 .tab-container {
     display: flex;
@@ -582,7 +597,14 @@ img, svg, video { max-width: 100%; height: auto; }
   background: var(--glass-bg); border: 1px solid var(--glass-border);
   border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
 }
-.user-info { display: flex; align-items: center; gap: 12px; }
+/* Deux groupes visuellement dissociés : profil + menu à gauche, séparés par
+   un trait vertical du bouton de déconnexion isolé à droite. */
+.user-bar-left { display: flex; align-items: center; gap: 12px; }
+.user-bar-right {
+  display: flex; align-items: center;
+  padding-left: 14px; margin-left: 4px;
+  border-left: 1px solid var(--glass-border);
+}
 .avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 42px; height: 42px; border-radius: 50%; overflow: hidden;

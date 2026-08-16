@@ -187,6 +187,13 @@ export default function Home() {
 
           <div className="vendors-section">
             <div className="vendors-scroll">
+              {loading ? (
+                <>
+                  <div className="vendor-skeleton" />
+                  <div className="vendor-skeleton" />
+                  <div className="vendor-skeleton" />
+                </>
+              ) : null}
               {allVendors.map((v) => {
                 const l = vendorLikes[safeKey(v.id)] || { count: 0, liked: false };
                 const own = isOwnVendor(v);

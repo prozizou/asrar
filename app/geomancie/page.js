@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { useAccess } from '@/components/AccessProvider';
+import Spinner from '@/components/Spinner';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import {
   generateAllHouses,
@@ -77,6 +78,7 @@ export default function GeomanciePage() {
 
   const [mothers, setMothers] = useState(neutralMothers);
   const [calculated, setCalculated] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const [fbData, setFbData] = useState([]);
   const [activeFig, setActiveFig] = useState(null);
   const [modalIndex, setModalIndex] = useState(null);
@@ -131,10 +133,15 @@ export default function GeomanciePage() {
   const onCalculate = async () => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
-    if (!fbData || fbData.length === 0) await fetchFirebaseData();
-    setCalculated(true);
-    setActiveFig(null);
-    logGeomancie();
+    setCalculating(true);
+    try {
+      if (!fbData || fbData.length === 0) await fetchFirebaseData();
+      setCalculated(true);
+      setActiveFig(null);
+      logGeomancie();
+    } finally {
+      setCalculating(false);
+    }
   };
 
   const onRandom = () => {
@@ -209,8 +216,14 @@ export default function GeomanciePage() {
             ))}
           </div>
           <div className="btn-row" style={{ marginTop: 14 }}>
-            <button className="btn primary" onClick={onCalculate}>
-              🔮 Calculer l'Écu
+            <button className="btn primary" onClick={onCalculate} disabled={calculating}>
+              {calculating ? (
+                <>
+                  <Spinner /> Calcul…
+                </>
+              ) : (
+                "🔮 Calculer l'Écu"
+              )}
             </button>
             <button className="btn" onClick={onRandom}>
               🎲 Aléatoire
@@ -225,7 +238,11 @@ export default function GeomanciePage() {
         <div className="panel">
           <h2>🛡️ L'Écu Géomantique</h2>
           <div className="shield-container">
-            {!calculated ? (
+            {calculating ? (
+              <p className="placeholder-text">
+                <Spinner /> Calcul de l'écu en cours…
+              </p>
+            ) : !calculated ? (
               <p className="placeholder-text">
                 Saisissez les Mères et cliquez sur <strong>Calculer l'Écu</strong>.
               </p>
