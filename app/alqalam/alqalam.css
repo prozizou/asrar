@@ -57,6 +57,43 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .grid-row-2-1 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; width: 100%; min-width: 0; }
 .alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
 
+/* Menu de sélection (précède l'outil) : simple / intercalée / rasmique. */
+.alq-page .mode-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; }
+.alq-page .mode-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.alq-page .mode-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.alq-page .mode-card-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+.alq-page .mode-card-title { font-weight: 700; font-family: var(--font-display); font-size: 1.05rem; }
+.alq-page .mode-card-desc { font-size: 0.8rem; color: var(--text-gray); margin-top: 6px; line-height: 1.35; }
+
+.alq-page .mode-current {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+.alq-page .mode-current strong { color: var(--text-main); }
+.alq-page .mode-change-btn {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--text-gray);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.alq-page .mode-change-btn:hover { color: var(--text-main); border-color: var(--accent); }
+
 .alq-page .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
 .alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
 
