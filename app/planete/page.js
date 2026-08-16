@@ -63,6 +63,13 @@ async function reverseGeocode(lat, lng) {
 
 const fmtHM = (date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
+// Précision GPS visée (m) — best-effort : on affine tant que le matériel de
+// l'appareil ne l'atteint pas, sans jamais bloquer indéfiniment (souvent
+// inatteignable en intérieur). GPS_MAX_WAIT_MS borne l'attente ; passé ce
+// délai, on garde la meilleure lecture obtenue plutôt que d'échouer.
+const GPS_TARGET_ACCURACY_M = 5;
+const GPS_MAX_WAIT_MS = 12000;
+
 export default function PlanetePage() {
   const { ensureAccess } = useAccess();
   const sunCache = useRef({});
@@ -73,6 +80,7 @@ export default function PlanetePage() {
   const [todaySun, setTodaySun] = useState(null);
   const [hours, setHours] = useState(null); // { dayName, day[], night[] }
   const [hoursError, setHoursError] = useState('');
+  const [hoursTab, setHoursTab] = useState('day'); // 'day' | 'night' — onglet actif (moins linéaire que 2 tableaux empilés)
 
   // Recalcule la journée planétaire + le soleil du jour à partir d'une position.
   const recompute = useCallback((lat, lng) => {
@@ -81,32 +89,61 @@ export default function PlanetePage() {
     setTodaySun({ sunrise: p.today.sunrise, sunset: p.today.sunset });
   }, []);
 
+  // Une seule lecture GPS (getCurrentPosition) peut être imprécise au « cold
+  // start » (peu de satellites encore accrochés). On observe plusieurs
+  // lectures (watchPosition) et on garde la plus précise, jusqu'à atteindre
+  // GPS_TARGET_ACCURACY_M ou GPS_MAX_WAIT_MS — sans jamais rester bloqué.
   const requestGPS = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setGeo((g) => ({ ...g, ready: false, error: 'Géolocalisation non disponible sur cet appareil.' }));
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const acc = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
-        setGeo({ lat, lng, city: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, accuracy: acc, named: false, ready: true, error: null });
-        recompute(lat, lng); // 1) calcul local immédiat
-        await prefetchSunAPI(lat, lng, sunCache.current);
-        recompute(lat, lng); // 2) affiné via l'API
-        const city = await reverseGeocode(lat, lng);
-        if (city) setGeo((g) => ({ ...g, city, named: true }));
+    setGeo({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
+
+    let best = null;
+    let done = false;
+    let watchId = null;
+
+    const finalize = async () => {
+      if (done || !best) return;
+      done = true;
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timeoutId);
+      const { lat, lng, acc } = best;
+      setGeo({ lat, lng, city: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, accuracy: acc, named: false, ready: true, error: null });
+      recompute(lat, lng); // 1) calcul local immédiat
+      await prefetchSunAPI(lat, lng, sunCache.current);
+      recompute(lat, lng); // 2) affiné via l'API Sunrise-Sunset
+      const city = await reverseGeocode(lat, lng);
+      if (city) setGeo((g) => ({ ...g, city, named: true }));
+    };
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : null;
+        if (!best || (acc != null && acc < best.acc)) {
+          best = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc };
+          if (acc != null && acc <= GPS_TARGET_ACCURACY_M) finalize(); // précision cible atteinte
+        }
       },
       (err) => {
+        if (done) return;
+        done = true;
+        if (watchId != null) navigator.geolocation.clearWatch(watchId);
+        clearTimeout(timeoutId);
         const msg =
           err && err.code === 1
             ? 'Accès GPS refusé. Autorisez la localisation puis réessayez.'
             : 'Position GPS indisponible. Réessayez en extérieur.';
         setGeo((g) => ({ ...g, ready: false, error: msg }));
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: GPS_MAX_WAIT_MS, maximumAge: 0 }
     );
+
+    // Repli : au-delà du délai max, on garde la meilleure lecture déjà
+    // obtenue plutôt que d'attendre indéfiniment un 5 m rarement atteignable
+    // en intérieur.
+    const timeoutId = setTimeout(finalize, GPS_MAX_WAIT_MS);
   }, [recompute]);
 
   // GPS au montage.
@@ -144,6 +181,7 @@ export default function PlanetePage() {
     }
     const c = currentHour(new Date(), pday);
     setHoursError('');
+    setHoursTab(c.isDay ? 'day' : 'night'); // ouvre directement sur la période en cours
     setHours({
       dayName: DAY_PLANETS.names[pday.dayOfWeek],
       day: buildHourList(pday, c, true),
@@ -222,8 +260,21 @@ export default function PlanetePage() {
               <p style={{ textAlign: 'center', color: 'var(--accent)', margin: '6px 0' }}>
                 Journée planétaire : <strong>{hours.dayName}</strong>
               </p>
-              <HoursTable title="☀️ Heures du Jour" rows={hours.day} />
-              <HoursTable title="🌙 Heures de la Nuit" rows={hours.night} />
+              <div className="hours-tabs">
+                <button
+                  className={'hours-tab' + (hoursTab === 'day' ? ' active' : '')}
+                  onClick={() => setHoursTab('day')}
+                >
+                  ☀️ Jour
+                </button>
+                <button
+                  className={'hours-tab' + (hoursTab === 'night' ? ' active' : '')}
+                  onClick={() => setHoursTab('night')}
+                >
+                  🌙 Nuit
+                </button>
+              </div>
+              <HourGrid rows={hoursTab === 'day' ? hours.day : hours.night} />
             </div>
           )}
         </div>
@@ -257,33 +308,22 @@ function InfoRow({ label, valueClass, children }) {
   );
 }
 
-function HoursTable({ title, rows }) {
+// Grille de cartes plutôt qu'un tableau de 12 lignes : plus rapide à
+// parcourir d'un coup d'œil que la vue linéaire précédente (deux tableaux
+// empilés de 12 lignes chacun).
+function HourGrid({ rows }) {
   return (
-    <div className="planetary-hours-table">
-      <h4 style={{ textAlign: 'center', color: 'var(--accent)', margin: '14px 0 8px' }}>{title}</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Intervalle</th>
-            <th>Planète</th>
-            <th>Nature</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className={r.isNow ? 'now-hour' : ''}>
-              <td>{r.interval}</td>
-              <td className="planet-name">
-                {r.emoji} {r.planet}
-                {r.isNow ? ' ◀' : ''}
-              </td>
-              <td>
-                <span className={r.nat.cls}>{r.nat.txt}</span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="hours-grid">
+      {rows.map((r, i) => (
+        <div key={i} className={'hour-card' + (r.isNow ? ' now-hour' : '')}>
+          <div className="hour-card-planet">
+            {r.emoji} {r.planet}
+            {r.isNow ? ' ◀' : ''}
+          </div>
+          <div className="hour-card-interval">{r.interval}</div>
+          <div className={'hour-card-nature ' + r.nat.cls}>{r.nat.txt}</div>
+        </div>
+      ))}
     </div>
   );
 }
