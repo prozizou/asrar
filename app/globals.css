@@ -582,7 +582,14 @@ img, svg, video { max-width: 100%; height: auto; }
   background: var(--glass-bg); border: 1px solid var(--glass-border);
   border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
 }
-.user-info { display: flex; align-items: center; gap: 12px; }
+/* Deux groupes visuellement dissociés : profil + menu à gauche, séparés par
+   un trait vertical du bouton de déconnexion isolé à droite. */
+.user-bar-left { display: flex; align-items: center; gap: 12px; }
+.user-bar-right {
+  display: flex; align-items: center;
+  padding-left: 14px; margin-left: 4px;
+  border-left: 1px solid var(--glass-border);
+}
 .avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
