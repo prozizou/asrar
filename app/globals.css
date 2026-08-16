@@ -624,13 +624,25 @@ img, svg, video { max-width: 100%; height: auto; }
 }
 .commit-modal-loading { display: flex; align-items: center; gap: 10px; color: var(--text-muted); padding: 6px 0; }
 .commit-modal-error { color: #e0607a; font-size: .92rem; }
-.commit-modal-title { font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
-.commit-modal-desc { color: var(--text-muted); font-size: .88rem; white-space: pre-wrap; margin-bottom: 12px; }
-.commit-modal-meta { display: flex; gap: 8px; font-size: .82rem; color: var(--text-dim); margin-bottom: 10px; }
+.commit-modal-title { font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+.commit-modal-meta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  font-size: .82rem; color: var(--text-dim);
+}
 .commit-modal-sha {
   display: inline-block; background: var(--surface-2); border: 1px solid var(--glass-border);
-  border-radius: 8px; padding: 3px 8px; font-size: .78rem; color: var(--text-muted);
+  border-radius: 8px; padding: 2px 7px; font-size: .74rem; color: var(--text-muted);
 }
+/* Description technique complète : repliée par défaut (voir LatestCommitModal.js). */
+.commit-modal-details { margin-top: 12px; }
+.commit-modal-details summary {
+  cursor: pointer; font-size: .82rem; color: var(--accent);
+  user-select: none; list-style: none;
+}
+.commit-modal-details summary::-webkit-details-marker { display: none; }
+.commit-modal-details summary::before { content: '▸ '; }
+.commit-modal-details[open] summary::before { content: '▾ '; }
+.commit-modal-desc { color: var(--text-muted); font-size: .85rem; white-space: pre-wrap; margin-top: 8px; }
 
 /* ── Tableau de bord (accueil) — barre utilisateur + menus groupés ────────── */
 .user-bar {
