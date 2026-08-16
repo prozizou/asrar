@@ -522,6 +522,11 @@ body::before {
     opacity: 0.4;
 }
 
+.empty-message .mini-spinner {
+    display: block;
+    margin: 0 auto 1rem;
+}
+
 /* ── HIGHLIGHT RECHERCHE ──────────────────────────────────── */
 .search-highlight {
     background: rgba(201, 168, 76, 0.22);

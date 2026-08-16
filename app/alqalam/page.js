@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
+import Spinner from '@/components/Spinner';
 import {
   config,
   buildPreview,
@@ -522,7 +523,13 @@ export default function AlQalamPage() {
                       className={'version-btn' + (textVersion === 'voyelles' ? ' active' : '')}
                       onClick={() => chooseTextVersion('voyelles')}
                     >
-                      {uthmaniLoading ? '⏳ Chargement…' : 'Avec voyelles'}
+                      {uthmaniLoading ? (
+                        <>
+                          <Spinner /> Chargement…
+                        </>
+                      ) : (
+                        'Avec voyelles'
+                      )}
                     </button>
                   </div>
 

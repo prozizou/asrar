@@ -9,6 +9,7 @@ import './planete.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
+import Spinner from '@/components/Spinner';
 import {
   DAY_PLANETS,
   CHALDEAN_EMOJIS,
@@ -215,20 +216,32 @@ export default function PlanetePage() {
 
           <div style={{ marginTop: 20, textAlign: 'left' }}>
             <InfoRow label="🪐 Planète de l'heure">
-              {geo.error ? '— (GPS requis)' : cur ? `${cur.planet} ${CHALDEAN_EMOJIS[cur.planet]}` : '—'}
+              {geo.error ? '— (GPS requis)' : cur ? `${cur.planet} ${CHALDEAN_EMOJIS[cur.planet]}` : <Spinner />}
             </InfoRow>
             <InfoRow label="⚖️ Nature de l'heure" valueClass={nature ? nature.cls : ''}>
-              {nature ? nature.txt : '—'}
+              {nature ? nature.txt : geo.error ? '—' : <Spinner />}
             </InfoRow>
             <InfoRow label="🗓️ Jour planétaire">
-              {ready
-                ? `${DAY_PLANETS.names[pday.dayOfWeek]} — régent ${DAY_PLANETS.planets[pday.dayOfWeek]}${
-                    pday.dayOfWeek !== now.getDay() ? ' (nuit, avant le lever)' : ''
-                  }`
-                : '—'}
+              {ready ? (
+                `${DAY_PLANETS.names[pday.dayOfWeek]} — régent ${DAY_PLANETS.planets[pday.dayOfWeek]}${
+                  pday.dayOfWeek !== now.getDay() ? ' (nuit, avant le lever)' : ''
+                }`
+              ) : geo.error ? (
+                '—'
+              ) : (
+                <Spinner />
+              )}
             </InfoRow>
-            <InfoRow label="🌅 Lever du soleil">{ready ? fmtHM(todaySun.sunrise) : '—'}</InfoRow>
-            <InfoRow label="🌇 Coucher du soleil">{ready ? fmtHM(todaySun.sunset) : '—'}</InfoRow>
+            {/* Lever/coucher du soleil : dépendent de la position GPS (jusqu'à
+                12 s d'acquisition, voir GPS_MAX_WAIT_MS) puis de l'API
+                Sunrise-Sunset — sans repère visuel, l'attente ressemblait à un
+                blocage. */}
+            <InfoRow label="🌅 Lever du soleil">
+              {ready ? fmtHM(todaySun.sunrise) : geo.error ? '—' : <Spinner />}
+            </InfoRow>
+            <InfoRow label="🌇 Coucher du soleil">
+              {ready ? fmtHM(todaySun.sunset) : geo.error ? '—' : <Spinner />}
+            </InfoRow>
             <InfoRow label="📍 Position">
               {geo.error ? (
                 <>
@@ -244,7 +257,9 @@ export default function PlanetePage() {
                   `📡 GPS : ${geo.city}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
                 )
               ) : (
-                '—'
+                <>
+                  <Spinner /> <span style={{ marginLeft: 6 }}>Localisation…</span>
+                </>
               )}
             </InfoRow>
           </div>

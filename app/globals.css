@@ -350,6 +350,21 @@ input:focus {
     100% { transform: rotate(360deg); }
 }
 
+/* Spinner inline (composant Spinner.js) : une valeur, un bouton, une ligne de
+   texte en cours de chargement — versant compact du .loader ci-dessus, qui
+   lui est pensé pour occuper toute une zone de page. */
+.mini-spinner {
+    display: inline-block;
+    vertical-align: -2px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border, rgba(127, 127, 127, .35));
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    flex: 0 0 auto;
+}
+
 /* ───────────── Onglets ───────────── */
 .tab-container {
     display: flex;

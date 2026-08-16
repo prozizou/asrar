@@ -39,7 +39,10 @@ body {
 h2 { font-family: var(--font-display); margin: 0 0 4px; color: var(--bq-text); }
 h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 .subtitle { color: var(--bq-text-dim); margin: 0 0 1rem; }
-.bq-loading { color: var(--bq-text-dim); text-align: center; padding: 2rem; }
+.bq-loading {
+  color: var(--bq-text-dim); text-align: center; padding: 2rem;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
 .bq-error  { color: var(--danger); text-align: center; }
 .bq-intro, .bq-note { color: var(--bq-text-dim); font-size: .88rem; line-height: 1.5; }
 .bq-note { margin-top: 12px; text-align: center; }

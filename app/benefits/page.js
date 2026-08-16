@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { loadNames } from '@/lib/benefits';
 import { useAccess } from '@/components/AccessProvider';
+import Spinner from '@/components/Spinner';
 import NameCard from './NameCard';
 import NameModal from './NameModal';
 
@@ -15,6 +16,7 @@ const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,
 export default function BenefitsPage() {
   const { allowed, refreshAccess, openGate } = useAccess();
   const [names, setNames] = useState([]);
+  const [namesLoading, setNamesLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showFavs, setShowFavs] = useState(false);
   const [favorites, setFavorites] = useState(() => new Set());
@@ -41,7 +43,8 @@ export default function BenefitsPage() {
     } catch {}
     loadNames()
       .then(setNames)
-      .catch(() => showToast('⚠️ Données locales utilisées'));
+      .catch(() => showToast('⚠️ Données locales utilisées'))
+      .finally(() => setNamesLoading(false));
     refreshAccess().catch(() => {});
   }, [refreshAccess, showToast]);
 
@@ -169,7 +172,12 @@ export default function BenefitsPage() {
       </div>
 
       <main className="cards-grid">
-        {filtered.length === 0 ? (
+        {namesLoading ? (
+          <div className="empty-message">
+            <Spinner size={28} />
+            <p>Chargement des noms…</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="empty-message">
             <i className="fas fa-moon" />
             <p>{search ? `Aucun nom trouvé pour « ${search} »` : 'Aucun nom.'}</p>
