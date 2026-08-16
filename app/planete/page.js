@@ -6,7 +6,7 @@
 // planétaire est dans lib/planete.js ; ici, l'UI React et les effets (GPS,
 // horloge 1 s, recalcul aux bascules de journée planétaire).
 import './planete.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import {
@@ -311,19 +311,89 @@ function InfoRow({ label, valueClass, children }) {
 // Grille de cartes plutôt qu'un tableau de 12 lignes : plus rapide à
 // parcourir d'un coup d'œil que la vue linéaire précédente (deux tableaux
 // empilés de 12 lignes chacun).
+//
+// Retour utilisateur : on se perd dans l'ordre des heures en parcourant la
+// grille (screenshot avec un cheminement tracé à la main entre les cartes).
+// Deux aides, redondantes et complémentaires :
+//   1) un numéro d'ordre (①…⑫) sur chaque carte — fiable à 100 %, ne dépend
+//      d'aucune mesure du DOM.
+//   2) une ligne de cheminement (SVG) reliant les cartes dans l'ordre
+//      chronologique, comme le trait dessiné à la main. Impossible à faire
+//      en CSS pur : .hours-grid utilise `grid-template-columns:
+//      repeat(auto-fill, …)`, donc le nombre de colonnes par ligne dépend de
+//      la largeur d'écran et n'est pas prévisible à l'avance → on mesure la
+//      position réelle des cartes (getBoundingClientRect) et on redessine à
+//      chaque changement de taille (ResizeObserver).
 function HourGrid({ rows }) {
+  const wrapRef = useRef(null);
+  const cardRefs = useRef([]);
+  const [pathD, setPathD] = useState('');
+  const [viewBox, setViewBox] = useState('0 0 0 0');
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+
+    const recompute = () => {
+      const wrapRect = wrap.getBoundingClientRect();
+      const pts = cardRefs.current
+        .slice(0, rows.length)
+        .filter(Boolean)
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left - wrapRect.left + r.width / 2, r.top - wrapRect.top + r.height / 2];
+        });
+      setPathD(pts.length < 2 ? '' : pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' '));
+      setViewBox(`0 0 ${wrapRect.width} ${wrapRect.height}`);
+    };
+
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [rows]);
+
   return (
-    <div className="hours-grid">
-      {rows.map((r, i) => (
-        <div key={i} className={'hour-card' + (r.isNow ? ' now-hour' : '')}>
-          <div className="hour-card-planet">
-            {r.emoji} {r.planet}
-            {r.isNow ? ' ◀' : ''}
+    <div className="hours-grid-wrap" ref={wrapRef}>
+      <svg className="hours-path" viewBox={viewBox} preserveAspectRatio="none">
+        <defs>
+          <marker id="hourPathArrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="var(--accent)" />
+          </marker>
+        </defs>
+        {pathD && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="2 9"
+            opacity="0.55"
+            markerEnd="url(#hourPathArrow)"
+          />
+        )}
+      </svg>
+      <div className="hours-grid">
+        {rows.map((r, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
+            className={'hour-card' + (r.isNow ? ' now-hour' : '')}
+          >
+            <span className="hour-card-order">{i + 1}</span>
+            <div className="hour-card-planet">
+              {r.emoji} {r.planet}
+              {r.isNow ? ' ◀' : ''}
+            </div>
+            <div className="hour-card-interval">{r.interval}</div>
+            <div className={'hour-card-nature ' + r.nat.cls}>{r.nat.txt}</div>
           </div>
-          <div className="hour-card-interval">{r.interval}</div>
-          <div className={'hour-card-nature ' + r.nat.cls}>{r.nat.txt}</div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

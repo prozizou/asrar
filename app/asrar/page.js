@@ -124,12 +124,11 @@ export default function AsrarPage() {
 
   return (
     <div className="container">
-      <Link href="/" className="back-btn">
-        ← Retour
-      </Link>
-
-      <div className="glass-panel">
-        <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
+      <div className="asrar-topbar">
+        <Link href="/" className="back-btn">
+          ← Retour
+        </Link>
+        {!inDetail && (
           <div className="cat-rail">
             {CATS.map((cat) => (
               <div
@@ -142,7 +141,12 @@ export default function AsrarPage() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+      <div className={'asrar-topbar-spacer' + (inDetail ? '' : ' with-cats')} />
 
+      <div className="glass-panel">
+        <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
           <div className="asrar-main">
             {inDetail ? (
               <SecretDetail secret={currentSecret} onBack={goBackFromSecret} />
