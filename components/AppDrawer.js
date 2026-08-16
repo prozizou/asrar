@@ -5,13 +5,12 @@
 // ici on ne fait que lire/écrire l'attribut data-theme déjà en place.
 import { useEffect, useState } from 'react';
 import pkg from '@/package.json';
+import LatestCommitModal from './LatestCommitModal';
 
 const APP_VERSION = pkg.version;
 // SHA court du commit déployé (voir next.config.mjs) — change à chaque
 // déploiement, contrairement à APP_VERSION (package.json), rarement bumpé.
 const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || '';
-// Lien vers l'historique des commits du dépôt (pour l'entrée « Releases »).
-const RELEASES_URL = 'https://github.com/prozizou/asrar/commits/main';
 
 // Interroge le service worker ACTIF (celui qui contrôle réellement la page)
 // pour sa version — plus fidèle que package.json/APP_VERSION, qui n'est
@@ -38,6 +37,7 @@ export default function AppDrawer() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [swVersion, setSwVersion] = useState(null);
+  const [commitModalOpen, setCommitModalOpen] = useState(false);
 
   useEffect(() => {
     setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
@@ -115,13 +115,17 @@ export default function AppDrawer() {
                 <span className="drawer-row-hint">Bientôt disponible</span>
               </div>
 
-              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className="drawer-row drawer-row-link">
+              <button
+                type="button"
+                className="drawer-row drawer-row-link"
+                onClick={() => setCommitModalOpen(true)}
+              >
                 <span className="drawer-row-label">
                   <span className="drawer-row-icon">📝</span>
                   Releases
                 </span>
-                <span className="drawer-row-hint">Commits récents ↗</span>
-              </a>
+                <span className="drawer-row-hint">Dernier commit</span>
+              </button>
 
               <div className="drawer-row drawer-row-static">
                 <span className="drawer-row-label">
@@ -140,6 +144,8 @@ export default function AppDrawer() {
           </div>
         </div>
       )}
+
+      {commitModalOpen && <LatestCommitModal onClose={() => setCommitModalOpen(false)} />}
     </>
   );
 }
