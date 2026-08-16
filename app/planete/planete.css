@@ -143,11 +143,15 @@
   pointer-events: none;
   z-index: 1;
 }
+/* 2 colonnes FIXES (pas de repeat(auto-fill, ...) responsive) : le
+   boustrophédon (page.js, HOURS_GRID_COLS) a besoin d'un nombre de colonnes
+   connu à l'avance pour inverser une ligne sur deux — un nombre de colonnes
+   qui varierait selon la largeur d'écran casserait le zigzag. */
 .planete-page .hours-grid {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 .planete-page .hour-card {
