@@ -30,22 +30,22 @@
 }
 
 html[data-theme='light'] .rw-page {
-  --bg-gradient-start: #eef3f7;
+  --bg-gradient-start: #eaf6f2;
   --bg-gradient-end: #cdd8e0;
   --glass-bg: rgba(255, 255, 255, 0.25);
   --glass-border: rgba(255, 255, 255, 0.4);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   --text-primary: #2d3436;
   --text-secondary: #636e72;
-  --btn-primary: #1f77c9;
+  --btn-primary: #0f766e;
   --btn-disabled: #aaa;
   --result-bg: rgba(255, 255, 255, 0.7);
   --stat-bg: rgba(255, 255, 255, 0.4);
   --border-color: rgba(0, 0, 0, 0.1);
   --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
   --card-bg: #fffef9;
-  --card-border: #1f77c9;
-  --card-title: #1f77c9;
+  --card-border: #0f766e;
+  --card-title: #0f766e;
   --card-text: #2d3436;
   --card-accent: #ecf0f1;
   --card-green-bg: #e8f8f5;

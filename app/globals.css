@@ -72,49 +72,53 @@
     --font-ar:        'Noto Naskh Arabic', serif;
 }
 
-/* ───────────── html[data-theme="light"] = MODE CLAIR ───────────── */
+/* ───────────── html[data-theme="light"] = MODE CLAIR ─────────────
+   Fond doux menthe/lavande à halo turquoise (maquette de référence
+   « CoachPro »), remplace le gris-bleu précédent. */
 html[data-theme="light"] {
-    --bg-gradient:    linear-gradient(135deg, #eef3f7, #dde6ec, #cdd8e0);
-    --bg-deep:        #f5f1e8;
-    --bg-alt:         #faf6ec;
-    --surface:        rgba(255, 255, 255, 0.78);
-    --surface-2:      rgba(255, 255, 255, 0.55);
-    --surface-3:      rgba(30, 40, 60, 0.06);
-    --surface-input:  rgba(255, 255, 255, 0.85);
+    --bg-gradient:    linear-gradient(135deg, #eaf6f2, #e8eef6, #e6e8f5);
+    --bg-deep:        #eef6f4;
+    --bg-alt:         #f5faf8;
+    --surface:        rgba(255, 255, 255, 0.8);
+    --surface-2:      rgba(255, 255, 255, 0.58);
+    --surface-3:      rgba(20, 60, 55, 0.06);
+    --surface-input:  rgba(255, 255, 255, 0.88);
 
-    --border:         rgba(30, 40, 60, 0.14);
-    --border-strong:  rgba(30, 40, 60, 0.28);
-    --border-soft:    rgba(30, 40, 60, 0.10);
+    --border:         rgba(20, 60, 55, 0.12);
+    --border-strong:  rgba(20, 60, 55, 0.24);
+    --border-soft:    rgba(20, 60, 55, 0.08);
 
-    --text-main:      #1b2634;
-    --text-muted:     #51606f;
-    --text-dim:       #6b7886;
-    --text-faint:     #8a96a4;
+    --text-main:      #16302c;
+    --text-muted:     #4a635e;
+    --text-dim:       #647f79;
+    --text-faint:     #86a29c;
     --text-on-accent: #ffffff;
 
-    --accent:         #1f77c9;
-    --accent-hover:   #0bb7c4;
-    --accent-glow:    rgba(31, 119, 201, 0.3);
+    /* Turquoise (maquette) — remplace le bleu précédent. */
+    --accent:         #14b8a6;
+    --accent-hover:   #0f766e;
+    --accent-glow:    rgba(20, 184, 166, 0.3);
 
-    /* Mystique : en clair, l'or reste l'or mais le fond crème l'adoucit */
-    --gold:           #b0852f;
-    --gold-hover:     #8c6418;
-    --gold-soft:      #b0852f;
+    /* Or / mystique : aligné sur le même turquoise pour une identité
+       cohérente dans toute l'app, plutôt qu'un accent doré séparé. */
+    --gold:           #14b8a6;
+    --gold-hover:     #0f766e;
+    --gold-soft:      #2dd4bf;
     --gold-ink:       #fdf7e6;
 
     --success:        #2c9c54;
     --danger:         #b53a37;
 
     --card-bg:        #fffef9;
-    --card-border:    #f39c12;
+    --card-border:    #14b8a6;
     --card-text:      #2d3436;
-    --card-accent:    #ecf0f1;
+    --card-accent:    #e6f5f2;
     --card-green-bg:  #e8f8f5;
     --card-green-text:#27ae60;
 
-    --glass-bg:       rgba(255, 255, 255, 0.78);
-    --glass-border:   rgba(30, 40, 60, 0.14);
-    --glass-shadow:   0 8px 32px rgba(60, 80, 110, 0.14);
+    --glass-bg:       rgba(255, 255, 255, 0.8);
+    --glass-border:   rgba(20, 60, 55, 0.12);
+    --glass-shadow:   0 8px 32px rgba(20, 100, 90, 0.12);
 }
 
 /* ───────────── Reset & typo ───────────── */

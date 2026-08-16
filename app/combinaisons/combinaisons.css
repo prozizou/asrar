@@ -28,20 +28,20 @@
 }
 
 html[data-theme='light'] .cc-page {
-  --gold: #1f77c9;
-  --gold-light: #4facfe;
-  --gold-pale: #eaf2fb;
-  --gold-border: #a9c7e6;
-  --deep: #1a2744;
-  --deep2: #243260;
-  --lapis: #2c4a8a;
-  --cream: #eef3f7;
+  --gold: #0f766e;
+  --gold-light: #14b8a6;
+  --gold-pale: #e6f5f2;
+  --gold-border: #9fd9d0;
+  --deep: #123a35;
+  --deep2: #1d4f48;
+  --lapis: #0f9b8e;
+  --cream: #eaf6f2;
   --ink: #111827;
   --muted: #6b7280;
   --red: #991b1b;
   --card-bg: #ffffff;
-  --shadow: 0 2px 16px rgba(26, 39, 68, 0.1);
-  --cc-heading: #1a2744;
+  --shadow: 0 2px 16px rgba(18, 58, 53, 0.1);
+  --cc-heading: #123a35;
   --cc-soft: #f0e4c8;
 }
 

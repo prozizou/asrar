@@ -183,7 +183,7 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 
 .alq-page .toast-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--text-on-accent); padding: 12px 24px; border-radius: 8px; z-index: 9999; font-family: sans-serif; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
 .alq-page .toast-error { background-color: rgba(217, 83, 79, 0.95); border: 1px solid var(--danger); }
-.alq-page .toast-info { background-color: rgba(167, 139, 250, 0.95); border: 1px solid var(--accent); }
+.alq-page .toast-info { background-color: color-mix(in srgb, var(--accent) 95%, transparent); border: 1px solid var(--accent); }
 
 .alq-page .flex-grow { flex: 1; }
 
