@@ -33,9 +33,10 @@ const LEGACY = [
 // Content-Security-Policy : restreint script/style/connexions aux origines
 // réellement utilisées par l'app (Firebase Auth/Realtime DB/Messaging,
 // Google Fonts, Cloudinary pour les images boutique/marché, popup Google
-// Sign-In, Sunrise-Sunset + BigDataCloud pour le module Planète — sans ces
-// deux domaines dans connect-src, le navigateur bloque silencieusement les
-// appels et l'app retombe sur le calcul NOAA hors-ligne, moins précis).
+// Sign-In, Sunrise-Sunset + BigDataCloud pour le module Planète, AlQuran
+// Cloud pour le texte Uthmani complet du module Al Qalam — sans ces domaines
+// dans connect-src, le navigateur bloque silencieusement les appels et l'app
+// retombe sur ses solutions de repli hors-ligne, moins complètes).
 // 'unsafe-inline' reste nécessaire pour script-src (script anti-FOUC
 // du thème dans app/layout.js) et style-src (attribut style="" posé par le
 // rendu serveur de React) — sans nonce/middleware, c'est le compromis standard
@@ -54,7 +55,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com https://*.gstatic.com",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com https://accounts.google.com https://api.sunrise-sunset.org https://api.bigdatacloud.net",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com https://accounts.google.com https://api.sunrise-sunset.org https://api.bigdatacloud.net https://api.alquran.cloud",
   "frame-src 'self' https://asrar-bc059.firebaseapp.com https://accounts.google.com https://content.googleapis.com",
   "worker-src 'self'",
   "object-src 'none'",

@@ -19,6 +19,8 @@ import {
   loadSourates,
   loadVersets,
   htmlToPlainText,
+  loadQuranUthmani,
+  matchUthmaniSourate,
 } from '@/lib/alqalam';
 
 const savePref = (k, v) => {
@@ -90,6 +92,14 @@ export default function AlQalamPage() {
   const [souratesContent, setSouratesContent] = useState({});
   const [versets, setVersets] = useState([]);
   const [interKey, setInterKey] = useState('');
+
+  // Version du texte pour l'intercalation : 'simple' (base existante, sans
+  // voyelles) ou 'voyelles' (texte Uthmani complet, chargé depuis l'API à la
+  // demande — voir chooseTextVersion). quranUthmani = null tant que rien n'a
+  // encore été chargé.
+  const [textVersion, setTextVersion] = useState('simple');
+  const [quranUthmani, setQuranUthmani] = useState(null);
+  const [uthmaniLoading, setUthmaniLoading] = useState(false);
 
   const [suggestions, setSuggestions] = useState([]);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -198,6 +208,23 @@ export default function AlQalamPage() {
   };
 
   // ─── Intercalation (protégé) ───
+  // Bascule vers la version « avec voyelles » : charge le texte Uthmani
+  // complet (API, une seule fois — voir loadQuranUthmani) au premier besoin.
+  // En cas d'échec (hors-ligne, API injoignable), on revient à « simple ».
+  const chooseTextVersion = async (version) => {
+    setTextVersion(version);
+    if (version !== 'voyelles' || quranUthmani || uthmaniLoading) return;
+    setUthmaniLoading(true);
+    const data = await loadQuranUthmani();
+    setUthmaniLoading(false);
+    if (!data) {
+      showToast('Texte avec voyelles indisponible (hors-ligne ou API injoignable). Version simple conservée.', 'error');
+      setTextVersion('simple');
+      return;
+    }
+    setQuranUthmani(data);
+  };
+
   const onIntercaler = async () => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
@@ -205,8 +232,21 @@ export default function AlQalamPage() {
     if (!interKey || !phrase) {
       return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
     }
+    let content = souratesContent[interKey];
+    if (textVersion === 'voyelles') {
+      if (!quranUthmani) {
+        return showToast('Chargement du texte avec voyelles en cours, réessayez dans un instant.', 'error');
+      }
+      const sourateName = sourates.find((s) => s.key === interKey)?.name;
+      const matched = matchUthmaniSourate(quranUthmani, sourateName);
+      if (!matched) {
+        showToast("Version avec voyelles introuvable pour cette sourate, texte simple utilisé.", 'error');
+      } else {
+        content = matched;
+      }
+    }
     const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
-    const result = buildIntercalatedText(souratesContent[interKey], phrase, rep);
+    const result = buildIntercalatedText(content, phrase, rep);
     setBaseText(result);
     setIntercalatedPhrase(phrase);
     setTotalMultiplier(1);
@@ -422,9 +462,28 @@ export default function AlQalamPage() {
                       </option>
                     ))}
                   </select>
+
+                  <div className="version-toggle" role="radiogroup" aria-label="Version du texte de la sourate">
+                    <button
+                      type="button"
+                      className={'version-btn' + (textVersion === 'simple' ? ' active' : '')}
+                      onClick={() => chooseTextVersion('simple')}
+                    >
+                      Sans voyelles
+                    </button>
+                    <button
+                      type="button"
+                      className={'version-btn' + (textVersion === 'voyelles' ? ' active' : '')}
+                      onClick={() => chooseTextVersion('voyelles')}
+                    >
+                      {uthmaniLoading ? '⏳ Chargement…' : 'Avec voyelles'}
+                    </button>
+                  </div>
+
                   <p style={{ fontSize: 12, color: 'var(--text-gray)', margin: 0 }}>
                     ✍️ Entre chaque verset, on insère l'expression de la zone de texte, <b>répétée</b> selon le nombre de
                     « répétitions ».
+                    {textVersion === 'voyelles' && ' Texte Uthmani complet (source : alquran.cloud).'}
                   </p>
                   <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
                     Combiner le texte
