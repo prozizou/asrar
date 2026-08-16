@@ -162,6 +162,15 @@ export default function Home() {
     (etait ? remove(r) : set(r, 5)).catch(() => loadVendorLikes(allVendors));
   };
 
+  // Reconnaît automatiquement « sa » boutique dans la liste des vendeurs :
+  // vendorKey() (lib/market.js) vaut l'email du vendeur (repli sur l'uid).
+  const isOwnVendor = useCallback((v) => {
+    const me = auth.currentUser;
+    if (!me) return false;
+    const email = me.email ? me.email.toLowerCase() : null;
+    return v.id === email || v.id === me.uid;
+  }, []);
+
   const chains = useMemo(
     () => [...new Set(allProducts.map((p) => p.chain).filter(Boolean))].sort(),
     [allProducts]
@@ -237,26 +246,9 @@ export default function Home() {
         <div className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>🛒 Marché Mystique</h2>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Link href="/menu" className="shop-link" style={menuBtnStyle}>
-                ☰ Accéder au menu
-              </Link>
-              <Link
-                href="/boutique"
-                className="shop-link"
-                style={{
-                  background: 'var(--accent)',
-                  color: 'var(--text-on-accent)',
-                  textDecoration: 'none',
-                  fontWeight: 700,
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  fontSize: '.85rem',
-                }}
-              >
-                🏪 Ma boutique
-              </Link>
-            </div>
+            <Link href="/menu" className="shop-link" style={menuBtnStyle}>
+              ☰ Accéder au menu
+            </Link>
           </div>
           <p className="subtitle">Produits ésotériques de nos praticiens certifiés</p>
 
@@ -270,30 +262,35 @@ export default function Home() {
             />
           </div>
 
-          {allVendors.length > 0 && (
-            <div className="vendors-section">
-              <h3>🌙 Nos praticiens et vendeurs certifiés</h3>
-              <div className="vendors-scroll">
-                {allVendors.map((v) => {
-                  const l = vendorLikes[safeKey(v.id)] || { count: 0, liked: false };
-                  return (
-                    <div key={v.id} className="vendor-card" onClick={() => setVendorShopId(v.id)}>
-                      <div className="vendor-avatar">
-                        {v.avatar ? (
-                          <SmartImage
-                            src={optimImg(v.avatar, 120)}
-                            alt=""
-                            fill
-                            sizes="70px"
-                            style={{ objectFit: 'cover' }}
-                            onError={(e) => (e.currentTarget.style.display = 'none')}
-                          />
-                        ) : (
-                          '🔮'
-                        )}
-                      </div>
-                      <div className="vendor-name">{v.name}</div>
-                      <div className="vendor-specialty">{v.specialty}</div>
+          <div className="vendors-section">
+            <h3>🌙 Nos praticiens et vendeurs certifiés</h3>
+            <div className="vendors-scroll">
+              {allVendors.map((v) => {
+                const l = vendorLikes[safeKey(v.id)] || { count: 0, liked: false };
+                const own = isOwnVendor(v);
+                const inner = (
+                  <>
+                    <div className="vendor-avatar">
+                      {v.avatar ? (
+                        <SmartImage
+                          src={optimImg(v.avatar, 120)}
+                          alt=""
+                          fill
+                          sizes="70px"
+                          style={{ objectFit: 'cover' }}
+                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                        />
+                      ) : (
+                        '🔮'
+                      )}
+                    </div>
+                    {own && <div className="vendor-you-badge">Votre boutique</div>}
+                    <div className="vendor-name">{v.name}</div>
+                    <div className="vendor-specialty">{v.specialty}</div>
+                    {!own && (
+                      // Pas de <button> ici sur sa propre carte : elle devient un <Link>
+                      // (imbriquer un bouton dans un lien est invalide en HTML), et « aimer
+                      // sa propre boutique » n'a de toute façon pas de sens.
                       <button
                         className={'vendor-like' + (l.liked ? ' liked' : '')}
                         onClick={(e) => toggleVendorLike(v.id, e)}
@@ -301,12 +298,31 @@ export default function Home() {
                       >
                         <span>{l.liked ? '❤️' : '🤍'}</span> <span>{formatCount(l.count)}</span>
                       </button>
-                    </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </>
+                );
+                // Sa propre boutique est reconnue automatiquement (email/uid) : on
+                // ouvre directement /boutique (gestion + ajout de produits) au lieu
+                // de la vue vitrine en lecture seule des autres vendeurs.
+                return own ? (
+                  <Link key={v.id} href="/boutique" className="vendor-card" style={{ textDecoration: 'none' }}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={v.id} className="vendor-card" onClick={() => setVendorShopId(v.id)}>
+                    {inner}
+                  </div>
+                );
+              })}
+              {!allVendors.some(isOwnVendor) && (
+                <Link href="/boutique" className="vendor-card" style={{ textDecoration: 'none' }}>
+                  <div className="vendor-avatar">➕</div>
+                  <div className="vendor-name">Avoir une chaîne</div>
+                  <div className="vendor-specialty">Ouvrez votre propre boutique</div>
+                </Link>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="filters">
             <div className={'filter-tag' + (activeFilter === '' ? ' active' : '')} onClick={() => setActiveFilter('')}>
@@ -391,6 +407,10 @@ export default function Home() {
               })
             )}
           </div>
+
+          <Link href="/menu" className="menu-cta-bottom">
+            ☰ Accéder au menu
+          </Link>
         </div>
       )}
 
