@@ -113,10 +113,10 @@ export default function AlQalamPage() {
   const sugTimer = useRef(null);
   const toastTimer = useRef(null);
 
-  const showToast = useCallback((msg, type = 'info') => {
+  const showToast = useCallback((msg, type = 'info', duration = 3000) => {
     setToast({ msg, type, id: Date.now() });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 3000);
+    toastTimer.current = setTimeout(() => setToast(null), duration);
   }, []);
 
   // Préférences + données au montage.
@@ -419,7 +419,11 @@ export default function AlQalamPage() {
         docName: docName.trim(),
         onProgress: (pct, text) => setProgress({ pct, text }),
       });
-      showToast('Boîte de dialogue d’impression ouverte — choisissez « Enregistrer en PDF ».', 'info');
+      showToast(
+        'Boîte de dialogue d’impression ouverte — choisissez « Enregistrer en PDF », puis activez « En-têtes et pieds de page » dans « Plus de paramètres » pour la numérotation.',
+        'info',
+        7000
+      );
     } catch (e) {
       showToast('Échec de la préparation du PDF.', 'error');
     } finally {
