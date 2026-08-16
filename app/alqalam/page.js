@@ -419,9 +419,9 @@ export default function AlQalamPage() {
         docName: docName.trim(),
         onProgress: (pct, text) => setProgress({ pct, text }),
       });
-      showToast('Document PDF généré.', 'info');
+      showToast('Boîte de dialogue d’impression ouverte — choisissez « Enregistrer en PDF ».', 'info');
     } catch (e) {
-      showToast('Échec de la génération PDF.', 'error');
+      showToast('Échec de la préparation du PDF.', 'error');
     } finally {
       setProgress(null);
     }
