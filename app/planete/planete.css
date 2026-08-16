@@ -13,11 +13,12 @@
   backdrop-filter: none;
 }
 
-/* Horloge sacrée */
+/* Horloge sacrée — marges resserrées (retour : trop d'espace vide entre
+   l'horloge, la phase et les infos ci-dessous). */
 .planete-page .time-display {
   font-size: clamp(2.4rem, 12vw, 3.5rem);
   font-family: var(--font-display);
-  margin: 20px 0 5px;
+  margin: 8px 0 4px;
   color: var(--accent);
   text-align: center;
   letter-spacing: 3px;
@@ -27,17 +28,17 @@
 .planete-page .date-display {
   text-align: center;
   color: var(--text-dim);
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   font-size: 1rem;
   font-style: italic;
 }
 
 /* Phase & planète actuelles */
-.planete-page .planet-card { text-align: center; padding: 10px 0; }
+.planete-page .planet-card { text-align: center; padding: 4px 0; }
 .planete-page .planet-icon {
-  font-size: 3.8rem;
+  font-size: 3.2rem;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15));
 }
 .planete-page .planet-name { font-size: 1.6rem; font-weight: 700; font-family: var(--font-display); }
@@ -45,7 +46,7 @@
   display: inline-block;
   padding: 6px 20px;
   border-radius: 20px;
-  margin-top: 12px;
+  margin-top: 10px;
   font-size: 0.9rem;
   font-weight: 600;
   background: rgba(79, 172, 254, 0.15);
@@ -53,16 +54,27 @@
   border: 1px solid var(--accent);
 }
 
+/* Étiquette au-dessus de la valeur (au lieu d'une ligne label:valeur côte à
+   côte) : avec un contenu long (« Jour planétaire » / « Dimanche — régent
+   Soleil ☀️ »), les deux se mettaient à retomber sur plusieurs lignes en même
+   temps et s'entremêlaient (retour : « textes pas bien ordonnés »). Empilées,
+   elles restent lisibles quelle que soit leur longueur. */
 .planete-page .info-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   font-size: 0.95rem;
 }
-.planete-page .info-row .label { color: var(--text-dim); }
-.planete-page .info-row .value { color: var(--text-main); font-weight: 600; }
+.planete-page .info-row .label {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.planete-page .info-row .value { color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 /* Semaine planétaire */
 .planete-page .planets-week h4 {

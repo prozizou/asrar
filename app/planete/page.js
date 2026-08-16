@@ -214,7 +214,7 @@ export default function PlanetePage() {
             <span className="phase-badge">{phase.badge}</span>
           </div>
 
-          <div style={{ marginTop: 20, textAlign: 'left' }}>
+          <div style={{ marginTop: 12, textAlign: 'left' }}>
             <InfoRow label="🪐 Planète de l'heure">
               {geo.error ? '— (GPS requis)' : cur ? `${cur.planet} ${CHALDEAN_EMOJIS[cur.planet]}` : <Spinner />}
             </InfoRow>

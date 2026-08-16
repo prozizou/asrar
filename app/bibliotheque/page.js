@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, deepLink, cleanUrl } from '@/lib/share';
+import { driveDirectLink } from '@/lib/drive';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import CommentModal from './CommentModal';
@@ -46,7 +47,7 @@ export default function BibliothequePage() {
       if (!ok) return;
       try {
         const { item } = await apiPost('get-content', { kind: 'book', key });
-        const link = item.pdf || item.pdfUrl || '';
+        const link = driveDirectLink(item.pdf || item.pdfUrl || '');
         if (!link) {
           alert('Lien du document indisponible.');
           return;

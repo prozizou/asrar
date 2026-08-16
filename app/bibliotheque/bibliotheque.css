@@ -324,15 +324,18 @@
     }
     .bs-btn.liked { color:#e0607a; border-color:#e0607a; background:rgba(224,96,122,0.1); }
     .book-cover, .book-title { cursor:pointer; }
+    /* Couleurs crème/or codées en dur (pensées pour un fond sombre) → illisibles
+       en thème clair, où .modal-box passe sur un fond clair (var(--surface)).
+       Remplacées par les tokens de thème globaux, comme le reste de la modale. */
     .cm-list { max-height:45vh; overflow:auto; margin:10px 0; text-align:left; }
-    .cm-item { padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
-    .cm-head { font-size:.85rem; color:#cdbb8f; }
-    .cm-date { color:#7d7358; font-size:.75rem; margin-left:6px; }
-    .cm-text { color:#e8e2d2; margin-top:3px; white-space:pre-wrap; word-break:break-word; }
-    .cm-empty { color:#8a7f66; text-align:center; padding:16px; }
+    .cm-item { padding:10px 0; border-bottom:1px solid var(--border); }
+    .cm-head { font-size:.85rem; color:var(--accent); }
+    .cm-date { color:var(--text-dim); font-size:.75rem; margin-left:6px; }
+    .cm-text { color:var(--text-main); margin-top:3px; white-space:pre-wrap; word-break:break-word; }
+    .cm-empty { color:var(--text-dim); text-align:center; padding:16px; }
     .cm-form { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-    .cm-form textarea { width:100%; box-sizing:border-box; min-height:64px; border-radius:10px; padding:10px; background:rgba(0,0,0,0.3);
-      border:1px solid rgba(79,172,254,0.3); color:#fff; resize:vertical; font-size:.95rem; }
+    .cm-form textarea { width:100%; box-sizing:border-box; min-height:64px; border-radius:10px; padding:10px; background:var(--surface-input);
+      border:1px solid var(--border); color:var(--text-main); resize:vertical; font-size:.95rem; }
     .book-highlight { outline:2px solid var(--accent); outline-offset:3px; border-radius:12px; }
     .cm-send { align-self:flex-end; background:linear-gradient(45deg,var(--accent),var(--accent-hover)); border:none; color:var(--text-on-accent);
       font-weight:700; border-radius:10px; padding:10px 22px; cursor:pointer; }

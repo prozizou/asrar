@@ -15,7 +15,7 @@
 // Mise à jour : incrémenter SW_VERSION à chaque changement de stratégie de cache.
 // skipWaiting + clients.claim → le nouveau SW prend la main immédiatement.
 
-const SW_VERSION = 'v12';
+const SW_VERSION = 'v13';
 const CACHE = 'asrar-pwa-' + SW_VERSION;
 const IMG_CACHE = 'asrar-img-' + SW_VERSION; // cache dédié aux images distantes.
 const IMG_MAX = 60; // nombre d'images conservées (LRU approximatif).
@@ -68,6 +68,15 @@ function isBypassed(url) {
     /sunrise-sunset\.org$/.test(url.hostname)
   );
 }
+
+// Répond à une demande de version depuis la page (voir components/AppDrawer.js
+// « Version de l'app » — reflète désormais la version du SW réellement actif
+// sur l'appareil, plus fidèle que package.json qui n'est presque jamais bumpé).
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'GET_VERSION' && event.ports && event.ports[0]) {
+    event.ports[0].postMessage({ version: SW_VERSION });
+  }
+});
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

@@ -10,13 +10,41 @@ const APP_VERSION = pkg.version;
 // SHA court du commit déployé (voir next.config.mjs) — change à chaque
 // déploiement, contrairement à APP_VERSION (package.json), rarement bumpé.
 const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || '';
+// Lien vers l'historique des commits du dépôt (pour l'entrée « Releases »).
+const RELEASES_URL = 'https://github.com/prozizou/asrar/commits/main';
+
+// Interroge le service worker ACTIF (celui qui contrôle réellement la page)
+// pour sa version — plus fidèle que package.json/APP_VERSION, qui n'est
+// presque jamais mis à jour alors que SW_VERSION l'est à chaque déploiement
+// (voir public/sw.js). Résout `null` si aucun SW ne contrôle encore la page
+// (premier chargement avant install) ou en l'absence de réponse.
+function getSwVersion() {
+  return new Promise((resolve) => {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker || !navigator.serviceWorker.controller) {
+      resolve(null);
+      return;
+    }
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => resolve(null), 1500);
+    channel.port1.onmessage = (event) => {
+      clearTimeout(timer);
+      resolve((event.data && event.data.version) || null);
+    };
+    navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+  });
+}
 
 export default function AppDrawer() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
+  const [swVersion, setSwVersion] = useState(null);
 
   useEffect(() => {
     setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+  }, []);
+
+  useEffect(() => {
+    getSwVersion().then(setSwVersion);
   }, []);
 
   // Échap ferme le drawer.
@@ -87,13 +115,24 @@ export default function AppDrawer() {
                 <span className="drawer-row-hint">Bientôt disponible</span>
               </div>
 
+              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className="drawer-row drawer-row-link">
+                <span className="drawer-row-label">
+                  <span className="drawer-row-icon">📝</span>
+                  Releases
+                </span>
+                <span className="drawer-row-hint">Commits récents ↗</span>
+              </a>
+
               <div className="drawer-row drawer-row-static">
                 <span className="drawer-row-label">
                   <span className="drawer-row-icon">📦</span>
                   Version de l'app
                 </span>
+                {/* Version du service worker réellement actif sur l'appareil
+                    (voir getSwVersion) — repli sur package.json tant qu'elle
+                    n'est pas encore résolue ou hors contexte PWA/SW. */}
                 <span className="drawer-row-hint">
-                  v{APP_VERSION}
+                  {swVersion || `v${APP_VERSION}`}
                   {BUILD_SHA ? ` · ${BUILD_SHA}` : ''}
                 </span>
               </div>
