@@ -1,4 +1,5 @@
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+/* Font Awesome : voir les imports en tête de page.js (auto-hébergé, plus de
+   @import CDN ici — bloqué par la CSP, cf. commentaire dans page.js). */
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 /* ============================================================
    ASMA UL-HUSNA — Style Professionnel v2.0
@@ -443,38 +444,46 @@ body::before {
     opacity: 0.8;
 }
 /* ── PIED DE CARTE ─────────────────────────────────────────── */
+/* Boutons pilules (fond + bordure visibles par défaut, pas seulement au
+   survol) plutôt que de la simple icône flottante sur padding invisible —
+   plus lisible comme « vrais » boutons. Favori/écoute groupés à gauche,
+   compteur de dhikr détaché à droite (margin-left:auto) : deux groupes
+   d'actions distincts plutôt qu'un empilement en vrac. */
 .card-footer {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     margin-top: 1rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--border);
 }
 
 .card-action-btn {
-    background: none;
-    border: none;
-    color: var(--text-3);
-    font-size: 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 0.85rem;
     cursor: pointer;
-    padding: 0.4rem 0.6rem;
-    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-pill);
     transition: all 0.2s;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     white-space: nowrap;
 }
 
-.card-action-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.card-action-btn i { font-size: 0.82rem; }
 
-.favorite-btn.active { color: var(--gold) !important; }
-.favorite-btn.active i::before { content: '\f005'; } /* fa-star filled */
+.card-action-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--text-1); }
+
+.favorite-btn.active { color: var(--gold) !important; border-color: var(--gold-border); background: var(--gold-dim); }
+
+.tasbih-btn { margin-left: auto; }
 
 .tasbih-counter {
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     min-width: 1.2em;
     text-align: center;
 }

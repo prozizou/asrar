@@ -2,6 +2,16 @@
 // Module « Asma ul-Husna » (99 Noms d'Allah) — port de Benefits/ en React.
 // Chargement des noms, recherche + suggestions, favoris, cartes verrouillées
 // sans abonnement, modale, compteur de dhikr et carrés magiques par nom.
+// Font Awesome (icônes des boutons : favori, audio, dhikr…) — auto-hébergé
+// (npm) au lieu d'un @import CDN dans benefits.css : la CSP de l'app
+// n'autorise pas cdnjs.cloudflare.com dans style-src, donc cet import était
+// bloqué en silence et toutes les icônes s'affichaient vides (boutons
+// « invisibles »). Seuls les styles Solid + Regular sont importés (seuls
+// utilisés dans ce module) — pas Brands, pour ne pas charger sa police
+// inutilement.
+import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+import '@fortawesome/fontawesome-free/css/solid.min.css';
+import '@fortawesome/fontawesome-free/css/regular.min.css';
 import './benefits.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
