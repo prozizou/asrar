@@ -7,12 +7,12 @@
 
 .cc-page {
   --gold: var(--accent);
-  --gold-light: #4facfe;
+  --gold-light: #f472b6;
   --gold-pale: rgba(255, 255, 255, 0.06);
   --gold-border: var(--border);
-  --deep: #1a2744;
-  --deep2: #243260;
-  --lapis: #7fb0ec;
+  --deep: #1a1030;
+  --deep2: #2e1d47;
+  --lapis: #c9a8f5;
   --cream: transparent;
   --ink: var(--text-main);
   --muted: var(--text-dim);

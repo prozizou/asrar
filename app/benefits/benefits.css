@@ -11,19 +11,19 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 /* ── DESIGN TOKENS ────────────────────────────────────────── */
 :root {
-    /* Accent aligné sur le thème global bleu (--gold conservé comme nom
-       de token interne mais teinté en bleu pour l'unité visuelle). */
-    --gold:         #4facfe;
-    --gold-light:   #00f2fe;
-    --gold-dim:     rgba(79, 172, 254, 0.18);
-    --gold-border:  rgba(79, 172, 254, 0.30);
+    /* Accent aligné sur le thème global violet-magenta (--gold conservé
+       comme nom de token interne pour l'unité visuelle). */
+    --gold:         #a78bfa;
+    --gold-light:   #f472b6;
+    --gold-dim:     rgba(167, 139, 250, 0.18);
+    --gold-border:  rgba(167, 139, 250, 0.30);
     --green-accent: #2dd4a0;
 
-    /* Fond & surfaces (dark) — dégradé teal du thème global */
-    --bg:           linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    --surface-1:    rgba(22, 30, 44, 0.75);
-    --surface-2:    rgba(30, 40, 58, 0.65);
-    --surface-hover:rgba(38, 52, 74, 0.80);
+    /* Fond & surfaces (dark) — dégradé violet du thème global */
+    --bg:           linear-gradient(135deg, #0c0713, #180d28, #241639);
+    --surface-1:    rgba(30, 22, 44, 0.75);
+    --surface-2:    rgba(40, 30, 58, 0.65);
+    --surface-hover:rgba(52, 38, 74, 0.80);
 
     /* Textes */
     --text-1:       #f0f4fc;
@@ -92,8 +92,8 @@ body::before {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(79,172,254,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 85% 100%, rgba(0,242,254,0.05) 0%, transparent 60%);
+        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(167,139,250,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 85% 100%, rgba(244,114,182,0.05) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
 }
