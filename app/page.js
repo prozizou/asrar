@@ -183,8 +183,9 @@ export default function Home() {
         />
       ) : (
         <div className="glass-panel">
+          <h2 className="market-title">Marché ASRAR PRO</h2>
+
           <div className="vendors-section">
-            <h3>🌙 Nos praticiens et vendeurs certifiés</h3>
             <div className="vendors-scroll">
               {allVendors.map((v) => {
                 const l = vendorLikes[safeKey(v.id)] || { count: 0, liked: false };

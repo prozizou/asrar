@@ -92,16 +92,21 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
         </span>
 
         {mainImg && (
-          <div className="modal-img">
-            <SmartImage
-              src={optimImg(mainImg, 800)}
-              alt={product.produit || ''}
-              fill
-              sizes="(max-width: 640px) 100vw, 500px"
-              style={{ objectFit: 'contain' }}
-              onError={(e) => (e.currentTarget.style.display = 'none')}
-            />
-          </div>
+          // Pas de `fill` ici : un conteneur à hauteur FIXE (250px) laissait une
+          // bande vide en dessous des images plus larges que hautes (object-fit:
+          // contain sans remplir le cadre). width/height servent seulement de
+          // ratio indicatif à next/image ; le rendu réel suit height:auto —
+          // la boîte épouse la hauteur de l'image, jusqu'à 250px maximum.
+          <SmartImage
+            src={optimImg(mainImg, 800)}
+            alt={product.produit || ''}
+            width={800}
+            height={600}
+            sizes="(max-width: 640px) 100vw, 500px"
+            className="modal-img"
+            style={{ width: '100%', height: 'auto', maxHeight: 250, objectFit: 'contain' }}
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+          />
         )}
 
         {galerie.length > 1 && (
@@ -183,8 +188,17 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
           <div className="comment-list" ref={listRef}>
             {comments.map((c) => (
               <div key={c.id} className="m-comment-item">
-                <div className="m-comment-pseudo">{c.pseudo}</div>
-                <div className="m-comment-text">{c.text}</div>
+                <div className="m-comment-avatar">
+                  {c.photo ? (
+                    <SmartImage src={c.photo} alt="" fill sizes="26px" style={{ objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                  ) : (
+                    (c.email || '?').charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="m-comment-body">
+                  <div className="m-comment-pseudo">{c.email}</div>
+                  <div className="m-comment-text">{c.text}</div>
+                </div>
               </div>
             ))}
           </div>

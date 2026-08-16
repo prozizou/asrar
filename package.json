@@ -1,6 +1,6 @@
 {
   "name": "asrar-next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "ASRAR PRO — pilote Next.js/React (module Secrets Mystiques). App parallèle : ne remplace pas le site statique existant.",
   "scripts": {

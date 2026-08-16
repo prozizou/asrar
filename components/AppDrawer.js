@@ -7,6 +7,9 @@ import { useEffect, useState } from 'react';
 import pkg from '@/package.json';
 
 const APP_VERSION = pkg.version;
+// SHA court du commit déployé (voir next.config.mjs) — change à chaque
+// déploiement, contrairement à APP_VERSION (package.json), rarement bumpé.
+const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || '';
 
 export default function AppDrawer() {
   const [open, setOpen] = useState(false);
@@ -89,7 +92,10 @@ export default function AppDrawer() {
                   <span className="drawer-row-icon">📦</span>
                   Version de l'app
                 </span>
-                <span className="drawer-row-hint">v{APP_VERSION}</span>
+                <span className="drawer-row-hint">
+                  v{APP_VERSION}
+                  {BUILD_SHA ? ` · ${BUILD_SHA}` : ''}
+                </span>
               </div>
             </div>
           </div>

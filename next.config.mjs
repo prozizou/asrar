@@ -76,6 +76,17 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
 
+  // « Version de l'app » (drawer, components/AppDrawer.js) : le numéro dans
+  // package.json n'est quasiment jamais bumpé à chaque déploiement, donc
+  // affiché seul il ne reflète pas les mises à jour réelles. Vercel expose
+  // le SHA du commit déployé (VERCEL_GIT_COMMIT_SHA) — on l'injecte ici en
+  // variable NEXT_PUBLIC_* (nécessaire pour qu'elle soit lisible côté
+  // client) : la « version » affichée change alors à CHAQUE déploiement,
+  // sans dépendre d'un bump manuel oublié. Vide en local (hors Vercel).
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7),
+  },
+
   // --- Minification / poids des bundles ---
   // swcMinify (JS/CSS) est actif par défaut sur Next 14 ; on ajoute :
   compress: true, // compression gzip/brotli des réponses servies par Next.

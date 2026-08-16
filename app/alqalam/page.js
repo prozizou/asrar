@@ -161,6 +161,23 @@ export default function AlQalamPage() {
     }, config.DEBOUNCE_DELAY);
   };
 
+  // Ferme la liste de suggestions au clic/toucher en dehors — le seul repli
+  // sur onBlur (délai de 150 ms) pouvait la laisser affichée si le blur du
+  // textarea ne se déclenchait pas comme attendu (notamment tactile).
+  useEffect(() => {
+    if (suggestions.length === 0) return undefined;
+    const onOutside = (e) => {
+      const wrap = inputRef.current && inputRef.current.parentElement;
+      if (wrap && !wrap.contains(e.target)) setSuggestions([]);
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('touchstart', onOutside);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('touchstart', onOutside);
+    };
+  }, [suggestions.length]);
+
   // ─── Panneau d'outils (Documents / Recherche — sélecteur unique, protégé).
   // Intercaler et Mode Rasm sont désormais choisis en amont via le menu de
   // sélection (writingMode), pas ici. ───
@@ -225,17 +242,13 @@ export default function AlQalamPage() {
     setQuranUthmani(data);
   };
 
-  const onIntercaler = async () => {
-    const ok = await ensureAccess(PREMIUM_LEVEL);
-    if (!ok) return;
-    const phrase = inputText.trim();
-    if (!interKey || !phrase) {
-      return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
-    }
+  // Résout le contenu de la sourate sélectionnée selon la version choisie
+  // (sans/avec voyelles) — commun à « Combiner le texte » et « Sourate seule ».
+  const resolveSourateContent = () => {
     let content = souratesContent[interKey];
     if (textVersion === 'voyelles') {
       if (!quranUthmani) {
-        return showToast('Chargement du texte avec voyelles en cours, réessayez dans un instant.', 'error');
+        return { error: 'Chargement du texte avec voyelles en cours, réessayez dans un instant.' };
       }
       const sourateName = sourates.find((s) => s.key === interKey)?.name;
       const matched = matchUthmaniSourate(quranUthmani, sourateName);
@@ -245,12 +258,45 @@ export default function AlQalamPage() {
         content = matched;
       }
     }
+    return { content };
+  };
+
+  const onIntercaler = async () => {
+    const ok = await ensureAccess(PREMIUM_LEVEL);
+    if (!ok) return;
+    const phrase = inputText.trim();
+    if (!interKey || !phrase) {
+      return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
+    }
+    const { content, error } = resolveSourateContent();
+    if (error) return showToast(error, 'error');
     const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
     const result = buildIntercalatedText(content, phrase, rep);
     setBaseText(result);
     setIntercalatedPhrase(phrase);
     setTotalMultiplier(1);
     showToast('Texte combiné généré.', 'info');
+  };
+
+  // ─── Sourate seule, sans intercalation (protégé) ───
+  // Réutilise buildIntercalatedText avec une phrase vide : les marqueurs de
+  // verset sont retirés (même nettoyage que l'intercalation) sans rien
+  // insérer entre les versets. Le nombre de « répétitions » s'applique alors
+  // à la sourate entière (comme en Écriture simple), pas à une phrase.
+  const onSourateSeule = async () => {
+    const ok = await ensureAccess(PREMIUM_LEVEL);
+    if (!ok) return;
+    if (!interKey) {
+      return showToast('Choisissez une sourate.', 'error');
+    }
+    const { content, error } = resolveSourateContent();
+    if (error) return showToast(error, 'error');
+    const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
+    const result = buildIntercalatedText(content, '', 0);
+    setBaseText(result);
+    setIntercalatedPhrase('');
+    setTotalMultiplier(rep);
+    showToast('Sourate insérée.', 'info');
   };
 
   // ─── Cumuler (protégé) ───
@@ -488,6 +534,15 @@ export default function AlQalamPage() {
                   <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
                     Combiner le texte
                   </button>
+                  <button
+                    type="button"
+                    className="btn-glass-outline"
+                    style={{ width: '100%' }}
+                    onClick={onSourateSeule}
+                    title="Insère la sourate seule, sans y intercaler d'expression"
+                  >
+                    📖 Sourate seule (sans intercaler)
+                  </button>
                 </div>
               )}
 
@@ -504,20 +559,22 @@ export default function AlQalamPage() {
 
               {showDoc && (
                 <div className="hidden-panel show-panel">
-                  <input
-                    type="text"
-                    className="glass-input flex-grow"
-                    placeholder="Nom du document"
-                    value={docName}
-                    onChange={(e) => {
-                      setDocName(e.target.value);
-                      savePref('docName', e.target.value);
-                    }}
-                  />
-                  <button className="btn-glass" style={{ width: '100%' }} onClick={onDoc}>
-                    DOCS
-                  </button>
-                  <div className="grid-row-1-1" style={{ marginTop: 10 }}>
+                  <div className="doc-name-row">
+                    <input
+                      type="text"
+                      className="glass-input flex-grow"
+                      placeholder="Nom du document"
+                      value={docName}
+                      onChange={(e) => {
+                        setDocName(e.target.value);
+                        savePref('docName', e.target.value);
+                      }}
+                    />
+                    <button className="btn-glass" onClick={onDoc}>
+                      DOCS
+                    </button>
+                  </div>
+                  <div className="grid-row-1-1">
                     <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
                       ➕ Cumuler
                     </button>

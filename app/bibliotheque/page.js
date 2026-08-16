@@ -67,13 +67,17 @@ export default function BibliothequePage() {
     (async () => {
       try {
         const { items } = await apiPost('list-content', { kind: 'book' });
-        const list = (items || []).map((b) => ({
-          ...b,
-          text: b.text || b.title || b.titre || 'Sans titre',
-          img: b.img || b.image || '',
-          author: b.author || b.auteur || '',
-          description: b.description || b.faida || b.content || '',
-        }));
+        const list = (items || [])
+          .map((b) => ({
+            ...b,
+            text: b.text || b.title || b.titre || 'Sans titre',
+            img: b.img || b.image || '',
+            author: b.author || b.auteur || '',
+            description: b.description || b.faida || b.content || '',
+          }))
+          // Les plus récents en premier (au lieu de l'ordre par défaut de
+          // Firebase, chronologique croissant — donc les plus ANCIENS en tête).
+          .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
         setBooks(list);
         setLoading(false);
         loadSocialCounts(list);

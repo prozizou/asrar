@@ -1,6 +1,6 @@
 /* Module Al-Qalam — styles portés de alqalam/style.css.
-   Scopé sous .alq-page : le module redéfinit des tokens partagés
-   (--glass-bg/--glass-border/--glass-shadow) via des alias locaux. Les polices
+   Scopé sous .alq-page : le module redéfinit certains tokens partagés
+   (--glass-bg/--glass-border) via des alias locaux. Les polices
    calligraphiques (Scheherazade New, Alkalami) sont préservées — cœur du module. */
 @import url('https://fonts.googleapis.com/css2?family=Alkalami&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@700&display=swap');
@@ -12,8 +12,15 @@
   --text-red: var(--danger, #ff6b6b);
   --glass-bg: var(--surface, rgba(255, 255, 255, 0.08));
   --glass-border: var(--border, rgba(255, 255, 255, 0.15));
-  --glass-shadow: var(--glass-shadow, 0 8px 32px 0 rgba(0, 0, 0, 0.3));
-  --accent-hover: var(--accent-hover, #2176ff);
+  /* --glass-shadow et --accent-hover NE SONT PAS redéclarées ici : elles
+     existent déjà comme tokens globaux (globals.css, adaptés clair/sombre).
+     Un alias local `--x: var(--x, repli)` comme pour les tokens ci-dessus
+     serait ici une AUTO-référence : le navigateur la traite comme une
+     boucle (valeur invalide), et `--repli` n'est alors PAS utilisé (ce
+     n'est pas comme une variable JS non définie — la propriété devient
+     simplement vide). C'était le bug des boutons invisibles en thème clair
+     (var(--accent-hover) vide → background dégradé invalide → transparent).
+     Voir aussi .btn-glass plus bas. */
 
   display: flex;
   justify-content: center;
@@ -56,6 +63,11 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 
 .alq-page .grid-row-2-1 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; width: 100%; min-width: 0; }
 .alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
+
+/* Nom du document + bouton DOCS sur une seule ligne (au lieu de 2 lignes
+   pleine largeur empilées) — panneau Documents plus compact. */
+.alq-page .doc-name-row { display: flex; gap: 10px; align-items: stretch; width: 100%; }
+.alq-page .doc-name-row .btn-glass { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 12px 18px; }
 
 /* Menu de sélection (précède l'outil) : simple / intercalée / rasmique. */
 .alq-page .mode-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; }
@@ -111,6 +123,21 @@ html[data-theme='light'] .alq-page .shape1 { opacity: 0.25; }
 .alq-page .btn-glass { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-on-accent); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
 .alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
 
+/* Variante secondaire (action alternative, moins mise en avant que .btn-glass) */
+.alq-page .btn-glass-outline {
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  color: var(--accent);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.alq-page .btn-glass-outline:hover { background: var(--glass-bg); }
+
 .alq-page .hidden-panel { display: none; width: 100%; gap: 10px; }
 .alq-page .show-panel { display: flex; flex-direction: column; }
 
@@ -133,7 +160,9 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
    #8b0000 (bordeaux foncé) était illisible sur fond sombre. */
 .alq-page .verset-brun { color: var(--text-red); font-family: inherit; font-weight: 700; }
 
-.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; }
+/* direction: ltr — sinon ce texte français hérite du RTL de .output-area
+   (prévu pour l'arabe) et s'affiche à l'envers. */
+.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; direction: ltr; }
 
 .alq-page .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Scheherazade New', serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: none; }
 .alq-page .suggestions-container.show-panel { display: block; }
@@ -178,7 +207,9 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 }
 @media (max-width: 480px) {
   .alq-page .controls-section { padding: 15px; }
-  .alq-page .grid-row-1-1 { grid-template-columns: 1fr; }
+  /* Reste sur 2 colonnes (au lieu d'empiler en pleine largeur, qui prenait
+     énormément de place) — juste un texte/padding un peu plus compact. */
+  .alq-page .grid-row-1-1 .btn-glass, .alq-page .doc-name-row .btn-glass { font-size: 0.8rem; padding: 10px 8px; }
 }
 @media (min-width: 900px) {
   .alq-page .app-container { flex-direction: row; align-items: stretch; max-width: 96vw; margin: 0 auto; }
