@@ -77,7 +77,14 @@ export default function BibliothequePage() {
           }))
           // Les plus récents en premier (au lieu de l'ordre par défaut de
           // Firebase, chronologique croissant — donc les plus ANCIENS en tête).
-          .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+          // updatedAt n'existe que pour les livres déjà modifiés via le panneau
+          // admin (save-book) : la plupart des ouvrages importés directement
+          // dans Firebase n'en ont pas, donc Number(undefined||0) vaut 0 pour
+          // TOUS → égalité générale → le tri ne changeait rien en pratique.
+          // Repli sur _key (identifiant push Firebase, naturellement
+          // chronologique) pour départager, comme déjà fait pour les secrets
+          // mystiques (app/asrar/page.js).
+          .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0) || (a._key < b._key ? 1 : a._key > b._key ? -1 : 0));
         setBooks(list);
         setLoading(false);
         loadSocialCounts(list);

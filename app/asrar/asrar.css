@@ -62,9 +62,47 @@ body {
 }
 
 /* Barre de catégories : ex-rail latéral gauche (colonne étroite qui défilait
-   avec la liste — invisible dès qu'on scrollait). Devient une barre
-   HORIZONTALE, centrée, au-dessus de la liste, fixée en haut de l'écran
-   (position: sticky) pendant le scroll de la liste. */
+   avec la liste). Deux passages précédents ont échoué en conditions réelles :
+   1) `position: sticky` — le rail disparaît quand même au scroll.
+   2) `position: fixed` seul sur .cat-rail — corrige la disparition, mais en
+      se plaçant à `top: 0` du viewport il recouvre le lien « ← Retour »
+      (rendu dans le flux normal juste au-dessus du panneau).
+   Solution : le lien retour ET le rail de catégories sont regroupés dans une
+   SEULE barre fixe (.asrar-topbar), donc plus aucun recouvrement possible —
+   les deux sont toujours visibles ensemble, tout le temps. Le rail reste une
+   seule ligne HORIZONTALE qui défile latéralement (comme .vendors-scroll ou
+   .filters ailleurs dans l'app) plutôt qu'un empilement sur plusieurs lignes :
+   hauteur fixe et prévisible, beaucoup moins « verticale ».
+   .asrar-topbar-spacer réserve, plus bas dans le flux normal, la place
+   correspondant à la hauteur réelle de la barre fixe (avec ou sans le rail,
+   absent en mode détail). */
+.asrar-topbar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px; /* aligné sur .container */
+  box-sizing: border-box;
+  z-index: 40;
+  background: var(--asrar-bg-deep);
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.asrar-topbar .back-btn {
+  margin-bottom: 0; /* la barre fixe gère déjà l'espacement (gap) */
+}
+
+.asrar-topbar-spacer {
+  height: 48px; /* barre = lien retour seul (mode détail) */
+}
+.asrar-topbar-spacer.with-cats {
+  height: 96px; /* barre = lien retour + rail de catégories */
+}
+
 .asrar-wrap {
   display: flex;
   flex-direction: column;
@@ -74,15 +112,14 @@ body {
 .cat-rail {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: 0.6rem;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--asrar-bg-deep);
-  padding: 0.6rem 0.2rem;
 }
+.cat-rail::-webkit-scrollbar { display: none; }
 
 .cat-item {
   background: var(--asrar-surface);
@@ -96,6 +133,7 @@ body {
   transition: all 0.2s;
   color: var(--asrar-text);
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .cat-item.active {
@@ -504,7 +542,6 @@ body.comment-open #asrarViewBtn { display: none !important; }
 }
 
 /* ==================== LECTEUR PLEIN ÉCRAN ==================== */
-.asrar-wrap.detail-mode .cat-rail { display: none; }
 .asrar-wrap.detail-mode .asrar-main { width: 100%; flex: 1 1 100%; }
 
 .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }

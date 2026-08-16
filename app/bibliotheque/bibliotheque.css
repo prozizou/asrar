@@ -303,9 +303,25 @@
       .book-cover { height: 180px; }
     }
 
-    .book-social { display:flex; gap:10px; margin-top:8px; }
-    .bs-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(201,169,97,0.25);
-      color:#cdbb8f; border-radius:20px; padding:5px 12px; font-size:.85rem; cursor:pointer; }
+    /* Rangée like/commentaires/partage : sur une carte étroite (mobile, grille
+       auto-fill 140px), 3 boutons non contraints débordaient ou se
+       redimensionnaient différemment selon le contenu (icône+chiffre vs icône
+       seule) → alignement/hauteur incohérents (« pas bien empilé »).
+       flex-wrap évite tout débordement hors carte ; display:inline-flex +
+       line-height:1 fige la hauteur des 3 boutons (les glyphes emoji ont des
+       métriques de ligne différentes selon le navigateur/OS, sinon). */
+    .book-social { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .bs-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      line-height: 1;
+      min-height: 30px;
+      box-sizing: border-box;
+      background:rgba(255,255,255,0.05); border:1px solid rgba(201,169,97,0.25);
+      color:#cdbb8f; border-radius:20px; padding:5px 10px; font-size:.8rem; cursor:pointer;
+    }
     .bs-btn.liked { color:#e0607a; border-color:#e0607a; background:rgba(224,96,122,0.1); }
     .book-cover, .book-title { cursor:pointer; }
     .cm-list { max-height:45vh; overflow:auto; margin:10px 0; text-align:left; }
