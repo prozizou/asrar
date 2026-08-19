@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+import { buildCsp } from './lib/csp.js';
 
 // L'API vit désormais DANS cette app (pages/api/* + server/*) : plus de proxy
 // externe. On conserve le lien court /s (aperçu Open Graph + redirection +
@@ -30,39 +31,13 @@ const LEGACY = [
   ['/Benefits/index.html', '/benefits'],
 ];
 
-// Content-Security-Policy : restreint script/style/connexions aux origines
-// réellement utilisées par l'app (Firebase Auth/Realtime DB/Messaging,
-// Google Fonts, Cloudinary pour les images boutique/marché, popup Google
-// Sign-In, Sunrise-Sunset + BigDataCloud pour le module Planète, AlQuran
-// Cloud pour le texte Uthmani complet du module Al Qalam — sans ces domaines
-// dans connect-src, le navigateur bloque silencieusement les appels et l'app
-// retombe sur ses solutions de repli hors-ligne, moins complètes).
-// 'unsafe-inline' reste nécessaire pour script-src (script anti-FOUC
-// du thème dans app/layout.js) et style-src (attribut style="" posé par le
-// rendu serveur de React) — sans nonce/middleware, c'est le compromis standard
-// Next.js ; l'apport réel est d'empêcher le chargement de script/style/appels
-// réseau depuis un domaine tiers non listé (le principal vecteur XSS).
-//
-// script-src : GAPI (chargé par signInWithPopup) injecte dynamiquement des
-// scripts/iframes de relais (postMessage) depuis PLUSIEURS sous-domaines
-// Google selon la région/le compte (constaté : blocages CSP en prod avec un
-// allowlist restreint à www.gstatic.com/apis.google.com seuls) — wildcard sur
-// gstatic.com et google.com, comme recommandé par Google pour l'intégration
-// GAPI/Google Identity Services.
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://apis.google.com https://*.gstatic.com https://www.google.com https://accounts.google.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com https://*.gstatic.com",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://res.cloudinary.com https://api.cloudinary.com https://accounts.google.com https://api.sunrise-sunset.org https://api.bigdatacloud.net https://api.alquran.cloud",
-  "frame-src 'self' https://asrar-bc059.firebaseapp.com https://accounts.google.com https://content.googleapis.com",
-  "worker-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'self'",
-].join('; ');
+// Content-Security-Policy — définition dans lib/csp.js (source unique,
+// partagée avec middleware.js). Ici : repli SANS nonce ('unsafe-inline' sur
+// script-src), pour les routes que middleware.js ne couvre pas (/api/*, cf.
+// son `matcher`) — sur les pages, middleware.js pose une CSP par requête
+// avec un nonce qui REMPLACE celle-ci (Next.js ne fusionne pas deux en-têtes
+// Content-Security-Policy de même nom).
+const CSP = buildCsp();
 
 const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy', value: CSP },
