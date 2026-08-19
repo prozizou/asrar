@@ -2,12 +2,15 @@
   "name": "asrar-next",
   "version": "0.2.0",
   "private": true,
-  "description": "ASRAR PRO — pilote Next.js/React (module Secrets Mystiques). App parallèle : ne remplace pas le site statique existant.",
+  "description": "ASRAR PRO — application Next.js/React. Migration terminée : toutes les rubriques (secrets, marché, boutique, bibliothèque, calculs ésotériques…) sont servies par cette app, plus de site statique séparé.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.lib.json"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.4.0",
@@ -22,6 +25,8 @@
   },
   "devDependencies": {
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.35"
+    "eslint-config-next": "^14.2.35",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
   }
 }

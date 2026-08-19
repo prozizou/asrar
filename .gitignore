@@ -4,6 +4,9 @@
 # build Next.js
 /.next
 /out
+# auto-généré par Next dès que `typescript` est présent (tsconfig.lib.json
+# pour le typecheck de lib/, cf. ANALYSE.md) — pas un vrai projet TS, rien à committer.
+next-env.d.ts
 
 # divers
 .DS_Store

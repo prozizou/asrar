@@ -22,6 +22,14 @@ jobs:
 
       - run: npm run lint
 
+      # Vérification de types incrémentale (checkJs), scopée à lib/ (logique
+      # métier pure) — voir tsconfig.json et ANALYSE.md.
+      - run: npm run typecheck
+
+      # Tests unitaires de lib/ (calculs Abjad/géomancie/planète, paliers
+      # d'accès…) — voir lib/*.test.js.
+      - run: npm test
+
       - run: npm run build
         env:
           # Valeurs factices : aucune route /api n'est exécutée pendant

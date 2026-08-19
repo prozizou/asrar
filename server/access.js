@@ -4,34 +4,16 @@
 // Réutilise l'app Firebase Admin initialisée dans grant.js (même compte de service).
 
 const { app } = require("./grant");
+// Source unique (partagée avec lib/access.js côté client) : SUPER_ADMIN_EMAIL,
+// PREMIUM_LEVEL et parseAllowed() ne sont plus dupliqués ni à resynchroniser
+// manuellement entre client et serveur — voir lib/plans.js.
+const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, parseAllowed } = require("../lib/plans");
 
-// Même super-admin que firebase-config.js (surchargé possible par variable d'env).
-const SUPER_ADMIN = (process.env.SUPER_ADMIN_EMAIL || "prozizou298@gmail.com").toLowerCase();
+// Même super-admin que lib/plans.js (surchargé possible par variable d'env, serveur only).
+const SUPER_ADMIN = (process.env.SUPER_ADMIN_EMAIL || SUPER_ADMIN_EMAIL).toLowerCase();
 
 // DOIT correspondre à emailToKey() du client et emailKey() de grant.js ('.' → ',').
 const emailKey = (email) => (email || "").replace(/\./g, ",");
-
-// Niveau minimum requis pour les modules haut de gamme (Al Qalam, Géomancie) :
-// réservés au palier « 1 An / 45 000 FCFA ». `level` = montant FCFA du palier
-// (même convention que purchased_user.level, cf. pages/api/referral.js), pas
-// un simple rang 1/2/3. Doit rester synchronisé avec PREMIUM_LEVEL dans
-// lib/access.js (SUB_PLANS[].level).
-const PREMIUM_LEVEL = 45000;
-
-// allowedUsers/{clé} peut être une valeur héritée : true / timestamp (sans
-// palier connu → level 0), ou un objet { until, level } écrit par grant-access
-// avec le palier réellement accordé.
-function parseAllowed(aVal, now) {
-  if (aVal == null) return { active: false, level: 0 };
-  if (aVal === true) return { active: true, level: 0 };
-  if (typeof aVal === "number") return { active: aVal > now, level: 0 };
-  if (typeof aVal === "object") {
-    const until = aVal.until;
-    const active = until === true || until == null || (typeof until === "number" && until > now);
-    return { active, level: Number(aVal.level) || 0 };
-  }
-  return { active: false, level: 0 };
-}
 
 // Crée une erreur portant un code HTTP, pour des réponses propres.
 function httpError(status, message) {
