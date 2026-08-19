@@ -13,6 +13,12 @@
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
+const { rateLimit } = require("../../lib/rateLimit");
+
+// Le tracking suit la navigation normale (une entrée par page/action) : une
+// limite large, juste assez pour couper un compte compromis qui boucle en
+// continu sur cet endpoint (chaque appel écrit dans activity_feed).
+const RATE_LIMIT = { max: 60, windowMs: 60_000 };
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -24,6 +30,11 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+
+  if (!rateLimit("track:" + user.uid, RATE_LIMIT.max, RATE_LIMIT.windowMs)) {
+    // Le tracking ne doit jamais casser l'expérience (cf. plus bas) : 200 silencieux.
+    return res.status(200).json({ ok: false, reason: "rate_limited" });
+  }
 
   const db = app().database();
   const now = Date.now();

@@ -22,6 +22,7 @@
 const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
+const { rateLimit } = require("../../lib/rateLimit");
 
 // ── Paramètres (source unique de vérité) ─────────────────────
 const POINTS_PER_INVITE  = 10;      // points par filleul inscrit
@@ -44,6 +45,15 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(body.idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+
+  // "me" est un simple rafraîchissement de tableau de bord (fréquent, sans
+  // effet de bord) : limite large. "claim"/"redeem" ont un effet réel (crédit
+  // de points, activation d'abonnement) déjà protégé par des transactions
+  // atomiques côté RTDB — la limite ici borne juste le débit d'essais.
+  const limit = body.action === "me" ? { max: 30, windowMs: 60_000 } : { max: 10, windowMs: 60_000 };
+  if (!rateLimit("referral:" + body.action + ":" + user.uid, limit.max, limit.windowMs)) {
+    return res.status(429).json({ error: "Trop de requêtes, réessayez dans une minute." });
+  }
 
   const db = app().database();
 

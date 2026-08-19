@@ -7,6 +7,12 @@
 const crypto = require("crypto");
 const { verifyUser } = require("../../server/access");
 const { setCors, parseBody } = require("../../server/http");
+const { rateLimit } = require("../../lib/rateLimit");
+
+// Une signature = un upload potentiel : limite le nombre de signatures qu'un
+// compte peut obtenir par minute (l'upload réel se fait ensuite directement
+// vers Cloudinary, hors de notre contrôle — cf. limite documentée plus bas).
+const RATE_LIMIT = { max: 20, windowMs: 60_000 };
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -18,6 +24,10 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+
+  if (!rateLimit("cloudinary-sign:" + user.uid, RATE_LIMIT.max, RATE_LIMIT.windowMs)) {
+    return res.status(429).json({ error: "Trop de demandes d'upload, réessayez dans une minute." });
+  }
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey    = process.env.CLOUDINARY_API_KEY;
