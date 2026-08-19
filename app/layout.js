@@ -1,4 +1,5 @@
 import './globals.css';
+import { headers } from 'next/headers';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
 
@@ -36,10 +37,15 @@ export const viewport = {
 const themeInit = `(function(){try{var t=localStorage.getItem('asrar_theme')||'dark';document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');document.documentElement.style.colorScheme=t==='light'?'light':'dark';}catch(e){}})();`;
 
 export default function RootLayout({ children }) {
+  // Posé par middleware.js (nonce CSP par requête) : absent hors du contexte
+  // HTTP normal (ex. `next build` prérend certaines routes sans middleware) —
+  // dans ce cas le script reste bloqué par la CSP à nonce mais reste autorisé
+  // par la CSP statique 'unsafe-inline' de next.config.mjs (repli).
+  const nonce = headers().get('x-nonce') || undefined;
   return (
     <html lang="fr">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
         <PwaGate>

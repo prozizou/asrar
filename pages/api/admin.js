@@ -16,6 +16,7 @@ const { verifyUser, isAdmin, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 const DAY_MS = 86400000;
 
@@ -190,6 +191,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Action inconnue." });
     }
   } catch (e) {
+    if (!e.statusCode) await reportError("admin", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

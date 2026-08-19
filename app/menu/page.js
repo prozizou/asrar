@@ -1,17 +1,17 @@
-'use client';
 // Menu — liste des modules de l'app (hors Marché Mystique, désormais la page
 // d'accueil, cf. app/page.js). Accessible via le bouton « ☰ Accéder au menu »
 // de l'accueil. Chaque tuile porte une courte description en clair : plusieurs
 // noms de modules sont des termes du domaine (Abajad, Rouwhanes, Tourab…) que
 // quelqu'un de nouveau ne devine pas avant d'avoir cliqué.
 //
-// Porte aussi les contrôles de compte (avatar, thème, déconnexion) : ils
-// vivaient sur l'accueil avant que celui-ci ne devienne le Marché, épuré
-// depuis de tout ce qui n'est pas la liste des vendeurs/produits.
+// Composant SERVEUR (pas de 'use client') : la liste des modules est
+// statique, aucun état/hook ici. Seuls les contrôles de compte (avatar,
+// thème, déconnexion — ex-accueil) ont besoin de useAuth() côté client :
+// extraits dans UserBar.js pour ne pas faire basculer toute la page côté
+// client (réduit le JS envoyé au navigateur pour cette route — cf. ANALYSE.md,
+// faiblesse « surface use client »).
 import Link from 'next/link';
-import { useAuth } from '@/components/AuthProvider';
-import AppDrawer from '@/components/AppDrawer';
-import SmartImage from '@/components/SmartImage';
+import UserBar from './UserBar';
 
 const MODULES = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
@@ -37,50 +37,13 @@ function MenuItem({ item }) {
 }
 
 export default function MenuPage() {
-  const { user, signOut } = useAuth();
-  const name = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Utilisateur');
-
   return (
     <div className="container">
       <Link href="/" className="back-btn">
         ← Retour
       </Link>
 
-      {/* Barre utilisateur (ex-accueil) : compte, thème, déconnexion.
-          Deux groupes bien dissociés (séparateur vertical) : à gauche le
-          profil (avatar seul, plus de nom/e-mail affichés) + le menu ; à
-          droite, seul, le bouton de déconnexion. */}
-      <div className="user-bar">
-        <div className="user-bar-left">
-          <div className="avatar" title={user?.email || name} aria-label={name}>
-            {user?.photoURL ? (
-              <SmartImage
-                src={user.photoURL}
-                alt=""
-                fill
-                sizes="42px"
-                referrerPolicy="no-referrer"
-                style={{ objectFit: 'cover', borderRadius: '50%' }}
-              />
-            ) : (
-              name.charAt(0).toUpperCase()
-            )}
-          </div>
-          <AppDrawer />
-        </div>
-        <div className="user-bar-right">
-          <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
-            {/* Icône SVG (fiable sur tous les appareils) plutôt que le
-                glyphe Unicode ⏻, absent de certaines polices système →
-                s'affichait comme un carré vide ("tofu"). */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <UserBar />
 
       <div className="header">
         <h1>Menu</h1>

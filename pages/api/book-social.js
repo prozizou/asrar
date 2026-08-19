@@ -13,6 +13,7 @@
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 const BAD_KEY = /[.#$\[\]\/\u0000-\u001F\u007F]/;
 const validKey = (k) => { const s = String(k ?? ""); return s.length > 0 && s.length <= 768 && !BAD_KEY.test(s); };
@@ -97,6 +98,7 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: "Action inconnue." });
   } catch (e) {
+    if (!e.statusCode) await reportError("book-social", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

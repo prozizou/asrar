@@ -1,0 +1,28 @@
+{
+  // TypeScript incrémental — première étape de l'amélioration « pas de
+  // vérification de types » (voir ANALYSE.md). checkJs porte uniquement sur
+  // lib/ (logique métier pure, aucun JSX/React) : c'est le périmètre le plus
+  // simple à faire passer et le plus rentable à couvrir en premier (calculs
+  // Abjad/géomancie/planète/accès). app/ et components/ (JSX, hooks, Firebase)
+  // seront ajoutés au fur et à mesure, une fois leurs erreurs résorbées.
+  //
+  // Nommé `tsconfig.lib.json` (et non `tsconfig.json`) délibérément : dès
+  // qu'un `tsconfig.json` existe à la racine, `next build` bascule en mode
+  // « projet TypeScript » et type-checke TOUT app/ (JSX, imports CSS…), hors
+  // du périmètre visé ici et pas prêt pour ça. `npm run typecheck` pointe
+  // explicitement sur ce fichier, indépendamment du build Next.
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "include": ["lib/**/*.js"],
+  "exclude": ["node_modules", "lib/**/*.test.js"]
+}

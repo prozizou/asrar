@@ -20,6 +20,7 @@
 
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
+const { reportError } = require("../../server/log");
 
 const SHARE_SHOW_TITLES = true;
 
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
         }
       } catch (e) {
         // Base indisponible → aperçu générique, la redirection fonctionne quand même.
-        console.error("share:", e.message);
+        await reportError("share", e, { kind, cat, key });
       }
     }
   }
