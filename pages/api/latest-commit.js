@@ -10,6 +10,7 @@
 
 const { verifyUser } = require("../../server/access");
 const { setCors, parseBody } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 const OWNER = "prozizou";
 const REPO = "asrar";
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
       url: d.html_url || `https://github.com/${OWNER}/${REPO}/commit/${d.sha || ""}`,
     });
   } catch (e) {
+    if (!e.statusCode) await reportError("latest-commit", e);
     return res.status(e.statusCode || 500).json({ error: e.message || "Erreur serveur." });
   }
 }

@@ -45,12 +45,22 @@ export default async function handler(req, res) {
   const safeFolder = `${rootFolder}/${user.uid}`;
 
   // NOTE SÉCURITÉ : la signature ne peut pas contraindre `resource_type`
-  // (dans l'URL). Pour un verrouillage complet du format/taille, configurez côté
-  // Cloudinary un « upload preset » signé (formats image uniquement, taille max)
-  // et signez aussi le paramètre `upload_preset` ci-dessous.
+  // (dans l'URL). Pour un verrouillage complet du format/taille, configurez
+  // côté Cloudinary un « upload preset » SIGNÉ (formats image uniquement,
+  // taille max) et renseignez son nom dans CLOUDINARY_UPLOAD_PRESET — signé
+  // ici et transmis à lib/cloudinary.js. Rien ne change si la variable est
+  // absente (comportement historique conservé).
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || "";
+
   const timestamp = Math.floor(Date.now() / 1000);
-  const toSign = `folder=${safeFolder}&timestamp=${timestamp}`;
+  // Paramètres signés triés par ordre alphabétique de clé (exigence Cloudinary).
+  const toSign = uploadPreset
+    ? `folder=${safeFolder}&timestamp=${timestamp}&upload_preset=${uploadPreset}`
+    : `folder=${safeFolder}&timestamp=${timestamp}`;
   const signature = crypto.createHash("sha1").update(toSign + apiSecret).digest("hex");
 
-  return res.status(200).json({ cloudName, apiKey, timestamp, signature, folder: safeFolder });
+  return res.status(200).json({
+    cloudName, apiKey, timestamp, signature, folder: safeFolder,
+    uploadPreset: uploadPreset || undefined,
+  });
 };

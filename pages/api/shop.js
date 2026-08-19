@@ -15,6 +15,7 @@ const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -204,6 +205,7 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: "Action inconnue." });
   } catch (e) {
+    if (!e.statusCode) await reportError("shop", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

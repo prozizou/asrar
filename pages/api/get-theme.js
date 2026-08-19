@@ -10,6 +10,7 @@
 const { verifyUser, getAccessLevel, PREMIUM_LEVEL } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
     const snap = await app().database().ref("theme_fondamental").once("value");
     return res.status(200).json({ data: snap.val() });
   } catch (e) {
+    if (!e.statusCode) await reportError("get-theme", e);
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

@@ -7,6 +7,7 @@ const { verifyUser, hasActiveAccess } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -42,6 +43,7 @@ export default async function handler(req, res) {
     item._key = key;
     return res.status(200).json({ item });
   } catch (e) {
+    if (!e.statusCode) await reportError("get-content", e, { kind, cat, key });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

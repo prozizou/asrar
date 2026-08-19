@@ -23,6 +23,7 @@ const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
+const { reportError } = require("../../server/log");
 
 // ── Paramètres (source unique de vérité) ─────────────────────
 const POINTS_PER_INVITE  = 10;      // points par filleul inscrit
@@ -158,7 +159,7 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true, expiresAt, days: REWARD_DAYS });
         } catch (e) {
           await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
-          console.error("referral redeem:", e.message);
+          await reportError("referral:redeem", e, { uid: user.uid });
           return res.status(500).json({ error: "Activation impossible. Vos points ont été restitués." });
         }
       }
@@ -167,7 +168,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Action inconnue." });
     }
   } catch (e) {
-    console.error("referral:", e.message);
+    if (!e.statusCode) await reportError("referral", e, { action: body.action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

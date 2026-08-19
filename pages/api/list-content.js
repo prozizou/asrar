@@ -9,6 +9,7 @@ const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
+const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -37,6 +38,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ items });
   } catch (e) {
+    if (!e.statusCode) await reportError("list-content", e, { kind, cat });
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

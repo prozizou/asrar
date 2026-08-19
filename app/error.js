@@ -9,6 +9,17 @@ export default function GlobalError({ error, reset }) {
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error(error);
+    // Remontée best-effort vers le suivi d'erreurs serveur (server/log.js) —
+    // fetch direct (pas apiPost) : pas d'idToken requis, réponse 204 ignorée.
+    fetch('/api/client-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error?.message,
+        stack: error?.stack,
+        url: typeof window !== 'undefined' ? window.location.href : '',
+      }),
+    }).catch(() => {});
   }, [error]);
 
   return (
