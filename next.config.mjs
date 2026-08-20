@@ -31,12 +31,9 @@ const LEGACY = [
   ['/Benefits/index.html', '/benefits'],
 ];
 
-// Content-Security-Policy — définition dans lib/csp.js (source unique,
-// partagée avec middleware.js). Ici : repli SANS nonce ('unsafe-inline' sur
-// script-src), pour les routes que middleware.js ne couvre pas (/api/*, cf.
-// son `matcher`) — sur les pages, middleware.js pose une CSP par requête
-// avec un nonce qui REMPLACE celle-ci (Next.js ne fusionne pas deux en-têtes
-// Content-Security-Policy de même nom).
+// Content-Security-Policy — définition dans lib/csp.js (source unique).
+// Voir son en-tête : un nonce par requête a été essayé puis abandonné (a
+// cassé signInWithPopup en production, erreur Firebase auth/internal-error).
 const CSP = buildCsp();
 
 const SECURITY_HEADERS = [
