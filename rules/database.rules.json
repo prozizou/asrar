@@ -4,19 +4,13 @@
     ".write": false,
 
     "purchased_user": {
-      "$key": {
-        ".read": "auth != null && $key === auth.token.email.replace('.', ',')"
-      }
+      "$key": { ".read": "auth != null" }
     },
     "allowedUsers": {
-      "$key": {
-        ".read": "auth != null && $key === auth.token.email.replace('.', ',')"
-      }
+      "$key": { ".read": "auth != null" }
     },
     "admins": {
-      "$key": {
-        ".read": "auth != null && $key === auth.token.email.replace('.', ',')"
-      }
+      "$key": { ".read": "auth != null" }
     },
     "vip_users": {
       "$uid": {
