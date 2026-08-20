@@ -20,7 +20,7 @@
 // components/PwaGate.js écoute 'controllerchange' et recharge la page une
 // fois pour que le JS déjà chargé en mémoire reparte du nouveau build.
 
-const SW_VERSION = 'v24';
+const SW_VERSION = 'v25';
 
 // Répond à une demande de version depuis la page (voir components/AppDrawer.js
 // « Version de l'app » — reflète la version du SW réellement actif sur
@@ -47,9 +47,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Gestionnaire 'fetch' minimal : laisse tout passer au réseau, sans jamais
-// lire ni écrire dans `caches`. Présent uniquement pour l'installabilité —
-// voir le commentaire d'en-tête.
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
-});
+// Gestionnaire 'fetch' minimal : ne fait RIEN (pas d'event.respondWith()) —
+// le navigateur traite alors la requête normalement, comme en l'absence de
+// service worker. Présent uniquement pour l'installabilité PWA (voir le
+// commentaire d'en-tête) : la simple présence du gestionnaire suffit, il n'a
+// pas besoin de répondre lui-même.
+//
+// PIÈGE ÉVITÉ ICI (régression constatée en production sur v24, corrigée en
+// v25) : `event.respondWith(fetch(event.request))` semblait un pass-through
+// neutre ("aucune mise en cache, juste relayer"), mais un fetch() émis
+// DEPUIS le service worker est vérifié par le navigateur contre la CSP
+// `connect-src` — PAS contre la directive native de la ressource
+// (`script-src` pour un script, `font-src` pour une police…). Résultat :
+// les polices Google Fonts et le loader GAPI (apis.google.com), pourtant
+// autorisés par font-src/script-src, étaient bloqués dès qu'ils passaient
+// par ce relais. Ne JAMAIS appeler respondWith() ici pour un simple
+// pass-through — soit on répond vraiment (avec une vraie logique, ex. un
+// cache), soit on n'intercepte pas du tout.
+self.addEventListener('fetch', () => {});

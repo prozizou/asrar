@@ -58,10 +58,21 @@
 - **PWA installable, sans mode hors-ligne** (`public/manifest.json`,
   `public/sw.js`) — décision assumée : toutes les données de l'app
   dépendent de Firebase/des API, un mode hors-ligne n'aurait donc jamais
-  offert de contenu réel. Le service worker ne sert qu'à l'installabilité
-  (aucune mise en cache), avec rechargement automatique (`controllerchange`,
-  `components/PwaGate.js`) quand une nouvelle version prend le contrôle.
-  Thème clair/sombre centralisé.
+  offert de contenu réel. Le service worker ne sert qu'à l'installabilité,
+  avec rechargement automatique (`controllerchange`, `components/PwaGate.js`)
+  quand une nouvelle version prend le contrôle. Thème clair/sombre
+  centralisé.
+  **Deuxième piège rencontré en production (v24 → v25)** : le premier
+  gestionnaire `fetch` « pass-through » (`event.respondWith(fetch(event.request))`,
+  pensé comme neutre puisqu'il ne met rien en cache) bloquait en réalité les
+  polices Google Fonts et le loader GAPI — un `fetch()` émis DEPUIS le
+  service worker est vérifié par le navigateur contre `connect-src`, pas
+  contre la directive native de la ressource (`font-src`/`script-src`).
+  Corrigé en ne répondant plus du tout (`self.addEventListener('fetch', () =>
+  {})`) : le navigateur traite alors la requête normalement, comme en
+  l'absence de SW. Repéré via une capture de la console DevTools envoyée par
+  l'utilisateur — pas détectable par `next build && next start` + `curl`,
+  qui ne fait jamais tourner de vrai service worker.
 
 ## ⚠️ Faiblesses (état après cette revue)
 
