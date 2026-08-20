@@ -24,16 +24,17 @@ export default function PwaGate({ children }) {
     setStandalone(isStandalone());
     setInstallState(getInstallState());
 
-    // Enregistrement du service worker (tous les visiteurs).
+    // Enregistrement du service worker (tous les visiteurs). public/sw.js ne
+    // met RIEN en cache (l'app n'a pas de mode hors-ligne : tout dépend de
+    // Firebase/des API) — il ne sert qu'à satisfaire les critères
+    // d'installabilité PWA.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
 
-      // public/sw.js appelle déjà self.skipWaiting() + clients.claim() : un
+      // public/sw.js appelle self.skipWaiting() + clients.claim() : un
       // nouveau SW prend le contrôle de cet onglet dès qu'il est détecté, SANS
       // attendre la fermeture des onglets ouverts. Mais le JS déjà CHARGÉ en
-      // mémoire dans cet onglet reste l'ancien tant qu'on ne recharge pas —
-      // jusqu'ici rien ne le faisait, d'où le symptôme « après un déploiement,
-      // il faut vider le cache à la main pour que l'app refonctionne ».
+      // mémoire dans cet onglet reste l'ancien tant qu'on ne recharge pas.
       // 'controllerchange' se déclenche exactement à ce moment (y compris à la
       // toute première visite, quand clients.claim() prend le contrôle d'une
       // page chargée avant l'enregistrement du SW — un rechargement de plus à
@@ -94,8 +95,7 @@ export default function PwaGate({ children }) {
                   Installez l'application pour continuer
                 </p>
                 <p style={txt}>
-                  ASRAR PRO fonctionne comme une véritable application (plus rapide, hors-ligne, sur votre écran
-                  d'accueil).
+                  ASRAR PRO fonctionne comme une véritable application, directement depuis votre écran d'accueil.
                 </p>
 
                 {canPrompt && (

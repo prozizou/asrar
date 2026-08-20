@@ -51,8 +51,13 @@
   (`plans.js`, `csp.js`, `rateLimit.js`) sont désormais la **source unique**
   importée à la fois côté client et côté serveur (interop CommonJS/ESM du
   bundler Next), là où les constantes d'accès étaient dupliquées avant.
-- **PWA conservée** (`public/manifest.json`, `public/sw.js`) et thème
-  clair/sombre centralisé.
+- **PWA installable, sans mode hors-ligne** (`public/manifest.json`,
+  `public/sw.js`) — décision assumée : toutes les données de l'app
+  dépendent de Firebase/des API, un mode hors-ligne n'aurait donc jamais
+  offert de contenu réel. Le service worker ne sert qu'à l'installabilité
+  (aucune mise en cache), avec rechargement automatique (`controllerchange`,
+  `components/PwaGate.js`) quand une nouvelle version prend le contrôle.
+  Thème clair/sombre centralisé.
 
 ## ⚠️ Faiblesses (état après cette revue)
 
