@@ -9,11 +9,17 @@
 >
 > Cette version marque le statut de chaque faiblesse identifiée lors de la
 > revue précédente : ✅ traitée, 🟡 partiellement traitée (limite assumée et
-> documentée), ⬜ encore ouverte. Rien n'a été déployé en production dans le
-> cadre de cette revue (pas d'accès aux secrets Vercel/Firebase) — chaque
-> changement a été validé localement (`npm run lint && npm run typecheck &&
-> npm test && npm run build`, plus un `next build && next start` réel pour la
-> CSP, cf. point 6) mais reste à vérifier une fois déployé.
+> documentée), ⬜ encore ouverte.
+>
+> **Leçon tirée après déploiement réel** : la première passe de cette revue
+> avait tout validé localement (lint/typecheck/tests/build, plus un `next
+> build && next start` + `curl` réel pour la CSP) sans accès aux secrets de
+> production. Une fois déployée, la CSP à nonce (point 6) a cassé Google
+> Sign-In (`auth/internal-error`) — un défaut invisible sans un vrai compte
+> Google en conditions réelles. Corrigé (nonce annulé), mais ça illustre la
+> limite de toute validation purement locale sur un projet qui dépend
+> fortement de services tiers (Firebase Auth, GAPI) : certains risques ne
+> se vérifient qu'en production.
 
 ## ✅ Forces
 
@@ -29,11 +35,9 @@
   points atomique (`transaction` qui échoue si le solde est insuffisant, et
   restitution en cas d'échec d'activation) ; upload Cloudinary namespacé par
   `uid` pour tracer/cloisonner le stockage.
-- **En-têtes de sécurité complets** (`next.config.mjs` + `middleware.js`) :
-  CSP détaillée par domaine réellement utilisé — **et désormais sans
-  `unsafe-inline` sur `script-src`** grâce à un nonce par requête —, HSTS,
-  `X-Frame-Options`, `Permissions-Policy`, `remotePatterns` restreints pour
-  `next/image`.
+- **En-têtes de sécurité complets** (`next.config.mjs`) : CSP détaillée par
+  domaine réellement utilisé, HSTS, `X-Frame-Options`, `Permissions-Policy`,
+  `remotePatterns` restreints pour `next/image`.
 - **Assainissement systématique des entrées** : `safeUrl()` / `clean()` /
   échappement HTML dans `server/http.js` et `pages/api/share.js` contre les
   évasions HTML/JS dans les champs libres (admin, tracking, aperçu Open
@@ -69,13 +73,10 @@
    après montage via le SDK Firebase client. Une conversion complète
    demanderait de faire transiter ces lectures par le serveur (routes `/api`
    existantes ou nouvelles) — un chantier par module, hors périmètre ici.
-   **Effet de bord additionnel** : fermer la CSP (point 6) a nécessité
-   `headers()` dans `app/layout.js`, ce qui bascule **toutes** les pages en
-   rendu dynamique (plus de prérendu statique) — comportement documenté de
-   Next.js pour ce pattern. Impact réel limité : la quasi-totalité du
-   contenu était déjà rendue client-side après coup (le HTML prérendu
-   n'était qu'une coquille de chargement), donc peu de perte réelle, mais
-   c'est une contrainte de plus qui pèse dans le même sens que ce point.
+   (Une tentative de fermer la CSP — point 6 — était passée par `headers()`
+   dans `app/layout.js`, ce qui aurait basculé toutes les pages en rendu
+   dynamique ; annulée avec le reste de cette tentative, le prérendu
+   statique existant est donc intact.)
 2. ✅ **Zéro test automatisé** → 95 tests Vitest sur `lib/` (`npm test`,
    dans la CI). Reste hors périmètre : tests de composants React (`app/`,
    `components/`) et tests d'intégration/e2e sur les routes `/api`.
@@ -101,16 +102,24 @@
    unique : `SUPER_ADMIN_EMAIL`, `SUB_PLANS`, `PREMIUM_LEVEL`,
    `parseAllowed()`), importé par `lib/access.js` (client) ET
    `server/access.js` (Admin SDK). Testé (`lib/plans.test.js`).
-6. ✅ **CSP en `'unsafe-inline'` sur `script-src`** → `middleware.js` pose un
-   nonce par requête, propagé à `app/layout.js` via `next/headers`.
-   **Piège identifié en testant en conditions réelles** (`next build && next
-   start` + `curl`) : Next.js ne fusionne pas deux en-têtes
-   `Content-Security-Policy` de même nom, celui du middleware remplace
-   entièrement celui de `next.config.mjs` sur les routes qu'il couvre — d'où
-   `lib/csp.js` qui renvoie toujours la politique complète (pas seulement
-   `script-src`). `style-src` reste en `'unsafe-inline'` (attribut `style=""`
-   posé par le rendu serveur de React — fermer ce point demanderait de
-   migrer les styles inline vers des classes CSS, non fait ici).
+6. ⬜ **CSP en `'unsafe-inline'` sur `script-src`** → **tentative faite puis
+   annulée.** Un nonce par requête (`middleware.js` + `next/headers`) a bien
+   fermé ce point, validé localement (`next build && next start` + `curl`,
+   y compris un piège de fusion d'en-têtes CSP repéré et corrigé à ce
+   moment-là) — mais en production, avec un vrai compte Google, ça a cassé
+   `signInWithPopup()` (Google Sign-In) : erreur Firebase
+   `auth/internal-error`. Cause : GAPI/Google Identity Services injecte
+   dynamiquement des scripts/iframes de relais dont le contenu échappe
+   totalement à notre contrôle — impossible de leur poser notre nonce, donc
+   bloqués par une CSP sans `'unsafe-inline'`. Ce risque était déjà noté
+   dans le commentaire GAPI de `lib/csp.js` avant la tentative, mais pas
+   vérifié avec un vrai flux d'authentification avant déploiement — l'écart
+   entre « le build passe et les en-têtes sont corrects » et « la connexion
+   fonctionne réellement » n'a été comblé qu'après coup, par un
+   signalement utilisateur. `middleware.js` supprimé, retour à
+   `'unsafe-inline'` sur `script-src` (et toujours sur `style-src`, jamais
+   traité). Cf. le commentaire d'en-tête de `lib/csp.js` pour la marche à
+   suivre si ce point est rouvert un jour.
 7. ✅ **Pas de limitation de fréquence** → `lib/rateLimit.js` (fenêtre
    glissante en mémoire, testé) appliqué sur `/api/track`, `/api/referral`
    et `/api/cloudinary-sign`. **Limite assumée** : par instance serverless,
@@ -157,9 +166,12 @@
 3. **Rate limiting distribué** (Upstash Redis, Vercel KV) si l'app grossit
    au point qu'un abus multi-instance devienne un risque réel — `lib/rateLimit.js`
    reste une protection best-effort par instance.
-4. **Fermer `style-src 'unsafe-inline'`** en migrant les styles inline React
-   vers des classes CSS (gain XSS marginal restant, effort plus élevé que le
-   nonce script-src déjà fait).
+4. **CSP `'unsafe-inline'`** (`script-src` ET `style-src`) : une tentative de
+   nonce par requête a cassé Google Sign-In en production (point 6) — si
+   quelqu'un la reprend, tester `signInWithPopup`/`signInWithRedirect` avec
+   un vrai compte Google avant tout déploiement, pas seulement le build.
+   Pour `style-src`, l'alternative sans risque équivalent est de migrer les
+   styles inline React vers des classes CSS.
 5. **Étendre TypeScript** au-delà de `lib/` : `app/`/`components/` restent
    non typés (JSX, hooks, Firebase) — un chantier bien plus large que le
    `checkJs` scopé posé ici.
