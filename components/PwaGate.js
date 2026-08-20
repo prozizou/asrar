@@ -27,6 +27,23 @@ export default function PwaGate({ children }) {
     // Enregistrement du service worker (tous les visiteurs).
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+      // public/sw.js appelle déjà self.skipWaiting() + clients.claim() : un
+      // nouveau SW prend le contrôle de cet onglet dès qu'il est détecté, SANS
+      // attendre la fermeture des onglets ouverts. Mais le JS déjà CHARGÉ en
+      // mémoire dans cet onglet reste l'ancien tant qu'on ne recharge pas —
+      // jusqu'ici rien ne le faisait, d'où le symptôme « après un déploiement,
+      // il faut vider le cache à la main pour que l'app refonctionne ».
+      // 'controllerchange' se déclenche exactement à ce moment (y compris à la
+      // toute première visite, quand clients.claim() prend le contrôle d'une
+      // page chargée avant l'enregistrement du SW — un rechargement de plus à
+      // ce moment-là est sans conséquence). On recharge une seule fois.
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
     }
 
     const mql = window.matchMedia('(display-mode: standalone)');
