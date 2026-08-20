@@ -52,11 +52,27 @@ explicitement est fermé au client, sans affecter l'Admin SDK.
 
 ## Points à vérifier humainement (pas garantis par la seule lecture du code)
 
-- `admins/{clé}` : la restriction de lecture à `$key === sa propre clé`
-  empêche un utilisateur de lister les autres admins, mais suppose que
-  `auth.token.email` correspond exactement à la casse utilisée par
-  `emailToKey()` (`.` → `,`, pas de normalisation de casse) — à confirmer
-  avec de vrais comptes Google.
+- **`purchased_user`/`allowedUsers`/`admins`** : une première version de ces
+  règles restreignait la lecture à `$key === auth.token.email.replace('.',
+  ',')` (empêcher un utilisateur de lire le statut d'accès d'un autre). Cette
+  restriction a été **retirée** — le langage de règles Firebase RTDB ne
+  documente pas clairement si `String.replace()` remplace la première
+  occurrence ou toutes (contrairement au `.replace(/\./g, ',')` — global —
+  utilisé côté client dans `emailToKey()`), et un e-mail avec plus d'un point
+  (`prenom.nom@gmail.com`, très courant) aurait alors produit une clé
+  différente côté règle et côté client, refusant l'accès en lecture à
+  `checkAccess()` (`lib/access.js`) — appelée à **chaque** clic sur un
+  élément gaté par le paywall. Autrement dit : une règle censée protéger la
+  vie privée aurait pu casser l'ouverture du contenu pour une partie des
+  utilisateurs. Le compromis retenu ici (`auth != null`, comme avant) accepte
+  qu'un utilisateur connecté puisse lire le statut d'accès d'un autre (fuite
+  mineure) plutôt que de risquer de bloquer des abonnés payants. Si vous
+  voulez restaurer la restriction par clé, testez d'abord `.replace()` dans
+  le simulateur de règles Firebase avec un e-mail à plusieurs points avant de
+  déployer.
+- `admins/{clé}` : accès en lecture ouvert à tout utilisateur connecté (voir
+  ci-dessus) — un utilisateur authentifié peut donc voir qui d'autre est
+  admin. Compromis identique, mêmes raisons.
 - `ratings`/`comments` : la validation (`text` non vide, ≤ 500 caractères,
   note 1–5) reprend `REVUE.md` — pas de garde-fou ici sur le **débit**
   d'écriture (spam de likes/commentaires) : voir `lib/rateLimit.js` côté
