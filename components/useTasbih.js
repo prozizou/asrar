@@ -5,6 +5,7 @@
 // (tasbih_asma_/target_/loopmax_/loopcur_) → compteurs partagés entre les deux.
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { playBeadSound, playGoalSound } from '@/lib/audio';
+import { getStreak, recordCompletion } from '@/lib/dhikrStreak';
 
 const ls = {
   get: (k) => {
@@ -39,6 +40,12 @@ export function useTasbih(id, autoTarget) {
   const [loopCur, setLoopCur] = useState(() => parseInt(ls.get(`tasbih_loopcur_${id}`)) || 0);
   const [flash, setFlash] = useState(false);
   const flashTimer = useRef(null);
+  // Série de jours de dhikr (lib/dhikrStreak.js) — portée GLOBALE (tous
+  // noms confondus), pas propre à `id` : chaque instance de useTasbih lit/
+  // écrit donc le même état partagé, volontairement.
+  const [streak, setStreak] = useState(() => getStreak().current);
+  const [newBadge, setNewBadge] = useState(null);
+  const badgeTimer = useRef(null);
 
   const grand = parseInt(target) || 0;
   const seriesCount = parseInt(series) || 0;
@@ -84,6 +91,17 @@ export function useTasbih(id, autoTarget) {
       setFlash(true);
       clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setFlash(false), 1000);
+
+      // Série de dhikr : un seul décompte par jour, quel que soit le nombre
+      // d'objectifs terminés (recordCompletion() renvoie null si déjà compté
+      // aujourd'hui — cf. lib/dhikrStreak.js).
+      const badge = recordCompletion();
+      setStreak(getStreak().current);
+      if (badge) {
+        setNewBadge(badge);
+        clearTimeout(badgeTimer.current);
+        badgeTimer.current = setTimeout(() => setNewBadge(null), 3200);
+      }
     } else if (c !== 0) {
       vibrate([18, 12, 24]);
       playBeadSound();
@@ -120,5 +138,8 @@ export function useTasbih(id, autoTarget) {
     ls.set(`tasbih_loopcur_${id}`, 0);
   }, [id]);
 
-  return { count, target, series, loopCur, seriesCount, numericTarget, total, pct, flash, tap, setTarget, setSeries, reset };
+  return {
+    count, target, series, loopCur, seriesCount, numericTarget, total, pct, flash,
+    streak, newBadge, tap, setTarget, setSeries, reset,
+  };
 }

@@ -296,6 +296,22 @@ input:focus {
     line-height: 1.3;
 }
 
+/* Nature d'une heure planétaire (voir lib/planete.js natureOf()) — partagé
+   entre app/planete/planete.css (scopé .planete-page) et tout usage hors de
+   ce module, ex. components/PlanetHourWidget.js sur /menu. */
+.nat-tfav { color: #38d66b; font-weight: 700; }
+.nat-fav { color: #8fd694; }
+.nat-def { color: #d9534f; }
+.nat-mix { color: var(--accent); }
+
+/* Widget « heure planétaire actuelle » (components/PlanetHourWidget.js) :
+   même carte que .menu-item, avec un léger liseré pour le distinguer des
+   modules statiques — c'est une donnée live, pas une simple entrée de menu. */
+.planet-hour-widget {
+    border-color: var(--accent);
+    grid-column: 1 / -1;
+}
+
 .back-btn {
     display: inline-block;
     margin-bottom: 20px;

@@ -91,6 +91,20 @@ export default function Tasbih({ id, t, open }) {
         {String(t.count).padStart(2, '0')}
       </div>
 
+      {/* Série de dhikr (lib/dhikrStreak.js) : portée globale (tous noms),
+          pas propre à cette carte — affichée dès qu'il y a une série en
+          cours, avec un badge de franchissement de seuil temporaire. */}
+      {t.streak > 0 && (
+        <div className="tasbih-streak" aria-live="polite">
+          🔥 Série : {t.streak} jour{t.streak > 1 ? 's' : ''}
+          {t.newBadge && (
+            <span className="tasbih-streak-badge">
+              {t.newBadge.icon} Badge « {t.newBadge.label} » débloqué !
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="tasbih-progress" style={{ margin: '6px 0 4px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', opacity: 0.85 }}>
           <span>Progression</span>
