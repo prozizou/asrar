@@ -79,8 +79,21 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
       `Assalamou aleykoum 🌙\nJe souhaite passer une commande sur le Marché (${boutique}).\n\n` +
       `• Compte (e-mail) : ${email}\n• Articles :\n   - ${article}\n• Total : ${total}\n\n` +
       `Merci de me confirmer la disponibilité et les modalités de paiement.`;
-    // Le comptage de commande se fait côté serveur (api/wa.js), pas ici :
-    // évite toute dépendance aux règles RTDB pour l'écriture du compteur.
+    // Le comptage AGRÉGÉ de commande se fait côté serveur (api/wa.js) ; ceci
+    // est un enregistrement SÉPARÉ, propre à cet acheteur (« Mes commandes »,
+    // app/commandes) — best-effort, ne doit jamais retarder/bloquer l'ouverture
+    // de WhatsApp (fire-and-forget, aucun await avant window.open).
+    apiPost('track', {
+      type: 'order',
+      order: {
+        productKey: product._key,
+        produit: article,
+        prix: product.Prix,
+        devise: product.devise,
+        vendeur: boutique,
+        image: mainImg || product.Image || '',
+      },
+    }).catch(() => {});
     window.open('/api/wa?product=' + encodeURIComponent(product._key) + '&text=' + encodeURIComponent(msg), '_blank', 'noopener');
   };
 
