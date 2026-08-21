@@ -12,6 +12,7 @@
 // faiblesse « surface use client »).
 import Link from 'next/link';
 import UserBar from './UserBar';
+import PlanetHourWidget from '@/components/PlanetHourWidget';
 
 const MODULES = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
@@ -52,6 +53,9 @@ export default function MenuPage() {
 
       <section className="menu-group">
         <div className="sub-grid">
+          {/* Widget live (position GPS/repli, calcul lib/planete.js) : composant
+              client isolé — n'affecte pas le rendu serveur du reste de la page. */}
+          <PlanetHourWidget />
           {MODULES.map((it) => (
             <MenuItem item={it} key={it.label} />
           ))}

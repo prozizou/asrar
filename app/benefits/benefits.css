@@ -646,6 +646,29 @@ body::before {
     letter-spacing: 0.02em;
 }
 
+/* Série de dhikr (lib/dhikrStreak.js) — voir Tasbih.js */
+.tasbih-streak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.78rem;
+    color: var(--text-2);
+    margin: 0.15rem 0 0.35rem;
+}
+
+.tasbih-streak-badge {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--green-accent);
+    animation: streakBadgeIn 0.4s var(--ease);
+}
+
+@keyframes streakBadgeIn {
+    0%   { opacity: 0; transform: scale(0.85) translateY(2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* ── RÉGLAGES TASBIH ──────────────────────────────────────── */
 .tasbih-settings {
     display: flex;
