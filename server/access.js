@@ -133,4 +133,75 @@ async function isAdmin({ email }) {
   return snap.val() === true;
 }
 
-module.exports = { verifyUser, hasActiveAccess, getAccessLevel, PREMIUM_LEVEL, isAdmin, emailKey, httpError };
+/**
+ * Statut d'accès complet en UNE seule volée de lectures (contrairement à
+ * hasActiveAccess()+getAccessLevel() appelés séparément, qui liraient les
+ * 4 mêmes chemins deux fois). Même forme que checkAccess() côté client
+ * (lib/access.js), pour que /api/check-access puisse simplement renvoyer ce
+ * résultat tel quel — voir la note de cet endpoint sur la raison d'être de
+ * ce doublon serveur (lecture Admin SDK, pas le SDK client RTDB).
+ * @param {{uid:string, email:string}} user
+ * @returns {Promise<{allowed:boolean, admin:boolean, vip:boolean, level:number, purchase:object|null, expiresAt:number|null}>}
+ */
+async function getAccessStatus({ uid, email }) {
+  const emailLower = (email || "").toLowerCase();
+  if (emailLower === SUPER_ADMIN) {
+    return { allowed: true, admin: true, vip: false, level: Infinity, purchase: null, expiresAt: null };
+  }
+
+  const db  = app().database();
+  const key = emailKey(email);
+  const now = Date.now();
+
+  const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
+    db.ref("purchased_user/" + key).once("value"),
+    db.ref("allowedUsers/"  + key).once("value"),
+    db.ref("admins/"        + key).once("value"),
+    uid ? db.ref("vip_users/" + uid).once("value")
+        : Promise.resolve({ exists: () => false })
+  ]);
+
+  const isAdminUser = adminSnap.val() === true;
+  const isVip = vipSnap.exists();
+
+  const pur = purSnap.val();
+  const notExpired =
+    !pur ||
+    pur.expiresAt === "lifetime" ||
+    pur.expiresAt == null ||
+    (typeof pur.expiresAt === "number" && pur.expiresAt > now);
+  const hasToken = !!(pur && pur.token) && notExpired;
+
+  const allowedInfo = parseAllowed(allowedSnap.val(), now);
+
+  const allowed = isAdminUser || isVip || hasToken || allowedInfo.active;
+  const level = isAdminUser || isVip
+    ? Infinity
+    : Math.max(allowedInfo.level, hasToken && pur ? Number(pur.level) || 0 : 0);
+
+  // Même calcul d'expiration unifiée que lib/access.js (rappel J-3) — la plus
+  // proche des deux sources d'accès actives.
+  const allowedVal = allowedSnap.val();
+  const allowedNumericUntil =
+    allowedVal && typeof allowedVal === "object" ? allowedVal.until
+    : typeof allowedVal === "number" ? allowedVal
+    : null;
+  const expiryCandidates = [
+    typeof pur?.expiresAt === "number" ? pur.expiresAt : null,
+    typeof allowedNumericUntil === "number" ? allowedNumericUntil : null,
+  ].filter((v) => v != null);
+  const expiresAt = isAdminUser || isVip || !expiryCandidates.length ? null : Math.min(...expiryCandidates);
+
+  return { allowed, admin: isAdminUser, vip: isVip, purchase: pur || null, level, expiresAt };
+}
+
+module.exports = {
+  verifyUser,
+  hasActiveAccess,
+  getAccessLevel,
+  getAccessStatus,
+  PREMIUM_LEVEL,
+  isAdmin,
+  emailKey,
+  httpError,
+};
