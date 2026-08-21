@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/planet-push",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
