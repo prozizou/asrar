@@ -679,6 +679,10 @@ img, svg, video { max-width: 100%; height: auto; }
 .commit-modal-box {
   background: var(--bg-deep); border: 1px solid var(--glass-border);
   border-radius: 20px; padding: 26px 22px; max-width: 440px; width: 100%;
+  /* Le corps du commit (repli "Détails") peut largement dépasser la
+     hauteur d'écran sur mobile — sans borne ni défilement, le bas du
+     dialogue (et parfois le haut) sortait du viewport, inatteignable. */
+  max-height: calc(100vh - 40px); overflow-y: auto; -webkit-overflow-scrolling: touch;
   position: relative; color: var(--text-main); font-family: var(--font-ui);
 }
 .commit-modal-close {
