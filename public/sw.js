@@ -20,7 +20,7 @@
 // components/PwaGate.js écoute 'controllerchange' et recharge la page une
 // fois pour que le JS déjà chargé en mémoire reparte du nouveau build.
 
-const SW_VERSION = 'v25';
+const SW_VERSION = 'v26';
 
 // Répond à une demande de version depuis la page (voir components/AppDrawer.js
 // « Version de l'app » — reflète la version du SW réellement actif sur
@@ -65,3 +65,46 @@ self.addEventListener('activate', (event) => {
 // pass-through — soit on répond vraiment (avec une vraie logique, ex. un
 // cache), soit on n'intercepte pas du tout.
 self.addEventListener('fetch', () => {});
+
+// ── Notifications push (heure planétaire, lib/push.js côté client) ─────────
+// Web Push : le serveur (pages/api/cron/planet-push.js, via web-push/VAPID)
+// envoie un message chiffré ; le navigateur le remet ici, HORS de toute page
+// ouverte — c'est tout l'intérêt (fonctionne même app fermée). On affiche
+// juste la notification, sans mise en cache ni fetch() (même piège que
+// ci-dessus si jamais on voulait relayer une requête ici : à éviter).
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {}
+
+  const title = data.title || 'ASRAR PRO';
+  const options = {
+    body: data.body || '',
+    icon: '/assets/icon-192.png',
+    badge: '/assets/icon-192.png',
+    tag: data.tag || 'asrar-notification', // remplace une notif du même tag au lieu d'empiler
+    data: { url: data.url || '/planete' },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Clic sur la notification : ramène au premier onglet déjà ouvert s'il y en
+// a un (évite de multiplier les fenêtres), sinon en ouvre un nouveau.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) {
+          client.navigate(url).catch(() => {});
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

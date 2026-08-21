@@ -10,6 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import Spinner from '@/components/Spinner';
+import PlanetPushToggle from '@/components/PlanetPushToggle';
 import {
   DAY_PLANETS,
   CHALDEAN_EMOJIS,
@@ -268,6 +269,11 @@ export default function PlanetePage() {
           <button className="access-btn" onClick={showHours}>
             🔮 Déterminer les heures planétaires
           </button>
+
+          {/* Notifications push (lib/push.js) : abonnement indépendant de
+              l'accès au module — sa propre position GPS, capturée à
+              l'abonnement (pas celle, plus précise/instable, de cette page). */}
+          <PlanetPushToggle />
 
           {hoursError && <p className="error-text">{hoursError}</p>}
           {hours && (
