@@ -31,7 +31,8 @@ export default function AccessProvider({ children }) {
       return false;
     }
     const status = cache.current || (await checkAccess(user));
-    cache.current = status;
+    // Ne met en cache QUE le résultat d'une lecture réussie — cf. ensureAccess.
+    if (!status.networkTimeout) cache.current = status;
     setAllowed(status.allowed);
     return status.allowed;
   }, [user]);
@@ -40,16 +41,25 @@ export default function AccessProvider({ children }) {
   // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL
   // pour Al Qalam / Géomancie, réservés au forfait 1 An). Sinon ouvre le
   // portail (avec un motif adapté) et résout false. Résultat mis en cache
-  // pour la session.
+  // pour la session — SAUF un timeout réseau (cf. lib/access.js) : sans
+  // cette exception, un premier clic malchanceux sur une connexion lente
+  // figeait « pas d'accès » pour TOUTE la session (le cache ne se
+  // réinitialise qu'à un rechargement complet de la page), même une fois la
+  // connexion redevenue bonne — symptôme observé : « ça marche puis plus
+  // rien, il faut vider le cache pour que ça remarche ».
   const ensureAccess = useCallback(
     async (minLevel = 0) => {
       if (!user) return false;
       let status = cache.current;
       if (!status) {
         status = await checkAccess(user);
-        cache.current = status;
+        if (!status.networkTimeout) cache.current = status;
       }
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
+      if (status.networkTimeout) {
+        openGate('network');
+        return false;
+      }
       openGate(status.allowed && minLevel ? 'level' : null);
       return false;
     },
