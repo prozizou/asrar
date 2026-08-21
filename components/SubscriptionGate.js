@@ -14,6 +14,30 @@ export default function SubscriptionGate({ open, reason, onClose }) {
   // reason === 'level' : l'utilisateur a déjà un abonnement actif, mais pas le
   // palier requis par ce module (Al Qalam / Géomancie → forfait 1 An uniquement).
   const isLevelGate = reason === 'level';
+  // reason === 'network' : la vérification d'accès a expiré (connexion lente),
+  // on ne SAIT PAS si l'utilisateur est abonné ou non — lui proposer de payer
+  // serait trompeur pour un abonné existant. Message honnête + réessayer.
+  const isNetworkGate = reason === 'network';
+
+  if (isNetworkGate) {
+    return (
+      <div className="sg-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="sg-box">
+          <span className="sg-close" onClick={onClose}>
+            ✕
+          </span>
+          <div style={{ fontSize: '2.4rem' }}>📶</div>
+          <h2>Connexion trop lente</h2>
+          <p className="sg-sub">
+            Impossible de vérifier votre accès pour le moment — vérifiez votre connexion et réessayez.
+          </p>
+          <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={onClose}>
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="sg-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
