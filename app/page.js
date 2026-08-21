@@ -15,8 +15,7 @@
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ref, get, set, remove } from 'firebase/database';
-import { db, auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
@@ -42,16 +41,14 @@ export default function Home() {
   const bootRef = useRef(false);
 
   // — Popularité (likes + commentaires + achats) : chargée après l'affichage —
+  // via /api/social (HTTPS, Admin SDK), pas le SDK client RTDB (get() direct
+  // depuis le navigateur) — voir pages/api/social.js pour l'historique : sur
+  // certains réseaux ce canal restait bloqué en silence, laissant les cartes
+  // produit sans likes/commentaires alors que le reste de la page (la liste
+  // elle-même, via /api/list-content) s'affichait normalement.
   const loadPopularite = useCallback(async (products) => {
     try {
-      const [likesSnap, comsSnap, ordersSnap] = await Promise.all([
-        get(ref(db, 'ratings/product')),
-        get(ref(db, 'comments/product')),
-        get(ref(db, 'orders_count')).catch(() => null),
-      ]);
-      const likes = likesSnap.val() || {};
-      const coms = comsSnap.val() || {};
-      const orders = (ordersSnap && ordersSnap.val()) || {};
+      const { likes, comments: coms, orders } = await apiPost('social', { action: 'market-popularity' });
       const pop = {};
       products.forEach((p) => {
         pop[p._key] = {
@@ -70,8 +67,7 @@ export default function Home() {
   const loadVendorLikes = useCallback(async (vendors) => {
     try {
       const uid = auth.currentUser?.uid;
-      const snap = await get(ref(db, 'ratings/vendor'));
-      const val = snap.val() || {};
+      const { vendorLikes: val } = await apiPost('social', { action: 'vendor-likes' });
       const out = {};
       vendors.forEach((v) => {
         const k = safeKey(v.id);
@@ -137,13 +133,13 @@ export default function Home() {
     if (!uid) return;
     const k = safeKey(vendorId);
     const etait = vendorLikes[k] && vendorLikes[k].liked;
-    // Mise à jour optimiste, puis écriture.
+    // Mise à jour optimiste, puis écriture (via /api/social — même raison que
+    // loadPopularite/loadVendorLikes ci-dessus : plus de SDK client RTDB).
     setVendorLikes((prev) => ({
       ...prev,
       [k]: { count: Math.max(0, (prev[k]?.count || 0) + (etait ? -1 : 1)), liked: !etait },
     }));
-    const r = ref(db, `ratings/vendor/${k}/${uid}`);
-    (etait ? remove(r) : set(r, 5)).catch(() => loadVendorLikes(allVendors));
+    apiPost('social', { cat: 'vendor', key: k, action: 'toggle-like' }).catch(() => loadVendorLikes(allVendors));
   };
 
   // Reconnaît automatiquement « sa » boutique dans la liste des vendeurs :

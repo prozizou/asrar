@@ -24,7 +24,9 @@ function httpError(status, message) {
 
 /**
  * Vérifie le jeton d'identité Firebase envoyé par le client (auth.currentUser.getIdToken()).
- * @returns {Promise<{uid:string, email:string}>}
+ * `picture` (photo de profil Google, si connu du jeton) est optionnel — les
+ * appelants qui n'en ont pas besoin le laissent simplement de côté.
+ * @returns {Promise<{uid:string, email:string, picture?:string}>}
  */
 async function verifyUser(idToken) {
   if (!idToken) throw httpError(401, "Authentification requise.");
@@ -35,7 +37,7 @@ async function verifyUser(idToken) {
     throw httpError(401, "Session invalide ou expirée. Reconnecte-toi.");
   }
   if (!decoded.email) throw httpError(401, "Compte sans adresse e-mail.");
-  return { uid: decoded.uid, email: decoded.email };
+  return { uid: decoded.uid, email: decoded.email, picture: decoded.picture || "" };
 }
 
 /**
