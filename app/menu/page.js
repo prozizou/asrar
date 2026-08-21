@@ -25,6 +25,7 @@ const MODULES = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
+  { icon: '🧾', label: 'Mes commandes', desc: 'Retrouver vos commandes sur le Marché', href: '/commandes' },
 ];
 
 function MenuItem({ item }) {

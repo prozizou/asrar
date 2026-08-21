@@ -1,18 +1,22 @@
 // api/track.js (Vercel) — Journalisation légère pour le tableau de bord admin.
 //
-// Body (JSON) : { idToken, type, page?, lat?, lng?, city? }
+// Body (JSON) : { idToken, type, page?, lat?, lng?, city?, order? }
 //   type="visit"     → comptage de visite (page) + fil d'activité
 //   type="geomancie" → log géomancie AVEC localisation (lat/lng) + activité
+//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (orders/{uid}) —
+//                       voir api/orders.js pour la relecture (« Mes commandes »)
 //   (autre)          → événement générique dans le fil d'activité
 //
 // Écrit (Admin SDK, nœuds serveur-only) :
 //   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email }
 //   activity_feed/{pushId}             = { uid, email, type, page, at }
 //   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city }
+//   orders/{uid}/{pushId}              = { productKey, produit, prix, devise,
+//                                           vendeur, image, at }
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { setCors, parseBody } = require("../../server/http");
+const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 
@@ -26,7 +30,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, type, page, lat, lng, city, productKey } = parseBody(req);
+  const { idToken, type, page, lat, lng, city, productKey, order } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -67,6 +71,26 @@ export default async function handler(req, res) {
     if (kind === "product_view") {
       const key = safeKey(productKey);
       if (key) await db.ref("views/product/" + key + "/" + user.uid).set(now);
+    }
+
+    // 5) Commande (Marché) : snapshot au moment du clic « Commander via
+    // WhatsApp » — pour que l'acheteur retrouve son historique dans l'app
+    // (rien n'existait avant : la commande ne vivait que dans WhatsApp).
+    // Champs figés (pas une référence live au produit) : un produit modifié/
+    // supprimé plus tard par le vendeur ne doit pas changer l'historique.
+    if (kind === "order" && order && typeof order === "object") {
+      const key = safeKey(order.productKey);
+      if (key) {
+        await db.ref("orders/" + user.uid).push({
+          productKey: key,
+          produit: clean(order.produit, 120),
+          prix: num(order.prix),
+          devise: clean(order.devise, 8) || "FCFA",
+          vendeur: clean(order.vendeur, 80),
+          image: safeUrl(order.image, 500),
+          at: now,
+        });
+      }
     }
 
     return res.status(200).json({ ok: true });
