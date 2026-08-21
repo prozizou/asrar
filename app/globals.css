@@ -201,6 +201,53 @@ body {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* Rappel d'expiration d'abonnement (components/SubscriptionExpiryBanner.js) —
+   fixé en haut (le toast est en bas) : présent sur toute page, il ne doit
+   jamais recouvrir un bouton d'action au moment où l'utilisateur en a besoin. */
+.expiry-banner {
+    /* Flux normal (pas fixed) : pousse le contenu au lieu de le recouvrir —
+       chaque page a son propre en-tête fixe/sticky en haut, un bandeau
+       superposé le cacherait ou masquerait un bouton juste sous lui. */
+    position: sticky;
+    top: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, #b8860b, #d9a441);
+    color: #1a1206;
+    font-size: .82rem;
+    text-align: center;
+}
+
+.expiry-banner-text { flex: 1; min-width: 0; }
+
+.expiry-banner-link {
+    background: rgba(0,0,0,.15);
+    color: inherit;
+    border: none;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.expiry-banner-close {
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: .7;
+    cursor: pointer;
+    font-size: .9rem;
+    padding: 2px 4px;
+    flex-shrink: 0;
+}
+.expiry-banner-close:hover { opacity: 1; }
+
 h1, h2, h3 {
     font-family: var(--font-display);
     font-weight: 600;

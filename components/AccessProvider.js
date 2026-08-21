@@ -2,10 +2,11 @@
 // Contexte d'accès (paywall) — remplace le cache global _accessStatus + les
 // fonctions ensureAccess()/getSubscriptionLevel() éparpillées. Le portail
 // d'abonnement est rendu ici et piloté par un simple état React.
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus } from '@/lib/access';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
+import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -16,6 +17,7 @@ export default function AccessProvider({ children }) {
   const [gateOpen, setGateOpen] = useState(false);
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
+  const [expiresAt, setExpiresAt] = useState(null); // pour SubscriptionExpiryBanner
 
   const openGate = useCallback((reason) => {
     setGateReason(reason || null);
@@ -34,8 +36,17 @@ export default function AccessProvider({ children }) {
     // Ne met en cache QUE le résultat d'une lecture réussie — cf. ensureAccess.
     if (!status.networkTimeout) cache.current = status;
     setAllowed(status.allowed);
+    setExpiresAt(status.expiresAt ?? null);
     return status.allowed;
   }, [user]);
+
+  // Rappel d'expiration (SubscriptionExpiryBanner) : contrairement à
+  // ensureAccess/refreshAccess (appelés à la demande par chaque module), il
+  // doit s'afficher partout — un seul contrôle par connexion, ici, garantit
+  // qu'il ne dépend pas de la page ouverte en premier.
+  useEffect(() => {
+    if (user) refreshAccess().catch(() => {});
+  }, [user, refreshAccess]);
 
   // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
   // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL
@@ -67,12 +78,20 @@ export default function AccessProvider({ children }) {
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
+  // Vide le cache ET redéclenche tout de suite le contrôle (ex. après un
+  // parrainage redeem qui prolonge l'abonnement) — sans ça, la bannière
+  // d'expiration restait sur l'ancienne date jusqu'au prochain rechargement
+  // de page, malgré un abonnement déjà prolongé côté serveur.
   const invalidate = useCallback(() => {
     cache.current = null;
-  }, []);
+    refreshAccess().catch(() => {});
+  }, [refreshAccess]);
 
   return (
     <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, refreshAccess }}>
+      {/* Avant {children} : en flux normal (voir .expiry-banner), doit apparaître
+          au-dessus de tout, pas se glisser derrière le contenu de la page. */}
+      <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
       <SubscriptionGate open={gateOpen} reason={gateReason} onClose={closeGate} />
     </AccessCtx.Provider>
