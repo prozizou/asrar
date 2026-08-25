@@ -45,10 +45,16 @@ importé dans `lib/`, `components/`, `app/`) :
 
 Tout le reste (`det_produits`, `db_sirr_*`, `almaqtab`, `sellers`,
 `orders`, `activity_feed`, `geomancie_logs`, `book_likes`, `book_comments`,
-`referrals`, `referred`, `purchases`, `views`, `analytics`…) n'est **jamais**
+`referrals`, `referred`, `purchases`, `views`, `analytics`,
+`zikr_groups`, `zikr_members`, `zikr_requests`…) n'est **jamais**
 lu ni écrit directement par le client dans ce dépôt — d'où le
 `.read`/`.write: false` par défaut à la racine : tout nœud non listé
 explicitement est fermé au client, sans affecter l'Admin SDK.
+
+> Note : le Zikr collectif (`zikr_*`, via `pages/api/zikr.js`) suit la même
+> direction que les correctifs récents `check-access`/`social` — **tout passe
+> par l'Admin SDK en HTTPS**, aucun accès RTDB client direct. Ces nœuds sont
+> donc protégés par le `false` racine, sans règle explicite à ajouter.
 
 ## Points à vérifier humainement (pas garantis par la seule lecture du code)
 
