@@ -32,8 +32,13 @@
 .zk-field input {
   background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
   padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem; outline: none;
+  width: 100%;
 }
 .zk-field input:focus { border-color: var(--accent); }
+.zk-field-row { display: flex; gap: 12px; }
+.zk-field-row .zk-field { flex: 1; min-width: 0; }
+.zk-preview { font-size: 0.8rem; color: var(--text-muted); margin: -2px 2px 0; }
+.zk-preview strong { color: var(--accent); }
 
 /* ── Liste de groupes ────────────────────────────────────── */
 .zk-list { display: flex; flex-direction: column; gap: 12px; }
@@ -54,12 +59,14 @@
 .zk-badge-member { background: rgba(45,212,160,0.18); color: #2dd4a0; }
 .zk-badge-pending { background: rgba(240,180,80,0.18); color: #e0a24a; }
 .zk-badge-none { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--glass-border); }
+.zk-badge-full { background: rgba(224,96,122,0.14); color: #e0607a; }
 
 /* ── Barre de progression ────────────────────────────────── */
 .zk-bar { height: 8px; border-radius: 8px; background: var(--glass-border); overflow: hidden; }
 .zk-bar.big { height: 12px; border-radius: 12px; }
 .zk-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.35s ease; }
 .zk-bar > span.done { background: linear-gradient(90deg, #2dd4a0, #22c55e); }
+.zk-bar > span.gold { background: linear-gradient(90deg, #d9a441, #f2c14e); }
 
 /* ── Détail ──────────────────────────────────────────────── */
 .zk-detail-head { text-align: center; margin: 8px 0 16px; }
