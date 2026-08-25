@@ -327,8 +327,15 @@ async function handleProgress(db, res, user, gid, rawFait) {
   const mem = memSnap.val() || {};
 
   const part = partSize(Number(g.target) || 0, Number(g.parts) || 0, Number(mem.rang) || 0);
-  const newFait = clampFait(rawFait, part); // valeur absolue, bornée à la part
   const oldFait = Number(mem.fait) || 0;
+  // Avancement MONOTONE : on ne retient jamais une valeur inférieure à celle
+  // déjà enregistrée. Le client envoie un absolu déduit de son compteur local
+  // (localStorage) ; sans ce garde-fou, un appareil neuf (stockage vide), une
+  // navigation privée ou le bouton « réinitialiser » renverrait 0 et ferait
+  // RECULER le total commun — au détriment de tout le groupe. Contrepartie
+  // assumée : après une remise à zéro locale, il faut regagner l'avancement
+  // déjà acquis avant que le groupe ne progresse à nouveau.
+  const newFait = Math.max(oldFait, clampFait(rawFait, part));
   const delta = newFait - oldFait;
 
   await memRef.update({ fait: newFait, updatedAt: Date.now() });

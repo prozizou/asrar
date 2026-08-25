@@ -83,19 +83,8 @@
 .zk-stats b { display: block; font-size: 1.15rem; color: var(--text-main); }
 .zk-stats small { font-size: 0.72rem; color: var(--text-dim); }
 
-/* ── Contribution (compteur d'égrainage) ─────────────────── */
-.zk-contribute { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 18px 0; }
-.zk-bead-btn {
-  width: 150px; height: 150px; border-radius: 50%; cursor: pointer;
-  border: 2px solid var(--glass-border);
-  background: radial-gradient(circle at 38% 30%, rgba(167,139,250,0.25), rgba(9,5,15,0.15));
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  color: var(--text-main); user-select: none; touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.15s;
-}
-.zk-bead-btn:active { transform: scale(0.94); box-shadow: 0 0 26px var(--accent-glow); }
-.zk-bead-count { font-size: 2.6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-.zk-bead-hint { font-size: 0.68rem; color: var(--text-dim); }
+/* ── Adhésion ────────────────────────────────────────────
+   Le compteur lui-même est le chapelet partagé (.tc-*, app/globals.css). */
 .zk-join-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
