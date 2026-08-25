@@ -23,10 +23,16 @@ const MODULES = [
   { icon: '🤲', label: 'Zikr collectif', desc: 'Réciter un dhikr ensemble vers un objectif commun', href: '/zikr' },
   { icon: '🌀', label: 'Rouwhanes', desc: 'Générer des noms d\'anges et un vœu', href: '/rouwhania' },
   { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
-  { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
-  { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
   { icon: '🧾', label: 'Mes commandes', desc: 'Retrouver vos commandes sur le Marché', href: '/commandes' },
+];
+
+// Modules réservés au palier « 1 An » (PREMIUM_LEVEL) — regroupés à part pour
+// les distinguer visuellement du reste des modules (cf. app/globals.css
+// .group-title / .menu-group).
+const MODULES_PREMIUM = [
+  { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
+  { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
 ];
 
 function MenuItem({ item }) {
@@ -59,6 +65,17 @@ export default function MenuPage() {
               client isolé — n'affecte pas le rendu serveur du reste de la page. */}
           <PlanetHourWidget />
           {MODULES.map((it) => (
+            <MenuItem item={it} key={it.label} />
+          ))}
+        </div>
+      </section>
+
+      {/* Al Qalam & Géomancie : dissociés des autres modules dans une section
+          dédiée (modules du palier « 1 An »). */}
+      <section className="menu-group">
+        <h2 className="group-title">Al Qalam &amp; Géomancie</h2>
+        <div className="sub-grid">
+          {MODULES_PREMIUM.map((it) => (
             <MenuItem item={it} key={it.label} />
           ))}
         </div>
