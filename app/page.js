@@ -22,6 +22,7 @@ import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopu
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
+import { useProgressiveList } from '@/components/useProgressiveList';
 import { useToast } from '@/components/useToast';
 import ProductModal from './marche/ProductModal';
 import VendorShop from './marche/VendorShop';
@@ -160,6 +161,10 @@ export default function Home() {
     });
   }, [allProducts, popularite]);
 
+  // Rendu progressif : la grille produit ne monte plus toutes ses cartes
+  // (chacune avec son image) dans la même frame.
+  const { visible: visibleProducts, sentinelRef, hasMore } = useProgressiveList(filtered);
+
   const modalVendor = modalProduct ? allVendors.find((v) => v.id === vendorKey(modalProduct)) : null;
   const shopVendor = vendorShopId ? allVendors.find((v) => v.id === vendorShopId) : null;
   const shopProducts = vendorShopId ? allProducts.filter((p) => vendorKey(p) === vendorShopId) : [];
@@ -266,7 +271,8 @@ export default function Home() {
             ) : filtered.length === 0 ? (
               <p style={{ color: '#888', textAlign: 'center', padding: 40, width: '100%' }}>Aucun produit trouvé.</p>
             ) : (
-              filtered.map((p) => {
+              <>
+              {visibleProducts.map((p) => {
                 const vendor = allVendors.find((v) => v.id === vendorKey(p));
                 const s = popularite[p._key] || { likes: 0, comments: 0 };
                 return (
@@ -314,7 +320,9 @@ export default function Home() {
                     </div>
                   </div>
                 );
-              })
+              })}
+              {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
+              </>
             )}
           </div>
 
