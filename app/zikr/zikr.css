@@ -1,0 +1,115 @@
+/* Zikr collectif (/zikr) — voir app/zikr/page.js. S'appuie sur les primitives
+   globales (.container, .glass-panel, .back-btn, .toast) et les variables de
+   thème de globals.css (--accent, --bg-deep, --glass-border, --text-*). */
+
+.zk-hero { text-align: center; margin-bottom: 18px; }
+.zk-hero h1 { font-family: var(--font-display); font-size: 1.7rem; margin: 6px 0 4px; }
+.zk-hero p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+
+.zk-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); padding: 24px 0; }
+.zk-error { color: #e0607a; font-size: 0.92rem; }
+.zk-empty { color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.92rem; }
+.zk-muted { color: var(--text-dim); font-size: 0.85rem; }
+
+/* ── Boutons ─────────────────────────────────────────────── */
+.zk-btn {
+  border: 1px solid var(--glass-border); background: var(--surface-2); color: var(--text-main);
+  border-radius: 12px; padding: 11px 16px; font-family: var(--font-ui); font-size: 0.9rem;
+  font-weight: 600; cursor: pointer; transition: filter 0.15s, opacity 0.15s; width: 100%;
+}
+.zk-btn:disabled { opacity: 0.55; cursor: default; }
+.zk-btn.main { background: linear-gradient(90deg, var(--accent), var(--accent-hover)); border: none; color: #fff; }
+.zk-btn.main:hover:not(:disabled) { filter: brightness(1.08); }
+.zk-btn.ghost { background: transparent; }
+.zk-btn.danger { background: rgba(224,96,122,0.12); border-color: rgba(224,96,122,0.4); color: #e0607a; }
+.zk-create-toggle { margin-bottom: 14px; }
+.zk-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 4px 0; font-family: var(--font-ui); }
+
+/* ── Formulaire de création ──────────────────────────────── */
+.zk-form { display: flex; flex-direction: column; gap: 12px; border: 1px dashed var(--glass-border); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
+.zk-field { display: flex; flex-direction: column; gap: 5px; }
+.zk-field span { font-size: 0.78rem; color: var(--text-dim); }
+.zk-field input {
+  background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem; outline: none;
+}
+.zk-field input:focus { border-color: var(--accent); }
+
+/* ── Liste de groupes ────────────────────────────────────── */
+.zk-list { display: flex; flex-direction: column; gap: 12px; }
+.zk-card {
+  text-align: left; width: 100%; cursor: pointer; display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px;
+  color: var(--text-main); font-family: var(--font-ui); transition: border-color 0.15s, transform 0.1s;
+}
+.zk-card:hover { border-color: var(--accent); }
+.zk-card:active { transform: scale(0.995); }
+.zk-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.zk-card-name { font-weight: 700; font-size: 1rem; }
+.zk-card-phrase { color: var(--text-muted); font-size: 0.9rem; }
+.zk-card-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); }
+
+.zk-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.zk-badge-owner { background: rgba(201,169,97,0.18); color: #d9a441; }
+.zk-badge-member { background: rgba(45,212,160,0.18); color: #2dd4a0; }
+.zk-badge-pending { background: rgba(240,180,80,0.18); color: #e0a24a; }
+.zk-badge-none { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--glass-border); }
+
+/* ── Barre de progression ────────────────────────────────── */
+.zk-bar { height: 8px; border-radius: 8px; background: var(--glass-border); overflow: hidden; }
+.zk-bar.big { height: 12px; border-radius: 12px; }
+.zk-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.35s ease; }
+.zk-bar > span.done { background: linear-gradient(90deg, #2dd4a0, #22c55e); }
+
+/* ── Détail ──────────────────────────────────────────────── */
+.zk-detail-head { text-align: center; margin: 8px 0 16px; }
+.zk-detail-head h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 6px 0; }
+.zk-phrase-big { font-size: 1.5rem; color: var(--accent); margin: 6px 0; line-height: 1.5; }
+.zk-owner { font-size: 0.78rem; color: var(--text-dim); }
+
+.zk-progress-block { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
+.zk-progress-meta { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
+.zk-progress-meta strong { color: var(--text-main); }
+.zk-reached { color: #2dd4a0; font-weight: 700; }
+.zk-stats { display: flex; gap: 12px; }
+.zk-stats > div { flex: 1; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; text-align: center; }
+.zk-stats b { display: block; font-size: 1.15rem; color: var(--text-main); }
+.zk-stats small { font-size: 0.72rem; color: var(--text-dim); }
+
+/* ── Contribution (compteur d'égrainage) ─────────────────── */
+.zk-contribute { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 18px 0; }
+.zk-bead-btn {
+  width: 150px; height: 150px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--glass-border);
+  background: radial-gradient(circle at 38% 30%, rgba(167,139,250,0.25), rgba(9,5,15,0.15));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--text-main); user-select: none; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.15s;
+}
+.zk-bead-btn:active { transform: scale(0.94); box-shadow: 0 0 26px var(--accent-glow); }
+.zk-bead-count { font-size: 2.6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.zk-bead-hint { font-size: 0.68rem; color: var(--text-dim); }
+.zk-join-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
+
+/* ── Panneau créateur : demandes ─────────────────────────── */
+.zk-owner-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.zk-owner-panel h3, .zk-board h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
+.zk-req-list { display: flex; flex-direction: column; gap: 8px; }
+.zk-req { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
+.zk-req-email { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-req-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.zk-mini { border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
+.zk-mini.ok { background: rgba(45,212,160,0.2); color: #2dd4a0; }
+.zk-mini.no { background: rgba(224,96,122,0.18); color: #e0607a; }
+
+/* ── Classement ──────────────────────────────────────────── */
+.zk-board { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.zk-board-list { display: flex; flex-direction: column; gap: 6px; }
+.zk-board-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.zk-board-row.me { border: 1px solid var(--accent); }
+.zk-rank { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: var(--glass-border); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.zk-board-email { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-board-count { font-weight: 700; font-size: 0.9rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.zk-footer-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
