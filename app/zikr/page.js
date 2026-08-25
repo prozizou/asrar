@@ -16,14 +16,14 @@ import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
 import Spinner from '@/components/Spinner';
-import { playBeadSound, playGoalSound } from '@/lib/audio';
+import TasbihChapelet from '@/components/TasbihChapelet';
+import { useTasbih } from '@/components/useTasbih';
 import { progressPct, partSize, NAME_MAX, PHRASE_MAX, TARGET_MAX, PARTS_MAX } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, leaveGroup, deleteGroup,
 } from '@/lib/zikrCollectif';
 
-const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch {} };
 const fmt = (n) => (Number(n) || 0).toLocaleString('fr-FR');
 const SAVE_DEBOUNCE = 800;  // regroupe les frappes avant l'envoi (comme le ZIP)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
@@ -241,7 +241,7 @@ function GroupDetail({ groupId, user, notify, onBack }) {
       </div>
 
       {isMember ? (
-        <MemberCounter groupId={groupId} initial={g} notify={notify} onRefresh={load} />
+        <MemberCounter groupId={groupId} initial={g} onRefresh={load} />
       ) : (
         <>
           <StaticProgress total={g.total} target={g.target} />
@@ -313,101 +313,103 @@ function StaticProgress({ total, target }) {
   );
 }
 
-// Compteur d'un participant — égrène SA part, en temps réel, sans validation.
-// Chaque frappe compte immédiatement en local ; l'envoi au serveur est
-// regroupé (SAVE_DEBOUNCE) et le groupe est resondé (POLL_MS) pour refléter
-// l'avancement des autres membres.
-function MemberCounter({ groupId, initial, notify, onRefresh }) {
+// Compteur d'un participant — il égrène SA part avec le MÊME chapelet que
+// « Noms d'Allah » (components/TasbihChapelet.js), en temps réel et sans
+// validation : chaque grain compte immédiatement, l'envoi au serveur est
+// simplement regroupé SAVE_DEBOUNCE ms après la dernière frappe (comme le ZIP
+// de référence), et le groupe est resondé (POLL_MS) pour refléter l'avancement
+// des autres membres.
+//
+// La clé de persistance est propre à CE zikr collectif (`collectif_{gid}`) :
+// sans cela, égrener ici ferait aussi avancer le compteur personnel de la même
+// formule dans « Noms d'Allah ».
+function MemberCounter({ groupId, initial, onRefresh }) {
   const myPart = Number(initial.myPart) || 0;
-  const [localFait, setLocalFait] = useState(Number(initial.myFait) || 0);
-  const [serverTotal, setServerTotal] = useState(Number(initial.total) || 0);
-  // fait déjà connu du serveur pour MOI : sert à corriger le total affiché
-  // pendant que des frappes locales ne sont pas encore synchronisées.
-  const syncedFait = useRef(Number(initial.myFait) || 0);
-  const localFaitRef = useRef(localFait);
-  const saveTimer = useRef(null);
-  const reachedRef = useRef((Number(initial.myFait) || 0) >= myPart && myPart > 0);
-  localFaitRef.current = localFait;
-
   const target = Number(initial.target) || 0;
 
+  const t = useTasbih(`collectif_${groupId}`, myPart);
+
+  // Avancement déduit du compteur, borné à la part (même calcul que le ZIP :
+  // séries bouclées × base + série en cours). `t.total` ne convient pas ici,
+  // il se cale sur l'objectif SAISI, alors que la référence est la part.
+  const { count, loopCur, series } = t;
+  const seriesCount = parseInt(series, 10) || 0;
+  const base = seriesCount > 0 ? Math.floor(myPart / seriesCount) : 0;
+  const fait = Math.min(myPart, base * loopCur + count);
+
+  const [serverTotal, setServerTotal] = useState(Number(initial.total) || 0);
+  // Dernière valeur connue du serveur pour MOI : sert à corriger le total
+  // affiché tant que des grains locaux ne sont pas encore synchronisés.
+  const syncedFait = useRef(Number(initial.myFait) || 0);
+  const faitRef = useRef(fait);
+  faitRef.current = fait;
+
   const flush = useCallback(async () => {
-    const val = localFaitRef.current;
+    const val = faitRef.current;
     if (val === syncedFait.current) return;
     try {
       const d = await saveProgress(groupId, val);
       syncedFait.current = Number(d.fait) || 0;
       setServerTotal(Number(d.total) || 0);
     } catch {
-      // best-effort : on garde localFait, la prochaine frappe/flush réessaiera
+      // best-effort : la prochaine frappe (ou le démontage) réessaiera
     }
   }, [groupId]);
 
-  const tap = () => {
-    setLocalFait((n) => {
-      if (n >= myPart) return n; // sa part est déjà terminée
-      const next = n + 1;
-      if (next >= myPart && !reachedRef.current) {
-        reachedRef.current = true;
-        playGoalSound();
-        vibrate([90, 40, 120]);
-      } else {
-        playBeadSound();
-        vibrate([16, 10, 20]);
-      }
-      return next;
-    });
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(flush, SAVE_DEBOUNCE);
-  };
-
-  // Sondage régulier : reflète l'avancement des AUTRES membres et le total.
-  // Ne fait jamais RECULER mon compteur local (mes frappes en cours priment) ;
-  // il ne peut que le rattraper si un autre appareil a avancé ma part.
+  // Envoi groupé : une écriture après SAVE_DEBOUNCE ms sans nouvelle frappe,
+  // plutôt qu'une par grain.
   useEffect(() => {
-    const poll = async () => {
+    if (fait === syncedFait.current) return undefined;
+    const timer = setTimeout(flush, SAVE_DEBOUNCE);
+    return () => clearTimeout(timer);
+  }, [fait, flush]);
+
+  // Sondage régulier : reflète l'avancement des AUTRES membres et le total du
+  // groupe (le « temps réel » passe par là, faute d'abonnement RTDB direct).
+  useEffect(() => {
+    const id = setInterval(async () => {
       const d = await onRefresh();
       if (!d) return;
       setServerTotal(Number(d.total) || 0);
-      const remoteFait = Number(d.myFait) || 0;
-      if (remoteFait > localFaitRef.current) {
-        syncedFait.current = remoteFait;
-        setLocalFait(remoteFait);
-      }
-    };
-    const id = setInterval(poll, POLL_MS);
+      // Ma part a pu avancer ailleurs (autre appareil) : on recale la
+      // référence, sinon la correction ci-dessous compterait ces grains en
+      // double dans le total affiché.
+      const remote = Number(d.myFait) || 0;
+      if (remote > syncedFait.current) syncedFait.current = remote;
+    }, POLL_MS);
     return () => {
       clearInterval(id);
-      clearTimeout(saveTimer.current);
-      flush(); // envoie les frappes restantes en quittant la vue
+      flush(); // n'abandonne pas les grains en attente si on quitte la vue
     };
   }, [onRefresh, flush]);
 
-  // Total du groupe affiché : total serveur corrigé de mes frappes non encore
-  // synchronisées, pour que la barre collective bouge dès que j'égrène.
-  const groupTotal = Math.min(target || Infinity, serverTotal + (localFait - syncedFait.current));
+  // Total du groupe affiché = total serveur corrigé de mes grains non encore
+  // synchronisés, pour que la barre collective bouge dès que j'égrène.
+  const pending = Math.max(0, fait - syncedFait.current);
+  const groupTotal = Math.min(target || Infinity, serverTotal + pending);
   const groupPct = progressPct(groupTotal, target);
-  const myPct = myPart > 0 ? Math.min(100, (localFait / myPart) * 100) : 0;
-  const myDone = myPart > 0 && localFait >= myPart;
+  // L'avancement enregistré fait foi s'il dépasse le compteur local (stockage
+  // vidé, ou récitation faite depuis un autre appareil) — cohérent avec le
+  // caractère monotone appliqué côté serveur.
+  const myFait = Math.max(fait, syncedFait.current);
+  const myPct = myPart > 0 ? Math.min(100, (myFait / myPart) * 100) : 0;
 
   return (
     <>
       <div className="zk-progress-block">
         <div className="zk-progress-meta"><span>Progression du groupe</span></div>
-        <div className="zk-bar big"><span style={{ width: groupPct + '%' }} className={groupTotal >= target && target > 0 ? 'done' : ''} /></div>
+        <div className="zk-bar big">
+          <span style={{ width: groupPct + '%' }} className={target > 0 && groupTotal >= target ? 'done' : ''} />
+        </div>
         <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({Math.floor(groupPct)}%)</div>
 
         <div className="zk-progress-meta" style={{ marginTop: 10 }}><span>Ma part</span></div>
         <div className="zk-bar big"><span className="gold" style={{ width: myPct + '%' }} /></div>
-        <div className="zk-progress-meta"><strong>{fmt(localFait)}</strong> / {fmt(myPart)} grains</div>
+        <div className="zk-progress-meta"><strong>{fmt(myFait)}</strong> / {fmt(myPart)} grains</div>
       </div>
 
-      <div className="zk-contribute">
-        <button className="zk-bead-btn" onClick={tap} disabled={myDone} aria-label="Égrainer un grain">
-          <span className="zk-bead-count">{fmt(localFait)}</span>
-          <span className="zk-bead-hint">{myDone ? 'Part terminée 🌙' : 'Appuyez pour égrainer'}</span>
-        </button>
-      </div>
+      {/* Objectif masqué dans les réglages : ici, l'objectif EST la part. */}
+      <TasbihChapelet id={`collectif-${groupId}`} t={t} targetLocked />
     </>
   );
 }

@@ -715,6 +715,81 @@ img, svg, video { max-width: 100%; height: auto; }
 .commit-modal-details[open] summary::before { content: '▾ '; }
 .commit-modal-desc { color: var(--text-muted); font-size: .85rem; white-space: pre-wrap; margin-top: 8px; }
 
+/* ── Compteur de dhikr : le chapelet (components/TasbihChapelet.js) ───────────
+   Ici, dans globals.css, et non dans le CSS d'une route : le composant est
+   partagé par « Noms d'Allah » (/benefits) et le « Zikr collectif » (/zikr). */
+.tc {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  cursor: pointer; user-select: none; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; text-align: center;
+}
+.tc-settings {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding-bottom: 14px; border-bottom: 1px dashed var(--glass-border);
+  cursor: default;
+}
+.tc-group {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px;
+}
+.tc-group:focus-within { border-color: var(--accent); }
+.tc-group input {
+  width: 56px; background: transparent; border: none; outline: none; text-align: center;
+  color: var(--text-main); font-family: var(--font-ui); font-size: .88rem;
+}
+.tc-group input::placeholder { color: var(--text-dim); opacity: .7; }
+.tc-group input::-webkit-outer-spin-button,
+.tc-group input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.tc-group input[type="number"] { -moz-appearance: textfield; }
+.tc-loop {
+  padding: 5px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600;
+  color: #d9a441; background: rgba(217,164,65,.15); border: 1px solid rgba(217,164,65,.4);
+}
+.tc-reset {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  color: #ff7070; background: rgba(255,80,80,.1); border: 1px solid rgba(255,80,80,.2);
+  transition: background .2s, transform .2s;
+}
+.tc-reset:hover { background: rgba(255,80,80,.25); transform: rotate(-15deg) scale(1.1); }
+.tc-subdiv { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.tc-chip {
+  padding: 2px 10px; border-radius: 14px; font-size: .78rem; font-weight: 600;
+  white-space: nowrap; cursor: pointer; font-family: var(--font-ui);
+  color: #d9a441; background: rgba(217,164,65,.12); border: 1px solid rgba(217,164,65,.4);
+  transition: background .15s;
+}
+.tc-chip:hover { background: rgba(217,164,65,.25); }
+.tc-chip.active { background: #d9a441; border-color: #d9a441; color: #1a1206; }
+.tc-counter {
+  font-size: 3.5rem; font-weight: 700; line-height: 1; letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums; color: var(--accent);
+  text-shadow: 0 0 24px var(--accent-glow);
+}
+.tc-streak { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .8rem; color: var(--text-muted); }
+.tc-badge { font-size: .76rem; font-weight: 700; color: var(--accent); animation: tcBadgeIn .4s ease; }
+@keyframes tcBadgeIn {
+  from { opacity: 0; transform: scale(.85) translateY(2px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.tc-progress { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+.tc-progress-row { display: flex; justify-content: space-between; font-size: .78rem; color: var(--text-dim); }
+.tc-progress-row strong { color: var(--text-main); }
+.tc-bar { height: 6px; border-radius: 6px; background: var(--glass-border); overflow: hidden; }
+.tc-bar > span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width .3s ease;
+}
+.tc-stage-wrap { position: relative; overflow: hidden; }
+.tc-thread { position: absolute; inset: 0; }
+.tc-stage { position: absolute; inset: 0; opacity: 0; transition: opacity .2s; }
+.tc-bead {
+  position: absolute; left: 0; top: 0; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #f7e6bd, #d9ab63 58%, #a9743a);
+  box-shadow: 0 2px 5px rgba(60,35,10,.45), inset 0 1px 2px rgba(255,245,220,.5);
+}
+.tc-hint { font-size: .72rem; color: var(--text-dim); letter-spacing: .02em; }
+
 /* ── Tableau de bord (accueil) — barre utilisateur + menus groupés ────────── */
 .user-bar {
   display: flex; align-items: center; justify-content: space-between;
