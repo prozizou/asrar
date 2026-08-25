@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
+import { useProgressiveList } from '@/components/useProgressiveList';
 import { share as shareLink, deepLink, cleanUrl } from '@/lib/share';
 import { driveDirectLink } from '@/lib/drive';
 import { optimImg } from '@/lib/img';
@@ -152,6 +153,9 @@ export default function BibliothequePage() {
     }
   };
 
+  // Rendu progressif : la grille ne monte plus toutes les couvertures d'un bloc.
+  const { visible: visibleBooks, sentinelRef, hasMore } = useProgressiveList(books);
+
   return (
     <div className="container">
       <Link href="/" className="back-btn">
@@ -176,7 +180,8 @@ export default function BibliothequePage() {
         ) : books.length === 0 ? (
           <p className="empty-msg">Aucun ouvrage disponible.</p>
         ) : (
-          books.map((book) => {
+          <>
+          {visibleBooks.map((book) => {
             const s = social[book._key] || { likes: 0, liked: false, comments: 0 };
             return (
               <div key={book._key} className={'book-card' + (highlightKey === book._key ? ' book-highlight' : '')} id={'book-' + book._key}>
@@ -213,7 +218,9 @@ export default function BibliothequePage() {
                 </div>
               </div>
             );
-          })
+          })}
+          {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
+          </>
         )}
       </div>
 

@@ -26,7 +26,7 @@
   --card-green-text: #2ecc71;
 
   color: var(--text-primary);
-  font-family: 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 
 html[data-theme='light'] .rw-page {
@@ -53,7 +53,7 @@ html[data-theme='light'] .rw-page {
 }
 
 .rw-page * { box-sizing: border-box; }
-.rw-page h1, .rw-page h2, .rw-page h3 { font-family: 'Cormorant Garamond', serif; }
+.rw-page h1, .rw-page h2, .rw-page h3 { font-family: var(--font-display); }
 
 .rw-page .main-container {
   width: 100%;

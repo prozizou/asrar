@@ -1,3 +1,15 @@
+// Police de l'app : Calibri. Absente d'Android/iOS/Linux, on embarque Carlito
+// — clone libre MÉTRIQUEMENT COMPATIBLE (mêmes chasses et interlignage) : le
+// rendu est identique partout, sans décalage de mise en page entre un poste
+// Windows (vraie Calibri, servie en premier par la pile de --font-ui) et un
+// téléphone (Carlito). Auto-hébergée via npm plutôt qu'un @import distant :
+// Google Fonts ne propose pas Carlito, et une police locale évite une requête
+// bloquante de plus au premier rendu. Sous-ensembles latin/latin-ext seuls
+// (l'arabe garde ses propres polices — cf. --font-ar).
+import '@fontsource/carlito/latin-400.css';
+import '@fontsource/carlito/latin-700.css';
+import '@fontsource/carlito/latin-ext-400.css';
+import '@fontsource/carlito/latin-ext-700.css';
 import './globals.css';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';

@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { loadNames } from '@/lib/benefits';
 import { useAccess } from '@/components/AccessProvider';
 import Spinner from '@/components/Spinner';
+import { useProgressiveList } from '@/components/useProgressiveList';
 import NameCard from './NameCard';
 import NameModal from './NameModal';
 
@@ -94,6 +95,10 @@ export default function BenefitsPage() {
     }
     return list;
   }, [names, showFavs, search, favorites]);
+
+  // Rendu progressif : les 99 cartes ne sont plus montées d'un bloc (chacune
+  // porte son compteur de dhikr, ses icônes et ses lectures localStorage).
+  const { visible: visibleNames, sentinelRef, hasMore } = useProgressiveList(filtered);
 
   // Suggestions (translit commençant par, ou sens contenant), top 6.
   const suggestions = useMemo(() => {
@@ -193,18 +198,21 @@ export default function BenefitsPage() {
             <p>{search ? `Aucun nom trouvé pour « ${search} »` : 'Aucun nom.'}</p>
           </div>
         ) : (
-          filtered.map((item) => (
-            <NameCard
-              key={item.id}
-              item={item}
-              accessGranted={accessGranted}
-              isFav={favorites.has(item.id)}
-              searchTerm={search.trim()}
-              onToggleFav={toggleFav}
-              onOpenModal={setModalItem}
-              onOpenGate={openGate}
-            />
-          ))
+          <>
+            {visibleNames.map((item) => (
+              <NameCard
+                key={item.id}
+                item={item}
+                accessGranted={accessGranted}
+                isFav={favorites.has(item.id)}
+                searchTerm={search.trim()}
+                onToggleFav={toggleFav}
+                onOpenModal={setModalItem}
+                onOpenGate={openGate}
+              />
+            ))}
+            {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
+          </>
         )}
       </main>
 

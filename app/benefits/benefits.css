@@ -75,7 +75,7 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 /* ── BODY & LAYOUT ────────────────────────────────────────── */
 body {
-    font-family: 'Poppins', system-ui, sans-serif;
+    font-family: var(--font-ui);
     font-size: 15px;
     line-height: 1.6;
     background: var(--bg-noise), var(--bg) fixed;
@@ -760,7 +760,7 @@ body::before {
     top: 0;
     font-size: 0.5rem;
     padding: 1px 3px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-ui);
     font-weight: 800;
     z-index: 2;
     background: var(--gold);
@@ -1101,5 +1101,5 @@ body::before {
         transition-duration: 0.01ms !important;
     }
 }
-/* Titres unifiés (Cormorant Garamond) — cohérence typographique projet */
-h1, h2, h3, .section-title, .card-title { font-family: 'Cormorant Garamond', serif; }
+/* Titres unifiés — cohérence typographique projet (Calibri, cf. --font-display) */
+h1, h2, h3, .section-title, .card-title { font-family: var(--font-display); }

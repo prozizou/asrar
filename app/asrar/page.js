@@ -11,6 +11,7 @@ import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
+import { useProgressiveList } from '@/components/useProgressiveList';
 import SecretDetail from './SecretDetail';
 
 const CATS = [
@@ -122,6 +123,11 @@ export default function AsrarPage() {
   // Backpress Android : ferme le détail (pas de vraie navigation de page ici).
   const goBackFromSecret = useHistoryClose(inDetail, closeSecret);
 
+  // Rendu progressif : une catégorie chargée ne monte plus toutes ses cartes
+  // (vignettes comprises) d'un bloc. Le compteur repart à chaque changement de
+  // catégorie, `list` étant remplacée à ce moment-là.
+  const { visible: visibleList, sentinelRef, hasMore } = useProgressiveList(list);
+
   return (
     <div className="container">
       <div className="asrar-topbar">
@@ -157,7 +163,8 @@ export default function AsrarPage() {
                 ) : list.length === 0 ? (
                   <p style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>Aucun secret trouvé.</p>
                 ) : (
-                  list.map((item) => (
+                  <>
+                  {visibleList.map((item) => (
                     <div
                       key={item.key}
                       className={'secret-card' + (item.img ? ' has-cover' : '')}
@@ -178,7 +185,9 @@ export default function AsrarPage() {
                       </div>
                       <div className="secret-title">{item.faida}</div>
                     </div>
-                  ))
+                  ))}
+                  {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
+                  </>
                 )}
               </div>
             )}

@@ -6,7 +6,10 @@
    <html data-theme="light|dark"> reste cohérent partout.
    ═══════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap');
+/* Ne reste ici que l'arabe : Calibri/Carlito (la police de l'app) est
+   auto-hébergée et importée dans app/layout.js — voir le commentaire de
+   --font-ui. Une requête distante de moins au premier rendu. */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap');
 
 /* ───────────── :root = MODE SOMBRE (valeurs par défaut) ───────────── */
 :root {
@@ -64,11 +67,16 @@
     --glass-shadow:   0 8px 32px 0 rgba(0, 0, 0, 0.37);
 
     /* ─── Système typographique unifié (partagé par tout le projet) ───
-       Corps = Poppins, titres = Cormorant Garamond, arabe = Noto Naskh.
-       Les polices calligraphiques dédiées (Al Qalam, affichage des 99
-       Noms) restent définies localement car elles sont le cœur du module. */
-    --font-ui:        'Poppins', system-ui, -apple-system, sans-serif;
-    --font-display:   'Cormorant Garamond', 'Poppins', serif;
+       TOUTE l'app est en Calibri (corps ET titres) — auparavant Poppins pour
+       le corps et Cormorant Garamond pour les titres. Calibri d'abord (postes
+       Windows/Office, la vraie), puis Carlito, son clone libre métriquement
+       compatible, embarqué avec l'app (import dans app/layout.js) pour que
+       les téléphones — qui n'ont pas Calibri — rendent exactement pareil.
+       L'ARABE garde ses propres polices : Calibri le couvre mal, et les
+       polices calligraphiques dédiées (Al Qalam, affichage des 99 Noms)
+       restent définies localement, elles sont le cœur de ces modules. */
+    --font-ui:        Calibri, Carlito, 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-display:   Calibri, Carlito, 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-ar:        'Noto Naskh Arabic', serif;
 }
 
@@ -334,6 +342,9 @@ input:focus {
 .menu-item h3 {
     font-size: 1.1rem;
     margin-top: 10px;
+    /* Gras franc (700) : la règle générale h1/h2/h3 les met à 600 — trop
+       proche du corps de texte pour des titres de tuiles. */
+    font-weight: 700;
 }
 
 .menu-item-desc {
@@ -485,7 +496,7 @@ input:focus {
 #asrar-loader .asrar-loader-text {
     color: var(--text-muted, #d0d0d0);
     font-size: 13px;
-    font-family: sans-serif;
+    font-family: var(--font-ui);
     letter-spacing: 0.04em;
 }
 @keyframes asrar-spin { to { transform: rotate(360deg); } }
@@ -828,3 +839,9 @@ img, svg, video { max-width: 100%; height: auto; }
 .sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
 .sub-grid .menu-item h3 { font-size: .9rem; margin-top: 8px; }
 .menu-item:active { transform: scale(.96); box-shadow: 0 0 0 2px var(--accent) inset; }
+
+/* Sentinelle du rendu progressif (components/useProgressiveList.js) : repère
+   invisible placé après la liste ; son approche déclenche le lot suivant.
+   Occupe toute la largeur pour ne pas être pris pour une carte par les
+   grilles (grid-column: 1/-1). */
+.load-sentinel { grid-column: 1 / -1; width: 100%; height: 1px; }

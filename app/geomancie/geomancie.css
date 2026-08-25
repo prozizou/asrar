@@ -17,7 +17,7 @@
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  --font: 'Poppins', system-ui, sans-serif;
+  --font: var(--font-ui);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --glass-border: rgba(255, 255, 255, 0.15);
 
@@ -103,7 +103,7 @@ html[data-theme='light'] .geo-page::before {
 .geo-page .header h1,
 .geo-page .panel h2,
 .geo-page .modal h3,
-.geo-page .synthesis-card h4 { font-family: 'Cormorant Garamond', serif; }
+.geo-page .synthesis-card h4 { font-family: var(--font-display); }
 .geo-page .header h1 { font-size: 2rem; letter-spacing: 0.04em; color: var(--gold); font-weight: 700; margin-bottom: 2px; }
 .geo-page .header .subtitle { font-size: 0.9rem; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -264,13 +264,13 @@ html[data-theme='light'] .geo-page::before {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   position: relative;
   color: #e0dcd0;
-  font-family: 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-ui);
   --gold: #a78bfa;
   --text2: #b8b4a8;
   --glass-border: rgba(255, 255, 255, 0.15);
 }
 .geo-modal p { color: #e0dcd0; }
-.geo-modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; font-family: 'Cormorant Garamond', serif; }
+.geo-modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; font-family: var(--font-display); }
 .geo-modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: 0.25s; }
 .geo-modal .close-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .geo-modal .copulation-steps { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin: 12px 0; font-size: 0.9rem; }

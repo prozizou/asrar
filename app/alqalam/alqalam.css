@@ -162,7 +162,7 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
 
 /* direction: ltr — sinon ce texte français hérite du RTL de .output-area
    (prévu pour l'arabe) et s'affiche à l'envers. */
-.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: sans-serif; direction: ltr; }
+.alq-page .preview-warning { background: rgba(255, 193, 7, 0.12); color: #ffc107; font-size: 14px; text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #ffc107; border-radius: 12px; font-family: var(--font-ui); direction: ltr; }
 
 .alq-page .suggestions-container { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-deep); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; direction: rtl; font-family: 'Scheherazade New', serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: none; }
 .alq-page .suggestions-container.show-panel { display: block; }
@@ -181,7 +181,7 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 .alq-page .progress-bar-container { width: 100%; height: 12px; background: var(--surface-3); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; margin: 20px 0; }
 .alq-page .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.1s linear; }
 
-.alq-page .toast-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--text-on-accent); padding: 12px 24px; border-radius: 8px; z-index: 9999; font-family: sans-serif; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
+.alq-page .toast-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--text-on-accent); padding: 12px 24px; border-radius: 8px; z-index: 9999; font-family: var(--font-ui); font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
 .alq-page .toast-error { background-color: rgba(217, 83, 79, 0.95); border: 1px solid var(--danger); }
 .alq-page .toast-info { background-color: color-mix(in srgb, var(--accent) 95%, transparent); border: 1px solid var(--accent); }
 
