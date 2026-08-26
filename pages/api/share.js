@@ -21,6 +21,7 @@
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { reportError } = require("../../server/log");
+const { normalizeSiteUrl } = require("../../lib/site");
 
 const SHARE_SHOW_TITLES = true;
 
@@ -310,7 +311,12 @@ async function countClick(code) {
 
 // ── Utilitaires ───────────────────────────────────────────────
 function siteUrl(req) {
-  if (process.env.SITE_URL) return String(process.env.SITE_URL).replace(/\/+$/, "");
+  // normalizeSiteUrl() garantit un schéma (http/https) même si SITE_URL est
+  // saisie sans dans les Environment Variables Vercel — sinon les liens de
+  // partage et og:image générés ici seraient invalides (repli sur l'hôte de
+  // la requête plus bas, non affecté puisqu'il compose lui-même le schéma).
+  const fromEnv = normalizeSiteUrl(process.env.SITE_URL);
+  if (fromEnv) return fromEnv;
   const host = (req.headers && (req.headers["x-forwarded-host"] || req.headers.host)) || "";
   const proto = (req.headers && req.headers["x-forwarded-proto"]) || "https";
   return host ? proto + "://" + host : "";
