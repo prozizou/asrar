@@ -50,10 +50,15 @@ export default async function handler(req, res) {
   const src    = SOURCES[kind];
 
   // Destination par défaut : l'application (lien de parrainage simple).
+  // Image par défaut : la même carte de partage « professionnelle » que le
+  // lien racine (app/layout.js, openGraph.images) — logo + accroche +
+  // repère « Installer l'application » sur le fond cosmique de la charte —
+  // plutôt que la simple icône carrée, pour un rendu cohérent quel que soit
+  // le lien effectivement partagé (racine OU /s?r=<code>).
   let dest  = "/";
   let title = "ASRAR PRO — Sciences mystiques";
   let desc  = "Secrets mystiques, bibliothèque Almaqtab, géomancie, noms d'Allah et marché mystique.";
-  let image = site + "/assets/icon-512.png";
+  let image = site + "/assets/og-banner.jpg";
 
   // Métadonnées de l'élément pour la page d'accueil du lien (distinctes des
   // balises OG : `title` y porte le suffixe « — ASRAR PRO », et `image` retombe
