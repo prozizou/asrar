@@ -13,6 +13,7 @@ import '@fontsource/carlito/latin-ext-700.css';
 import './globals.css';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
+import CosmicBackground from '@/components/CosmicBackground';
 
 export const metadata = {
   title: 'ASRAR PRO',
@@ -54,6 +55,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
+        <CosmicBackground />
         <PwaGate>
           <Providers>{children}</Providers>
         </PwaGate>

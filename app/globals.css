@@ -78,6 +78,11 @@
     --font-ui:        Calibri, Carlito, 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-display:   Calibri, Carlito, 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-ar:        'Noto Naskh Arabic', serif;
+
+    /* Ciel étoilé du fond animé (components/CosmicBackground.js) : bien
+       visible sur le violet profond, discret en clair (voir override plus
+       bas) pour ne pas ternir le fond menthe/lavande. */
+    --star-opacity:   .6;
 }
 
 /* ───────────── html[data-theme="light"] = MODE CLAIR ─────────────
@@ -127,6 +132,10 @@ html[data-theme="light"] {
     --glass-bg:       rgba(255, 255, 255, 0.8);
     --glass-border:   rgba(20, 60, 55, 0.12);
     --glass-shadow:   0 8px 32px rgba(20, 100, 90, 0.12);
+
+    /* Fond menthe/lavande déjà clair : un ciel étoilé aussi marqué qu'en
+       sombre le ternirait, on le garde en filigrane. */
+    --star-opacity:   .22;
 }
 
 /* ───────────── Reset & typo ───────────── */
@@ -845,3 +854,100 @@ img, svg, video { max-width: 100%; height: auto; }
    Occupe toute la largeur pour ne pas être pris pour une carte par les
    grilles (grid-column: 1/-1). */
 .load-sentinel { grid-column: 1 / -1; width: 100%; height: 1px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Fond animé — nébuleuse + ciel étoilé (components/CosmicBackground.js)
+   Direction ajoutée par la maquette Claude Design « Asrar Mystic » : fixé
+   derrière toute l'app (z-index négatif, cf. règle de peinture CSS — un
+   enfant `position:fixed` à z-index négatif se peint AVANT le contenu
+   statique normal du <body>, donc bien en arrière-plan) pour que le violet
+   profond / menthe-lavande de --bg-gradient ne soit plus tout à fait plat,
+   sans toucher au rendu d'aucune page. Purement décoratif, respecte
+   « prefers-reduced-motion » via la règle générique plus haut.
+   ═══════════════════════════════════════════════════════════════════════ */
+.cosmic-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.cosmic-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+}
+.cosmic-blob-a {
+  width: 260px; height: 260px; left: -70px; top: -40px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%);
+  animation: cosmicBlobDrift1 14s ease-in-out infinite;
+}
+.cosmic-blob-b {
+  width: 220px; height: 220px; right: -60px; bottom: 80px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-hover) 33%, transparent), transparent 70%);
+  animation: cosmicBlobDrift2 16s ease-in-out infinite;
+}
+@keyframes cosmicBlobDrift1 {
+  0%, 100% { transform: translate(-10%, -10%) scale(1); }
+  50%      { transform: translate(12%, 16%) scale(1.18); }
+}
+@keyframes cosmicBlobDrift2 {
+  0%, 100% { transform: translate(14%, 10%) scale(1.1); }
+  50%      { transform: translate(-12%, -14%) scale(0.92); }
+}
+.cosmic-stars {
+  position: absolute;
+  inset: 0;
+  opacity: var(--star-opacity);
+  animation: cosmicStarTwinkle 4.5s ease-in-out infinite;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, color-mix(in srgb, var(--text-main) 60%, transparent), transparent),
+    radial-gradient(1px 1px at 70% 20%, color-mix(in srgb, var(--text-main) 53%, transparent), transparent),
+    radial-gradient(1px 1px at 40% 80%, color-mix(in srgb, var(--text-main) 47%, transparent), transparent),
+    radial-gradient(1px 1px at 85% 65%, color-mix(in srgb, var(--text-main) 60%, transparent), transparent),
+    radial-gradient(1px 1px at 55% 45%, color-mix(in srgb, var(--text-main) 40%, transparent), transparent),
+    radial-gradient(1px 1px at 10% 70%, color-mix(in srgb, var(--text-main) 53%, transparent), transparent),
+    radial-gradient(1px 1px at 30% 12%, color-mix(in srgb, var(--text-main) 47%, transparent), transparent),
+    radial-gradient(1px 1px at 92% 40%, color-mix(in srgb, var(--text-main) 40%, transparent), transparent);
+}
+@keyframes cosmicStarTwinkle {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
+}
+
+/* Marque de l'écran de connexion (components/AuthProvider.js LoginScreen) :
+   halo pulsant + losange, écho du fond animé — absent jusqu'ici, l'écran
+   n'affichait que le titre texte. */
+.login-logo {
+  position: relative;
+  width: 86px; height: 86px;
+  margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.login-logo-glow {
+  position: absolute; inset: -17px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .35;
+  filter: blur(18px);
+  animation: loginLogoPulse 3.2s ease-in-out infinite;
+}
+.login-logo-ring {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--surface-2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-logo-mark {
+  width: 32px; height: 32px;
+  transform: rotate(45deg);
+  border: 2px solid var(--accent-hover);
+}
+@keyframes loginLogoPulse {
+  0%, 100% { opacity: .5; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.12); }
+}

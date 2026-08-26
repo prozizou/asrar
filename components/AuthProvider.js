@@ -103,6 +103,12 @@ function LoginScreen({ onLogin, status, error }) {
     <div className="login-screen">
       <div className="container" style={{ maxWidth: 420 }}>
         <div className="glass-panel" style={{ textAlign: 'center' }}>
+          <div className="login-logo" aria-hidden="true">
+            <div className="login-logo-glow" />
+            <div className="login-logo-ring">
+              <div className="login-logo-mark" />
+            </div>
+          </div>
           <div className="header">
             <h1>ASRAR PRO</h1>
             <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Les noms d'Allah &amp; géométrie mystique</p>
