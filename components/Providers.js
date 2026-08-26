@@ -5,11 +5,15 @@
 // pilote désormais depuis le drawer de l'accueil (components/AppDrawer.js).
 import AuthProvider from './AuthProvider';
 import AccessProvider from './AccessProvider';
+import PendingDeepLink from './PendingDeepLink';
 
 export default function Providers({ children }) {
   return (
     <AuthProvider>
-      <AccessProvider>{children}</AccessProvider>
+      <AccessProvider>
+        <PendingDeepLink />
+        {children}
+      </AccessProvider>
     </AuthProvider>
   );
 }
