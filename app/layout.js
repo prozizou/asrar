@@ -11,6 +11,7 @@ import '@fontsource/carlito/latin-700.css';
 import '@fontsource/carlito/latin-ext-400.css';
 import '@fontsource/carlito/latin-ext-700.css';
 import './globals.css';
+import { normalizeSiteUrl } from '@/lib/site';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
 import CosmicBackground from '@/components/CosmicBackground';
@@ -21,7 +22,7 @@ import InstallBanner from '@/components/InstallBanner';
 // relatif ("/assets/og-banner.jpg"), invisible pour WhatsApp/Facebook/X, qui
 // ne résolvent jamais une image relative au domaine courant du crawler.
 // Même variable, même repli que server/http.js (CORS) et pages/api/share.js.
-const SITE_URL = process.env.SITE_URL || 'https://www.asrarpro.com';
+const SITE_URL = normalizeSiteUrl(process.env.SITE_URL, 'https://www.asrarpro.com');
 
 const TITLE = 'ASRAR PRO';
 const DESCRIPTION =

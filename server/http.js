@@ -1,9 +1,14 @@
 // api/_lib/http.js — utilitaires HTTP communs aux fonctions Vercel.
 
+const { normalizeSiteUrl } = require("../lib/site");
+
 // CORS : origine fixe via SITE_URL ; à défaut, on renvoie l'origine appelante
-// (évite le "*" passe-partout). Pas de cookies → sûr.
+// (évite le "*" passe-partout). Pas de cookies → sûr. normalizeSiteUrl()
+// garantit un schéma (http/https) même si la variable d'env est saisie sans
+// — sinon un en-tête Access-Control-Allow-Origin sans schéma est invalide et
+// silencieusement rejeté par les navigateurs (CORS cassé, sans erreur claire).
 function setCors(req, res, methods = "POST, OPTIONS") {
-  const origin = process.env.SITE_URL || (req && req.headers && req.headers.origin) || "*";
+  const origin = normalizeSiteUrl(process.env.SITE_URL) || (req && req.headers && req.headers.origin) || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", methods);
