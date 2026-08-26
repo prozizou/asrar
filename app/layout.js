@@ -14,6 +14,7 @@ import './globals.css';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
 import CosmicBackground from '@/components/CosmicBackground';
+import InstallBanner from '@/components/InstallBanner';
 
 export const metadata = {
   title: 'ASRAR PRO',
@@ -56,6 +57,10 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <CosmicBackground />
+        {/* Hors de PwaGate/Providers : la proposition d'installation doit
+            aussi s'afficher AVANT connexion, pour un visiteur qui arrive
+            sur un lien partagé et n'a pas encore de compte. */}
+        <InstallBanner />
         <PwaGate>
           <Providers>{children}</Providers>
         </PwaGate>
