@@ -117,7 +117,7 @@ referred/{uidFilleul} = { by, at, credited, points?, reason? }
 1. Fusionner les nouvelles règles de `rules/purchases.rules.json` (bloc
    `_comment_parrainage` : `referrals`, `referral_codes`, `referred`) dans les
    règles RTDB.
-2. Vérifier la variable **`SITE_URL`** sur Vercel (ex. `https://asrar-hub.vercel.app`) :
+2. Vérifier la variable **`SITE_URL`** sur Vercel (ex. `https://www.asrarpro.com`) :
    elle sert à construire les liens `/s` et les URL Open Graph absolues.
    À défaut, l'hôte de la requête est utilisé.
 3. Déployer. `vercel.json` route déjà `/s` → `/api/share`.
