@@ -29,7 +29,6 @@ import {
   figToKey,
   getBZDHValue,
   houseModalData,
-  houseNames,
   randomMothers,
   neutralMothers,
 } from '@/lib/geomancie';
