@@ -18,7 +18,6 @@ import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import {
   NAMES,
-  NAMES_SORTED,
   NUM_NAMES,
   abjadWeight,
   countCombinations,
