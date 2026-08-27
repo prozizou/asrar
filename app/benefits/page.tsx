@@ -9,6 +9,12 @@
 // « invisibles »). Seuls les styles Solid + Regular sont importés (seuls
 // utilisés dans ce module) — pas Brands, pour ne pas charger sa police
 // inutilement.
+//
+// TypeScript (batch 3/7, cf. tsconfig.json) : NameItem reflète la forme
+// renvoyée par lib/benefits.js (loadNames()). NameCard.js, NameModal.js,
+// useProgressiveList.js et Spinner.js restent en .js (composants/hooks
+// partagés, hors scope de ce batch) — mêmes principes que dans
+// app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
 import '@fortawesome/fontawesome-free/css/solid.min.css';
 import '@fortawesome/fontawesome-free/css/regular.min.css';
@@ -17,29 +23,47 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { loadNames } from '@/lib/benefits';
 import { useAccess } from '@/components/AccessProvider';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import NameCard from './NameCard';
 import NameModal from './NameModal';
 
-const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const Spinner = SpinnerUntyped as any;
+
+interface NameItem {
+  id: string;
+  name: string;
+  translit: string;
+  meaning: string;
+  benefit: string;
+  number: number;
+}
+
+const norm = (s: unknown) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 export default function BenefitsPage() {
-  const { allowed, refreshAccess, openGate } = useAccess();
-  const [names, setNames] = useState([]);
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { allowed, refreshAccess, openGate } = useAccess() as unknown as {
+    allowed: boolean | null;
+    refreshAccess: () => Promise<boolean>;
+    openGate: (reason?: string | null) => void;
+  };
+  const [names, setNames] = useState<NameItem[]>([]);
   const [namesLoading, setNamesLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showFavs, setShowFavs] = useState(false);
-  const [favorites, setFavorites] = useState(() => new Set());
-  const [modalItem, setModalItem] = useState(null);
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
+  const [modalItem, setModalItem] = useState<NameItem | null>(null);
   const [toastMsg, setToastMsg] = useState('');
   const [toastShow, setToastShow] = useState(false);
-  const toastTimer = useRef(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const bootRef = useRef(false);
 
   const accessGranted = allowed === true;
 
-  const showToast = useCallback((msg) => {
+  const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
     setToastShow(true);
     clearTimeout(toastTimer.current);
@@ -50,7 +74,7 @@ export default function BenefitsPage() {
     if (bootRef.current) return;
     bootRef.current = true;
     try {
-      setFavorites(new Set(JSON.parse(localStorage.getItem('favorites')) || []));
+      setFavorites(new Set(JSON.parse(localStorage.getItem('favorites') as string) || []));
     } catch {}
     loadNames()
       .then(setNames)
@@ -60,7 +84,7 @@ export default function BenefitsPage() {
   }, [refreshAccess, showToast]);
 
   const toggleFav = useCallback(
-    (id) => {
+    (id: string) => {
       setFavorites((prev) => {
         const next = new Set(prev);
         if (next.has(id)) next.delete(id);
@@ -82,7 +106,7 @@ export default function BenefitsPage() {
       list = list.filter((item) => {
         let count = 0;
         try {
-          count = parseInt(localStorage.getItem(`tasbih_asma_${item.id}`)) || 0;
+          count = parseInt(localStorage.getItem(`tasbih_asma_${item.id}`) as string) || 0;
         } catch {}
         return favorites.has(item.id) || count > 0;
       });
