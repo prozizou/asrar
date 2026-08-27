@@ -39,7 +39,6 @@ const MODULES: ModuleTile[] = [
   { icon: '🌀', label: 'Rouwhanes', desc: 'Générer des noms d\'anges et un vœu', href: '/rouwhania' },
   { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
-  { icon: '🧾', label: 'Mes commandes', desc: 'Retrouver vos commandes sur le Marché', href: '/commandes' },
 ];
 
 // Modules réservés au palier « 1 An » (PREMIUM_LEVEL) — regroupés à part pour

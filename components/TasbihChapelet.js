@@ -219,18 +219,22 @@ export default function TasbihChapelet({ id, t, targetLocked = false }) {
         </button>
 
         {subs.length > 0 && (
-          <div className="tc-subdiv">
-            {subs.map((sub) => (
-              <button
-                key={sub.label}
-                type="button"
-                title={`Égrainer ${sub.base} fois, en ${sub.series} séries`}
-                className={'tc-chip' + (t.seriesCount === sub.series ? ' active' : '')}
-                onClick={() => t.setSeries(String(sub.series))}
-              >
-                {sub.label}
-              </button>
-            ))}
+          // Menu déroulant plutôt qu'une rangée de puces : objSubdivisions()
+          // peut renvoyer jusqu'à 40 suggestions (objectifs très divisibles,
+          // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
+          // compact, un seul contrôle quel que soit le nombre de suggestions.
+          <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
+            <span aria-hidden>🔀</span>
+            <select
+              aria-label="Suggestions de répartition"
+              value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
+              onChange={(e) => { if (e.target.value) t.setSeries(e.target.value); }}
+            >
+              <option value="">Suggestions…</option>
+              {subs.map((sub) => (
+                <option key={sub.label} value={sub.series}>{sub.label}</option>
+              ))}
+            </select>
           </div>
         )}
       </div>

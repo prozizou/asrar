@@ -147,12 +147,48 @@ h2 {
 }
 
 /* Section vendeurs horizontale */
+.market-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 1.4rem;
+}
+
 .market-title {
   text-align: center;
   font-family: var(--font-display);
   font-size: 1.6rem;
-  margin: 0 0 1.4rem;
+  margin: 0;
   color: var(--mk-text);
+}
+
+/* Lien « Mes commandes » — déplacé depuis le menu d'accueil sur le Marché
+   lui-même (c'est ici que les commandes se passent). Petit et discret : pas
+   une action principale de la page, juste un raccourci accessible. */
+.market-orders-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--mk-text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border: 1px solid var(--mk-border);
+  border-radius: 999px;
+  transition: all 0.2s;
+}
+
+.market-orders-link:hover {
+  color: var(--mk-gold);
+  border-color: var(--mk-gold);
+}
+
+@media (max-width: 480px) {
+  .market-header {
+    flex-wrap: wrap;
+  }
 }
 
 .vendors-section {

@@ -86,6 +86,9 @@
 /* ── Adhésion ────────────────────────────────────────────
    Le compteur lui-même est le chapelet partagé (.tc-*, app/globals.css). */
 .zk-join-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
+.zk-join-form { display: flex; flex-direction: column; gap: 8px; }
+.zk-join-form .zk-field-row { align-items: flex-end; }
+.zk-join-btn { width: auto; white-space: nowrap; flex-shrink: 0; }
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
 .zk-owner-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }

@@ -220,7 +220,15 @@ export default function Home() {
         />
       ) : (
         <div className="glass-panel">
-          <h2 className="market-title">Marché ASRAR PRO</h2>
+          <div className="market-header">
+            <h2 className="market-title">Marché ASRAR PRO</h2>
+            {/* Rapatrié depuis /menu : les commandes se passent ici (via WhatsApp,
+                cf. ProductModal), donc les retrouver doit rester à portée de main
+                sur le Marché plutôt que dans le tableau de bord des modules. */}
+            <Link href="/commandes" className="market-orders-link">
+              🧾 Mes commandes
+            </Link>
+          </div>
 
           <div className="vendors-section">
             <div className="vendors-scroll">
