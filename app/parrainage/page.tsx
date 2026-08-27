@@ -2,26 +2,53 @@
 // Module « Parrainage » — port de parrainage/parrainage.html.
 // Points, lien/code de parrainage, statistiques et conversion des points en
 // abonnement (via /api/referral). Rendu piloté par l'état React.
+//
+// TypeScript (batch 2/7, cf. tsconfig.json) : le type ReferralInfo reflète
+// le format renvoyé par pages/api/referral.js (action "me") — lib/share.js
+// reste en .js (imports non typés, cf. app/menu/page.tsx pour le même choix).
 import './parrainage.css';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { me, share as shareApp, copy, post } from '@/lib/share';
 import { useAccess } from '@/components/AccessProvider';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
+
+// Spinner.js reste en .js pour l'instant (composant partagé, hors scope de
+// ce batch — cf. tsconfig.json) : sans JSDoc, TS infère depuis son
+// destructuring un type de props trop strict (`style` sans valeur par
+// défaut devient "requis"). Cast local en `any`, même esprit que l'« any
+// implicite » documenté dans app/menu/page.tsx pour UserBar/PlanetHourWidget.
+const Spinner = SpinnerUntyped as any;
+
+interface ReferralInfo {
+  code: string;
+  link: string;
+  points: number;
+  clicks: number;
+  invited: number;
+  rewards: number;
+  canRedeem: boolean;
+  pointsPerInvite: number;
+  pointsForReward: number;
+  rewardDays: number;
+}
 
 export default function ParrainagePage() {
-  const { invalidate } = useAccess();
-  const [info, setInfo] = useState(null);
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { invalidate } = useAccess() as unknown as { invalidate: () => void };
+  const [info, setInfo] = useState<ReferralInfo | null>(null);
   const [msg, setMsg] = useState('');
   const [redeeming, setRedeeming] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async (force) => {
+  const load = useCallback(async (force?: boolean) => {
     try {
       const d = await me(!!force);
       setInfo(d);
       setError('');
-    } catch (e) {
+    } catch (e: any) {
       setError('Erreur de chargement : ' + (e.message || e));
     }
   }, []);
@@ -48,7 +75,7 @@ export default function ParrainagePage() {
       invalidate(); // équivalent de invalidateAccessCache()
       setMsg('✅ Abonnement activé jusqu\'au ' + new Date(r.expiresAt).toLocaleDateString('fr-FR') + '.');
       load(true);
-    } catch (e) {
+    } catch (e: any) {
       setMsg('❌ ' + (e.message || e));
       setRedeeming(false);
     }

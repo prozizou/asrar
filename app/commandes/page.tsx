@@ -4,25 +4,50 @@
 // via WhatsApp » ; ici on relit via /api/orders, scopé au uid connecté).
 // Avant ce module, rien ne permettait de retrouver ce qu'on avait commandé —
 // tout ne vivait que dans la conversation WhatsApp.
+//
+// TypeScript (batch 2/7, cf. tsconfig.json) : le type Order reflète le
+// format renvoyé par pages/api/orders.js ({ items: [{ _key, produit, prix,
+// devise, vendeur, image, at }] }) — lib/api.js, lib/market.js et lib/img.js
+// restent en .js (imports non typés, cf. app/menu/page.tsx pour le même choix).
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
-import SmartImage from '@/components/SmartImage';
-import Spinner from '@/components/Spinner';
+import SmartImageUntyped from '@/components/SmartImage';
+import SpinnerUntyped from '@/components/Spinner';
+
+// SmartImage.js / Spinner.js restent en .js pour l'instant (composants
+// partagés, hors scope de ce batch — cf. tsconfig.json) : sans JSDoc, TS
+// infère depuis leur destructuring un type de props trop strict (toute
+// propriété sans valeur par défaut devient "requise"). Cast local en `any`
+// plutôt que de se battre avec cette inférence — même esprit que l'« any
+// implicite » documenté dans app/menu/page.tsx pour UserBar/PlanetHourWidget
+// (comportement réel inchangé à l'exécution).
+const SmartImage = SmartImageUntyped as any;
+const Spinner = SpinnerUntyped as any;
+
+interface Order {
+  _key: string;
+  produit?: string;
+  prix?: number;
+  devise?: string;
+  vendeur?: string;
+  image?: string;
+  at?: number;
+}
 
 export default function CommandesPage() {
-  const [items, setItems] = useState(null); // null = chargement
+  const [items, setItems] = useState<Order[] | null>(null); // null = chargement
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     apiPost('orders', {})
-      .then(({ items }) => {
+      .then(({ items }: { items?: Order[] }) => {
         if (!cancelled) setItems(items || []);
       })
-      .catch((e) => {
+      .catch((e: any) => {
         if (!cancelled) setError(e.message || 'Impossible de charger vos commandes.');
       });
     return () => {
@@ -65,7 +90,7 @@ export default function CommandesPage() {
   );
 }
 
-function OrderRow({ order }) {
+function OrderRow({ order }: { order: Order }) {
   const date = order.at ? new Date(order.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
   return (
@@ -88,7 +113,7 @@ function OrderRow({ order }) {
             fill
             sizes="56px"
             style={{ objectFit: 'cover' }}
-            onError={(e) => (e.currentTarget.style.display = 'none')}
+            onError={(e: any) => (e.currentTarget.style.display = 'none')}
           />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '1.3rem' }}>

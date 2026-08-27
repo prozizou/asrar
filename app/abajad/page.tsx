@@ -3,6 +3,10 @@
 // Calcul en temps réel (Mashreqi/Maghrébi), réduction théosophique, analyse
 // ésotérique (faces, adad, zodiaque) et décomposition en facteurs a×b.
 // La saisie est protégée par le paywall (ensureAccess) comme dans l'original.
+//
+// TypeScript (batch 2/7, cf. tsconfig.json) : lib/abjad.js et lib/api.js
+// restent en .js (imports non typés, cf. app/menu/page.tsx pour le même choix) —
+// EsoRow type le retour de computeEso() pour les composants locaux ci-dessous.
 import './abajad.css';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -15,19 +19,33 @@ import {
   computeEso,
 } from '@/lib/abjad';
 
+interface EsoRow {
+  face: string;
+  cachee: string;
+  rouhani: string;
+  lumineux: string;
+  ordre: string;
+  signe: string;
+  nature: string;
+  intervalle: string;
+}
+
 export default function AbajadPage() {
-  const { ensureAccess } = useAccess();
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as { ensureAccess: () => Promise<boolean> };
   const [input, setInput] = useState('');
   const [granted, setGranted] = useState(false);
-  const [versets, setVersets] = useState([]);
+  const [versets, setVersets] = useState<string[]>([]);
 
   // Suggestions de versets/mots depuis le RTDB (via /api/list-content).
   useEffect(() => {
     let alive = true;
     apiPost('list-content', { kind: 'verset' })
-      .then(({ items }) => {
+      .then(({ items }: { items?: { verset?: string }[] }) => {
         if (!alive) return;
-        setVersets((items || []).map((v) => v && v.verset).filter(Boolean));
+        setVersets((items || []).map((v) => v && v.verset).filter(Boolean) as string[]);
       })
       .catch(() => {});
     return () => {
@@ -37,7 +55,7 @@ export default function AbajadPage() {
 
   // Paywall : à la première frappe on vérifie l'accès ; tant qu'il n'est pas
   // accordé, le portail s'ouvre et aucun résultat n'est calculé.
-  const onChange = async (e) => {
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setInput(v);
     if (!granted) {
@@ -111,19 +129,23 @@ export default function AbajadPage() {
   );
 }
 
-function FactorPairs({ v }) {
+function FactorPairs({ v }: { v: number }) {
   const pairs = getFactorPairs(v);
   if (!(pairs.length > 0 && v > 0)) {
     return <span style={{ color: 'var(--text-muted)' }}>Nombre premier — pas de décomposition.</span>;
   }
-  return pairs.map(([a, b], i) => (
-    <div className="factor-row" key={i}>
-      <strong>{a}</strong> × <strong>{b}</strong>
-    </div>
-  ));
+  return (
+    <>
+      {pairs.map(([a, b]: [number, number], i: number) => (
+        <div className="factor-row" key={i}>
+          <strong>{a}</strong> × <strong>{b}</strong>
+        </div>
+      ))}
+    </>
+  );
 }
 
-function Factors({ mash, magh }) {
+function Factors({ mash, magh }: { mash: number; magh: number }) {
   if (mash === magh) {
     return (
       <div className="factor-list">
@@ -145,11 +167,11 @@ function Factors({ mash, magh }) {
   );
 }
 
-function EsoInfo({ mash, magh }) {
+function EsoInfo({ mash, magh }: { mash: number; magh: number }) {
   if ((!mash || mash <= 0) && (!magh || magh <= 0)) return null;
-  const A = computeEso(mash);
-  const B = computeEso(magh);
-  const rows = [
+  const A: EsoRow = computeEso(mash);
+  const B: EsoRow = computeEso(magh);
+  const rows: [string, string, string][] = [
     ['Face apparente', A.face, B.face],
     ['Face cachée', A.cachee, B.cachee],
     ['Adad rouhâni', A.rouhani, B.rouhani],
