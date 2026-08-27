@@ -5,12 +5,21 @@
 // (.docx). La logique vit dans lib/alqalam.js ; ici l'UI React et les effets.
 // Les fonctionnalités premium passent par ensureAccess(PREMIUM_LEVEL) : réservées
 // au forfait 1 An (45 000 FCFA), comme la Géomancie.
+//
+// TypeScript (batch 7/7, dernière page de la conversion — cf. tsconfig.json) :
+// AccBlock/EditDraft/Progress/Toast/Sourate sont des types locaux pour
+// l'état React de cette page. lib/alqalam.js reste en .js (hors scope de ce
+// batch) : ses valeurs de retour (preview, contenu Uthmani…) restent typées
+// `any` en local plutôt que reproduites en interfaces (forme interne
+// complexe, propre à ce module), même principe que les lib/*.js dans les
+// batches précédents (#120, #122, #124). useAccess()/Spinner.js suivent le
+// même traitement (cast) que dans les batches précédents.
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import {
   config,
   buildPreview,
@@ -25,12 +34,14 @@ import {
   matchUthmaniSourate,
 } from '@/lib/alqalam';
 
-const savePref = (k, v) => {
+const Spinner = SpinnerUntyped as any;
+
+const savePref = (k: string, v: string) => {
   try {
     localStorage.setItem('cali_' + k, v);
   } catch {}
 };
-const getPref = (k) => {
+const getPref = (k: string): string | null => {
   try {
     return localStorage.getItem('cali_' + k);
   } catch {
@@ -38,16 +49,46 @@ const getPref = (k) => {
   }
 };
 
-const MODE_LABELS = {
+type WritingMode = 'simple' | 'intercalee' | 'rasmique' | null;
+
+const MODE_LABELS: Record<Exclude<WritingMode, null>, string> = {
   simple: 'Écriture simple',
   intercalee: 'Écriture intercalée',
   rasmique: 'Écriture rasmique',
 };
 
+interface AccBlock {
+  texte: string;
+  totalMultiplier: number;
+  isRasmMode: boolean;
+}
+
+interface EditDraft {
+  texte: string;
+  totalMultiplier: number | string;
+  isRasmMode: boolean;
+}
+
+interface ProgressState {
+  pct: number;
+  text: string;
+}
+
+interface ToastState {
+  msg: string;
+  type: 'info' | 'error';
+  id: number;
+}
+
+interface Sourate {
+  key: string;
+  name: string;
+}
+
 // Blocs cumulés ("➕ Cumuler") : sauvegardés à chaque changement pour ne rien
 // perdre si l'utilisateur ferme l'onglet/l'app avant de générer le Word.
 const ACC_KEY = 'cali_accumulated_blocks';
-const loadAccumulated = () => {
+const loadAccumulated = (): AccBlock[] => {
   try {
     const raw = localStorage.getItem(ACC_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -56,7 +97,7 @@ const loadAccumulated = () => {
     return [];
   }
 };
-const saveAccumulated = (blocks) => {
+const saveAccumulated = (blocks: AccBlock[]) => {
   try {
     if (blocks.length > 0) localStorage.setItem(ACC_KEY, JSON.stringify(blocks));
     else localStorage.removeItem(ACC_KEY);
@@ -64,12 +105,17 @@ const saveAccumulated = (blocks) => {
 };
 
 export default function AlQalamPage() {
-  const { ensureAccess } = useAccess();
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+  };
 
   // Menu de sélection préalable : quel type d'écriture ? null = pas encore choisi
   // (écran de choix affiché). 'simple' = répétition ; 'intercalee' = intercaler
   // avec les versets d'une sourate ; 'rasmique' = écriture sans points ni voyelles.
-  const [writingMode, setWritingMode] = useState(null);
+  const [writingMode, setWritingMode] = useState<WritingMode>(null);
 
   const [inputText, setInputText] = useState('');
   const [repCount, setRepCount] = useState('100');
@@ -80,40 +126,40 @@ export default function AlQalamPage() {
   const [intercalatedPhrase, setIntercalatedPhrase] = useState('');
   const [isRasmMode, setIsRasmMode] = useState(false);
 
-  const [accumulatedBlocks, setAccumulatedBlocks] = useState([]);
+  const [accumulatedBlocks, setAccumulatedBlocks] = useState<AccBlock[]>([]);
   const [showAccList, setShowAccList] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editDraft, setEditDraft] = useState({ texte: '', totalMultiplier: 1, isRasmMode: false });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft>({ texte: '', totalMultiplier: 1, isRasmMode: false });
   const [docName, setDocName] = useState('');
 
   const [showDoc, setShowDoc] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const [sourates, setSourates] = useState([]);
-  const [souratesContent, setSouratesContent] = useState({});
-  const [versets, setVersets] = useState([]);
+  const [sourates, setSourates] = useState<Sourate[]>([]);
+  const [souratesContent, setSouratesContent] = useState<Record<string, string>>({});
+  const [versets, setVersets] = useState<string[]>([]);
   const [interKey, setInterKey] = useState('');
 
   // Version du texte pour l'intercalation : 'simple' (base existante, sans
   // voyelles) ou 'voyelles' (texte Uthmani complet, chargé depuis l'API à la
   // demande — voir chooseTextVersion). quranUthmani = null tant que rien n'a
   // encore été chargé.
-  const [textVersion, setTextVersion] = useState('simple');
-  const [quranUthmani, setQuranUthmani] = useState(null);
+  const [textVersion, setTextVersion] = useState<'simple' | 'voyelles'>('simple');
+  const [quranUthmani, setQuranUthmani] = useState<any>(null);
   const [uthmaniLoading, setUthmaniLoading] = useState(false);
 
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupFormat, setPopupFormat] = useState('docx'); // 'docx' | 'pdf' — quel export le popup ouverture/fermeture déclenche
-  const [progress, setProgress] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [popupFormat, setPopupFormat] = useState<'docx' | 'pdf'>('docx'); // quel export le popup ouverture/fermeture déclenche
+  const [progress, setProgress] = useState<ProgressState | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
-  const inputRef = useRef(null);
-  const sugTimer = useRef(null);
-  const toastTimer = useRef(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sugTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const showToast = useCallback((msg, type = 'info', duration = 3000) => {
+  const showToast = useCallback((msg: string, type: 'info' | 'error' = 'info', duration = 3000) => {
     setToast({ msg, type, id: Date.now() });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), duration);
@@ -135,7 +181,7 @@ export default function AlQalamPage() {
       showToast(`${savedBlocks.length} bloc(s) cumulé(s) restauré(s).`, 'info');
     }
 
-    loadSourates().then((s) => {
+    loadSourates().then((s: any) => {
       setSourates(s.list);
       setSouratesContent(s.content);
       if (s.offline) showToast('Mode hors-ligne : sourates chargées depuis le cache', 'info');
@@ -154,7 +200,7 @@ export default function AlQalamPage() {
   );
 
   // ─── Suggestions de versets (debounce) ───
-  const onInput = (v) => {
+  const onInput = (v: string) => {
     setInputText(v);
     clearTimeout(sugTimer.current);
     sugTimer.current = setTimeout(() => {
@@ -169,9 +215,9 @@ export default function AlQalamPage() {
   // textarea ne se déclenchait pas comme attendu (notamment tactile).
   useEffect(() => {
     if (suggestions.length === 0) return undefined;
-    const onOutside = (e) => {
+    const onOutside = (e: Event) => {
       const wrap = inputRef.current && inputRef.current.parentElement;
-      if (wrap && !wrap.contains(e.target)) setSuggestions([]);
+      if (wrap && !wrap.contains(e.target as Node)) setSuggestions([]);
     };
     document.addEventListener('mousedown', onOutside);
     document.addEventListener('touchstart', onOutside);
@@ -185,7 +231,7 @@ export default function AlQalamPage() {
   // Intercaler et Mode Rasm sont désormais choisis en amont via le menu de
   // sélection (writingMode), pas ici. ───
   const activeTool = showDoc ? 'doc' : showSearch ? 'search' : '';
-  const onToolSelect = async (value) => {
+  const onToolSelect = async (value: string) => {
     if (!value) {
       setShowDoc(false);
       setShowSearch(false);
@@ -198,7 +244,7 @@ export default function AlQalamPage() {
   };
 
   // ─── Menu de sélection du type d'écriture (précède l'outil) ───
-  const selectWritingMode = async (mode) => {
+  const selectWritingMode = async (mode: Exclude<WritingMode, null>) => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     setWritingMode(mode);
@@ -231,7 +277,7 @@ export default function AlQalamPage() {
   // Bascule vers la version « avec voyelles » : charge le texte Uthmani
   // complet (API, une seule fois — voir loadQuranUthmani) au premier besoin.
   // En cas d'échec (hors-ligne, API injoignable), on revient à « simple ».
-  const chooseTextVersion = async (version) => {
+  const chooseTextVersion = async (version: 'simple' | 'voyelles') => {
     setTextVersion(version);
     if (version !== 'voyelles' || quranUthmani || uthmaniLoading) return;
     setUthmaniLoading(true);
@@ -247,7 +293,7 @@ export default function AlQalamPage() {
 
   // Résout le contenu de la sourate sélectionnée selon la version choisie
   // (sans/avec voyelles) — commun à « Combiner le texte » et « Sourate seule ».
-  const resolveSourateContent = () => {
+  const resolveSourateContent = (): { content?: string; error?: string } => {
     let content = souratesContent[interKey];
     if (textVersion === 'voyelles') {
       if (!quranUthmani) {
@@ -309,7 +355,7 @@ export default function AlQalamPage() {
     if (!baseText || totalMultiplier === 0) {
       return showToast("Générez d'abord un texte avant de l'ajouter.", 'error');
     }
-    const block = {
+    const block: AccBlock = {
       texte: ' ' + formaterTexteIntercale(baseText, intercalatedPhrase) + ' ',
       totalMultiplier,
       isRasmMode,
@@ -328,7 +374,7 @@ export default function AlQalamPage() {
   };
 
   // ─── Liste des blocs cumulés : réordonner, modifier, supprimer ───
-  const moveBlock = (index, dir) => {
+  const moveBlock = (index: number, dir: number) => {
     setEditingIndex(null);
     setAccumulatedBlocks((prev) => {
       const to = index + dir;
@@ -339,13 +385,13 @@ export default function AlQalamPage() {
     });
   };
 
-  const removeBlock = (index) => {
+  const removeBlock = (index: number) => {
     setEditingIndex(null);
     setAccumulatedBlocks((prev) => prev.filter((_, i) => i !== index));
     showToast('Bloc supprimé.', 'info');
   };
 
-  const startEdit = (index) => {
+  const startEdit = (index: number) => {
     const block = accumulatedBlocks[index];
     setEditDraft({
       texte: htmlToPlainText(block.texte).trim(),
@@ -360,7 +406,7 @@ export default function AlQalamPage() {
   const saveEdit = () => {
     const texte = editDraft.texte.trim();
     if (!texte) return showToast('Le texte du bloc ne peut pas être vide.', 'error');
-    const rep = Math.max(1, Math.min(parseInt(editDraft.totalMultiplier, 10) || 1, config.MAX_TOTAL_REPEAT));
+    const rep = Math.max(1, Math.min(parseInt(String(editDraft.totalMultiplier), 10) || 1, config.MAX_TOTAL_REPEAT));
     setAccumulatedBlocks((prev) =>
       prev.map((b, i) =>
         i === editingIndex ? { texte: ' ' + texte + ' ', totalMultiplier: rep, isRasmMode: editDraft.isRasmMode } : b
@@ -371,7 +417,7 @@ export default function AlQalamPage() {
   };
 
   // ─── Génération Word / PDF (protégé) ───
-  const openExportPopup = async (format) => {
+  const openExportPopup = async (format: 'docx' | 'pdf') => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     if (!docName.trim() || (totalMultiplier === 0 && accumulatedBlocks.length === 0)) {
@@ -383,12 +429,12 @@ export default function AlQalamPage() {
   const onDoc = () => openExportPopup('docx');
   const onPdf = () => openExportPopup('pdf');
 
-  const currentBlocks = () =>
+  const currentBlocks = (): AccBlock[] =>
     accumulatedBlocks.length > 0
       ? accumulatedBlocks
       : [{ texte: formaterTexteIntercale(baseText, intercalatedPhrase), totalMultiplier, isRasmMode }];
 
-  const triggerDocx = async (useOuv, useFerm) => {
+  const triggerDocx = async (useOuv: boolean, useFerm: boolean) => {
     setPopupOpen(false);
     setProgress({ pct: 0, text: 'Préparation...' });
     try {
@@ -398,7 +444,7 @@ export default function AlQalamPage() {
         blocks: currentBlocks(),
         docName: docName.trim(),
         fontPx: fontSize,
-        onProgress: (pct, text) => setProgress({ pct, text }),
+        onProgress: (pct: number, text: string) => setProgress({ pct, text }),
       });
       showToast('Document Word généré (compatible WPS Office).', 'info');
     } catch (e) {
@@ -408,7 +454,7 @@ export default function AlQalamPage() {
     }
   };
 
-  const triggerPdf = async (useOuv, useFerm) => {
+  const triggerPdf = async (useOuv: boolean, useFerm: boolean) => {
     setPopupOpen(false);
     setProgress({ pct: 0, text: 'Préparation...' });
     try {
@@ -417,7 +463,7 @@ export default function AlQalamPage() {
         useFerm,
         blocks: currentBlocks(),
         docName: docName.trim(),
-        onProgress: (pct, text) => setProgress({ pct, text }),
+        onProgress: (pct: number, text: string) => setProgress({ pct, text }),
       });
       showToast(
         'Boîte de dialogue d’impression ouverte — choisissez « Enregistrer en PDF », puis activez « En-têtes et pieds de page » dans « Plus de paramètres » pour la numérotation.',
@@ -431,7 +477,7 @@ export default function AlQalamPage() {
     }
   };
 
-  const triggerExport = (useOuv, useFerm) =>
+  const triggerExport = (useOuv: boolean, useFerm: boolean) =>
     popupFormat === 'pdf' ? triggerPdf(useOuv, useFerm) : triggerDocx(useOuv, useFerm);
 
   return (
@@ -624,7 +670,7 @@ export default function AlQalamPage() {
                       🗑️ Vider ({accumulatedBlocks.length})
                     </button>
                   </div>
-    
+
                   {accumulatedBlocks.length > 0 && (
                     <>
                       <button
@@ -635,7 +681,7 @@ export default function AlQalamPage() {
                       >
                         {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
                       </button>
-    
+
                       {showAccList && (
                         <div className="acc-list">
                           {accumulatedBlocks.map((block, i) => (
