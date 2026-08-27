@@ -14,13 +14,16 @@
 // Donc : AUCUNE mise en cache, ici. Chaque requête part directement au
 // réseau, sans jamais passer par `caches`. Le contenu est TOUJOURS frais.
 //
-// Mise à jour : incrémenter SW_VERSION à chaque changement de ce fichier
-// (purge les caches laissés par d'anciennes versions, cf. activate).
+// Mise à jour : incrémenter SW_VERSION à chaque changement affectant le
+// contenu servi aux utilisateurs déjà installés (purge les caches laissés par
+// d'anciennes versions, cf. activate) — pas seulement les changements de ce
+// fichier lui-même. Par pas de 0.1 (v45 → v45.1 → v45.2…), pas d'entier en
+// entier.
 // skipWaiting + clients.claim → le nouveau SW prend la main immédiatement ;
 // components/PwaGate.js écoute 'controllerchange' et recharge la page une
 // fois pour que le JS déjà chargé en mémoire reparte du nouveau build.
 
-const SW_VERSION = 'v45';
+const SW_VERSION = 'v45.1';
 
 // Répond à une demande de version depuis la page (voir components/AppDrawer.js
 // « Version de l'app » — reflète la version du SW réellement actif sur
