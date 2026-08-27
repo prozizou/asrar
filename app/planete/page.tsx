@@ -5,11 +5,19 @@
 // via l'API Sunrise-Sunset (avec repli hors-ligne). Toute la logique astro/
 // planétaire est dans lib/planete.js ; ici, l'UI React et les effets (GPS,
 // horloge 1 s, recalcul aux bascules de journée planétaire).
+//
+// TypeScript (batch 6/7, cf. tsconfig.json) : Geo/TodaySun/Hours sont des
+// types locaux pour l'état React de cette page — lib/planete.js reste en .js
+// (hors scope de ce batch) : pday/hours restent typés `any` en local plutôt
+// que reproduits en interfaces (forme interne complexe, propre à ce module),
+// même principe que lib/rouwhania.js et lib/geomancie.js dans les batches
+// précédents (#120, #122). useAccess()/Spinner.js suivent le même
+// traitement (cast) que dans les batches précédents.
 import './planete.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import PlanetPushToggle from '@/components/PlanetPushToggle';
 import {
   DAY_PLANETS,
@@ -22,8 +30,33 @@ import {
   dateKey,
 } from '@/lib/planete';
 
+const Spinner = SpinnerUntyped as any;
+
+interface Geo {
+  lat: number | null;
+  lng: number | null;
+  city: string;
+  accuracy: number | null;
+  named: boolean;
+  ready: boolean;
+  error: string | null;
+}
+
+interface TodaySun {
+  sunrise: Date;
+  sunset: Date;
+}
+
+interface Hours {
+  dayName: string;
+  day: any[];
+  night: any[];
+}
+
+type SunCache = Record<string, { sunrise: Date; sunset: Date }>;
+
 // API publique Sunrise-Sunset (plus précise) — remplit le cache pour J-1/J/J+1.
-async function prefetchSunAPI(lat, lng, cache) {
+async function prefetchSunAPI(lat: number | null, lng: number | null, cache: SunCache) {
   if (lat == null) return;
   const base = new Date();
   const days = [-1, 0, 1].map((off) => {
@@ -50,7 +83,7 @@ async function prefetchSunAPI(lat, lng, cache) {
 }
 
 // Nom de ville (réseau, AFFICHAGE seulement — la position vient du GPS).
-async function reverseGeocode(lat, lng) {
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
     const r = await fetch(
       `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=fr`
@@ -63,7 +96,7 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
-const fmtHM = (date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const fmtHM = (date: Date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 // Précision GPS visée (m) — best-effort : on affine tant que le matériel de
 // l'appareil ne l'atteint pas, sans jamais bloquer indéfiniment (souvent
@@ -73,19 +106,24 @@ const GPS_TARGET_ACCURACY_M = 5;
 const GPS_MAX_WAIT_MS = 12000;
 
 export default function PlanetePage() {
-  const { ensureAccess } = useAccess();
-  const sunCache = useRef({});
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+  };
+  const sunCache = useRef<SunCache>({});
 
   const [now, setNow] = useState(() => new Date());
-  const [geo, setGeo] = useState({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
-  const [pday, setPday] = useState(null);
-  const [todaySun, setTodaySun] = useState(null);
-  const [hours, setHours] = useState(null); // { dayName, day[], night[] }
+  const [geo, setGeo] = useState<Geo>({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
+  const [pday, setPday] = useState<any>(null);
+  const [todaySun, setTodaySun] = useState<TodaySun | null>(null);
+  const [hours, setHours] = useState<Hours | null>(null); // { dayName, day[], night[] }
   const [hoursError, setHoursError] = useState('');
-  const [hoursTab, setHoursTab] = useState('day'); // 'day' | 'night' — onglet actif (moins linéaire que 2 tableaux empilés)
+  const [hoursTab, setHoursTab] = useState<'day' | 'night'>('day'); // onglet actif (moins linéaire que 2 tableaux empilés)
 
   // Recalcule la journée planétaire + le soleil du jour à partir d'une position.
-  const recompute = useCallback((lat, lng) => {
+  const recompute = useCallback((lat: number | null, lng: number | null) => {
     const p = computePday(new Date(), lat, lng, sunCache.current);
     setPday(p);
     setTodaySun({ sunrise: p.today.sunrise, sunset: p.today.sunset });
@@ -102,9 +140,9 @@ export default function PlanetePage() {
     }
     setGeo({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
 
-    let best = null;
+    let best: { lat: number; lng: number; acc: number | null } | null = null;
     let done = false;
-    let watchId = null;
+    let watchId: number | null = null;
 
     const finalize = async () => {
       if (done || !best) return;
@@ -123,7 +161,7 @@ export default function PlanetePage() {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : null;
-        if (!best || (acc != null && acc < best.acc)) {
+        if (!best || (acc != null && acc < (best.acc as number))) {
           best = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc };
           if (acc != null && acc <= GPS_TARGET_ACCURACY_M) finalize(); // précision cible atteinte
         }
@@ -170,7 +208,7 @@ export default function PlanetePage() {
 
   const ready = geo.ready && pday && pday.sunrise;
   const cur = useMemo(() => (ready ? currentHour(now, pday) : null), [ready, now, pday]);
-  const phase = ready ? phaseOf(now, todaySun.sunrise, todaySun.sunset) : { icon: '🌟', name: 'Chargement...', badge: 'Phase en cours' };
+  const phase = ready ? phaseOf(now, todaySun!.sunrise, todaySun!.sunset) : { icon: '🌟', name: 'Chargement...', badge: 'Phase en cours' };
   const nature = cur ? natureOf(cur.planet, cur.fraction) : null;
 
   const showHours = async () => {
@@ -238,10 +276,10 @@ export default function PlanetePage() {
                 Sunrise-Sunset — sans repère visuel, l'attente ressemblait à un
                 blocage. */}
             <InfoRow label="🌅 Lever du soleil">
-              {ready ? fmtHM(todaySun.sunrise) : geo.error ? '—' : <Spinner />}
+              {ready ? fmtHM(todaySun!.sunrise) : geo.error ? '—' : <Spinner />}
             </InfoRow>
             <InfoRow label="🌇 Coucher du soleil">
-              {ready ? fmtHM(todaySun.sunset) : geo.error ? '—' : <Spinner />}
+              {ready ? fmtHM(todaySun!.sunset) : geo.error ? '—' : <Spinner />}
             </InfoRow>
             <InfoRow label="📍 Position">
               {geo.error ? (
@@ -304,7 +342,7 @@ export default function PlanetePage() {
         <div className="glass-panel planets-week">
           <h4>🪐 Régents de la semaine</h4>
           <div>
-            {DAY_PLANETS.names.map((day, i) => (
+            {DAY_PLANETS.names.map((day: string, i: number) => (
               <div className={'day-row' + (i === activeDay ? ' today' : '')} key={i}>
                 <span className="day-name">
                   {i === activeDay ? '▶ ' : ''}
@@ -320,7 +358,7 @@ export default function PlanetePage() {
   );
 }
 
-function InfoRow({ label, valueClass, children }) {
+function InfoRow({ label, valueClass, children }: { label: string; valueClass?: string; children: React.ReactNode }) {
   return (
     <div className="info-row">
       <span className="label">{label}</span>
@@ -341,8 +379,8 @@ const HOURS_GRID_COLS = 2;
 // l'autre) — reproduit exactement le tracé « en zigzag à angles droits »
 // dessiné à la main par l'utilisateur, plutôt qu'un simple ordre de lecture
 // classique (gauche→droite puis retour chariot).
-function boustrophedon(items, cols) {
-  const out = [];
+function boustrophedon<T>(items: T[], cols: number): T[] {
+  const out: T[] = [];
   for (let i = 0; i < items.length; i += cols) {
     const row = items.slice(i, i + cols);
     if ((i / cols) % 2 === 1) row.reverse();
@@ -368,9 +406,9 @@ function boustrophedon(items, cols) {
 //      d'affichage) — position réelle mesurée (getBoundingClientRect) et
 //      redessinée à chaque changement de taille (ResizeObserver), puisque
 //      impossible à prévoir en CSS pur.
-function HourGrid({ rows }) {
-  const wrapRef = useRef(null);
-  const cardRefs = useRef([]); // indexé par heure CHRONOLOGIQUE (rows[i]), pas par position affichée
+function HourGrid({ rows }: { rows: any[] }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]); // indexé par heure CHRONOLOGIQUE (rows[i]), pas par position affichée
   const [pathD, setPathD] = useState('');
   const [viewBox, setViewBox] = useState('0 0 0 0');
 
@@ -392,7 +430,7 @@ function HourGrid({ rows }) {
         .slice(0, rows.length)
         .filter(Boolean)
         .map((el) => {
-          const r = el.getBoundingClientRect();
+          const r = (el as HTMLDivElement).getBoundingClientRect();
           return [r.left - wrapRect.left + r.width / 2, r.top - wrapRect.top + r.height / 2];
         });
       setPathD(pts.length < 2 ? '' : pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' '));
