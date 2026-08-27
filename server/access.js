@@ -7,7 +7,7 @@ const { app } = require("./grant");
 // Source unique (partagée avec lib/access.js côté client) : SUPER_ADMIN_EMAIL,
 // PREMIUM_LEVEL et parseAllowed() ne sont plus dupliqués ni à resynchroniser
 // manuellement entre client et serveur — voir lib/plans.js.
-const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, parseAllowed } = require("../lib/plans");
+const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL, parseAllowed } = require("../lib/plans");
 
 // Même super-admin que lib/plans.js (surchargé possible par variable d'env, serveur only).
 const SUPER_ADMIN = (process.env.SUPER_ADMIN_EMAIL || SUPER_ADMIN_EMAIL).toLowerCase();
@@ -50,6 +50,9 @@ async function verifyUser(idToken) {
  */
 async function hasActiveAccess({ uid, email }) {
   if (email && email.toLowerCase() === SUPER_ADMIN) return true;
+  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
+  // court-circuite les lectures RTDB ci-dessous sans y toucher.
+  if (FREE_FOR_ALL) return true;
 
   const db  = app().database();
   const key = emailKey(email);
@@ -93,6 +96,10 @@ async function hasActiveAccess({ uid, email }) {
  */
 async function getAccessLevel({ uid, email }) {
   if (email && email.toLowerCase() === SUPER_ADMIN) return Infinity;
+  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
+  // débloque aussi les modules premium (Al Qalam, Géomancie), sans toucher
+  // aux lectures RTDB ci-dessous.
+  if (FREE_FOR_ALL) return Infinity;
 
   const db  = app().database();
   const key = emailKey(email);
@@ -149,6 +156,12 @@ async function getAccessStatus({ uid, email }) {
   const emailLower = (email || "").toLowerCase();
   if (emailLower === SUPER_ADMIN) {
     return { allowed: true, admin: true, vip: false, level: Infinity, purchase: null, expiresAt: null };
+  }
+  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
+  // admin/vip restent `false` (pas de mensonge sur le vrai statut du compte),
+  // seul l'accès l'est. Les lectures RTDB ci-dessous restent inchangées.
+  if (FREE_FOR_ALL) {
+    return { allowed: true, admin: false, vip: false, level: Infinity, purchase: null, expiresAt: null };
   }
 
   const db  = app().database();
