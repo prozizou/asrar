@@ -4,18 +4,54 @@
 //        (2) vendeur actif → édition de la boutique + CRUD produits via /api/shop.
 // Toutes les écritures passent par le serveur (Admin SDK) : le client n'impose
 // jamais l'uid/email — ils viennent du jeton vérifié côté serveur.
+//
+// TypeScript (batch 4/7, cf. tsconfig.json) : Seller/Product/Stats sont des
+// types locaux reflétant la forme réellement manipulée ici (réponses de
+// /api/shop, cf. pages/api/shop.js). ProductForm.js et SmartImage.js/
+// Spinner.js restent en .js (composants partagés, hors scope de ce batch) —
+// mêmes principes que dans les batches précédents (#114, #116, #118).
 import './boutique.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
-import SmartImage from '@/components/SmartImage';
+import SmartImageUntyped from '@/components/SmartImage';
 import { openAccess } from '@/lib/whatsapp';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import ProductForm from './ProductForm';
+
+const SmartImage = SmartImageUntyped as any;
+const Spinner = SpinnerUntyped as any;
+
+type View = 'loading' | 'gate' | 'shop' | 'error';
+
+interface Seller {
+  email?: string;
+  expiresAt?: number;
+  shop?: { name?: string; description?: string; phone?: string; logo?: string };
+  [k: string]: any;
+}
+
+interface Product {
+  _key: string;
+  Image?: string;
+  produit?: string;
+  Prix?: number;
+  devise?: string;
+  chain?: string;
+  [k: string]: any;
+}
+
+interface Stats {
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  totalOrders: number;
+  perProduct: Record<string, { views: number; likes: number; comments: number; orders: number }>;
+}
 
 const PLANS = [
   { id: 'boutique_1m', dur: '1 Mois', price: '10 000' },
@@ -24,25 +60,25 @@ const PLANS = [
 
 export default function BoutiquePage() {
   const { notify, toast } = useToast();
-  const [view, setView] = useState('loading'); // loading | gate | shop | error
+  const [view, setView] = useState<View>('loading');
   const [errorMsg, setErrorMsg] = useState('');
-  const [seller, setSeller] = useState(null);
-  const [products, setProducts] = useState([]);
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Champs de la fiche boutique
   const [shopName, setShopName] = useState('');
   const [shopDesc, setShopDesc] = useState('');
   const [shopPhone, setShopPhone] = useState('');
-  const [logoFile, setLogoFile] = useState(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
-  const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
-  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({}); // { [productKey]: true } — image indisponible → repli 🔮
+  const markImgError = useCallback((key: string) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
 
   // Formulaire produit (null = fermé)
-  const [formProduct, setFormProduct] = useState(undefined); // undefined=fermé, null=ajout, obj=édition
+  const [formProduct, setFormProduct] = useState<Product | null | undefined>(undefined); // undefined=fermé, null=ajout, obj=édition
 
   // Statistiques (propriétaire seulement) : vues/likes/commentaires/commandes
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   const bootRef = useRef(false);
 
@@ -63,7 +99,7 @@ export default function BoutiquePage() {
       } else {
         setView('gate');
       }
-    } catch (e) {
+    } catch (e: any) {
       setErrorMsg(e.message || String(e));
       setView('error');
     }
@@ -103,13 +139,13 @@ export default function BoutiquePage() {
     };
   }, [products, view]);
 
-  const souscrire = (planId) => {
+  const souscrire = (planId: string) => {
     const email = seller?.email;
     openAccess({ planId, email, section: 'Boutique vendeur (Marché)' });
   };
 
-  const onLogoChange = (e) => {
-    const f = e.target.files[0];
+  const onLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
     if (!f) return;
     setLogoFile(f);
     setLogoPreview(URL.createObjectURL(f));
@@ -126,17 +162,17 @@ export default function BoutiquePage() {
       await apiPost('shop', { action: 'save-shop', shop: { name: shopName.trim(), description: shopDesc.trim(), phone: shopPhone.trim() }, logoUrl });
       notify('✅ Boutique enregistrée.');
       await loadStatus();
-    } catch (e) {
+    } catch (e: any) {
       notify('Erreur : ' + (e.message || e));
     }
   };
 
-  const deleteProduct = async (key) => {
+  const deleteProduct = async (key: string) => {
     if (!confirm('Supprimer ce produit ?')) return;
     try {
       await apiPost('shop', { action: 'delete-product', key });
       await loadStatus();
-    } catch (e) {
+    } catch (e: any) {
       notify('Erreur : ' + (e.message || e));
     }
   };
