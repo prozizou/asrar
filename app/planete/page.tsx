@@ -27,7 +27,7 @@ import {
   phaseOf,
   natureOf,
   buildHourList,
-  dateKey,
+  prefetchSunAPI,
 } from '@/lib/planete';
 
 const Spinner = SpinnerUntyped as any;
@@ -54,33 +54,6 @@ interface Hours {
 }
 
 type SunCache = Record<string, { sunrise: Date; sunset: Date }>;
-
-// API publique Sunrise-Sunset (plus précise) — remplit le cache pour J-1/J/J+1.
-async function prefetchSunAPI(lat: number | null, lng: number | null, cache: SunCache) {
-  if (lat == null) return;
-  const base = new Date();
-  const days = [-1, 0, 1].map((off) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + off);
-    return d;
-  });
-  await Promise.all(
-    days.map(async (d) => {
-      const key = dateKey(d);
-      if (cache[key]) return;
-      try {
-        const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${key}&formatted=0`;
-        const r = await fetch(url);
-        const j = await r.json();
-        if (j && j.status === 'OK' && j.results && j.results.sunrise && j.results.sunset) {
-          cache[key] = { sunrise: new Date(j.results.sunrise), sunset: new Date(j.results.sunset) };
-        }
-      } catch {
-        /* repli local via sunOrDefault */
-      }
-    })
-  );
-}
 
 // Nom de ville (réseau, AFFICHAGE seulement — la position vient du GPS).
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
