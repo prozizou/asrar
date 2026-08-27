@@ -4,6 +4,14 @@
 // vaut une cible. L'algorithme (backtracking + élagage) vit dans
 // lib/combinaisons.js ; ici, l'UI React : formulaire, progression, arrêt,
 // filtre, pagination, calculatrice, tableau des noms et restauration.
+//
+// TypeScript (batch 6/7, cf. tsconfig.json) : Outcome/Progress/Banner sont
+// des types locaux pour l'état React de cette page — lib/combinaisons.js
+// reste en .js (hors scope de ce batch) : les combinaisons/noms restent
+// typés `any`/`number[]` en local plutôt que reproduits en interfaces
+// (forme interne propre à ce module), même principe que dans les batches
+// précédents (#120, #122). useAccess() suit le même traitement (cast) que
+// dans les batches précédents.
 import './combinaisons.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -24,8 +32,40 @@ const PAGE_SIZE = 50;
 const K_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const STORE_KEY = 'asrar_last_search';
 
+type Combo = number[]; // indices dans NAMES_SORTED
+
+interface Outcome {
+  results: Combo[];
+  elapsed: string | number;
+  pruned: number;
+  stopped: boolean;
+  target: number;
+  k: number;
+  empty: boolean;
+  restored?: boolean;
+}
+
+interface Progress {
+  pct: number;
+  found: number;
+  pruned: number;
+}
+
+interface Banner {
+  target: number;
+  k: number;
+  results: Combo[];
+  elapsed: string | number;
+  date: string;
+}
+
 export default function CombinaisonsPage() {
-  const { ensureAccess } = useAccess();
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+  };
 
   const [target, setTarget] = useState('');
   const [k, setK] = useState(3);
@@ -33,11 +73,11 @@ export default function CombinaisonsPage() {
 
   const [isSearching, setIsSearching] = useState(false);
   const stopRef = useRef(false);
-  const [progress, setProgress] = useState(null); // { pct, found, pruned }
-  const [outcome, setOutcome] = useState(null); // résultats finalisés
+  const [progress, setProgress] = useState<Progress | null>(null); // { pct, found, pruned }
+  const [outcome, setOutcome] = useState<Outcome | null>(null); // résultats finalisés
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
-  const [banner, setBanner] = useState(null); // recherche sauvegardée
+  const [banner, setBanner] = useState<Banner | null>(null); // recherche sauvegardée
 
   // Restauration : bannière si une recherche précédente est en cache.
   useEffect(() => {
@@ -61,7 +101,7 @@ export default function CombinaisonsPage() {
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) return sortedResults.map((_, i) => i);
-    const out = [];
+    const out: number[] = [];
     for (let i = 0; i < searchTexts.length; i++) if (searchTexts[i].includes(q)) out.push(i);
     return out;
   }, [filter, sortedResults, searchTexts]);
@@ -96,7 +136,7 @@ export default function CombinaisonsPage() {
       target: t,
       k,
       shouldStop: () => stopRef.current,
-      onProgress: (pct, foundCount, pr) => setProgress({ pct, found: foundCount, pruned: pr }),
+      onProgress: (pct: number, foundCount: number, pr: number) => setProgress({ pct, found: foundCount, pruned: pr }),
     });
     const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
 
@@ -154,7 +194,7 @@ export default function CombinaisonsPage() {
     setBanner(null);
   };
 
-  const pickName = (w) => {
+  const pickName = (w: number) => {
     setTarget(String(w));
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -348,7 +388,7 @@ export default function CombinaisonsPage() {
             <details>
               <summary>Tableau des 99 Noms et leurs poids Abjad</summary>
               <div className="names-grid">
-                {NAMES.map((nm, i) => (
+                {NAMES.map((nm: any, i: number) => (
                   <div className="name-chip" key={i} onClick={() => pickName(nm.weight)} title={nm.fr}>
                     <span className="nc-ar">{nm.display}</span>
                     <div className="nc-info">
@@ -370,7 +410,7 @@ export default function CombinaisonsPage() {
   );
 }
 
-function ProgressLabel({ isSearching, progress, outcome }) {
+function ProgressLabel({ isSearching, progress, outcome }: { isSearching: boolean; progress: Progress | null; outcome: Outcome | null }) {
   if (isSearching) {
     const p = progress || { pct: 0, found: 0, pruned: 0 };
     return (
@@ -408,19 +448,19 @@ function ProgressLabel({ isSearching, progress, outcome }) {
   );
 }
 
-function ResultCard({ indices }) {
+function ResultCard({ indices }: { indices: Combo }) {
   const { names, formula, isAllah } = describeCombo(indices);
   return (
     <div className={'result-card' + (isAllah ? ' has-allah' : '')}>
       <div className="rc-arabic">
-        {names.map((nn) => nn.display).join('  +  ')}
+        {names.map((nn: any) => nn.display).join('  +  ')}
         {isAllah && <span className="rc-allah-badge">★ الله</span>}
       </div>
       <div>
         <span className="rc-formula">{formula}</span>
       </div>
       <div className="rc-defs">
-        {names.map((nn, i) => (
+        {names.map((nn: any, i: number) => (
           <span key={i}>
             <b>{nn.display}</b> — {nn.fr}
             {i < names.length - 1 && <br />}
@@ -431,12 +471,12 @@ function ResultCard({ indices }) {
   );
 }
 
-function Pagination({ pages, page, onGo, start, end, total }) {
+function Pagination({ pages, page, onGo, start, end, total }: { pages: number; page: number; onGo: (p: number) => void; start: number; end: number; total: number }) {
   if (pages <= 1) return null;
   const nums = [...new Set([0, pages - 1, page - 1, page, page + 1].filter((p) => p >= 0 && p < pages))].sort(
     (a, b) => a - b
   );
-  const items = [];
+  const items: React.ReactNode[] = [];
   let prev = -1;
   for (const p of nums) {
     if (prev >= 0 && p - prev > 1) items.push(<span className="page-info" key={'e' + p}>…</span>);
