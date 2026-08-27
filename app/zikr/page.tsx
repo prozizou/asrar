@@ -10,12 +10,20 @@
 // l'historique /api/check-access, /api/social : ce canal WebSocket peut rester
 // bloqué en silence sur certains réseaux ; d'où le sondage court plutôt qu'un
 // abonnement RTDB temps réel).
+//
+// TypeScript (batch 5/7, cf. tsconfig.json) : Group/GroupDetailData/Member/
+// JoinRequest sont des types locaux reflétant la forme réellement manipulée
+// ici (réponses de lib/zikrCollectif.js, elle-même hors scope de ce batch —
+// ses fonctions restent typées via leur inférence .js standard, cf.
+// app/menu/page.tsx pour le même principe). useAuth()/Spinner.js suivent le
+// même traitement (cast) que dans les batches précédents (#114, #116, #118,
+// #120).
 import './zikr.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import { progressPct, partSize, NAME_MAX, PHRASE_MAX, TARGET_MAX, PARTS_MAX } from '@/lib/zikrLogic';
@@ -24,14 +32,51 @@ import {
   approveMember, rejectMember, saveProgress, leaveGroup, deleteGroup,
 } from '@/lib/zikrCollectif';
 
-const fmt = (n) => (Number(n) || 0).toLocaleString('fr-FR');
+const Spinner = SpinnerUntyped as any;
+
+type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
+
+interface Group {
+  id: string;
+  name: string;
+  phrase: string;
+  total: number;
+  target: number;
+  membersCount: number;
+  parts: number;
+  status: GroupStatus;
+}
+
+interface JoinRequest {
+  uid: string;
+  email: string;
+}
+
+interface Member {
+  uid: string;
+  email?: string;
+  fait: number;
+  part: number;
+}
+
+interface GroupDetailData extends Group {
+  ownerEmail: string;
+  full: boolean;
+  pending: number;
+  requests?: JoinRequest[];
+  members: Member[];
+  myPart?: number;
+  myFait?: number;
+}
+
+const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
 const SAVE_DEBOUNCE = 800;  // regroupe les frappes avant l'envoi (comme le ZIP)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 
 export default function ZikrCollectifPage() {
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
   const { notify, toast } = useToast();
-  const [selected, setSelected] = useState(null); // groupId ou null (= liste)
+  const [selected, setSelected] = useState<string | null>(null); // groupId ou null (= liste)
 
   return (
     <div className="container" style={{ maxWidth: 640 }}>
@@ -47,8 +92,8 @@ export default function ZikrCollectifPage() {
 }
 
 // ─────────────────────────── LISTE + CRÉATION ───────────────────────────
-function GroupList({ notify, onOpen }) {
-  const [groups, setGroups] = useState(null);
+function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: (id: string) => void }) {
+  const [groups, setGroups] = useState<Group[] | null>(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -57,7 +102,7 @@ function GroupList({ notify, onOpen }) {
       const d = await listGroups();
       setGroups(d.groups || []);
       setError('');
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message || 'Erreur de chargement.');
     }
   }, []);
@@ -77,7 +122,7 @@ function GroupList({ notify, onOpen }) {
       </button>
 
       {creating && (
-        <CreateForm notify={notify} onCreated={(id) => { setCreating(false); load(); onOpen(id); }} />
+        <CreateForm notify={notify} onCreated={(id: string) => { setCreating(false); load(); onOpen(id); }} />
       )}
 
       {groups === null ? (
@@ -95,15 +140,15 @@ function GroupList({ notify, onOpen }) {
   );
 }
 
-function GroupCard({ g, onOpen }) {
+function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   const pct = progressPct(g.total, g.target);
   const full = g.membersCount >= g.parts && g.status === 'none';
-  const statusLabel = {
+  const statusLabel = ({
     owner: '👑 Créateur',
     member: '✓ Membre',
     pending: '⏳ En attente',
     none: full ? 'Complet' : 'Voir',
-  }[g.status] || 'Voir';
+  } as Record<GroupStatus, string>)[g.status] || 'Voir';
 
   return (
     <button className="zk-card" onClick={onOpen}>
@@ -121,7 +166,7 @@ function GroupCard({ g, onOpen }) {
   );
 }
 
-function CreateForm({ notify, onCreated }) {
+function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCreated: (id: string) => void }) {
   const [name, setName] = useState('');
   const [phrase, setPhrase] = useState('');
   const [target, setTarget] = useState('');
@@ -139,7 +184,7 @@ function CreateForm({ notify, onCreated }) {
       const d = await createGroup({ name, phrase, target, parts });
       notify('✅ Zikr collectif créé.');
       onCreated(d.id);
-    } catch (e) {
+    } catch (e: any) {
       notify('❌ ' + (e.message || e));
       setBusy(false);
     }
@@ -180,8 +225,8 @@ function CreateForm({ notify, onCreated }) {
 }
 
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
-function GroupDetail({ groupId, user, notify, onBack }) {
-  const [g, setG] = useState(null);
+function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user: any; notify: (msg: string) => void; onBack: () => void }) {
+  const [g, setG] = useState<GroupDetailData | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -190,7 +235,7 @@ function GroupDetail({ groupId, user, notify, onBack }) {
       setG(d);
       setError('');
       return d;
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message || 'Erreur de chargement.');
       return null;
     }
@@ -203,21 +248,21 @@ function GroupDetail({ groupId, user, notify, onBack }) {
       const d = await joinGroup(groupId);
       notify(d.status === 'pending' ? '⏳ Demande envoyée au créateur.' : '✓ Vous avez rejoint le groupe.');
       load();
-    } catch (e) { notify('❌ ' + (e.message || e)); }
+    } catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doLeave = async () => {
     if (!window.confirm('Quitter ce zikr collectif ? Votre part sera libérée pour quelqu’un d’autre.')) return;
     try { await leaveGroup(groupId); notify('Vous avez quitté le groupe.'); onBack(); }
-    catch (e) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doDelete = async () => {
     if (!window.confirm('Supprimer définitivement ce zikr collectif pour tous les membres ?')) return;
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
-    catch (e) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
-  const act = async (fn, uid) => {
+  const act = async (fn: (groupId: string, uid: string) => Promise<any>, uid: string) => {
     try { await fn(groupId, uid); load(); }
-    catch (e) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
 
   if (error) return (
@@ -299,7 +344,7 @@ function GroupDetail({ groupId, user, notify, onBack }) {
   );
 }
 
-function StaticProgress({ total, target }) {
+function StaticProgress({ total, target }: { total: number; target: number }) {
   const pct = progressPct(total, target);
   const reached = target > 0 && total >= target;
   return (
@@ -323,7 +368,7 @@ function StaticProgress({ total, target }) {
 // La clé de persistance est propre à CE zikr collectif (`collectif_{gid}`) :
 // sans cela, égrener ici ferait aussi avancer le compteur personnel de la même
 // formule dans « Noms d'Allah ».
-function MemberCounter({ groupId, initial, onRefresh }) {
+function MemberCounter({ groupId, initial, onRefresh }: { groupId: string; initial: GroupDetailData; onRefresh: () => Promise<GroupDetailData | null> }) {
   const myPart = Number(initial.myPart) || 0;
   const target = Number(initial.target) || 0;
 
