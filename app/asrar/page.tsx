@@ -2,6 +2,14 @@
 // Module « Secrets Mystiques » — port complet d'asrar.js/asrar.html en React.
 // Liste par catégorie (métadonnées via /api/list-content) → détail complet
 // (contenu payant via /api/get-content, gaté par ensureAccess).
+//
+// TypeScript (batch 3/7, cf. tsconfig.json) : Category/SecretListItem/
+// CurrentSecret sont des types locaux reflétant la forme réellement
+// manipulée ici (réponses de /api/list-content et /api/get-content, cf.
+// pages/api/list-content.js et pages/api/get-content.js). SecretDetail.js,
+// useHistoryClose.js, useProgressiveList.js et SmartImage.js restent en .js
+// (composants/hooks partagés, hors scope de ce batch) — mêmes principes que
+// dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './asrar.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -9,12 +17,33 @@ import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
-import SmartImage from '@/components/SmartImage';
+import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import SecretDetail from './SecretDetail';
 
-const CATS = [
+const SmartImage = SmartImageUntyped as any;
+
+interface Category {
+  id: string;
+  icon: string;
+  label: string;
+}
+
+interface SecretListItem {
+  key: string;
+  faida: string;
+  img: string | null;
+  ts: number;
+}
+
+interface CurrentSecret {
+  catId: string;
+  key: string;
+  data: any;
+}
+
+const CATS: Category[] = [
   { id: 'deblocage', icon: '🔓', label: 'Déblocage' },
   { id: 'domptage', icon: '🌀', label: 'Domptage' },
   { id: 'ilham', icon: '✨', label: 'Ilham' },
@@ -23,16 +52,21 @@ const CATS = [
 ];
 
 export default function AsrarPage() {
-  const { ensureAccess } = useAccess();
-  const cacheRef = useRef({}); // secretsCache par catégorie
-  const [currentCat, setCurrentCat] = useState(CATS[0]);
-  const [list, setList] = useState([]);
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+  };
+  const cacheRef = useRef<Record<string, SecretListItem[]>>({}); // secretsCache par catégorie
+  const [currentCat, setCurrentCat] = useState<Category>(CATS[0]);
+  const [list, setList] = useState<SecretListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [currentSecret, setCurrentSecret] = useState(null);
+  const [currentSecret, setCurrentSecret] = useState<CurrentSecret | null>(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const bootRef = useRef(false);
 
-  const loadSecrets = useCallback(async (catId) => {
+  const loadSecrets = useCallback(async (catId: string) => {
     if (cacheRef.current[catId]) {
       setList(cacheRef.current[catId]);
       return cacheRef.current[catId];
@@ -40,7 +74,7 @@ export default function AsrarPage() {
     setLoadingList(true);
     try {
       const { items } = await apiPost('list-content', { kind: 'secret', cat: catId });
-      const mapped = (items || []).map((val) => ({
+      const mapped: SecretListItem[] = (items || []).map((val: any) => ({
         key: val._key,
         faida: val.faida || val.title || val.titre || 'Secret sans titre',
         img: val.img || val.image || null,
@@ -61,7 +95,7 @@ export default function AsrarPage() {
   }, []);
 
   const fetchDetail = useCallback(
-    async (catId, key) => {
+    async (catId: string, key: string) => {
       setLoadingSecret(true);
       try {
         const { item } = await apiPost('get-content', { kind: 'secret', cat: catId, key });
@@ -70,7 +104,7 @@ export default function AsrarPage() {
         item.sirr = item.sirr || item.content || '';
         item.img = item.img || item.image || null;
         setCurrentSecret({ catId, key, data: item });
-      } catch (e) {
+      } catch (e: any) {
         if (e.status === 403) {
           // paywall serveur : l'utilisateur a perdu l'accès entre-temps
           ensureAccess();
@@ -85,14 +119,14 @@ export default function AsrarPage() {
   );
 
   const openSecret = useCallback(
-    async (catId, key) => {
+    async (catId: string, key: string) => {
       const ok = await ensureAccess();
       if (ok) fetchDetail(catId, key);
     },
     [ensureAccess, fetchDetail]
   );
 
-  const switchCat = (cat) => {
+  const switchCat = (cat: Category) => {
     setCurrentCat(cat);
     setCurrentSecret(null);
     loadSecrets(cat.id);

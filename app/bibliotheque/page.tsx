@@ -3,6 +3,13 @@
 // Grille de livres (via /api/list-content kind=book), social (likes +
 // commentaires via /api/book-social), ouverture du PDF (paywall), partage,
 // deep link.
+//
+// TypeScript (batch 3/7, cf. tsconfig.json) : Book/SocialStats/Comment sont
+// des types locaux reflétant la forme réellement manipulée ici (réponses de
+// /api/list-content et /api/book-social, cf. pages/api/book-social.js).
+// CommentModal.js, useProgressiveList.js et SmartImage.js restent en .js
+// (composants/hooks partagés, hors scope de ce batch) — mêmes principes que
+// dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './bibliotheque.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -12,27 +19,57 @@ import { useProgressiveList } from '@/components/useProgressiveList';
 import { share as shareLink, deepLink, cleanUrl } from '@/lib/share';
 import { driveDirectLink } from '@/lib/drive';
 import { optimImg } from '@/lib/img';
-import SmartImage from '@/components/SmartImage';
+import SmartImageUntyped from '@/components/SmartImage';
 import CommentModal from './CommentModal';
 
+const SmartImage = SmartImageUntyped as any;
+
+interface Book {
+  _key: string;
+  text: string;
+  img: string;
+  author: string;
+  description: string;
+  pdf?: string;
+  pdfUrl?: string;
+  updatedAt?: number;
+  [k: string]: any;
+}
+
+interface SocialStats {
+  likes: number;
+  liked: boolean;
+  comments: number;
+}
+
+interface Comment {
+  [k: string]: any;
+}
+
 export default function BibliothequePage() {
-  const { ensureAccess, openGate } = useAccess();
-  const [books, setBooks] = useState([]);
-  const [social, setSocial] = useState({});
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess, openGate } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+    openGate: (reason?: string | null) => void;
+  };
+  const [books, setBooks] = useState<Book[]>([]);
+  const [social, setSocial] = useState<Record<string, SocialStats>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [highlightKey, setHighlightKey] = useState(null);
-  const [imgErrors, setImgErrors] = useState({}); // { [bookKey]: true } — couverture indisponible → repli 📖
-  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({}); // { [bookKey]: true } — couverture indisponible → repli 📖
+  const markImgError = useCallback((key: string) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
 
-  const [commentBook, setCommentBook] = useState(null); // objet livre ou null
-  const [comments, setComments] = useState([]);
+  const [commentBook, setCommentBook] = useState<Book | null>(null); // objet livre ou null
+  const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsError, setCommentsError] = useState('');
 
   const bootRef = useRef(false);
 
-  const loadSocialCounts = useCallback(async (list) => {
+  const loadSocialCounts = useCallback(async (list: Book[]) => {
     try {
       const keys = list.map((b) => b._key);
       const { stats } = await apiPost('book-social', { action: 'counts', keys });
@@ -43,7 +80,7 @@ export default function BibliothequePage() {
   }, []);
 
   const openBook = useCallback(
-    async (key) => {
+    async (key: string) => {
       const ok = await ensureAccess();
       if (!ok) return;
       try {
@@ -55,7 +92,7 @@ export default function BibliothequePage() {
         }
         const w = window.open(link, '_blank', 'noopener');
         if (!w) window.location.href = link;
-      } catch (e) {
+      } catch (e: any) {
         if (e.status === 403) openGate();
         else alert('Erreur : ' + e.message);
       }
@@ -69,8 +106,8 @@ export default function BibliothequePage() {
     (async () => {
       try {
         const { items } = await apiPost('list-content', { kind: 'book' });
-        const list = (items || [])
-          .map((b) => ({
+        const list: Book[] = (items || [])
+          .map((b: any) => ({
             ...b,
             text: b.text || b.title || b.titre || 'Sans titre',
             img: b.img || b.image || '',
@@ -85,8 +122,8 @@ export default function BibliothequePage() {
           // TOUS → égalité générale → le tri ne changeait rien en pratique.
           // Repli sur _key (identifiant push Firebase, naturellement
           // chronologique) pour départager, comme déjà fait pour les secrets
-          // mystiques (app/asrar/page.js).
-          .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0) || (a._key < b._key ? 1 : a._key > b._key ? -1 : 0));
+          // mystiques (app/asrar/page.tsx).
+          .sort((a: Book, b: Book) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0) || (a._key < b._key ? 1 : a._key > b._key ? -1 : 0));
         setBooks(list);
         setLoading(false);
         loadSocialCounts(list);
@@ -102,29 +139,29 @@ export default function BibliothequePage() {
             openBook(deep.key);
           } else alert("Cet ouvrage n'est plus disponible.");
         }
-      } catch (e) {
+      } catch (e: any) {
         setLoading(false);
         setError(e.message || 'Erreur de chargement.');
       }
     })();
   }, [loadSocialCounts, openBook]);
 
-  const toggleLike = async (key) => {
+  const toggleLike = async (key: string) => {
     try {
       const r = await apiPost('book-social', { action: 'like', bookKey: key });
       setSocial((prev) => ({ ...prev, [key]: { ...prev[key], likes: r.likes, liked: r.liked } }));
-    } catch (e) {
+    } catch (e: any) {
       alert('Erreur : ' + e.message);
     }
   };
 
-  const share = (key) => {
-    const b = books.find((x) => x._key === key) || {};
+  const share = (key: string) => {
+    const b = books.find((x) => x._key === key) || ({} as Book);
     const titre = b.text || 'Ouvrage';
     shareLink({ kind: 'book', key, title: titre, text: '📚 ' + titre + ' — Bibliothèque Almaqtab sur ASRAR PRO' });
   };
 
-  const openComments = async (book) => {
+  const openComments = async (book: Book) => {
     setCommentBook(book);
     setComments([]);
     setCommentsError('');
@@ -133,14 +170,14 @@ export default function BibliothequePage() {
       const r = await apiPost('book-social', { action: 'list', bookKey: book._key });
       setSocial((prev) => ({ ...prev, [book._key]: { ...prev[book._key], likes: r.likes, liked: r.liked, comments: r.comments.length } }));
       setComments(r.comments || []);
-    } catch (e) {
+    } catch (e: any) {
       setCommentsError(e.message);
     } finally {
       setCommentsLoading(false);
     }
   };
 
-  const submitComment = async (text) => {
+  const submitComment = async (text: string) => {
     if (!commentBook) return;
     const key = commentBook._key;
     try {
@@ -148,7 +185,7 @@ export default function BibliothequePage() {
       const r = await apiPost('book-social', { action: 'list', bookKey: key });
       setSocial((prev) => ({ ...prev, [key]: { ...prev[key], comments: r.comments.length } }));
       setComments(r.comments || []);
-    } catch (e) {
+    } catch (e: any) {
       alert('Erreur : ' + e.message);
     }
   };
