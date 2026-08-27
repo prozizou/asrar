@@ -1,13 +1,18 @@
-// api/zikr.js (Vercel) — ZIKR COLLECTIF : objectif de dhikr commun, RÉPARTI EN
-// PARTS entre plusieurs comptes (même logique que le ZIP « mon-chapelet » :
-// part = objectif / parts, la dernière absorbant le reste). Chaque participant
-// n'égrène QUE sa part ; l'avancement remonte au groupe en temps réel (pas de
-// validation manuelle — cf. handleProgress, avancement absolu enregistré à
-// chaque frappe, débattu côté client).
+// api/zikr.js (Vercel) — ZIKR COLLECTIF : objectif de dhikr commun vers lequel
+// chaque membre contribue le nombre de grains DE SON CHOIX (pas de répartition
+// automatique en parts égales — cf. l'historique : la version précédente
+// imposait un nombre de « parts » fixé à la création et divisait l'objectif
+// dessus ; ici chaque membre annonce lui-même combien il prend en charge, en
+// créant le groupe ou en rejoignant, borné à ce qu'il reste réellement à
+// couvrir sur l'objectif commun). Chaque participant n'égrène QUE sa part ;
+// l'avancement remonte au groupe en temps réel (pas de validation manuelle —
+// cf. handleProgress, avancement absolu enregistré à chaque frappe, débattu
+// côté client).
 //
-// Adhésion : n'importe quel compte peut DEMANDER à rejoindre ; seul le CRÉATEUR
-// approuve, ce qui attribue une part (rang) libre — via transaction, pour que
-// deux approbations simultanées ne donnent pas la même part à deux personnes.
+// Adhésion : n'importe quel compte peut DEMANDER à rejoindre avec le nombre
+// de grains qu'il souhaite prendre en charge ; seul le CRÉATEUR approuve, ce
+// qui confirme cet engagement (via transaction, pour que deux approbations
+// simultanées ne fassent jamais dépasser l'objectif commun).
 //
 // Tout passe par HTTPS (Admin SDK), comme le reste de l'app — jamais de SDK
 // client Firebase RTDB direct (cf. l'historique /api/check-access, /api/social :
@@ -17,28 +22,32 @@
 //
 // Body (JSON) : { idToken, action, ... }
 //   action="list"     → liste publique des zikr collectifs (+ mon statut)
-//   action="create"   → { name, phrase, target, parts } : crée, créateur = part n°0
-//   action="get"      → { groupId } : détail (progression, parts, ma part, membres)
-//   action="join"     → { groupId } : demande d'adhésion
+//   action="create"   → { name, phrase, target, amount } : crée, le créateur
+//                        prend en charge `amount` grains
+//   action="get"      → { groupId } : détail (progression, ma part, membres)
+//   action="join"     → { groupId, amount } : demande d'adhésion pour `amount` grains
 //   action="requests" → { groupId } : créateur only — demandes en attente
-//   action="approve"  → { groupId, uid } : créateur only — attribue une part libre
+//   action="approve"  → { groupId, uid } : créateur only — confirme l'engagement demandé
 //   action="reject"   → { groupId, uid } : créateur only — refuse une demande
 //   action="progress" → { groupId, fait } : membre only — avancement ABSOLU sur sa part
 //   action="leave"    → { groupId } : membre (non-créateur) libère sa part
 //   action="delete"   → { groupId } : créateur only — supprime le groupe
 //
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
-//   zikr_groups/{gid}        = { name, phrase, target, parts, total, ownerUid,
+//   zikr_groups/{gid}        = { name, phrase, target, total, claimed, ownerUid,
 //                                 ownerEmail, createdAt, membersCount }
-//   zikr_members/{gid}/{uid} = { email, rang, fait, joinedAt, updatedAt }
-//   zikr_requests/{gid}/{uid}= { email, at }
+//     (claimed = somme des parts déjà prises par les membres — maintenu par
+//      transaction, comme `total`/`membersCount` ; sert à savoir ce qu'il
+//      reste à prendre sans avoir à relire tous les membres à chaque fois)
+//   zikr_members/{gid}/{uid} = { email, part, fait, joinedAt, updatedAt }
+//   zikr_requests/{gid}/{uid}= { email, amount, at }
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
-const { normalizeGroupInput, partSize, clampFait } = require("../../lib/zikrLogic");
+const { normalizeGroupInput, normalizeAmount, clampFait } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
 function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
@@ -75,7 +84,7 @@ export default async function handler(req, res) {
       case "list":     return await handleList(db, res, user);
       case "create":   return await handleCreate(db, res, user, body);
       case "get":      return await handleGet(db, res, user, gid);
-      case "join":     return await handleJoin(db, res, user, gid);
+      case "join":     return await handleJoin(db, res, user, gid, body.amount);
       case "requests": return await handleRequests(db, res, user, gid);
       case "approve":  return await handleApprove(db, res, user, gid, safeKey(body.uid));
       case "reject":   return await handleReject(db, res, user, gid, safeKey(body.uid));
@@ -96,13 +105,16 @@ async function handleList(db, res, user) {
   const groups = [];
   snap.forEach((g) => {
     const v = g.val() || {};
+    const target = Number(v.target) || 0;
+    const claimed = Number(v.claimed) || 0;
     groups.push({
       id: g.key,
       name: v.name || "",
       phrase: v.phrase || "",
-      target: Number(v.target) || 0,
-      parts: Number(v.parts) || 0,
+      target,
       total: Number(v.total) || 0,
+      claimed,
+      remaining: Math.max(0, target - claimed),
       membersCount: Number(v.membersCount) || 0,
       ownerEmail: v.ownerEmail || "",
       isOwner: v.ownerUid === user.uid,
@@ -126,16 +138,22 @@ async function handleList(db, res, user) {
   return res.status(200).json({ groups });
 }
 
-// ── Créer un zikr collectif (le créateur prend la part n°0) ────
+// ── Créer un zikr collectif (le créateur prend en charge `amount` grains) ──
 async function handleCreate(db, res, user, body) {
   const norm = normalizeGroupInput(body);
   if (norm.error) {
     const msg =
       norm.error === "name" ? "Donnez un titre au zikr collectif."
       : norm.error === "phrase" ? "Indiquez la formule à réciter."
-      : norm.error === "target" ? "Objectif invalide (entier positif requis)."
-      : "Nombre de participants invalide (au moins 1, pas plus que l'objectif).";
+      : "Objectif invalide (entier positif requis).";
     return res.status(400).json({ error: msg });
+  }
+
+  // Rien n'est encore pris à la création : le créateur peut prendre en charge
+  // n'importe quel nombre de grains jusqu'à l'objectif entier.
+  const amt = normalizeAmount(body.amount, norm.target);
+  if (amt.error) {
+    return res.status(400).json({ error: "Indiquez combien de grains vous prenez en charge (au moins 1, pas plus que l'objectif)." });
   }
 
   const ref = db.ref("zikr_groups").push();
@@ -145,21 +163,21 @@ async function handleCreate(db, res, user, body) {
     name: norm.name,
     phrase: norm.phrase,
     target: norm.target,
-    parts: norm.parts,
     total: 0,
+    claimed: amt.amount,
     ownerUid: user.uid,
     ownerEmail: user.email,
     createdAt: now,
-    membersCount: 1, // le créateur est le premier participant (part n°0)
+    membersCount: 1, // le créateur est le premier participant
   });
   await db.ref("zikr_members/" + gid + "/" + user.uid).set({
-    email: user.email, rang: 0, fait: 0, joinedAt: now, updatedAt: now,
+    email: user.email, part: amt.amount, fait: 0, joinedAt: now, updatedAt: now,
   });
 
   return res.status(200).json({ ok: true, id: gid });
 }
 
-// ── Détail d'un groupe (progression, parts, ma part, membres) ──
+// ── Détail d'un groupe (progression, ma part, membres) ─────────
 async function handleGet(db, res, user, gid) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const gSnap = await db.ref("zikr_groups/" + gid).once("value");
@@ -167,21 +185,20 @@ async function handleGet(db, res, user, gid) {
   if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
 
   const isOwner = g.ownerUid === user.uid;
-  const parts = Number(g.parts) || 0;
   const target = Number(g.target) || 0;
+  const claimed = Number(g.claimed) || 0;
+  const remaining = Math.max(0, target - claimed);
 
   const membersSnap = await db.ref("zikr_members/" + gid).once("value");
   const members = [];
   let mine = null;
   membersSnap.forEach((m) => {
     const v = m.val() || {};
-    const rang = Number(v.rang) || 0;
     const entry = {
       uid: m.key,
       email: v.email || "",
-      rang,
       fait: Number(v.fait) || 0,
-      part: partSize(target, parts, rang),
+      part: Number(v.part) || 0,
     };
     if (m.key === user.uid) mine = entry;
     members.push(entry);
@@ -197,7 +214,7 @@ async function handleGet(db, res, user, gid) {
     const requests = [];
     rSnap.forEach((r) => {
       const v = r.val() || {};
-      requests.push({ uid: r.key, email: v.email || "", at: v.at || 0 });
+      requests.push({ uid: r.key, email: v.email || "", amount: Number(v.amount) || 0, at: v.at || 0 });
     });
     owner.requests = requests;
     owner.pending = requests.length;
@@ -208,21 +225,21 @@ async function handleGet(db, res, user, gid) {
     status = rSnap.exists() ? "pending" : "none";
   }
 
-  const full = members.length >= parts; // toutes les parts sont prises
+  const full = remaining <= 0; // tout l'objectif est déjà pris en charge
 
   return res.status(200).json({
     id: gid,
     name: g.name || "",
     phrase: g.phrase || "",
     target,
-    parts,
+    claimed,
+    remaining,
     total: Number(g.total) || 0,
     ownerEmail: g.ownerEmail || "",
     createdAt: g.createdAt || 0,
     membersCount: Number(g.membersCount) || 0,
     full,
     status,
-    myRang: mine ? mine.rang : null,
     myPart: mine ? mine.part : 0,
     myFait: mine ? mine.fait : 0,
     members,
@@ -230,8 +247,8 @@ async function handleGet(db, res, user, gid) {
   });
 }
 
-// ── Demander à rejoindre ───────────────────────────────────────
-async function handleJoin(db, res, user, gid) {
+// ── Demander à rejoindre (avec le nombre de grains souhaité) ───
+async function handleJoin(db, res, user, gid, rawAmount) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const gSnap = await db.ref("zikr_groups/" + gid).once("value");
   const g = gSnap.val();
@@ -241,13 +258,19 @@ async function handleJoin(db, res, user, gid) {
   const mSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   if (mSnap.exists()) return res.status(200).json({ ok: true, status: "member" });
 
-  // Groupe complet : inutile de déposer une demande qu'on ne pourra approuver.
-  const membersSnap = await db.ref("zikr_members/" + gid).once("value");
-  if (membersSnap.numChildren() >= (Number(g.parts) || 0)) {
-    return res.status(409).json({ error: "Ce zikr collectif est complet (toutes les parts sont prises)." });
+  const target = Number(g.target) || 0;
+  const claimed = Number(g.claimed) || 0;
+  const remaining = Math.max(0, target - claimed);
+  if (remaining <= 0) {
+    return res.status(409).json({ error: "Ce zikr collectif est complet (tout l'objectif est déjà pris en charge)." });
   }
 
-  await db.ref("zikr_requests/" + gid + "/" + user.uid).set({ email: user.email, at: Date.now() });
+  const amt = normalizeAmount(rawAmount, remaining);
+  if (amt.error) {
+    return res.status(400).json({ error: `Choisissez un nombre de grains valide (entre 1 et ${remaining}).` });
+  }
+
+  await db.ref("zikr_requests/" + gid + "/" + user.uid).set({ email: user.email, amount: amt.amount, at: Date.now() });
   return res.status(200).json({ ok: true, status: "pending" });
 }
 
@@ -258,51 +281,57 @@ async function handleRequests(db, res, user, gid) {
   const requests = [];
   rSnap.forEach((r) => {
     const v = r.val() || {};
-    requests.push({ uid: r.key, email: v.email || "", at: v.at || 0 });
+    requests.push({ uid: r.key, email: v.email || "", amount: Number(v.amount) || 0, at: v.at || 0 });
   });
   return res.status(200).json({ requests });
 }
 
-// ── Créateur : accepter une demande (attribue une part libre) ──
+// ── Créateur : accepter une demande (confirme l'engagement) ────
 async function handleApprove(db, res, user, gid, uid) {
   const g = await assertOwner(db, gid, user);
   if (!uid) return res.status(400).json({ error: "Compte manquant." });
-  const parts = Number(g.parts) || 0;
+  const target = Number(g.target) || 0;
 
   const reqSnap = await db.ref("zikr_requests/" + gid + "/" + uid).once("value");
   if (!reqSnap.exists()) return res.status(404).json({ error: "Demande introuvable (déjà traitée ?)." });
   const info = reqSnap.val() || {};
+  const requested = Number(info.amount) || 0;
 
   // Déjà membre ? (double-clic) — on nettoie la demande sans re-attribuer.
   const memSnap = await db.ref("zikr_members/" + gid + "/" + uid).once("value");
   if (memSnap.exists()) {
     await db.ref("zikr_requests/" + gid + "/" + uid).remove();
-    return res.status(200).json({ ok: true, rang: Number(memSnap.val().rang) || 0 });
+    return res.status(200).json({ ok: true, part: Number(memSnap.val().part) || 0 });
   }
 
-  // Attribution du rang dans une transaction sur le nœud des membres : deux
-  // approbations simultanées ne peuvent pas donner la même part à deux comptes.
+  // Confirmation dans une transaction sur le nœud des membres : le restant
+  // réel est recalculé à cet instant précis (somme des parts déjà prises),
+  // pour que deux approbations simultanées ne fassent jamais dépasser
+  // l'objectif — l'engagement demandé est plafonné à ce restant si besoin.
   const now = Date.now();
+  let assigned = 0;
   const tx = await db.ref("zikr_members/" + gid).transaction((members) => {
     members = members || {};
     if (members[uid]) return members; // course : déjà attribué entre-temps
-    const taken = new Set(Object.values(members).map((m) => Number(m.rang) || 0));
-    let rang = -1;
-    for (let c = 0; c < parts; c++) { if (!taken.has(c)) { rang = c; break; } }
-    if (rang === -1) return; // complet → abandon (transaction non validée)
-    members[uid] = { email: info.email || "", rang, fait: 0, joinedAt: now, updatedAt: now };
+    const claimed = Object.values(members).reduce((s, m) => s + (Number(m.part) || 0), 0);
+    const remaining = Math.max(0, target - claimed);
+    if (remaining <= 0) return; // complet → abandon (transaction non validée)
+    assigned = Math.min(requested, remaining);
+    if (assigned < 1) return;
+    members[uid] = { email: info.email || "", part: assigned, fait: 0, joinedAt: now, updatedAt: now };
     return members;
   });
 
   const membersAfter = (tx.committed && tx.snapshot && tx.snapshot.val()) || null;
   const mine = membersAfter && membersAfter[uid];
   if (!mine) {
-    return res.status(409).json({ error: "Toutes les parts sont déjà prises (groupe complet)." });
+    return res.status(409).json({ error: "Toutes les parts sont déjà prises (objectif complet)." });
   }
 
   await db.ref("zikr_requests/" + gid + "/" + uid).remove();
   await db.ref("zikr_groups/" + gid + "/membersCount").transaction((n) => (n || 0) + 1);
-  return res.status(200).json({ ok: true, rang: Number(mine.rang) || 0 });
+  await db.ref("zikr_groups/" + gid + "/claimed").transaction((c) => (c || 0) + assigned);
+  return res.status(200).json({ ok: true, part: Number(mine.part) || 0 });
 }
 
 // ── Créateur : refuser une demande ─────────────────────────────
@@ -326,7 +355,7 @@ async function handleProgress(db, res, user, gid, rawFait) {
   if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
   const mem = memSnap.val() || {};
 
-  const part = partSize(Number(g.target) || 0, Number(g.parts) || 0, Number(mem.rang) || 0);
+  const part = Number(mem.part) || 0; // pris en charge librement par le membre, pas une formule
   const oldFait = Number(mem.fait) || 0;
   // Avancement MONOTONE : on ne retient jamais une valeur inférieure à celle
   // déjà enregistrée. Le client envoie un absolu déduit de son compteur local
@@ -361,11 +390,15 @@ async function handleLeave(db, res, user, gid) {
   }
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   if (memSnap.exists()) {
-    const fait = Number((memSnap.val() || {}).fait) || 0;
+    const v = memSnap.val() || {};
+    const fait = Number(v.fait) || 0;
+    const part = Number(v.part) || 0;
     await db.ref("zikr_members/" + gid + "/" + user.uid).remove();
     await db.ref("zikr_groups/" + gid + "/membersCount").transaction((n) => Math.max(0, (n || 1) - 1));
-    // Sa part récitée quitte le total commun avec elle (la part est libérée).
+    // Sa part quitte le total commun ET le restant redevient disponible pour
+    // d'autres membres (part libérée, quel que soit son avancement).
     if (fait > 0) await db.ref("zikr_groups/" + gid + "/total").transaction((t) => Math.max(0, (t || 0) - fait));
+    if (part > 0) await db.ref("zikr_groups/" + gid + "/claimed").transaction((c) => Math.max(0, (c || 0) - part));
   }
   await db.ref("zikr_requests/" + gid + "/" + user.uid).remove();
   return res.status(200).json({ ok: true });
@@ -383,7 +416,7 @@ async function handleDelete(db, res, user, gid) {
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur
-// HTTP (403/404). Renvoie le groupe (utile pour lire parts/target ensuite).
+// HTTP (403/404). Renvoie le groupe (utile pour lire target/claimed ensuite).
 async function assertOwner(db, gid, user) {
   if (!gid) { const e = new Error("Groupe manquant."); e.statusCode = 400; throw e; }
   const g = (await db.ref("zikr_groups/" + gid).once("value")).val();

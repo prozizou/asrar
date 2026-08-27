@@ -1,10 +1,14 @@
 'use client';
-// Module « Zikr collectif » — objectif de dhikr COMMUN, réparti en PARTS entre
-// plusieurs comptes (même logique que le ZIP « mon-chapelet » : part = objectif
-// / parts, la dernière absorbant le reste). Chaque participant n'égrène QUE sa
-// part ; son avancement remonte au groupe EN TEMPS RÉEL, sans validation
-// manuelle (chaque frappe compte ; l'envoi au serveur est simplement regroupé
-// ~800 ms après la dernière frappe, et le groupe est resondé toutes les 4 s).
+// Module « Zikr collectif » — objectif de dhikr COMMUN vers lequel chaque
+// membre prend en charge le nombre de grains DE SON CHOIX (pas de répartition
+// automatique en parts égales — cf. l'historique : la version précédente
+// imposait un nombre de « parts » fixé à la création et divisait l'objectif
+// dessus ; désormais chaque membre annonce lui-même son engagement en créant
+// le groupe ou en rejoignant, plafonné à ce qu'il reste à couvrir). Chaque
+// participant n'égrène QUE sa part ; son avancement remonte au groupe EN
+// TEMPS RÉEL, sans validation manuelle (chaque frappe compte ; l'envoi au
+// serveur est simplement regroupé ~800 ms après la dernière frappe, et le
+// groupe est resondé toutes les 4 s).
 //
 // Tout via /api/zikr (HTTPS/Admin SDK — jamais de RTDB client direct, cf.
 // l'historique /api/check-access, /api/social : ce canal WebSocket peut rester
@@ -26,7 +30,7 @@ import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
-import { progressPct, partSize, NAME_MAX, PHRASE_MAX, TARGET_MAX, PARTS_MAX } from '@/lib/zikrLogic';
+import { progressPct, NAME_MAX, PHRASE_MAX, TARGET_MAX } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, leaveGroup, deleteGroup,
@@ -42,14 +46,16 @@ interface Group {
   phrase: string;
   total: number;
   target: number;
+  claimed: number;
+  remaining: number;
   membersCount: number;
-  parts: number;
   status: GroupStatus;
 }
 
 interface JoinRequest {
   uid: string;
   email: string;
+  amount: number;
 }
 
 interface Member {
@@ -114,7 +120,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
       <div className="zk-hero">
         <div style={{ fontSize: '2.6rem' }}>🤲</div>
         <h1>Zikr collectif</h1>
-        <p>Réciter un dhikr ensemble vers un objectif commun, réparti en parts. Créez le vôtre ou rejoignez un groupe.</p>
+        <p>Réciter un dhikr ensemble vers un objectif commun : chacun prend en charge le nombre de grains de son choix. Créez le vôtre ou rejoignez un groupe.</p>
       </div>
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
@@ -142,7 +148,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
 
 function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   const pct = progressPct(g.total, g.target);
-  const full = g.membersCount >= g.parts && g.status === 'none';
+  const full = g.remaining <= 0 && g.status === 'none';
   const statusLabel = ({
     owner: '👑 Créateur',
     member: '✓ Membre',
@@ -160,7 +166,7 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
       <div className="zk-bar"><span style={{ width: pct + '%' }} /></div>
       <div className="zk-card-meta">
         <span>{fmt(g.total)} / {fmt(g.target)}</span>
-        <span>👥 {fmt(g.membersCount)} / {fmt(g.parts)} parts</span>
+        <span>👥 {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
       </div>
     </button>
   );
@@ -170,18 +176,17 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
   const [name, setName] = useState('');
   const [phrase, setPhrase] = useState('');
   const [target, setTarget] = useState('');
-  const [parts, setParts] = useState('');
+  const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
 
   const objectifNum = parseInt(target, 10) || 0;
-  const partsNum = parseInt(parts, 10) || 0;
-  const preview = objectifNum > 0 && partsNum > 0 ? partSize(objectifNum, partsNum, 0) : 0;
+  const amountNum = parseInt(amount, 10) || 0;
 
   const submit = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const d = await createGroup({ name, phrase, target, parts });
+      const d = await createGroup({ name, phrase, target, amount });
       notify('✅ Zikr collectif créé.');
       onCreated(d.id);
     } catch (e: any) {
@@ -209,13 +214,16 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
             placeholder="100000" onChange={(e) => setTarget(e.target.value)} />
         </label>
         <label className="zk-field">
-          <span>Participants</span>
-          <input type="number" min="1" max={PARTS_MAX} value={parts}
-            placeholder="10" onChange={(e) => setParts(e.target.value)} />
+          <span>Votre part</span>
+          <input type="number" min="1" max={objectifNum || TARGET_MAX} value={amount}
+            placeholder="Combien de grains ?" onChange={(e) => setAmount(e.target.value)} />
         </label>
       </div>
-      {preview > 0 && (
-        <p className="zk-preview">Part de chacun : <strong>{fmt(preview)}</strong> grains (la dernière absorbe le reste).</p>
+      {objectifNum > 0 && amountNum > 0 && (
+        <p className="zk-preview">
+          Vous prenez en charge <strong>{fmt(amountNum)}</strong> grains sur l’objectif de <strong>{fmt(objectifNum)}</strong>.
+          Le reste sera à prendre par les membres qui rejoindront.
+        </p>
       )}
       <button className="zk-btn main" onClick={submit} disabled={busy}>
         {busy ? 'Création…' : 'Créer'}
@@ -243,9 +251,9 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
 
   useEffect(() => { load(); }, [load]);
 
-  const doJoin = async () => {
+  const doJoin = async (amount: number) => {
     try {
-      const d = await joinGroup(groupId);
+      const d = await joinGroup(groupId, amount);
       notify(d.status === 'pending' ? '⏳ Demande envoyée au créateur.' : '✓ Vous avez rejoint le groupe.');
       load();
     } catch (e: any) { notify('❌ ' + (e.message || e)); }
@@ -282,7 +290,10 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
       <div className="zk-detail-head">
         <h1>{g.name}</h1>
         <div className="zk-phrase-big" dir="auto">{g.phrase}</div>
-        <div className="zk-owner">Créé par {g.ownerEmail} · {fmt(g.membersCount)}/{fmt(g.parts)} parts</div>
+        <div className="zk-owner">
+          Créé par {g.ownerEmail} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
+          {g.remaining > 0 ? ` · reste ${fmt(g.remaining)} à prendre` : ' · objectif entièrement pris en charge'}
+        </div>
       </div>
 
       {isMember ? (
@@ -293,9 +304,9 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
           {g.status === 'pending' ? (
             <div className="zk-join-state">⏳ Votre demande est en attente de validation par le créateur.</div>
           ) : g.full ? (
-            <div className="zk-join-state">Ce zikr collectif est complet — toutes les parts sont prises.</div>
+            <div className="zk-join-state">Ce zikr collectif est complet — tout l’objectif est déjà pris en charge.</div>
           ) : (
-            <button className="zk-btn main" onClick={doJoin}>🤝 Demander à rejoindre</button>
+            <JoinForm remaining={g.remaining} onJoin={doJoin} />
           )}
         </>
       )}
@@ -310,7 +321,7 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
             <div className="zk-req-list">
               {g.requests.map((r) => (
                 <div key={r.uid} className="zk-req">
-                  <span className="zk-req-email">{r.email}</span>
+                  <span className="zk-req-email">{r.email} — {fmt(r.amount)} grains</span>
                   <span className="zk-req-actions">
                     <button className="zk-mini ok" onClick={() => act(approveMember, r.uid)}>Accepter</button>
                     <button className="zk-mini no" onClick={() => act(rejectMember, r.uid)}>Refuser</button>
@@ -339,6 +350,31 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
       <div className="zk-footer-actions">
         {g.status === 'member' && <button className="zk-btn ghost" onClick={doLeave}>Quitter le groupe</button>}
         {g.status === 'owner' && <button className="zk-btn danger" onClick={doDelete}>Supprimer le zikr collectif</button>}
+      </div>
+    </div>
+  );
+}
+
+// Choix du nombre de grains à prendre en charge en rejoignant — plus de
+// répartition automatique en parts égales : c'est le membre qui décide,
+// plafonné à `remaining` (ce qu'il reste réellement à couvrir).
+function JoinForm({ remaining, onJoin }: { remaining: number; onJoin: (amount: number) => void }) {
+  const [amount, setAmount] = useState('');
+  const n = parseInt(amount, 10) || 0;
+  const valid = n >= 1 && n <= remaining;
+
+  return (
+    <div className="zk-join-form">
+      <p className="zk-muted">Combien de grains voulez-vous prendre en charge ? (reste {fmt(remaining)} à couvrir)</p>
+      <div className="zk-field-row">
+        <label className="zk-field">
+          <span>Nombre de grains</span>
+          <input type="number" min="1" max={remaining} value={amount}
+            placeholder="Ex. 100" onChange={(e) => setAmount(e.target.value)} />
+        </label>
+        <button className="zk-btn main zk-join-btn" disabled={!valid} onClick={() => onJoin(n)}>
+          🤝 Rejoindre
+        </button>
       </div>
     </div>
   );
