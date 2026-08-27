@@ -5,13 +5,21 @@
 // d'interprétation par maison. La logique vit dans lib/geomancie.js ; ici l'UI
 // React et les données premium (via /api/get-theme, réservées au forfait 1 An —
 // PREMIUM_LEVEL — vérifié côté client (ensureAccess) ET côté serveur (get-theme)).
+//
+// TypeScript (batch 5/7, cf. tsconfig.json) : lib/geomancie.js reste en .js
+// (hors scope de ce batch) — ses valeurs de retour (mères, maisons, figures)
+// restent typées `any`/`number[][]` en local plutôt que reproduites en
+// interfaces (forme interne complexe, propre à ce module), même principe que
+// lib/rouwhania.js dans le batch précédent (#120). useAccess()/Spinner.js
+// suivent le même traitement (cast) que dans les batches précédents (#114,
+// #116, #118, #120).
 import './geomancie.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { useAccess } from '@/components/AccessProvider';
-import Spinner from '@/components/Spinner';
+import SpinnerUntyped from '@/components/Spinner';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import {
   generateAllHouses,
@@ -26,14 +34,19 @@ import {
   neutralMothers,
 } from '@/lib/geomancie';
 
+const Spinner = SpinnerUntyped as any;
+
+type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
+type Mothers = Figure[]; // les 4 Mères
+
 // Journalise l'usage de la géomancie (suivi admin) avec la localisation.
 function logGeomancie() {
   const user = auth.currentUser;
   if (!user) return;
-  const send = (lat, lng) =>
+  const send = (lat: number | null, lng: number | null) =>
     user
       .getIdToken()
-      .then((idToken) =>
+      .then((idToken: string) =>
         fetch('/api/track', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -59,7 +72,7 @@ const SHIELD_ROWS = [
   { indices: [14, 15], cls: 'row-last' },
 ];
 
-function MiniFigure({ fig }) {
+function MiniFigure({ fig }: { fig: Figure }) {
   return (
     <div className="mini-figure">
       {fig.map((count, r) => (
@@ -74,22 +87,28 @@ function MiniFigure({ fig }) {
 }
 
 export default function GeomanciePage() {
-  const { ensureAccess, openGate } = useAccess();
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess, openGate } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+    openGate: (reason?: string | null) => void;
+  };
 
-  const [mothers, setMothers] = useState(neutralMothers);
+  const [mothers, setMothers] = useState<Mothers>(neutralMothers);
   const [calculated, setCalculated] = useState(false);
   const [calculating, setCalculating] = useState(false);
-  const [fbData, setFbData] = useState([]);
-  const [activeFig, setActiveFig] = useState(null);
-  const [modalIndex, setModalIndex] = useState(null);
-  const [toast, setToast] = useState(null);
-  const toastTimer = useRef(null);
+  const [fbData, setFbData] = useState<any[]>([]);
+  const [activeFig, setActiveFig] = useState<string | null>(null);
+  const [modalIndex, setModalIndex] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const houses = useMemo(() => generateAllHouses(mothers), [mothers]);
+  const houses = useMemo<any[]>(() => generateAllHouses(mothers), [mothers]);
   const synth = calculated ? synthesis(houses) : null;
   const parity = calculated ? checkJudgeParity(houses) : null;
 
-  const showToast = useCallback((msg) => {
+  const showToast = useCallback((msg: string) => {
     setToast({ id: Date.now(), msg });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2200);
@@ -97,14 +116,14 @@ export default function GeomanciePage() {
 
   // Échap ferme la modale.
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setModalIndex(null);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const toggleMotherRow = (mi, ri) => {
+  const toggleMotherRow = (mi: number, ri: number) => {
     setMothers((prev) => {
       const next = prev.map((row) => [...row]);
       next[mi][ri] = next[mi][ri] === 1 ? 2 : 1;
@@ -119,7 +138,7 @@ export default function GeomanciePage() {
       setFbData(res.data || []);
       showToast('✨ Données chargées avec succès !');
       return res.data || [];
-    } catch (error) {
+    } catch (error: any) {
       if (error && error.status === 403) {
         showToast('🔒 Géomancie réservée au forfait 1 An (45 000 FCFA).');
         openGate('level');
@@ -157,7 +176,7 @@ export default function GeomanciePage() {
     showToast('🔄 Thème réinitialisé');
   };
 
-  const openHouseModal = (idx) => {
+  const openHouseModal = (idx: number) => {
     if (!calculated) return;
     setActiveFig(figToKey(houses[idx]));
     setModalIndex(idx);
@@ -168,7 +187,7 @@ export default function GeomanciePage() {
     setActiveFig(null);
   };
 
-  const highlightFigure = (figKey) => {
+  const highlightFigure = (figKey: string) => {
     const count = houses.filter((h) => figToKey(h) === figKey).length;
     const name = getCleanName(figKey, fbData);
     if (count > 0) {
@@ -300,7 +319,7 @@ export default function GeomanciePage() {
   );
 }
 
-function HouseCell({ idx, fig, fbData, active, onOpen }) {
+function HouseCell({ idx, fig, fbData, active, onOpen }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void }) {
   const cls =
     'house-cell' +
     (idx === 14 ? ' judge-cell' : '') +
@@ -316,7 +335,7 @@ function HouseCell({ idx, fig, fbData, active, onOpen }) {
   );
 }
 
-function ModalBlock({ tone, title, domaine, interpretation, prefix }) {
+function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'blue' | 'gold'; title: string; domaine: string; interpretation: string; prefix: string }) {
   return (
     <div className={'modal-block ' + tone}>
       <h4 style={{ color: tone === 'blue' ? '#4facfe' : 'var(--gold)' }}>{title}</h4>
@@ -330,8 +349,8 @@ function ModalBlock({ tone, title, domaine, interpretation, prefix }) {
   );
 }
 
-function HouseModal({ data, onClose }) {
-  const stop = (e) => e.target === e.currentTarget && onClose();
+function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
+  const stop = (e: React.MouseEvent) => e.target === e.currentTarget && onClose();
   return (
     <div className="geo-modal-overlay" onClick={stop}>
       <div className="geo-modal">
