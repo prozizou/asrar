@@ -6,6 +6,13 @@
 // l'UI React, les effets de chargement (RTDB) et les suggestions de versets.
 // Le paywall passe par ensureAccess ; les blocs de calcul intermédiaires ne
 // sont visibles que pour le super-admin (comme l'original).
+//
+// TypeScript (batch 4/7, cf. tsconfig.json) : lib/rouwhania.js reste en .js
+// (hors scope de ce batch) — ses valeurs de retour (calculs, listes d'anges/
+// cartes) restent typées `any`/`unknown` en local plutôt que reproduites en
+// interfaces ici (forme interne complexe, propre à ce module), suivant le
+// même principe que useAccess()/SmartImage dans les batches précédents
+// (#114, #116, #118) pour ce qui reste .js.
 import './rouwhania.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -23,20 +30,30 @@ import {
 
 const SUPER_ADMIN = 'prozizou298@gmail.com';
 
+interface Verse {
+  verset: string;
+  [k: string]: any;
+}
+
 export default function RouwhaniaPage() {
-  const { user } = useAuth();
-  const { ensureAccess } = useAccess();
+  const { user } = useAuth() as any;
+  // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
+  // son contexte est créé via createContext(null), donc TS l'infère `null`
+  // sans cast — la vraie forme documentée ici en local.
+  const { ensureAccess } = useAccess() as unknown as {
+    ensureAccess: (minLevel?: number) => Promise<boolean>;
+  };
   const isAdmin = !!(user && user.email && user.email.trim().toLowerCase() === SUPER_ADMIN);
 
-  const editorRef = useRef(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [intent, setIntent] = useState('');
-  const [computed, setComputed] = useState(null);
-  const [angels, setAngels] = useState([]);
-  const [allahCards, setAllahCards] = useState([]);
+  const [computed, setComputed] = useState<any>(null);
+  const [angels, setAngels] = useState<any[]>([]);
+  const [allahCards, setAllahCards] = useState<any[]>([]);
 
-  const [asma, setAsma] = useState([]);
-  const [verses, setVerses] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
+  const [asma, setAsma] = useState<any[]>([]);
+  const [verses, setVerses] = useState<Verse[]>([]);
+  const [suggestions, setSuggestions] = useState<Verse[]>([]);
 
   // Contenu initial de l'éditeur + chargement des données (une fois).
   useEffect(() => {
@@ -49,8 +66,8 @@ export default function RouwhaniaPage() {
 
   // Fermer les suggestions au clic en dehors de l'éditeur.
   useEffect(() => {
-    const onDocClick = (e) => {
-      if (editorRef.current && !editorRef.current.parentNode.contains(e.target)) setSuggestions([]);
+    const onDocClick = (e: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.parentNode?.contains(e.target as Node)) setSuggestions([]);
     };
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -65,7 +82,7 @@ export default function RouwhaniaPage() {
     setSuggestions(verses.filter((v) => v.verset.includes(query)).slice(0, 30));
   };
 
-  const pickSuggestion = (verset) => {
+  const pickSuggestion = (verset: string) => {
     if (editorRef.current) editorRef.current.textContent = verset;
     setSuggestions([]);
   };
@@ -220,15 +237,19 @@ export default function RouwhaniaPage() {
   );
 }
 
-function MixedBlock({ text }) {
-  return mixedSegments(text).map((seg, i) => (
-    <div key={i} className={seg.dir === 'rtl' ? 'mixed-rtl' : 'mixed-ltr'} dir={seg.dir}>
-      {seg.text}
-    </div>
-  ));
+function MixedBlock({ text }: { text: string }) {
+  return (
+    <>
+      {mixedSegments(text).map((seg: any, i: number) => (
+        <div key={i} className={seg.dir === 'rtl' ? 'mixed-rtl' : 'mixed-ltr'} dir={seg.dir}>
+          {seg.text}
+        </div>
+      ))}
+    </>
+  );
 }
 
-function AllahCard({ card }) {
+function AllahCard({ card }: { card: any }) {
   const { char, data } = card;
   if (!data) {
     return (

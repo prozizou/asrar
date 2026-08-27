@@ -3,7 +3,7 @@
 // utilisé devient la porte d'entrée de l'app). Le tableau de bord — la liste
 // des autres modules — est déplacé sur /menu, accessible via le grand bouton
 // « ☰ Accéder au menu » en bas de page (compte/thème/déconnexion ont suivi
-// sur /menu, cf. app/menu/page.js). Port de marche.html/marche.js en React.
+// sur /menu, cf. app/menu/page.tsx). Port de marche.html/marche.js en React.
 // Produits (via /api/list-content kind=product), vendeurs reconstruits depuis
 // les métadonnées, tri par popularité, modale produit et boutique vendeur.
 // Volontairement épuré : pas de barre de recherche ni de filtre par
@@ -12,6 +12,14 @@
 // NB : le panier de marche.js ciblait des éléments DOM absents du HTML (code
 // mort) ; la commande réelle se fait par produit via WhatsApp. On porte donc
 // le comportement effectif, sans panier.
+//
+// TypeScript (batch 4/7, dernière page du batch — cf. tsconfig.json) :
+// Product/Vendor sont des types locaux reflétant la forme réellement
+// manipulée ici (réponses de /api/list-content et lib/market.js).
+// ProductModal.js, VendorShop.js, useHistoryClose.js, useProgressiveList.js
+// et SmartImage.js restent en .js (composants/hooks partagés, hors scope de
+// ce batch) — mêmes principes que dans les batches précédents (#114, #116,
+// #118).
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -20,25 +28,53 @@ import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
 import { optimImg } from '@/lib/img';
-import SmartImage from '@/components/SmartImage';
+import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import { useToast } from '@/components/useToast';
 import ProductModal from './marche/ProductModal';
 import VendorShop from './marche/VendorShop';
 
+const SmartImage = SmartImageUntyped as any;
+
+interface Product {
+  _key: string;
+  Image?: string;
+  produit?: string;
+  Prix?: number;
+  devise?: string;
+  chain?: string;
+  updatedAt?: number;
+  [k: string]: any;
+}
+
+interface Vendor {
+  id: string;
+  name: string;
+  specialty?: string;
+  avatar?: string;
+  verified?: boolean;
+  [k: string]: any;
+}
+
+interface PopulariteEntry {
+  likes: number;
+  comments: number;
+  orders?: number;
+}
+
 export default function Home() {
   const { notify, toast } = useToast();
-  const [allProducts, setAllProducts] = useState([]);
-  const [allVendors, setAllVendors] = useState([]);
-  const [popularite, setPopularite] = useState({});
-  const [vendorLikes, setVendorLikes] = useState({});
-  const [modalProduct, setModalProduct] = useState(null);
-  const [vendorShopId, setVendorShopId] = useState(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
+  const [popularite, setPopularite] = useState<Record<string, PopulariteEntry>>({});
+  const [vendorLikes, setVendorLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
+  const [modalProduct, setModalProduct] = useState<any>(null);
+  const [vendorShopId, setVendorShopId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
-  const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({}); // { [productKey]: true } — image indisponible → repli 🔮
+  const markImgError = useCallback((key: string) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
   const bootRef = useRef(false);
 
   // — Popularité (likes + commentaires + achats) : chargée après l'affichage —
@@ -47,10 +83,10 @@ export default function Home() {
   // certains réseaux ce canal restait bloqué en silence, laissant les cartes
   // produit sans likes/commentaires alors que le reste de la page (la liste
   // elle-même, via /api/list-content) s'affichait normalement.
-  const loadPopularite = useCallback(async (products) => {
+  const loadPopularite = useCallback(async (products: Product[]) => {
     try {
       const { likes, comments: coms, orders } = await apiPost('social', { action: 'market-popularity' });
-      const pop = {};
+      const pop: Record<string, PopulariteEntry> = {};
       products.forEach((p) => {
         pop[p._key] = {
           likes: Object.keys(likes[p._key] || {}).length,
@@ -65,11 +101,11 @@ export default function Home() {
   }, []);
 
   // — Likes des boutiques —
-  const loadVendorLikes = useCallback(async (vendors) => {
+  const loadVendorLikes = useCallback(async (vendors: Vendor[]) => {
     try {
       const uid = auth.currentUser?.uid;
       const { vendorLikes: val } = await apiPost('social', { action: 'vendor-likes' });
-      const out = {};
+      const out: Record<string, { count: number; liked: boolean }> = {};
       vendors.forEach((v) => {
         const k = safeKey(v.id);
         const entry = val[k] || {};
@@ -82,15 +118,15 @@ export default function Home() {
   }, []);
 
   const gatedOpenProduct = useCallback(
-    async (key, products) => {
+    async (key: string, products?: Product[]) => {
       const list = products || allProducts;
       const meta = list.find((p) => p._key === key);
       if (!meta) return;
       try {
         // Fiche complète (description + contacts vendeur). Auth seule.
         const { item } = await apiPost('get-content', { kind: 'product', key });
-        setModalProduct({ _key: key, ...meta, ...item });
-      } catch (e) {
+        setModalProduct({ ...meta, ...item, _key: key });
+      } catch (e: any) {
         notify('Erreur : ' + (e.message || e));
       }
     },
@@ -104,8 +140,8 @@ export default function Home() {
     (async () => {
       try {
         const { items } = await apiPost('list-content', { kind: 'product' });
-        const products = (items || []).map((v) => ({ _key: v._key, ...v }));
-        const vendors = extractVendors(products);
+        const products: Product[] = (items || []).map((v: any) => ({ _key: v._key, ...v }));
+        const vendors: Vendor[] = extractVendors(products);
         setAllProducts(products);
         setAllVendors(vendors);
         setLoading(false);
@@ -118,14 +154,14 @@ export default function Home() {
           if (products.some((p) => p._key === deep.key)) gatedOpenProduct(deep.key, products);
           else notify("Ce produit n'est plus disponible.");
         }
-      } catch (e) {
+      } catch (e: any) {
         setLoading(false);
         setError(e.message || 'Erreur de chargement des produits.');
       }
     })();
   }, [loadPopularite, loadVendorLikes, gatedOpenProduct, notify]);
 
-  const toggleVendorLike = (vendorId, ev) => {
+  const toggleVendorLike = (vendorId: string, ev?: React.MouseEvent) => {
     if (ev) {
       ev.stopPropagation();
       ev.preventDefault();
@@ -145,7 +181,7 @@ export default function Home() {
 
   // Reconnaît automatiquement « sa » boutique dans la liste des vendeurs :
   // vendorKey() (lib/market.js) vaut l'email du vendeur (repli sur l'uid).
-  const isOwnVendor = useCallback((v) => {
+  const isOwnVendor = useCallback((v: Vendor) => {
     const me = auth.currentUser;
     if (!me) return false;
     const email = me.email ? me.email.toLowerCase() : null;
@@ -180,7 +216,7 @@ export default function Home() {
           vendor={shopVendor}
           products={shopProducts}
           onBack={goBackFromShop}
-          onOpenProduct={(key) => gatedOpenProduct(key)}
+          onOpenProduct={(key: string) => gatedOpenProduct(key)}
         />
       ) : (
         <div className="glass-panel">
@@ -208,7 +244,7 @@ export default function Home() {
                           fill
                           sizes="70px"
                           style={{ objectFit: 'cover' }}
-                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                          onError={(e: any) => (e.currentTarget.style.display = 'none')}
                         />
                       ) : (
                         '🔮'
@@ -308,7 +344,7 @@ export default function Home() {
                                 fill
                                 sizes="24px"
                                 style={{ objectFit: 'cover' }}
-                                onError={(e) => (e.currentTarget.style.display = 'none')}
+                                onError={(e: any) => (e.currentTarget.style.display = 'none')}
                               />
                             </div>
                           )}
@@ -337,7 +373,7 @@ export default function Home() {
           product={modalProduct}
           vendor={modalVendor}
           onClose={() => setModalProduct(null)}
-          onVisitShop={(id) => setVendorShopId(id)}
+          onVisitShop={(id: string) => setVendorShopId(id)}
         />
       )}
 
