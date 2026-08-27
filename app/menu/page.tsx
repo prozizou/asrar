@@ -10,11 +10,26 @@
 // extraits dans UserBar.js pour ne pas faire basculer toute la page côté
 // client (réduit le JS envoyé au navigateur pour cette route — cf. ANALYSE.md,
 // faiblesse « surface use client »).
+//
+// Première page convertie en TypeScript (pilote de la conversion .js → .tsx,
+// une poignée de pages à la fois — voir tsconfig.json) : simple et sans état,
+// choisie pour valider toute la chaîne (build, lint, CI) à faible risque avant
+// de convertir les pages plus grosses. UserBar.js et PlanetHourWidget.js
+// restent en .js pour l'instant — leurs props sont donc typées `any` de facto
+// ici, sans erreur (allowJs, cf. tsconfig.json) : ce sera resserré quand leur
+// tour de conversion viendra.
 import Link from 'next/link';
 import UserBar from './UserBar';
 import PlanetHourWidget from '@/components/PlanetHourWidget';
 
-const MODULES = [
+interface ModuleTile {
+  icon: string;
+  label: string;
+  desc: string;
+  href: string;
+}
+
+const MODULES: ModuleTile[] = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
   { icon: '🔢', label: 'Abajad', desc: 'Calculer le poids numérique des lettres arabes', href: '/abajad' },
   { icon: '🌍', label: 'Planète', desc: "Voir l'heure planétaire du moment", href: '/planete' },
@@ -30,12 +45,12 @@ const MODULES = [
 // Modules réservés au palier « 1 An » (PREMIUM_LEVEL) — regroupés à part pour
 // les distinguer visuellement du reste des modules (cf. app/globals.css
 // .group-title / .menu-group).
-const MODULES_PREMIUM = [
+const MODULES_PREMIUM: ModuleTile[] = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
 ];
 
-function MenuItem({ item }) {
+function MenuItem({ item }: { item: ModuleTile }) {
   return (
     <Link href={item.href} className="menu-item">
       <div style={{ fontSize: '2rem' }}>{item.icon}</div>

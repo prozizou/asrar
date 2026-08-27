@@ -4,9 +4,14 @@
 # build Next.js
 /.next
 /out
-# auto-généré par Next dès que `typescript` est présent (tsconfig.lib.json
-# pour le typecheck de lib/, cf. ANALYSE.md) — pas un vrai projet TS, rien à committer.
+# Régénéré automatiquement par `next build`/`next dev` à chaque lancement dès
+# qu'un tsconfig.json existe à la racine (conversion des pages en TypeScript,
+# une poignée à la fois — cf. commentaire en tête de tsconfig.json) — jamais
+# à éditer ni committer à la main, comme dans tout projet Next.js TypeScript.
 next-env.d.ts
+# Cache incrémental de `tsc` (compilerOptions.incremental) — régénéré à
+# chaque exécution, jamais à committer.
+tsconfig.tsbuildinfo
 
 # divers
 .DS_Store

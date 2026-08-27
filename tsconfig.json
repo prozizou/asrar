@@ -1,0 +1,58 @@
+{
+  // tsconfig.json (racine) — active TypeScript pour `next build`/`next dev`,
+  // nécessaire pour que les pages .tsx (conversion en cours, une poignée de
+  // fichiers à la fois — voir les commentaires en tête de chaque page.tsx)
+  // soient reconnues et type-checkées.
+  //
+  // NE COUVRE QUE LES FICHIERS .ts/.tsx (voir "include" plus bas) : les
+  // fichiers .js existants (components/, lib/, pages/api/, server/) restent
+  // INCHANGÉS et NE SONT PAS type-checkés par ce fichier — `allowJs: true`
+  // permet seulement aux pages .tsx de les IMPORTER sans erreur (résolution
+  // de module), sans activer `checkJs` (qui, lui, forcerait un contrôle de
+  // type sur leur contenu — non souhaité ici, ce n'est pas leur tour). C'est
+  // exactement la configuration standard recommandée par Next.js pour une
+  // adoption incrémentale JS → TS.
+  //
+  // À NE PAS CONFONDRE avec tsconfig.lib.json (checkJs scopé à lib/**/*.js,
+  // utilisé par `npm run typecheck` — un outil séparé, manuel, sans lien avec
+  // ce fichier ni avec `next build`).
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "strictNullChecks": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
