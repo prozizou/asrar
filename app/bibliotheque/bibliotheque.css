@@ -121,23 +121,11 @@
       object-fit: cover;
     }
     .book-info {
-      padding: 14px;
+      padding: 10px 12px;
       flex: 1;
       display: flex;
       flex-direction: column;
-    }
-    .book-title {
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 6px;
-      letter-spacing: 0.3px;
-      line-height: 1.3;
-    }
-    .book-meta {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-bottom: 4px;
+      justify-content: center;
     }
     .book-pt {
       color: var(--accent);
@@ -301,29 +289,37 @@
         gap: 12px;
       }
       .book-cover { height: 180px; }
+      /* Cartes plus étroites : resserre encore la rangée d'actions pour
+         qu'elle tienne sur une ligne sans jamais déborder. */
+      .book-info { padding: 8px 10px; }
+      .book-social { gap: 3px; }
+      .bs-btn { font-size: .7rem; padding: 4px 3px; gap: 2px; min-height: 26px; }
     }
 
-    /* Rangée like/commentaires/partage : sur une carte étroite (mobile, grille
-       auto-fill 140px), 3 boutons non contraints débordaient ou se
-       redimensionnaient différemment selon le contenu (icône+chiffre vs icône
-       seule) → alignement/hauteur incohérents (« pas bien empilé »).
-       flex-wrap évite tout débordement hors carte ; display:inline-flex +
+    /* Rangée like/commentaires/partage : UNE seule ligne horizontale, quelle
+       que soit la largeur de la carte (grille auto-fill jusqu'à 140px sur
+       mobile) — flex-wrap:nowrap + chaque bouton flex:1 (largeur égale,
+       jamais figée) avec min-width:0 pour que le contenu (icône+chiffre)
+       se contracte plutôt que de déborder de la carte. display:inline-flex +
        line-height:1 fige la hauteur des 3 boutons (les glyphes emoji ont des
        métriques de ligne différentes selon le navigateur/OS, sinon). */
-    .book-social { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .book-social { display:flex; flex-wrap:nowrap; gap:4px; margin-top:8px; }
     .bs-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 3px;
       line-height: 1;
-      min-height: 30px;
+      min-height: 28px;
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: hidden;
       box-sizing: border-box;
       background:rgba(255,255,255,0.05); border:1px solid rgba(201,169,97,0.25);
-      color:#cdbb8f; border-radius:20px; padding:5px 10px; font-size:.8rem; cursor:pointer;
+      color:#cdbb8f; border-radius:20px; padding:5px 6px; font-size:.78rem; cursor:pointer;
     }
     .bs-btn.liked { color:#e0607a; border-color:#e0607a; background:rgba(224,96,122,0.1); }
-    .book-cover, .book-title { cursor:pointer; }
+    .book-cover { cursor:pointer; }
     /* Couleurs crème/or codées en dur (pensées pour un fond sombre) → illisibles
        en thème clair, où .modal-box passe sur un fond clair (var(--surface)).
        Remplacées par les tokens de thème globaux, comme le reste de la modale. */
