@@ -1,9 +1,11 @@
 'use client';
 // Module « Rouwhanes » — port de rouwhania/index.html + script.js.
 // Saisie d'un nom/verset → poids Abjad (3 méthodes), génération des « noms des
-// rouwhanes » (anges) et des noms d'Allah correspondants selon le vœu.
+// rouwhanes » (anges) et, pour chaque lettre du nom-racine, TOUS les noms
+// d'Allah qui lui correspondent (plus de champ « vœu » : c'est à
+// l'utilisateur de choisir personnellement parmi les détails de chacun).
 // La logique (tables, calculs, génération) vit dans lib/rouwhania.js ; ici,
-// l'UI React, les effets de chargement (RTDB) et les suggestions de versets.
+// l'UI React, les effets de chargement et les suggestions de versets.
 // Le paywall passe par ensureAccess ; les blocs de calcul intermédiaires ne
 // sont visibles que pour le super-admin (comme l'original).
 //
@@ -46,7 +48,6 @@ export default function RouwhaniaPage() {
   const isAdmin = !!(user && user.email && user.email.trim().toLowerCase() === SUPER_ADMIN);
 
   const editorRef = useRef<HTMLDivElement>(null);
-  const [intent, setIntent] = useState('');
   const [computed, setComputed] = useState<any>(null);
   const [angels, setAngels] = useState<any[]>([]);
   const [allahCards, setAllahCards] = useState<any[]>([]);
@@ -100,9 +101,9 @@ export default function RouwhaniaPage() {
     setComputed(c);
     const { list, seventh } = buildAngelNames(c.results);
     setAngels(list);
-    setAllahCards(seventh ? buildAllahCards(seventh, asma, intent) : []);
+    setAllahCards(seventh ? buildAllahCards(seventh, asma) : []);
     setSuggestions([]);
-  }, [ensureAccess, asma, intent]);
+  }, [ensureAccess, asma]);
 
   const r = computed?.results;
 
@@ -136,17 +137,6 @@ export default function RouwhaniaPage() {
               )}
             </div>
 
-            <div className="input-container">
-              <input
-                type="text"
-                className="intent-select"
-                placeholder="Saisissez votre vœu (ex: amour, richesse, protection...)"
-                autoComplete="off"
-                value={intent}
-                onChange={(e) => setIntent(e.target.value)}
-              />
-            </div>
-
             <div className="button-row">
               <button className="primary-btn" onClick={onCalculate}>
                 Calculer
@@ -161,7 +151,7 @@ export default function RouwhaniaPage() {
                 <div className="rw-hint-icon">🌙</div>
                 <div className="rw-hint-title">Les noms des rouwhanes apparaîtront ici</div>
                 <div className="rw-hint-text">
-                  Saisissez un nom, précisez votre vœu, puis lancez « Calculer » pour révéler la génération complète.
+                  Saisissez un nom ou un verset, puis lancez « Calculer » pour révéler la génération complète.
                 </div>
               </div>
             )}
@@ -219,13 +209,17 @@ export default function RouwhaniaPage() {
               </div>
             )}
 
-            {/* Noms d'Allah correspondants */}
+            {/* Noms d'Allah correspondants : un groupe par lettre du nom-racine,
+                chacun listant TOUS les noms qui lui correspondent (plus de
+                sélection automatique d'un seul « meilleur » nom selon un vœu —
+                voir lib/rouwhania.js buildAllahCards) en scroll horizontal,
+                avec tous les détails pour choisir personnellement. */}
             {allahCards.length > 0 && (
               <div className="angel-names-container" style={{ borderTop: '2px dashed #f39c12', marginTop: 15 }}>
                 <h3 style={{ color: '#d35400' }}>Les noms d'Allah qui vont avec</h3>
-                <div className="angel-names-list">
+                <div className="allah-letters-list">
                   {allahCards.map((c, i) => (
-                    <AllahCard key={i} card={c} />
+                    <AllahLetterGroup key={i} group={c} />
                   ))}
                 </div>
               </div>
@@ -249,21 +243,35 @@ function MixedBlock({ text }: { text: string }) {
   );
 }
 
-function AllahCard({ card }: { card: any }) {
-  const { char, data } = card;
-  if (!data) {
-    return (
-      <div className="allah-card-empty">
-        <span>لا يوجد اسم مناسب لهذا الحرف</span>
-        <span className="allah-card-letter">{char}</span>
-      </div>
-    );
-  }
+// Un groupe = une lettre du nom-racine + TOUS les noms d'Allah qui lui
+// correspondent, présentés en scroll horizontal (au lieu d'un seul « meilleur »
+// nom choisi automatiquement) pour que l'utilisateur en déduise lui-même
+// lequel prendre, à partir de tous les détails de chacun.
+function AllahLetterGroup({ group }: { group: any }) {
+  const { char, matches } = group;
+  return (
+    <div className="allah-letter-group">
+      <span className="allah-card-letter">{char}</span>
+      {matches.length === 0 ? (
+        <div className="allah-card-empty">
+          <span>لا يوجد اسم مناسب لهذا الحرف</span>
+        </div>
+      ) : (
+        <div className="allah-scroll-row">
+          {matches.map((data: any, i: number) => (
+            <AllahCard key={i} data={data} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AllahCard({ data }: { data: any }) {
   return (
     <div className="allah-card">
       <div className="allah-card-head">
         <span className="allah-card-name">{data.name}</span>
-        <span className="allah-card-letter">{char}</span>
       </div>
       <div className="allah-card-body">
         <div className="allah-card-translit" dir="ltr">
