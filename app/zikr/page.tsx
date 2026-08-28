@@ -1,27 +1,25 @@
 'use client';
-// Module « Zikr collectif » — objectif de dhikr COMMUN vers lequel chaque
-// membre prend en charge le nombre de grains DE SON CHOIX (pas de répartition
-// automatique en parts égales — cf. l'historique : la version précédente
-// imposait un nombre de « parts » fixé à la création et divisait l'objectif
-// dessus ; désormais chaque membre annonce lui-même son engagement en créant
-// le groupe ou en rejoignant, plafonné à ce qu'il reste à couvrir). Chaque
-// participant n'égrène QUE sa part ; son avancement remonte au groupe EN
-// TEMPS RÉEL, sans validation manuelle (chaque frappe compte ; l'envoi au
-// serveur est simplement regroupé ~800 ms après la dernière frappe, et le
-// groupe est resondé toutes les 4 s).
+// Module « Zikr collectif » — objectif de dhikr COMMUN et PARTAGÉ (pas de
+// part individuelle fixée à l'avance) : l'objectif restant (target - total)
+// est LE MÊME nombre pour tout le monde, mis à jour en direct à chaque
+// grain égrené par n'importe quel participant. Chacun égrène sans plafond
+// ni série qui lui soit propre (components/useTasbih.js, `uncapped`).
 //
-// Tout via /api/zikr (HTTPS/Admin SDK — jamais de RTDB client direct, cf.
-// l'historique /api/check-access, /api/social : ce canal WebSocket peut rester
-// bloqué en silence sur certains réseaux ; d'où le sondage court plutôt qu'un
-// abonnement RTDB temps réel).
+// Port du modèle de référence (dépôt prozizou/mon-chapelet, ZIP fourni :
+// « Mon chapelet Ma solution — Zikr collectif ») adapté à l'architecture
+// d'ASRAR PRO : leur version écrit directement dans Firebase RTDB depuis le
+// navigateur (SDK client) et utilise `onDisconnect()` pour la présence ; ici
+// tout reste derrière /api/zikr (Admin SDK — jamais de RTDB client direct,
+// cf. l'historique /api/check-access, /api/social : ce canal peut rester
+// bloqué en silence sur certains réseaux), et la présence « en ligne » est
+// approximée par un battement de cœur posé à chaque sondage (voir
+// pages/api/zikr.js, ONLINE_WINDOW_MS).
 //
-// TypeScript (batch 5/7, cf. tsconfig.json) : Group/GroupDetailData/Member/
-// JoinRequest sont des types locaux reflétant la forme réellement manipulée
-// ici (réponses de lib/zikrCollectif.js, elle-même hors scope de ce batch —
-// ses fonctions restent typées via leur inférence .js standard, cf.
-// app/menu/page.tsx pour le même principe). useAuth()/Spinner.js suivent le
-// même traitement (cast) que dans les batches précédents (#114, #116, #118,
-// #120).
+// Fonctionnalités ajoutées avec ce port : formules prédéfinies (ou « Zikr
+// libre »), présence en ligne, rythme instantané (repère anti-tapotement
+// mécanique, jamais bloquant), modération par le créateur (avertissement
+// privé à un clic, exclusion), succession automatique de créateur s'il
+// quitte alors que d'autres membres restent.
 import './zikr.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -30,10 +28,12 @@ import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
-import { progressPct, NAME_MAX, PHRASE_MAX, TARGET_MAX } from '@/lib/zikrLogic';
+import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
+import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, getGroup, joinGroup,
-  approveMember, rejectMember, saveProgress, leaveGroup, deleteGroup,
+  approveMember, rejectMember, saveProgress, warnMember, dismissWarning,
+  excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
@@ -43,40 +43,42 @@ type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 interface Group {
   id: string;
   name: string;
-  phrase: string;
-  total: number;
+  transliteration: string;
+  arabic: string;
   target: number;
-  claimed: number;
+  total: number;
   remaining: number;
   membersCount: number;
+  ownerEmail: string;
   status: GroupStatus;
 }
 
 interface JoinRequest {
   uid: string;
   email: string;
-  amount: number;
 }
 
 interface Member {
   uid: string;
-  email?: string;
+  email: string;
   fait: number;
-  part: number;
+  rythme: number;
+  online: boolean;
 }
 
 interface GroupDetailData extends Group {
-  ownerEmail: string;
+  ownerUid: string;
   full: boolean;
   pending: number;
+  onlineCount: number;
   requests?: JoinRequest[];
   members: Member[];
-  myPart?: number;
   myFait?: number;
+  myWarning?: string;
 }
 
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
-const SAVE_DEBOUNCE = 800;  // regroupe les frappes avant l'envoi (comme le ZIP)
+const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 
 export default function ZikrCollectifPage() {
@@ -88,7 +90,7 @@ export default function ZikrCollectifPage() {
     <div className="container" style={{ maxWidth: 640 }}>
       <Link href="/menu" className="back-btn">← Retour</Link>
       {selected ? (
-        <GroupDetail groupId={selected} user={user} notify={notify} onBack={() => setSelected(null)} />
+        <GroupDetail groupId={selected} uid={user?.uid || ''} notify={notify} onBack={() => setSelected(null)} />
       ) : (
         <GroupList notify={notify} onOpen={setSelected} />
       )}
@@ -120,11 +122,15 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
       <div className="zk-hero">
         <div style={{ fontSize: '2.6rem' }}>🤲</div>
         <h1>Zikr collectif</h1>
-        <p>Réciter un dhikr ensemble vers un objectif commun : chacun prend en charge le nombre de grains de son choix. Créez le vôtre ou rejoignez un groupe.</p>
+        <p>
+          Réciter un dhikr ensemble vers un objectif commun et partagé — pas de
+          part fixée à l’avance : ce qu’il reste à faire diminue pour tout le
+          monde au fil des récitations du groupe. Créez le vôtre ou rejoignez-en un.
+        </p>
       </div>
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
-        {creating ? '✕ Annuler' : '➕ Créer un zikr collectif'}
+        {creating ? '✕ Annuler' : '➕ Lancer un zikr collectif'}
       </button>
 
       {creating && (
@@ -162,7 +168,7 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
         <span className="zk-card-name">{g.name}</span>
         <span className={'zk-badge zk-badge-' + (full ? 'full' : g.status)}>{statusLabel}</span>
       </div>
-      <div className="zk-card-phrase" dir="auto">{g.phrase}</div>
+      <div className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</div>
       <div className="zk-bar"><span style={{ width: pct + '%' }} /></div>
       <div className="zk-card-meta">
         <span>{fmt(g.total)} / {fmt(g.target)}</span>
@@ -174,19 +180,17 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
 
 function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCreated: (id: string) => void }) {
   const [name, setName] = useState('');
-  const [phrase, setPhrase] = useState('');
+  const [presetId, setPresetId] = useState(DHIKR_PRESETS[0].id);
+  const [customArabic, setCustomArabic] = useState('');
   const [target, setTarget] = useState('');
-  const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
-
-  const objectifNum = parseInt(target, 10) || 0;
-  const amountNum = parseInt(amount, 10) || 0;
+  const isLibre = presetId === LIBRE_PRESET_ID;
 
   const submit = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const d = await createGroup({ name, phrase, target, amount });
+      const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target });
       notify('✅ Zikr collectif créé.');
       onCreated(d.id);
     } catch (e: any) {
@@ -204,27 +208,28 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
       </label>
       <label className="zk-field">
         <span>Formule à réciter</span>
-        <input type="text" maxLength={PHRASE_MAX} value={phrase} dir="auto"
-          placeholder="Ex. يا لطيف / Astaghfiroullah" onChange={(e) => setPhrase(e.target.value)} />
+        <select value={presetId} onChange={(e) => setPresetId(e.target.value)}>
+          {DHIKR_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>{p.transliteration}</option>
+          ))}
+        </select>
       </label>
-      <div className="zk-field-row">
+      {isLibre && (
         <label className="zk-field">
-          <span>Objectif total</span>
-          <input type="number" min="1" max={TARGET_MAX} value={target}
-            placeholder="100000" onChange={(e) => setTarget(e.target.value)} />
+          <span>Zikr à réciter (arabe)</span>
+          <input type="text" dir="rtl" maxLength={ARABIC_MAX} value={customArabic}
+            placeholder="اكتب هنا" onChange={(e) => setCustomArabic(e.target.value)} />
         </label>
-        <label className="zk-field">
-          <span>Votre part</span>
-          <input type="number" min="1" max={objectifNum || TARGET_MAX} value={amount}
-            placeholder="Combien de grains ?" onChange={(e) => setAmount(e.target.value)} />
-        </label>
-      </div>
-      {objectifNum > 0 && amountNum > 0 && (
-        <p className="zk-preview">
-          Vous prenez en charge <strong>{fmt(amountNum)}</strong> grains sur l’objectif de <strong>{fmt(objectifNum)}</strong>.
-          Le reste sera à prendre par les membres qui rejoindront.
-        </p>
       )}
+      <label className="zk-field">
+        <span>Objectif total</span>
+        <input type="number" min="1" max={TARGET_MAX} value={target}
+          placeholder="100000" onChange={(e) => setTarget(e.target.value)} />
+      </label>
+      <p className="zk-preview">
+        Il n’y a pas de part fixée à l’avance : ce qu’il reste à faire à
+        chacun diminue automatiquement au fil des récitations de tout le groupe.
+      </p>
       <button className="zk-btn main" onClick={submit} disabled={busy}>
         {busy ? 'Création…' : 'Créer'}
       </button>
@@ -233,43 +238,67 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
 }
 
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
-function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user: any; notify: (msg: string) => void; onBack: () => void }) {
+function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string) => void; onBack: () => void }) {
   const [g, setG] = useState<GroupDetailData | null>(null);
   const [error, setError] = useState('');
+  const loadedOnce = useRef(false);
 
   const load = useCallback(async () => {
     try {
       const d = await getGroup(groupId);
       setG(d);
       setError('');
+      loadedOnce.current = true;
       return d;
     } catch (e: any) {
-      setError(e.message || 'Erreur de chargement.');
+      // Un sondage régulier qui échoue une fois ne doit pas effacer l'écran
+      // déjà affiché — seul un premier chargement raté est bloquant.
+      if (!loadedOnce.current) setError(e.message || 'Erreur de chargement.');
       return null;
     }
   }, [groupId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const doJoin = async (amount: number) => {
+  // Sondage régulier de TOUT le détail (membres, présence, demandes,
+  // objectif restant) — remplace l'abonnement RTDB temps réel de la
+  // référence, faute d'accès direct au client (voir l'en-tête du fichier).
+  useEffect(() => {
+    const id = setInterval(load, POLL_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const doJoin = async () => {
     try {
-      const d = await joinGroup(groupId, amount);
+      const d = await joinGroup(groupId);
       notify(d.status === 'pending' ? '⏳ Demande envoyée au créateur.' : '✓ Vous avez rejoint le groupe.');
       load();
     } catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doLeave = async () => {
-    if (!window.confirm('Quitter ce zikr collectif ? Votre part sera libérée pour quelqu’un d’autre.')) return;
+    if (!window.confirm('Quitter ce zikr collectif ?')) return;
     try { await leaveGroup(groupId); notify('Vous avez quitté le groupe.'); onBack(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doDelete = async () => {
-    if (!window.confirm('Supprimer définitivement ce zikr collectif pour tous les membres ?')) return;
+    if (!window.confirm('Supprimer définitivement ce zikr collectif ?')) return;
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
-  const act = async (fn: (groupId: string, uid: string) => Promise<any>, uid: string) => {
-    try { await fn(groupId, uid); load(); }
+  const doDismissWarning = async () => {
+    try { await dismissWarning(groupId); load(); } catch { /* best effort */ }
+  };
+  const doWarn = async (targetUid: string, email: string) => {
+    try { await warnMember(groupId, targetUid); notify(`Avertissement privé envoyé à ${email}.`); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const doExclude = async (targetUid: string, email: string) => {
+    if (!window.confirm(`Exclure ${email} de ce zikr collectif ?`)) return;
+    try { await excludeMember(groupId, targetUid); notify(`${email} a été retiré du zikr collectif.`); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const act = async (fn: (groupId: string, uid: string) => Promise<any>, targetUid: string) => {
+    try { await fn(groupId, targetUid); load(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
 
@@ -289,29 +318,35 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
 
       <div className="zk-detail-head">
         <h1>{g.name}</h1>
-        <div className="zk-phrase-big" dir="auto">{g.phrase}</div>
+        {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
+        <div className="zk-phrase-translit">{g.transliteration}</div>
         <div className="zk-owner">
           Créé par {g.ownerEmail} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-          {g.remaining > 0 ? ` · reste ${fmt(g.remaining)} à prendre` : ' · objectif entièrement pris en charge'}
+          {g.onlineCount > 0 && <> · <span className="zk-online-text">{g.onlineCount} en ligne</span></>}
         </div>
       </div>
 
       {isMember ? (
-        <MemberCounter groupId={groupId} initial={g} onRefresh={load} />
+        <>
+          {g.full && (
+            <p className="zk-reached-banner">🎉 Objectif atteint par le groupe — merci à tous les participants !</p>
+          )}
+          <MemberCounter groupId={groupId} uid={uid} g={g} onDismissWarning={doDismissWarning} />
+        </>
       ) : (
         <>
           <StaticProgress total={g.total} target={g.target} />
           {g.status === 'pending' ? (
             <div className="zk-join-state">⏳ Votre demande est en attente de validation par le créateur.</div>
           ) : g.full ? (
-            <div className="zk-join-state">Ce zikr collectif est complet — tout l’objectif est déjà pris en charge.</div>
+            <div className="zk-join-state">Ce zikr collectif est complet — objectif entièrement récité.</div>
           ) : (
-            <JoinForm remaining={g.remaining} onJoin={doJoin} />
+            <button className="zk-btn main" onClick={doJoin}>🤝 Demander à rejoindre</button>
           )}
         </>
       )}
 
-      {/* Panneau créateur : demandes en attente */}
+      {/* File d'approbation : seul le créateur la voit. */}
       {g.status === 'owner' && (
         <div className="zk-owner-panel">
           <h3>Demandes d’adhésion {g.pending > 0 && <span className="zk-pill">{g.pending}</span>}</h3>
@@ -321,7 +356,7 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
             <div className="zk-req-list">
               {g.requests.map((r) => (
                 <div key={r.uid} className="zk-req">
-                  <span className="zk-req-email">{r.email} — {fmt(r.amount)} grains</span>
+                  <span className="zk-req-email">{r.email}</span>
                   <span className="zk-req-actions">
                     <button className="zk-mini ok" onClick={() => act(approveMember, r.uid)}>Accepter</button>
                     <button className="zk-mini no" onClick={() => act(rejectMember, r.uid)}>Refuser</button>
@@ -333,48 +368,53 @@ function GroupDetail({ groupId, user, notify, onBack }: { groupId: string; user:
         </div>
       )}
 
-      {/* Classement des contributeurs (part de chacun) */}
-      <div className="zk-board">
-        <h3>Parts des membres</h3>
-        <div className="zk-board-list">
-          {g.members.map((m, i) => (
-            <div key={m.uid} className={'zk-board-row' + (m.uid === user?.uid ? ' me' : '')}>
-              <span className="zk-rank">{i + 1}</span>
-              <span className="zk-board-email">{m.email || 'Membre'}{m.uid === user?.uid ? ' (vous)' : ''}</span>
-              <span className="zk-board-count">{fmt(m.fait)} / {fmt(m.part)}</span>
-            </div>
-          ))}
+      {/* Qui participe, sa progression, sa présence et son rythme — visible
+          seulement des membres (pas des visiteurs qui n'ont pas encore
+          rejoint), avec les outils de modération pour le créateur. */}
+      {isMember && g.members.length > 0 && (
+        <div className="zk-board">
+          <h3>Participants ({g.members.length})</h3>
+          <div className="zk-board-list">
+            {g.members.map((m) => {
+              const suspect = m.rythme >= RYTHME_SUSPECT;
+              return (
+                <div key={m.uid} className={'zk-board-row' + (m.uid === uid ? ' me' : '')}>
+                  <span
+                    className={'zk-online-dot' + (m.online ? ' on' : '')}
+                    title={m.online ? 'En ligne' : 'Hors ligne'}
+                    aria-label={m.online ? 'En ligne' : 'Hors ligne'}
+                  />
+                  <span className="zk-board-email">
+                    {m.email || 'Membre'}
+                    {m.uid === g.ownerUid && <span className="zk-muted"> (créateur)</span>}
+                    {m.uid === uid && <span className="zk-muted"> (vous)</span>}
+                  </span>
+                  <span className="zk-board-count">{fmt(m.fait)} grains</span>
+                  {m.rythme > 0 && (
+                    <span className={'zk-pace' + (suspect ? ' suspect' : '')} title="Rythme instantané">
+                      {suspect ? '⚠️' : '⚡'} {m.rythme}/min
+                    </span>
+                  )}
+                  {g.status === 'owner' && m.uid !== uid && (
+                    <span className="zk-mod-actions">
+                      <button type="button" className="zk-mini warn" title="Avertir en privé"
+                        aria-label={`Avertir ${m.email} en privé`} onClick={() => doWarn(m.uid, m.email)}>⚠️</button>
+                      <button type="button" className="zk-mini no" title="Exclure"
+                        aria-label={`Exclure ${m.email}`} onClick={() => doExclude(m.uid, m.email)}>✕</button>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="zk-footer-actions">
-        {g.status === 'member' && <button className="zk-btn ghost" onClick={doLeave}>Quitter le groupe</button>}
-        {g.status === 'owner' && <button className="zk-btn danger" onClick={doDelete}>Supprimer le zikr collectif</button>}
-      </div>
-    </div>
-  );
-}
-
-// Choix du nombre de grains à prendre en charge en rejoignant — plus de
-// répartition automatique en parts égales : c'est le membre qui décide,
-// plafonné à `remaining` (ce qu'il reste réellement à couvrir).
-function JoinForm({ remaining, onJoin }: { remaining: number; onJoin: (amount: number) => void }) {
-  const [amount, setAmount] = useState('');
-  const n = parseInt(amount, 10) || 0;
-  const valid = n >= 1 && n <= remaining;
-
-  return (
-    <div className="zk-join-form">
-      <p className="zk-muted">Combien de grains voulez-vous prendre en charge ? (reste {fmt(remaining)} à couvrir)</p>
-      <div className="zk-field-row">
-        <label className="zk-field">
-          <span>Nombre de grains</span>
-          <input type="number" min="1" max={remaining} value={amount}
-            placeholder="Ex. 100" onChange={(e) => setAmount(e.target.value)} />
-        </label>
-        <button className="zk-btn main zk-join-btn" disabled={!valid} onClick={() => onJoin(n)}>
-          🤝 Rejoindre
-        </button>
+        {isMember && <button className="zk-btn ghost" onClick={doLeave}>Quitter le groupe</button>}
+        {g.status === 'owner' && g.membersCount <= 1 && (
+          <button className="zk-btn danger" onClick={doDelete}>Supprimer le zikr collectif</button>
+        )}
       </div>
     </div>
   );
@@ -388,95 +428,120 @@ function StaticProgress({ total, target }: { total: number; target: number }) {
       <div className="zk-bar big"><span style={{ width: pct + '%' }} className={reached ? 'done' : ''} /></div>
       <div className="zk-progress-meta">
         <strong>{fmt(total)}</strong> / {fmt(target)} ({Math.floor(pct)}%)
-        {reached && <span className="zk-reached"> 🎉 Objectif atteint !</span>}
       </div>
     </div>
   );
 }
 
-// Compteur d'un participant — il égrène SA part avec le MÊME chapelet que
-// « Noms d'Allah » (components/TasbihChapelet.js), en temps réel et sans
-// validation : chaque grain compte immédiatement, l'envoi au serveur est
-// simplement regroupé SAVE_DEBOUNCE ms après la dernière frappe (comme le ZIP
-// de référence), et le groupe est resondé (POLL_MS) pour refléter l'avancement
-// des autres membres.
+// Compteur d'un participant — il égrène SANS PLAFOND (pas de part
+// individuelle : l'objectif partagé du groupe diminue en direct pour TOUT
+// le monde à la fois, cf. TasbihChapelet prop `collectifRestant`) avec le
+// MÊME chapelet que « Noms d'Allah » (components/TasbihChapelet.js).
 //
-// La clé de persistance est propre à CE zikr collectif (`collectif_{gid}`) :
-// sans cela, égrener ici ferait aussi avancer le compteur personnel de la même
-// formule dans « Noms d'Allah ».
-function MemberCounter({ groupId, initial, onRefresh }: { groupId: string; initial: GroupDetailData; onRefresh: () => Promise<GroupDetailData | null> }) {
-  const myPart = Number(initial.myPart) || 0;
-  const target = Number(initial.target) || 0;
+// La clé de persistance locale est propre à CE zikr collectif ET à CE
+// COMPTE (`collectif_{gid}_{uid}`) : sans le `_{uid}`, deux comptes Google
+// ouverts sur le même appareil/navigateur partageraient le même compteur
+// local pour ce zikr, et le second hériterait des grains du premier.
+function MemberCounter({ groupId, uid, g, onDismissWarning }: {
+  groupId: string; uid: string; g: GroupDetailData; onDismissWarning: () => void;
+}) {
+  // Aligne le compteur LOCAL sur ce que le compte a déjà enregistré, s'il est
+  // en retard — utile en particulier sur un second appareil pour ce même
+  // compte, pour ne pas repartir de zéro localement (le garde-fou
+  // anti-régression côté serveur bloquerait sinon toute nouvelle frappe
+  // tant que le compteur local n'a pas rattrapé le retard).
+  restoreLocalCount(groupId, uid, Number(g.myFait) || 0);
 
-  const t = useTasbih(`collectif_${groupId}`, myPart);
+  const target = Number(g.target) || 0;
+  const t = useTasbih(`collectif_${groupId}_${uid}`, undefined, true);
 
-  // Avancement déduit du compteur, borné à la part (même calcul que le ZIP :
-  // séries bouclées × base + série en cours). `t.total` ne convient pas ici,
-  // il se cale sur l'objectif SAISI, alors que la référence est la part.
-  const { count, loopCur, series } = t;
-  const seriesCount = parseInt(series, 10) || 0;
-  const base = seriesCount > 0 ? Math.floor(myPart / seriesCount) : 0;
-  const fait = Math.min(myPart, base * loopCur + count);
+  // Rythme instantané (grains/minute), sur les tapotements des dix dernières
+  // secondes — remis à zéro après six secondes sans tap plutôt que de rester
+  // figé (repos, pas triche). Aucune API web ne mesure fiablement la
+  // pression du pouce : c'est le seul indice mesurable pour repérer un
+  // tapotement mécanique plutôt qu'une récitation avec intention.
+  const [rythme, setRythme] = useState(0);
+  const tapTimesRef = useRef<number[]>([]);
+  const prevTotalRef = useRef(t.total);
 
-  const [serverTotal, setServerTotal] = useState(Number(initial.total) || 0);
-  // Dernière valeur connue du serveur pour MOI : sert à corriger le total
-  // affiché tant que des grains locaux ne sont pas encore synchronisés.
-  const syncedFait = useRef(Number(initial.myFait) || 0);
-  const faitRef = useRef(fait);
-  faitRef.current = fait;
+  useEffect(() => {
+    if (t.total > prevTotalRef.current) {
+      const now = Date.now();
+      const times = tapTimesRef.current;
+      times.push(now);
+      const cutoff = now - 10_000;
+      while (times.length > 1 && times[0] < cutoff) times.shift();
+      if (times.length > 12) times.splice(0, times.length - 12);
+      const spanSec = times.length >= 2 ? (times[times.length - 1] - times[0]) / 1000 : 0;
+      setRythme(spanSec > 0 ? Math.round(((times.length - 1) / spanSec) * 60) : 0);
+    }
+    prevTotalRef.current = t.total;
+
+    const decay = setTimeout(() => setRythme(0), 6000);
+    return () => clearTimeout(decay);
+  }, [t.total]);
+
+  // Dernière valeur connue du serveur pour MOI : sert à corriger le total du
+  // groupe affiché tant que des grains locaux ne sont pas encore synchronisés.
+  const syncedFait = useRef(Number(g.myFait) || 0);
+  const faitRef = useRef(t.total);
+  faitRef.current = t.total;
+  const rythmeRef = useRef(rythme);
+  rythmeRef.current = rythme;
+  const lastSaved = useRef({ fait: Number(g.myFait) || 0, rythme: 0 });
 
   const flush = useCallback(async () => {
-    const val = faitRef.current;
-    if (val === syncedFait.current) return;
+    const fait = faitRef.current;
+    const r = rythmeRef.current;
+    if (fait === lastSaved.current.fait && r === lastSaved.current.rythme) return;
+    lastSaved.current = { fait, rythme: r };
     try {
-      const d = await saveProgress(groupId, val);
+      const d = await saveProgress(groupId, fait, r);
       syncedFait.current = Number(d.fait) || 0;
-      setServerTotal(Number(d.total) || 0);
     } catch {
       // best-effort : la prochaine frappe (ou le démontage) réessaiera
     }
   }, [groupId]);
 
-  // Envoi groupé : une écriture après SAVE_DEBOUNCE ms sans nouvelle frappe,
-  // plutôt qu'une par grain.
+  // Envoi groupé : une écriture après SAVE_DEBOUNCE ms sans nouvelle frappe
+  // NI changement de rythme (le rythme retombant à 0 après une pause doit
+  // aussi se propager, pour que les autres voient l'alerte se lever).
   useEffect(() => {
-    if (fait === syncedFait.current) return undefined;
+    if (t.total === lastSaved.current.fait && rythme === lastSaved.current.rythme) return undefined;
     const timer = setTimeout(flush, SAVE_DEBOUNCE);
     return () => clearTimeout(timer);
-  }, [fait, flush]);
+  }, [t.total, rythme, flush]);
 
-  // Sondage régulier : reflète l'avancement des AUTRES membres et le total du
-  // groupe (le « temps réel » passe par là, faute d'abonnement RTDB direct).
+  useEffect(() => () => { flush(); }, [flush]); // n'abandonne pas les grains en attente au démontage
+
+  // Ma part a pu avancer ailleurs (autre appareil) : le sondage régulier du
+  // parent (GroupDetail) le révèle via `g.myFait` — on recale la référence,
+  // sinon la correction ci-dessous compterait ces grains en double.
   useEffect(() => {
-    const id = setInterval(async () => {
-      const d = await onRefresh();
-      if (!d) return;
-      setServerTotal(Number(d.total) || 0);
-      // Ma part a pu avancer ailleurs (autre appareil) : on recale la
-      // référence, sinon la correction ci-dessous compterait ces grains en
-      // double dans le total affiché.
-      const remote = Number(d.myFait) || 0;
-      if (remote > syncedFait.current) syncedFait.current = remote;
-    }, POLL_MS);
-    return () => {
-      clearInterval(id);
-      flush(); // n'abandonne pas les grains en attente si on quitte la vue
-    };
-  }, [onRefresh, flush]);
+    const remote = Number(g.myFait) || 0;
+    if (remote > syncedFait.current) syncedFait.current = remote;
+  }, [g.myFait]);
 
-  // Total du groupe affiché = total serveur corrigé de mes grains non encore
-  // synchronisés, pour que la barre collective bouge dès que j'égrène.
-  const pending = Math.max(0, fait - syncedFait.current);
-  const groupTotal = Math.min(target || Infinity, serverTotal + pending);
+  const pending = Math.max(0, t.total - syncedFait.current);
+  const groupTotal = Math.min(target || Infinity, (Number(g.total) || 0) + pending);
   const groupPct = progressPct(groupTotal, target);
+  const restant = Math.max(0, target - groupTotal);
   // L'avancement enregistré fait foi s'il dépasse le compteur local (stockage
   // vidé, ou récitation faite depuis un autre appareil) — cohérent avec le
   // caractère monotone appliqué côté serveur.
-  const myFait = Math.max(fait, syncedFait.current);
-  const myPct = myPart > 0 ? Math.min(100, (myFait / myPart) * 100) : 0;
+  const myFait = Math.max(t.total, syncedFait.current);
 
   return (
     <>
+      {/* Avertissement privé du créateur — visible seulement de la personne
+          concernée, jamais des autres participants. */}
+      {g.myWarning && (
+        <div className="zk-warning">
+          <p>⚠️ {g.myWarning}</p>
+          <button type="button" className="zk-link" onClick={onDismissWarning}>C’est noté</button>
+        </div>
+      )}
+
       <div className="zk-progress-block">
         <div className="zk-progress-meta"><span>Progression du groupe</span></div>
         <div className="zk-bar big">
@@ -484,13 +549,13 @@ function MemberCounter({ groupId, initial, onRefresh }: { groupId: string; initi
         </div>
         <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({Math.floor(groupPct)}%)</div>
 
-        <div className="zk-progress-meta" style={{ marginTop: 10 }}><span>Ma part</span></div>
-        <div className="zk-bar big"><span className="gold" style={{ width: myPct + '%' }} /></div>
-        <div className="zk-progress-meta"><strong>{fmt(myFait)}</strong> / {fmt(myPart)} grains</div>
+        <div className="zk-progress-meta" style={{ marginTop: 10 }}><span>Mes grains récités</span></div>
+        <strong className="zk-my-fait">{fmt(myFait)}</strong>
       </div>
 
-      {/* Objectif masqué dans les réglages : ici, l'objectif EST la part. */}
-      <TasbihChapelet id={`collectif-${groupId}`} t={t} targetLocked />
+      {/* Réglages masqués : pas de part personnelle en Zikr collectif,
+          l'objectif restant affiché EST celui du groupe entier. */}
+      <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} />
     </>
   );
 }

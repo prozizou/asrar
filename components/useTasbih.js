@@ -28,7 +28,21 @@ const vibrate = (pattern) => {
   } catch {}
 };
 
-export function useTasbih(id, autoTarget) {
+/**
+ * @param {string} id identifiant du zikr récité (clé de persistance).
+ * @param {number} [autoTarget] objectif par défaut proposé tant qu'aucun
+ *   objectif n'a encore été enregistré pour ce zikr.
+ * @param {boolean} [uncapped] Zikr collectif : égrène SANS plafond ni série,
+ *   quoi que contienne le stockage local pour cet `id` — un objectif ou des
+ *   séries ont pu y être enregistrés avant de rejoindre un zikr collectif
+ *   (réglage personnel resté d'un usage antérieur en solo), et sans ce
+ *   paramètre ce résidu plafonnerait silencieusement `total` bien en dessous
+ *   du vrai nombre de grains tapés, avant d'écraser la contribution déjà
+ *   enregistrée sur le compte par cette valeur tronquée — vu comme une
+ *   régression du total du groupe (l'objectif partagé est affiché à part par
+ *   l'appelant, cf. components/TasbihChapelet.js, prop `collectifRestant`).
+ */
+export function useTasbih(id, autoTarget, uncapped = false) {
   const initialTarget = (() => {
     const t = ls.get(`tasbih_target_${id}`);
     return t === null || t === '' ? String(autoTarget || '') : t;
@@ -47,7 +61,7 @@ export function useTasbih(id, autoTarget) {
   const [newBadge, setNewBadge] = useState(null);
   const badgeTimer = useRef(null);
 
-  const grand = parseInt(target) || 0;
+  const grand = uncapped ? 0 : parseInt(target) || 0;
   const seriesCount = parseInt(series) || 0;
   const numericTarget = grand || parseInt(autoTarget) || 0;
   const base = seriesCount > 0 ? Math.floor(grand / seriesCount) : 0;
