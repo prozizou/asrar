@@ -767,6 +767,7 @@ img, svg, video { max-width: 100%; height: auto; }
   max-width: 140px;
 }
 .tc-group select option { color: #1a1206; }
+.tc-group-value { color: var(--text-main); font-family: var(--font-ui); font-size: .88rem; }
 .tc-loop {
   padding: 5px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600;
   color: #d9a441; background: rgba(217,164,65,.15); border: 1px solid rgba(217,164,65,.4);

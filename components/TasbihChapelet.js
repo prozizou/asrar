@@ -54,11 +54,18 @@ const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 1
 /**
  * @param {object} props
  * @param {string} props.id          identifiant de rendu (aria/DOM)
- * @param {object} props.t           résultat de useTasbih()
- * @param {boolean} [props.targetLocked]  masque le champ « Objectif » quand il
- *   est imposé par le contexte (Zikr collectif : l'objectif EST la part).
+ * @param {object} props.t           résultat de useTasbih() — passer `uncapped`
+ *   (3e argument) quand `collectifRestant` est fourni, cf. ci-dessous.
+ * @param {number} [props.collectifRestant]  Zikr collectif : ce qu'il reste à
+ *   faire au GROUPE entier (même nombre pour tous, mis à jour en direct).
+ *   Remplace entièrement les réglages personnels (objectif, séries, remise à
+ *   zéro, suggestions de répartition — aucun n'a de sens pour un objectif
+ *   partagé et non modifiable) par un simple badge en lecture seule, et
+ *   masque la barre de progression personnelle (sans objectif propre, elle
+ *   n'a rien de pertinent à montrer).
  */
-export default function TasbihChapelet({ id, t, targetLocked = false }) {
+export default function TasbihChapelet({ id, t, collectifRestant }) {
+  const isCollectif = collectifRestant !== undefined;
   const pathRef = useRef(null);
   const beadRefs = useRef([]);
   const stageRef = useRef(null);
@@ -179,63 +186,72 @@ export default function TasbihChapelet({ id, t, targetLocked = false }) {
       className="tc"
       onClick={handleTap}
     >
-      {/* Réglages : objectif, subdivisions suggérées, séries, remise à zéro.
-          stopPropagation empêche ces interactions de compter comme un tap. */}
+      {/* Réglages. stopPropagation empêche ces interactions de compter comme
+          un tap de grain. Pour un Zikr collectif, seul l'objectif partagé du
+          groupe a un sens ici : pas de séries ni de remise à zéro
+          personnelle, qui effacerait à tort sa contribution. */}
       <div className="tc-settings" onClick={(e) => e.stopPropagation()}>
-        {!targetLocked && (
-          <div className="tc-group" title="Objectif de récitation">
+        {isCollectif ? (
+          <div className="tc-group" title="Objectif du Zikr collectif — ce qu'il reste au groupe entier">
             <span aria-hidden>🎯</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="Obj."
-              aria-label="Objectif"
-              value={t.target}
-              onChange={(e) => t.setTarget(e.target.value)}
-            />
+            <span className="tc-group-value">{collectifRestant.toLocaleString('fr-FR')}</span>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="tc-group" title="Objectif de récitation">
+              <span aria-hidden>🎯</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="Obj."
+                aria-label="Objectif"
+                value={t.target}
+                onChange={(e) => t.setTarget(e.target.value)}
+              />
+            </div>
 
-        <div className="tc-group" title="Nombre de séries — l'objectif est réparti dessus, le reste va sur la dernière">
-          <span aria-hidden>🔁</span>
-          <input
-            type="number"
-            min="0"
-            placeholder="Séries"
-            aria-label="Nombre de séries"
-            value={t.series}
-            onChange={(e) => t.setSeries(e.target.value)}
-          />
-        </div>
+            <div className="tc-group" title="Nombre de séries — l'objectif est réparti dessus, le reste va sur la dernière">
+              <span aria-hidden>🔁</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="Séries"
+                aria-label="Nombre de séries"
+                value={t.series}
+                onChange={(e) => t.setSeries(e.target.value)}
+              />
+            </div>
 
-        {t.seriesCount > 0 && (
-          <span className="tc-loop">
-            Série {t.loopCur}/{t.seriesCount}
-          </span>
-        )}
+            {t.seriesCount > 0 && (
+              <span className="tc-loop">
+                Série {t.loopCur}/{t.seriesCount}
+              </span>
+            )}
 
-        <button type="button" className="tc-reset" aria-label="Réinitialiser le compteur" onClick={t.reset}>
-          ↺
-        </button>
+            <button type="button" className="tc-reset" aria-label="Réinitialiser le compteur" onClick={t.reset}>
+              ↺
+            </button>
 
-        {subs.length > 0 && (
-          // Menu déroulant plutôt qu'une rangée de puces : objSubdivisions()
-          // peut renvoyer jusqu'à 40 suggestions (objectifs très divisibles,
-          // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
-          // compact, un seul contrôle quel que soit le nombre de suggestions.
-          <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
-            <span aria-hidden>🔀</span>
-            <select
-              aria-label="Suggestions de répartition"
-              value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
-              onChange={(e) => { if (e.target.value) t.setSeries(e.target.value); }}
-            >
-              <option value="">Suggestions…</option>
-              {subs.map((sub) => (
-                <option key={sub.label} value={sub.series}>{sub.label}</option>
-              ))}
-            </select>
-          </div>
+            {subs.length > 0 && (
+              // Menu déroulant plutôt qu'une rangée de puces : objSubdivisions()
+              // peut renvoyer jusqu'à 40 suggestions (objectifs très divisibles,
+              // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
+              // compact, un seul contrôle quel que soit le nombre de suggestions.
+              <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
+                <span aria-hidden>🔀</span>
+                <select
+                  aria-label="Suggestions de répartition"
+                  value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
+                  onChange={(e) => { if (e.target.value) t.setSeries(e.target.value); }}
+                >
+                  <option value="">Suggestions…</option>
+                  {subs.map((sub) => (
+                    <option key={sub.label} value={sub.series}>{sub.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -257,17 +273,22 @@ export default function TasbihChapelet({ id, t, targetLocked = false }) {
         </div>
       )}
 
-      <div className="tc-progress">
-        <div className="tc-progress-row">
-          <span>Progression</span>
-          <span>
-            <strong>{t.total}</strong> / {t.numericTarget || 0}
-          </span>
+      {/* Progression personnelle — sans objectif propre en Zikr collectif
+          (celui du groupe est déjà affiché dans les réglages ci-dessus et
+          par l'appelant), cette barre n'a rien de pertinent à montrer. */}
+      {!isCollectif && (
+        <div className="tc-progress">
+          <div className="tc-progress-row">
+            <span>Progression</span>
+            <span>
+              <strong>{t.total}</strong> / {t.numericTarget || 0}
+            </span>
+          </div>
+          <div className="tc-bar">
+            <span style={{ width: t.pct + '%' }} />
+          </div>
         </div>
-        <div className="tc-bar">
-          <span style={{ width: t.pct + '%' }} />
-        </div>
-      </div>
+      )}
 
       {/* Le chapelet : le fil (SVG) puis les grains posés dessus. */}
       <div
