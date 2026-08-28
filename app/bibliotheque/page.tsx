@@ -237,10 +237,6 @@ export default function BibliothequePage() {
                   )}
                 </div>
                 <div className="book-info">
-                  <div className="book-title" onClick={() => openBook(book._key)}>
-                    {book.text}
-                  </div>
-                  {book.author && <div className="book-meta">✍️ {book.author}</div>}
                   <div className="book-social">
                     <button className={'bs-btn' + (s.liked ? ' liked' : '')} onClick={() => toggleLike(book._key)}>
                       ❤ <span>{s.likes}</span>
