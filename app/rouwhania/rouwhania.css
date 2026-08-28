@@ -67,7 +67,6 @@ html[data-theme='light'] .rw-page {
 
 /* ── Composants verre ── */
 .rw-page #editor,
-.rw-page .intent-select,
 .rw-page .result-box,
 .rw-page .stats-footer,
 .rw-page .angel-btn,
@@ -92,18 +91,6 @@ html[data-theme='light'] .rw-page {
   transition: box-shadow 0.3s;
 }
 .rw-page #editor:focus { box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.5); }
-
-.rw-page .intent-select {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 12px;
-  text-align: left;
-  direction: ltr;
-  outline: none;
-}
-.rw-page .intent-select:focus { box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.5); }
 
 .rw-page .button-row { display: flex; gap: 5px; }
 .rw-page .primary-btn,
@@ -189,20 +176,11 @@ html[data-theme='light'] .rw-page {
 .rw-page .angel-arabic { font-size: 22px; color: var(--text-primary); flex: 1; text-align: center; font-weight: bold; }
 .rw-page .angel-transcript { font-size: 14px; color: var(--text-secondary); flex: 0 0 35%; text-align: right; word-break: break-word; }
 
-/* Carte d'un nom d'Allah */
-.rw-page .allah-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  background: var(--card-bg);
-  padding: 20px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  box-shadow: var(--glass-shadow);
-}
-.rw-page .allah-card-head { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 15px; }
-.rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 28px; }
+/* Groupes de noms d'Allah par lettre : une lettre du nom-racine, tous les
+   noms qui lui correspondent en scroll horizontal (plus de sélection
+   automatique d'un seul « meilleur » nom selon un vœu). */
+.rw-page .allah-letters-list { display: flex; flex-direction: column; gap: 20px; }
+.rw-page .allah-letter-group { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .rw-page .allah-card-letter {
   font-size: 16px;
   color: var(--text-secondary);
@@ -215,8 +193,36 @@ html[data-theme='light'] .rw-page {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  margin-top: 8px;
+  flex-shrink: 0;
 }
+.rw-page .allah-scroll-row {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Carte d'un nom d'Allah — flex 0 0 auto : largeur propre plutôt que 100% du
+   conteneur, requis pour prendre place dans .allah-scroll-row (horizontal). */
+.rw-page .allah-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  width: min(260px, 78vw);
+  scroll-snap-align: start;
+  background: var(--card-bg);
+  padding: 20px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--glass-shadow);
+}
+.rw-page .allah-card-head { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 15px; }
+.rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 28px; }
 .rw-page .allah-card-body { width: 100%; border-top: 1px dashed var(--card-border); padding-top: 15px; }
 .rw-page .allah-card-translit { text-align: left; color: var(--text-secondary); margin-bottom: 15px; font-weight: bold; }
 .rw-page .allah-card-section-title { text-align: center; font-weight: bold; margin-bottom: 8px; border-radius: 8px; padding: 6px; }
@@ -227,10 +233,10 @@ html[data-theme='light'] .rw-page {
   flex-direction: column;
   align-items: center;
   padding: 15px;
+  width: 100%;
   background: var(--card-bg);
   border-radius: 12px;
   border: 1px solid var(--card-border);
-  margin-bottom: 20px;
   color: var(--text-secondary);
 }
 .rw-page .allah-card-empty span:first-child { font-size: 18px; }
