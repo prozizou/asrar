@@ -212,8 +212,8 @@ export default function RouwhaniaPage() {
             {/* Noms d'Allah correspondants : un groupe par lettre du nom-racine,
                 chacun listant TOUS les noms qui lui correspondent (plus de
                 sélection automatique d'un seul « meilleur » nom selon un vœu —
-                voir lib/rouwhania.js buildAllahCards) en scroll horizontal,
-                avec tous les détails pour choisir personnellement. */}
+                voir lib/rouwhania.js buildAllahCards), une carte pleine largeur
+                sous l'autre, avec tous les détails pour choisir personnellement. */}
             {allahCards.length > 0 && (
               <div className="angel-names-container" style={{ borderTop: '2px dashed #f39c12', marginTop: 15 }}>
                 <h3 style={{ color: '#d35400' }}>Les noms d'Allah qui vont avec</h3>
@@ -244,9 +244,9 @@ function MixedBlock({ text }: { text: string }) {
 }
 
 // Un groupe = une lettre du nom-racine + TOUS les noms d'Allah qui lui
-// correspondent, présentés en scroll horizontal (au lieu d'un seul « meilleur »
-// nom choisi automatiquement) pour que l'utilisateur en déduise lui-même
-// lequel prendre, à partir de tous les détails de chacun.
+// correspondent, une carte pleine largeur sous l'autre (au lieu d'un seul
+// « meilleur » nom choisi automatiquement) pour que l'utilisateur en déduise
+// lui-même lequel prendre, à partir de tous les détails de chacun.
 function AllahLetterGroup({ group }: { group: any }) {
   const { char, matches } = group;
   return (
@@ -257,7 +257,7 @@ function AllahLetterGroup({ group }: { group: any }) {
           <span>لا يوجد اسم مناسب لهذا الحرف</span>
         </div>
       ) : (
-        <div className="allah-scroll-row">
+        <div className="allah-names-list">
           {matches.map((data: any, i: number) => (
             <AllahCard key={i} data={data} />
           ))}
