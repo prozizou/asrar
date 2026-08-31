@@ -47,10 +47,13 @@ const SOURCES = {
     secretFields: []
   },
   // Formation mystique : ateliers/formations en direct par visioconférence.
-  // Titre/description/durée/prix/attentes toujours visibles (aperçu libre,
-  // comme la Bibliothèque) ; seul le lien Google Meet (lien simple géré par
-  // l'admin, pas d'intégration Google Calendar API) est un champ payant —
-  // révélé uniquement par get-content, au moment de rejoindre.
+  // Titre/description/durée/prix/attentes/pricePerMinute toujours visibles
+  // (aperçu libre, comme la Bibliothèque). Le lien Google Meet reste un champ
+  // secret ici (jamais renvoyé par list-content) MAIS n'est plus révélé via
+  // get-content (l'ancien modèle, gated par l'abonnement) : l'accès est
+  // désormais payant À LA MINUTE et indépendant de l'abonnement — voir
+  // pages/api/formation-access.js (action "join", formation_access/{clé}),
+  // qui lit le lien directement une fois le crédit de minutes vérifié.
   formation: {
     ref: () => "formations",
     secretFields: ["meetLink"]
