@@ -45,6 +45,15 @@ const SOURCES = {
   asma: {
     ref: () => "data/appData/asmaUlHusna",
     secretFields: []
+  },
+  // Formation mystique : ateliers/formations en direct par visioconférence.
+  // Titre/description/durée/prix/attentes toujours visibles (aperçu libre,
+  // comme la Bibliothèque) ; seul le lien Google Meet (lien simple géré par
+  // l'admin, pas d'intégration Google Calendar API) est un champ payant —
+  // révélé uniquement par get-content, au moment de rejoindre.
+  formation: {
+    ref: () => "formations",
+    secretFields: ["meetLink"]
   }
 };
 

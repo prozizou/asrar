@@ -1,0 +1,85 @@
+/* formation.css — Module Formation mystique : ateliers/formations en direct
+   par visioconférence Google Meet (lien simple, géré par l'admin — voir
+   server/sources.js "formation", pages/api/admin.js save-formation).
+   .container/.glass-panel/.back-btn viennent d'app/globals.css (chargé pour
+   toute l'app) — seules les classes propres à ce module sont définies ici. */
+
+.fm-subtitle { color: var(--text-dim); margin-top: 4px; }
+
+.fm-back-btn { font: inherit; cursor: pointer; }
+
+/* ── Grille des formations ───────────────────────────────── */
+.fm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  margin-top: 10px;
+}
+.fm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  flex-direction: column;
+}
+.fm-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.16); border-color: var(--border-strong); }
+.fm-cover {
+  position: relative;
+  height: 140px;
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--text-main);
+  overflow: hidden;
+}
+.fm-body { padding: 12px; }
+.fm-title { font-family: var(--font-display); font-weight: 600; font-size: 1rem; margin-bottom: 6px; line-height: 1.3; }
+.fm-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: var(--text-dim); }
+
+.fm-skeleton { background: var(--surface); border-radius: 16px; height: 220px; animation: fm-pulse 1.5s infinite; }
+@keyframes fm-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+.fm-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-faint); font-style: italic; }
+
+/* ── Détail ──────────────────────────────────────────────── */
+.fm-detail { padding: 1.5rem; }
+.fm-detail-cover {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface-3);
+  margin-bottom: 16px;
+}
+.fm-detail h2 { font-family: var(--font-display); font-size: 1.6rem; margin: 0 0 8px; }
+.fm-detail h3 { font-size: 1.05rem; margin: 20px 0 8px; color: var(--accent); }
+.fm-detail-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.9rem; color: var(--text-dim); margin-bottom: 14px; }
+.fm-detail-text { line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
+
+.fm-join-btn {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 24px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border: none;
+  color: var(--text-on-accent);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: filter 0.15s, opacity 0.15s;
+}
+.fm-join-btn:disabled { opacity: 0.6; cursor: default; }
+.fm-join-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+@media (max-width: 600px) {
+  .fm-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .fm-cover { height: 110px; }
+}
