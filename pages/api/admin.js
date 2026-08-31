@@ -7,6 +7,7 @@
 //   stats
 //   list-secrets {cat} · save-secret {cat,key?,faida,sirr,img} · delete-secret {cat,key}
 //   list-books · save-book {key?,titre,auteur,description,img,pdf} · delete-book {key}
+//   list-formations · save-formation {key?,titre,description,prix,duree,attentes,img,meetLink} · delete-formation {key}
 //   list-products · save-product {key?,produit,Prix,...} · delete-product {key}
 //   list-sellers · seller-action {uid, op:'extend'|'suspend'|'activate', days?}
 //   grant-access {email, days?, level?} · revoke-access {email} · list-access
@@ -79,6 +80,30 @@ export default async function handler(req, res) {
       case "delete-book": {
         if (!body.key) return res.status(400).json({ error: "Clé requise." });
         await db.ref("almaqtab/" + body.key).remove();
+        return res.json({ ok: true });
+      }
+
+      case "list-formations": return res.json({ items: await readAll(db, "formations") });
+      case "save-formation": {
+        const titre = str(body.titre, 150);
+        if (!titre) return res.status(400).json({ error: "Titre requis." });
+        const rec = {
+          titre, description: str(body.description, 3000), attentes: str(body.attentes, 2000),
+          duree: str(body.duree, 80), prix: parseInt(body.prix, 10) || 0,
+          img: safeUrl(body.img, 500),
+          // Lien Google Meet simple (meet.google.com/... ou tout lien de visio) —
+          // pas d'intégration Google Calendar API : l'admin colle le lien de son
+          // choix, revu/reconduit à sa guise pour chaque session.
+          meetLink: safeUrl(body.meetLink, 500),
+          updatedAt: Date.now()
+        };
+        const key = body.key || db.ref("formations").push().key;
+        await db.ref("formations/" + key).update(rec);
+        return res.json({ ok: true, key });
+      }
+      case "delete-formation": {
+        if (!body.key) return res.status(400).json({ error: "Clé requise." });
+        await db.ref("formations/" + body.key).remove();
         return res.json({ ok: true });
       }
 
@@ -218,10 +243,11 @@ async function getStats(db) {
     series: perDay.slice(0, 14).reverse() // 14 derniers jours, ordre chronologique
   };
 
-  const [products, sellers, books] = await Promise.all([
+  const [products, sellers, books, formations] = await Promise.all([
     countChildren(db, "det_produits"),
     db.ref("sellers").once("value"),
-    countChildren(db, "almaqtab")
+    countChildren(db, "almaqtab"),
+    countChildren(db, "formations")
   ]);
   let activeSellers = 0;
   sellers.forEach((s) => {
@@ -234,7 +260,7 @@ async function getStats(db) {
 
   return {
     visits,
-    totals: { products, sellers: sellers.numChildren(), activeSellers, books, secrets: secretCounts },
+    totals: { products, sellers: sellers.numChildren(), activeSellers, books, formations, secrets: secretCounts },
     recentActivity: await readFeed(db, "activity_feed", 30),
     recentGeomancie: await readFeed(db, "geomancie_logs", 30)
   };

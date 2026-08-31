@@ -38,6 +38,7 @@ const MODULES: ModuleTile[] = [
   { icon: '🤲', label: 'Zikr collectif', desc: 'Réciter un dhikr ensemble vers un objectif commun', href: '/zikr' },
   { icon: '🌀', label: 'Rouwhanes', desc: 'Générer des noms d\'anges et un vœu', href: '/rouwhania' },
   { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
+  { icon: '🎓', label: 'Formation mystique', desc: 'Ateliers en direct par visioconférence', href: '/formation' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
 ];
 
