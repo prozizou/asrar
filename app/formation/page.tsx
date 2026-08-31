@@ -5,12 +5,16 @@
 // à la main pour chaque session, PAS d'intégration Google Calendar API (pas
 // de compte de service Google Cloud à provisionner, mise en place immédiate).
 //
-// Titre/description/durée/prix/attentes : aperçu toujours libre (comme la
-// Bibliothèque) via /api/list-content. Seul le lien Meet est un champ payant
-// (server/sources.js "formation", secretFields: ["meetLink"]) — révélé
-// uniquement par /api/get-content, gaté par ensureAccess() (abonnement actif
-// requis), au moment de cliquer « Rejoindre ». Même mécanisme que la
-// Bibliothèque (pdf/pdfUrl) ou Secret Mystique (sirr).
+// La visioconférence étant elle-même le produit payant, le paywall couvre
+// TOUT le module — pas seulement le lien Meet, comme le fait la Bibliothèque
+// pour son PDF (aperçu libre) : ici, même le simple aperçu (titre, image,
+// description, durée, prix…) reste invisible tant que l'abonnement n'est pas
+// actif. ensureAccess() est donc vérifié dès l'arrivée sur la page, AVANT
+// même de charger la liste des formations (voir `access` ci-dessous) — le
+// lien Meet lui-même reste en plus un champ payant côté serveur
+// (server/sources.js "formation", secretFields: ["meetLink"]), révélé
+// uniquement par /api/get-content au moment de cliquer « Rejoindre »,
+// deuxième niveau de garde si l'abonnement expire entre-temps.
 import './formation.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -52,12 +56,18 @@ export default function FormationPage() {
   const [error, setError] = useState('');
   const [current, setCurrent] = useState<Formation | null>(null);
   const [joining, setJoining] = useState(false);
+  // null = vérification en cours, true/false = résolu. Tant que false, RIEN
+  // n'est chargé (le paywall couvre même l'aperçu — voir l'en-tête du fichier).
+  const [access, setAccess] = useState<boolean | null>(null);
   const bootRef = useRef(false);
 
   useEffect(() => {
     if (bootRef.current) return;
     bootRef.current = true;
     (async () => {
+      const ok = await ensureAccess(); // ouvre le portail d'abonnement si refusé
+      setAccess(ok);
+      if (!ok) { setLoading(false); return; }
       try {
         const { items } = await apiPost('list-content', { kind: 'formation' });
         const list: Formation[] = (items || []).slice().sort(
@@ -70,7 +80,7 @@ export default function FormationPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [ensureAccess]);
 
   const inDetail = !!current;
   const closeDetail = useCallback(() => setCurrent(null), []);
@@ -142,44 +152,54 @@ export default function FormationPage() {
             <h2>🎓 Formation mystique</h2>
             <p className="fm-subtitle">Ateliers et formations en direct, par visioconférence.</p>
           </div>
-          <div className="fm-grid">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => <div key={i} className="fm-skeleton" />)
-            ) : error ? (
-              <p className="fm-empty">
-                Erreur de chargement.
-                <br />
-                <small>{error}</small>
-              </p>
-            ) : items.length === 0 ? (
-              <p className="fm-empty">Aucune formation programmée pour l’instant.</p>
-            ) : (
-              items.map((f) => (
-                <div key={f._key} className="fm-card" onClick={() => setCurrent(f)}>
-                  <div className="fm-cover">
-                    {f.img ? (
-                      <SmartImage
-                        src={optimImg(f.img, 400)}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 45vw, 260px"
-                        style={{ objectFit: 'cover' }}
-                      />
-                    ) : (
-                      '🎓'
-                    )}
-                  </div>
-                  <div className="fm-body">
-                    <div className="fm-title">{f.titre}</div>
-                    <div className="fm-meta">
-                      {f.duree && <span>⏱️ {f.duree}</span>}
-                      {Number(f.prix) > 0 && <span>💳 {formatPrice(f.prix, 'FCFA')}</span>}
+          {access === false ? (
+            <div className="fm-locked">
+              <div className="fm-locked-icon">🔒</div>
+              <p>La visioconférence est un module payant : les formations (aperçu compris) sont réservées aux abonnés actifs.</p>
+              <button type="button" className="fm-join-btn" onClick={() => openGate()}>
+                Débloquer l’accès
+              </button>
+            </div>
+          ) : (
+            <div className="fm-grid">
+              {loading || access === null ? (
+                Array.from({ length: 4 }).map((_, i) => <div key={i} className="fm-skeleton" />)
+              ) : error ? (
+                <p className="fm-empty">
+                  Erreur de chargement.
+                  <br />
+                  <small>{error}</small>
+                </p>
+              ) : items.length === 0 ? (
+                <p className="fm-empty">Aucune formation programmée pour l’instant.</p>
+              ) : (
+                items.map((f) => (
+                  <div key={f._key} className="fm-card" onClick={() => setCurrent(f)}>
+                    <div className="fm-cover">
+                      {f.img ? (
+                        <SmartImage
+                          src={optimImg(f.img, 400)}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 45vw, 260px"
+                          style={{ objectFit: 'cover' }}
+                        />
+                      ) : (
+                        '🎓'
+                      )}
+                    </div>
+                    <div className="fm-body">
+                      <div className="fm-title">{f.titre}</div>
+                      <div className="fm-meta">
+                        {f.duree && <span>⏱️ {f.duree}</span>}
+                        {Number(f.prix) > 0 && <span>💳 {formatPrice(f.prix, 'FCFA')}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
