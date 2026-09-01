@@ -43,20 +43,33 @@
 // client Firebase RTDB direct.
 //
 // Body (JSON) : { idToken, action, ... }
-//   action="list"           → liste des zikr collectifs (+ mon statut) — un
-//                              zikr PRIVÉ (private:true) n'y apparaît QUE pour
-//                              son créateur ou un compte déjà membre/en
-//                              attente ; totalement absent pour les autres —
-//                              voir handleList. "get"/"join" restent
-//                              accessibles par lien direct quel que soit ce
-//                              drapeau (private ne restreint QUE la liste).
+//   action="list"           → liste des zikr collectifs (+ mon statut). Un
+//                              zikr n'y apparaît, pour un compte qui n'y a
+//                              AUCUN statut (ni créateur, ni membre, ni
+//                              demande en attente), que s'il est PUBLIC
+//                              (private:false) ET APPROUVÉ par l'administrateur
+//                              (approved:true) — voir handleList. Dès qu'on a
+//                              un statut (créateur/membre/en attente), toujours
+//                              visible, quels que soient ces deux drapeaux.
+//                              L'administrateur (isAdmin, server/access.js —
+//                              prozizou298@gmail.com ou admins/{clé}) voit TOUT
+//                              sans filtre : la liste lui sert aussi de file de
+//                              modération. "get"/"join" restent accessibles par
+//                              lien direct quels que soient private/approved
+//                              (ces deux drapeaux ne restreignent QUE "list").
 //   action="create"         → { name, presetId, arabic?, target, private? } :
-//                              crée, le créateur rejoint aussitôt avec fait=0
-//                              (private, def. false — voir action="list")
+//                              crée, le créateur rejoint aussitôt avec fait=0.
+//                              approved=false par défaut (voir action="list") —
+//                              doit être validé par l'administrateur avant
+//                              d'apparaître dans la liste publique ; les zikr
+//                              créés AVANT l'ajout de ce champ restent publics
+//                              (approved absent traité comme "déjà approuvé",
+//                              pas de régression rétroactive — voir handleList).
 //   action="get"            → { groupId } : détail (membres, ma part, avertissement)
 //   action="join"           → { groupId } : demande d'adhésion
 //   action="requests"       → { groupId } : créateur only — demandes en attente
-//   action="approve"        → { groupId, uid } : créateur only
+//   action="approve"        → { groupId, uid } : créateur only — accepte un
+//                              membre (à ne pas confondre avec "approveZikr")
 //   action="reject"         → { groupId, uid } : créateur only
 //   action="progress"       → { groupId, fait, rythme? } : membre only
 //   action="warn"           → { groupId, uid } : créateur only — avertissement privé
@@ -64,8 +77,10 @@
 //   action="exclude"        → { groupId, uid } : créateur only — jamais sur lui-même
 //   action="leave"          → { groupId } : membre (créateur inclus, si un
 //                              successeur existe — sinon, supprimer plutôt)
-//   action="delete"         → { groupId } : créateur only — seulement s'il est
-//                              l'unique participant
+//   action="delete"         → { groupId } : créateur (seulement s'il est
+//                              l'unique participant) OU ADMINISTRATEUR
+//                              (n'importe quel zikr, quel que soit le nombre
+//                              de participants — modération, voir handleDelete)
 //   action="openWishes"     → { groupId } : créateur only — ouvre la possibilité
 //                              de faire un vœu aux membres (objectif atteint
 //                              seulement — voir handleOpenWishes)
@@ -73,35 +88,46 @@
 //                              déjà enregistrés restent visibles au créateur)
 //   action="submitWish"     → { groupId, text } : membre only — enregistre (ou
 //                              met à jour) SON PROPRE vœu, tant que c'est ouvert
+//   action="sendMessage"    → { groupId, text } : membre only — discussion de
+//                              groupe façon WhatsApp (voir handleSendMessage)
+//   action="messages"       → { groupId } : membre only — 200 derniers messages
+//   action="approveZikr"    → { groupId } : ADMINISTRATEUR only — fait passer
+//                              approved à true (voir action="list"/"create")
 //
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
 //   zikr_groups/{gid}        = { name, presetId, transliteration, arabic,
 //                                 target, total, ownerUid, ownerEmail,
-//                                 createdAt, membersCount, wishesOpen?, private? }
+//                                 createdAt, membersCount, wishesOpen?,
+//                                 private?, approved? }
 //   zikr_members/{gid}/{uid} = { email, fait, rythme, avertissement?,
 //                                 joinedAt, updatedAt, lastSeenAt }
 //   zikr_requests/{gid}/{uid}= { email, at }
 //   zikr_wishes/{gid}/{uid}  = { email, text, at } — vœu PRIVÉ : visible
 //                                 seulement du créateur (liste) et de son
 //                                 auteur (sa propre entrée, jamais les autres)
+//   zikr_chat/{gid}/{msgId}  = { uid, email, text, at } — discussion de groupe
+//                                 (façon WhatsApp), réservée aux membres
 
-const { verifyUser } = require("../../server/access");
+const { verifyUser, isAdmin } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const {
   normalizeGroupInput, normalizeFait, normalizeRythme, cleanText,
-  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, WISH_MAX,
+  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, WISH_MAX, CHAT_MESSAGE_MAX,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
 function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
 
-// Limites : "list"/"get"/"progress" sont fréquents (sondage temps réel +
-// remontée d'avancement) mais légers → larges ; écritures rares → serrées.
+// Limites : "list"/"get"/"progress"/"messages" sont fréquents (sondage temps
+// réel + remontée d'avancement + discussion) mais légers → larges ;
+// écritures rares → serrées.
 function limitFor(action) {
-  if (action === "list" || action === "get" || action === "progress") return { max: 120, windowMs: 60_000 };
+  if (action === "list" || action === "get" || action === "progress" || action === "messages") {
+    return { max: 120, windowMs: 60_000 };
+  }
   return { max: 20, windowMs: 60_000 };
 }
 
@@ -143,6 +169,9 @@ export default async function handler(req, res) {
       case "openWishes":     return await handleOpenWishes(db, res, user, gid);
       case "closeWishes":    return await handleCloseWishes(db, res, user, gid);
       case "submitWish":     return await handleSubmitWish(db, res, user, gid, body.text);
+      case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text);
+      case "messages":       return await handleMessages(db, res, user, gid);
+      case "approveZikr":    return await handleApproveZikr(db, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
     }
   } catch (e) {
@@ -152,11 +181,16 @@ export default async function handler(req, res) {
 };
 
 // ── Liste (+ mon statut sur chaque groupe) ──────────────────────
-// Un zikr PRIVÉ n'est inclus que pour son créateur ou un compte déjà
-// membre/en attente — invisible (aucune trace, même pas son existence) pour
-// quiconque d'autre. "get"/"join" restent accessibles par groupId direct
-// (lien de partage) quel que soit ce drapeau — voir l'en-tête du fichier.
+// Un compte sans AUCUN statut (ni créateur, ni membre, ni demande en
+// attente) ne voit que les zikr PUBLICS (private:false) ET APPROUVÉS
+// (approved:true) — invisible (aucune trace, même pas son existence) sinon.
+// Dès qu'on a un statut, toujours visible quels que soient ces deux
+// drapeaux (comme avant pour "private" — voir la PR précédente). L'admin
+// voit TOUT, sans filtre : cette liste lui sert aussi de file de modération
+// (action="approveZikr"). "get"/"join" restent accessibles par groupId
+// direct (lien de partage) quels que soient ces drapeaux.
 async function handleList(db, res, user) {
+  const admin = await isAdmin(user);
   const snap = await db.ref("zikr_groups").once("value");
   const groups = [];
   snap.forEach((g) => {
@@ -176,6 +210,11 @@ async function handleList(db, res, user) {
       isOwner: v.ownerUid === user.uid,
       createdAt: v.createdAt || 0,
       private: v.private === true,
+      // Legacy (créé avant l'ajout de la modération) : approved absent →
+      // déjà public, pas de disparition rétroactive. Seuls les NOUVEAUX zikr
+      // (approved écrit explicitement à false, voir handleCreate) sont
+      // soumis au filtre ci-dessous tant que l'admin ne les a pas validés.
+      approved: v.approved !== false,
     });
   });
 
@@ -191,9 +230,11 @@ async function handleList(db, res, user) {
     })
   );
 
-  const visible = groups.filter((grp) => !grp.private || grp.status !== "none");
+  const visible = admin ? groups : groups.filter((grp) =>
+    grp.status !== "none" || (grp.approved && !grp.private)
+  );
   visible.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  return res.status(200).json({ groups: visible });
+  return res.status(200).json({ groups: visible, isAdmin: admin });
 }
 
 // ── Créer un zikr collectif (le créateur rejoint aussitôt, fait=0) ──
@@ -219,6 +260,7 @@ async function handleCreate(db, res, user, body) {
     target: norm.target,
     total: 0,
     private: norm.private,
+    approved: false, // voir l'en-tête du fichier — l'administrateur doit valider
     ownerUid: user.uid,
     ownerEmail: user.email,
     createdAt: now,
@@ -238,6 +280,7 @@ async function handleGet(db, res, user, gid) {
   const g = gSnap.val();
   if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
 
+  const admin = await isAdmin(user);
   const isOwner = g.ownerUid === user.uid;
   const target = Number(g.target) || 0;
   const total = Number(g.total) || 0;
@@ -323,6 +366,8 @@ async function handleGet(db, res, user, gid) {
     onlineCount: members.filter((m) => m.online).length,
     full,
     private: g.private === true,
+    approved: g.approved !== false,
+    isAdmin: admin,
     wishesOpen: g.wishesOpen === true,
     status,
     myFait: mine ? mine.fait : 0,
@@ -505,18 +550,49 @@ async function removeParticipant(db, gid, g, targetUid) {
   }
 }
 
-// ── Créateur : supprimer le groupe (seulement s'il est seul) ───
+// ── Supprimer le groupe : le créateur (seulement s'il est seul — les
+// autres participants doivent d'abord quitter) OU L'ADMINISTRATEUR
+// (n'importe quel zikr collectif, quel que soit le nombre de participants —
+// pouvoir de modération, voir l'en-tête du fichier) ───────────────
 async function handleDelete(db, res, user, gid) {
-  const g = await assertOwner(db, gid, user);
-  if ((Number(g.membersCount) || 0) > 1) {
-    return res.status(409).json({ error: "D'autres participants ont rejoint ce zikr collectif — quittez-le plutôt (un autre membre en devient créateur)." });
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const gSnap = await db.ref("zikr_groups/" + gid).once("value");
+  const g = gSnap.val();
+  if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
+
+  const admin = await isAdmin(user);
+  if (!admin) {
+    if (g.ownerUid !== user.uid) {
+      const e = new Error("Action réservée au créateur du zikr collectif.");
+      e.statusCode = 403;
+      throw e;
+    }
+    if ((Number(g.membersCount) || 0) > 1) {
+      return res.status(409).json({ error: "D'autres participants ont rejoint ce zikr collectif — quittez-le plutôt (un autre membre en devient créateur)." });
+    }
   }
+
   await Promise.all([
     db.ref("zikr_groups/" + gid).remove(),
     db.ref("zikr_members/" + gid).remove(),
     db.ref("zikr_requests/" + gid).remove(),
     db.ref("zikr_wishes/" + gid).remove(),
+    db.ref("zikr_chat/" + gid).remove(),
   ]);
+  return res.status(200).json({ ok: true });
+}
+
+// ── Administrateur : approuve un zikr collectif pour la liste publique ──
+async function handleApproveZikr(db, res, user, gid) {
+  if (!(await isAdmin(user))) {
+    const e = new Error("Action réservée à l'administrateur.");
+    e.statusCode = 403;
+    throw e;
+  }
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const snap = await db.ref("zikr_groups/" + gid).once("value");
+  if (!snap.exists()) return res.status(404).json({ error: "Zikr collectif introuvable." });
+  await db.ref("zikr_groups/" + gid + "/approved").set(true);
   return res.status(200).json({ ok: true });
 }
 
@@ -562,6 +638,40 @@ async function handleSubmitWish(db, res, user, gid, rawText) {
 
   await db.ref("zikr_wishes/" + gid + "/" + user.uid).set({ email: user.email, text, at: Date.now() });
   return res.status(200).json({ ok: true, text });
+}
+
+// ── Membre : discussion de groupe façon WhatsApp ─────────────────
+// Réservée aux membres (créateur inclus) : jamais accessible à un visiteur
+// qui n'a pas encore rejoint (même par lien direct — contrairement à
+// get/join, volontairement plus permissifs).
+async function handleSendMessage(db, res, user, gid, rawText) {
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
+  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+
+  const text = cleanText(rawText, CHAT_MESSAGE_MAX);
+  if (!text) return res.status(400).json({ error: "Écrivez un message avant d'envoyer." });
+
+  const ref = db.ref("zikr_chat/" + gid).push();
+  await ref.set({ uid: user.uid, email: user.email, text, at: Date.now() });
+  return res.status(200).json({ ok: true, id: ref.key });
+}
+
+// Messages récents (200 derniers — une discussion de groupe reste modeste,
+// pas besoin de pagination complète). Sondée régulièrement par le client
+// tant que le panneau discussion est ouvert (app/zikr/page.tsx).
+async function handleMessages(db, res, user, gid) {
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
+  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+
+  const snap = await db.ref("zikr_chat/" + gid).limitToLast(200).once("value");
+  const messages = [];
+  snap.forEach((m) => {
+    const v = m.val() || {};
+    messages.push({ id: m.key, uid: v.uid || "", email: v.email || "", text: v.text || "", at: v.at || 0 });
+  });
+  return res.status(200).json({ messages });
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur
