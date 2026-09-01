@@ -80,6 +80,7 @@ interface GroupDetailData extends Group {
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
+const LIST_POLL_MS = 6000;  // sondage de la liste (moins fréquent : pas de compteur en direct dessus)
 
 export default function ZikrCollectifPage() {
   const { user } = useAuth() as any;
@@ -104,18 +105,42 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  // Détecte une demande d'adhésion tranchée (acceptée ou refusée) entre deux
+  // sondages, pour NOTIFIER l'utilisateur sans qu'il ait besoin de rouvrir le
+  // détail du groupe pour s'en apercevoir — comparé au statut du sondage
+  // précédent, jamais à un état initial (undefined la première fois = pas de
+  // notification au premier chargement).
+  const prevStatusRef = useRef<Record<string, GroupStatus>>({});
 
   const load = useCallback(async () => {
     try {
       const d = await listGroups();
-      setGroups(d.groups || []);
+      const next: Group[] = d.groups || [];
+      const prevStatus = prevStatusRef.current;
+      for (const grp of next) {
+        const before = prevStatus[grp.id];
+        if (before === 'pending' && grp.status === 'member') {
+          notify(`✅ Votre demande pour « ${grp.name} » a été acceptée !`);
+        } else if (before === 'pending' && grp.status === 'none') {
+          notify(`Votre demande pour « ${grp.name} » a été refusée.`);
+        }
+      }
+      prevStatusRef.current = Object.fromEntries(next.map((grp) => [grp.id, grp.status]));
+      setGroups(next);
       setError('');
     } catch (e: any) {
       setError(e.message || 'Erreur de chargement.');
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Sondage régulier : révèle une acceptation/refus de demande même si
+  // l'utilisateur reste sur la liste sans jamais rouvrir un groupe.
+  useEffect(() => {
+    const id = setInterval(load, LIST_POLL_MS);
+    return () => clearInterval(id);
+  }, [load]);
 
   return (
     <div className="glass-panel">
@@ -242,10 +267,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const [g, setG] = useState<GroupDetailData | null>(null);
   const [error, setError] = useState('');
   const loadedOnce = useRef(false);
+  // Même détection d'acceptation/refus que GroupList (voir son commentaire) —
+  // utile ici pour l'utilisateur qui reste sur CETTE page en attendant.
+  const prevStatusRef = useRef<GroupStatus | null>(null);
 
   const load = useCallback(async () => {
     try {
       const d = await getGroup(groupId);
+      const before = prevStatusRef.current;
+      if (before === 'pending' && d.status === 'member') {
+        notify(`✅ Vous avez été accepté(e) dans « ${d.name} » !`);
+      } else if (before === 'pending' && d.status === 'none') {
+        notify(`Votre demande pour « ${d.name} » a été refusée.`);
+      }
+      prevStatusRef.current = d.status;
       setG(d);
       setError('');
       loadedOnce.current = true;
@@ -256,7 +291,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       if (!loadedOnce.current) setError(e.message || 'Erreur de chargement.');
       return null;
     }
-  }, [groupId]);
+  }, [groupId, notify]);
 
   useEffect(() => { load(); }, [load]);
 
