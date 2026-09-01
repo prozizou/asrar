@@ -42,6 +42,8 @@
   width: 100%;
 }
 .zk-field select:focus { border-color: var(--accent); }
+.zk-checkbox-field { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-dim); cursor: pointer; }
+.zk-checkbox-field input { flex-shrink: 0; }
 .zk-field-row { display: flex; gap: 12px; }
 .zk-field-row .zk-field { flex: 1; min-width: 0; }
 .zk-preview { font-size: 0.8rem; color: var(--text-muted); margin: -2px 2px 0; }
@@ -88,6 +90,7 @@
 .zk-phrase-big { font-size: 1.5rem; color: var(--text-main); margin: 6px 0; line-height: 1.5; }
 .zk-phrase-translit { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
 .zk-owner { font-size: 0.78rem; color: var(--text-dim); }
+.zk-private-note { margin-top: 8px; font-size: 0.78rem; color: #d9a441; }
 .zk-online-text { color: #2dd4a0; font-weight: 600; }
 
 .zk-progress-block { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
