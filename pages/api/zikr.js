@@ -59,14 +59,24 @@
 //                              successeur existe — sinon, supprimer plutôt)
 //   action="delete"         → { groupId } : créateur only — seulement s'il est
 //                              l'unique participant
+//   action="openWishes"     → { groupId } : créateur only — ouvre la possibilité
+//                              de faire un vœu aux membres (objectif atteint
+//                              seulement — voir handleOpenWishes)
+//   action="closeWishes"    → { groupId } : créateur only — referme (les vœux
+//                              déjà enregistrés restent visibles au créateur)
+//   action="submitWish"     → { groupId, text } : membre only — enregistre (ou
+//                              met à jour) SON PROPRE vœu, tant que c'est ouvert
 //
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
 //   zikr_groups/{gid}        = { name, presetId, transliteration, arabic,
 //                                 target, total, ownerUid, ownerEmail,
-//                                 createdAt, membersCount }
+//                                 createdAt, membersCount, wishesOpen? }
 //   zikr_members/{gid}/{uid} = { email, fait, rythme, avertissement?,
 //                                 joinedAt, updatedAt, lastSeenAt }
 //   zikr_requests/{gid}/{uid}= { email, at }
+//   zikr_wishes/{gid}/{uid}  = { email, text, at } — vœu PRIVÉ : visible
+//                                 seulement du créateur (liste) et de son
+//                                 auteur (sa propre entrée, jamais les autres)
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -74,8 +84,8 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const {
-  normalizeGroupInput, normalizeFait, normalizeRythme,
-  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT,
+  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText,
+  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, WISH_MAX,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -123,6 +133,9 @@ export default async function handler(req, res) {
       case "exclude":        return await handleExclude(db, res, user, gid, safeKey(body.uid));
       case "leave":           return await handleLeave(db, res, user, gid);
       case "delete":          return await handleDelete(db, res, user, gid);
+      case "openWishes":     return await handleOpenWishes(db, res, user, gid);
+      case "closeWishes":    return await handleCloseWishes(db, res, user, gid);
+      case "submitWish":     return await handleSubmitWish(db, res, user, gid, body.text);
       default:               return res.status(400).json({ error: "Action inconnue." });
     }
   } catch (e) {
@@ -247,6 +260,17 @@ async function handleGet(db, res, user, gid) {
     });
     owner.requests = requests;
     owner.pending = requests.length;
+
+    // Vœux des participants : visibles UNIQUEMENT du créateur (liste complète),
+    // jamais des autres membres entre eux — voir l'en-tête du fichier.
+    const wSnap = await db.ref("zikr_wishes/" + gid).once("value");
+    const wishes = [];
+    wSnap.forEach((w) => {
+      const v = w.val() || {};
+      wishes.push({ uid: w.key, email: v.email || "", text: v.text || "", at: v.at || 0 });
+    });
+    wishes.sort((a, b) => (b.at || 0) - (a.at || 0));
+    owner.wishes = wishes;
   } else if (mine) {
     status = "member";
   } else {
@@ -259,6 +283,15 @@ async function handleGet(db, res, user, gid) {
   if (mine) await db.ref("zikr_members/" + gid + "/" + user.uid + "/lastSeenAt").set(now);
 
   const full = remaining <= 0; // objectif entièrement récité
+
+  // Mon propre vœu (jamais celui des autres) — pour préremplir le formulaire
+  // si j'en avais déjà envoyé un. Un membre simple (pas le créateur) n'a pas
+  // besoin de la liste complète, seulement de sa propre entrée.
+  let myWish = "";
+  if (mine && !isOwner) {
+    const mwSnap = await db.ref("zikr_wishes/" + gid + "/" + user.uid).once("value");
+    myWish = (mwSnap.val() && mwSnap.val().text) || "";
+  }
 
   return res.status(200).json({
     id: gid,
@@ -275,9 +308,11 @@ async function handleGet(db, res, user, gid) {
     membersCount: Number(g.membersCount) || 0,
     onlineCount: members.filter((m) => m.online).length,
     full,
+    wishesOpen: g.wishesOpen === true,
     status,
     myFait: mine ? mine.fait : 0,
     myWarning: mine ? mine.avertissement : "",
+    myWish,
     members,
     ...owner,
   });
@@ -465,8 +500,53 @@ async function handleDelete(db, res, user, gid) {
     db.ref("zikr_groups/" + gid).remove(),
     db.ref("zikr_members/" + gid).remove(),
     db.ref("zikr_requests/" + gid).remove(),
+    db.ref("zikr_wishes/" + gid).remove(),
   ]);
   return res.status(200).json({ ok: true });
+}
+
+// ── Créateur : ouvre la possibilité de faire un vœu ─────────────
+// Seulement une fois l'objectif ENTIÈREMENT récité par le groupe — un vœu
+// après un dhikr collectif accompli, pas avant (cohérent avec la pratique :
+// on formule le vœu une fois l'engagement commun tenu).
+async function handleOpenWishes(db, res, user, gid) {
+  const g = await assertOwner(db, gid, user);
+  const target = Number(g.target) || 0;
+  const total = Number(g.total) || 0;
+  if (target <= 0 || total < target) {
+    return res.status(400).json({ error: "L'objectif du zikr collectif doit être entièrement atteint avant d'ouvrir les vœux." });
+  }
+  await db.ref("zikr_groups/" + gid + "/wishesOpen").set(true);
+  return res.status(200).json({ ok: true });
+}
+
+// ── Créateur : referme (les vœux déjà reçus restent visibles) ──
+async function handleCloseWishes(db, res, user, gid) {
+  await assertOwner(db, gid, user);
+  await db.ref("zikr_groups/" + gid + "/wishesOpen").set(false);
+  return res.status(200).json({ ok: true });
+}
+
+// ── Membre : enregistre (ou met à jour) SON PROPRE vœu ──────────
+// Jamais visible des autres membres — seulement de son auteur et du créateur
+// (liste complète, voir handleGet) : un vœu reste une démarche personnelle.
+async function handleSubmitWish(db, res, user, gid, rawText) {
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const gSnap = await db.ref("zikr_groups/" + gid).once("value");
+  const g = gSnap.val();
+  if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
+  if (g.wishesOpen !== true) {
+    return res.status(403).json({ error: "Les vœux ne sont pas (encore) ouverts pour ce zikr collectif." });
+  }
+
+  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
+  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+
+  const text = cleanText(rawText, WISH_MAX);
+  if (!text) return res.status(400).json({ error: "Écrivez votre vœu avant d'envoyer." });
+
+  await db.ref("zikr_wishes/" + gid + "/" + user.uid).set({ email: user.email, text, at: Date.now() });
+  return res.status(200).json({ ok: true, text });
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur

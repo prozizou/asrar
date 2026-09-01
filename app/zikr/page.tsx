@@ -28,12 +28,14 @@ import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
+import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
-import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
+import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, warnMember, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
+  openWishes, closeWishes, submitWish,
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
@@ -66,6 +68,13 @@ interface Member {
   online: boolean;
 }
 
+interface Wish {
+  uid: string;
+  email: string;
+  text: string;
+  at: number;
+}
+
 interface GroupDetailData extends Group {
   ownerUid: string;
   full: boolean;
@@ -75,6 +84,9 @@ interface GroupDetailData extends Group {
   members: Member[];
   myFait?: number;
   myWarning?: string;
+  wishesOpen?: boolean;
+  wishes?: Wish[];
+  myWish?: string;
 }
 
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
@@ -86,6 +98,20 @@ export default function ZikrCollectifPage() {
   const { user } = useAuth() as any;
   const { notify, toast } = useToast();
   const [selected, setSelected] = useState<string | null>(null); // groupId ou null (= liste)
+
+  // Deep link partagé sur les réseaux (/s?k=zikr&i=<gid>, voir GroupDetail
+  // « Partager ») : ouvre directement le zikr collectif visé, comme les
+  // autres modules (app/asrar/page.tsx, app/bibliotheque/page.tsx…).
+  const bootRef = useRef(false);
+  useEffect(() => {
+    if (bootRef.current) return;
+    bootRef.current = true;
+    const deep = deepLink();
+    if (deep && deep.key) {
+      cleanUrl();
+      setSelected(deep.key);
+    }
+  }, []);
 
   return (
     <div className="container" style={{ maxWidth: 640 }}>
@@ -211,8 +237,16 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
   const [busy, setBusy] = useState(false);
   const isLibre = presetId === LIBRE_PRESET_ID;
 
+  // L'objectif est OBLIGATOIRE pour créer un zikr collectif (pas de groupe
+  // sans but commun défini) — validé ici pour désactiver « Créer » avant même
+  // l'envoi, en plus de la validation serveur qui fait autorité (lib/zikrLogic.js
+  // normalizeGroupInput, toujours appliquée côté pages/api/zikr.js).
+  const targetNum = Math.floor(Number(target));
+  const targetValid = target !== '' && Number.isFinite(targetNum) && targetNum >= TARGET_MIN && targetNum <= TARGET_MAX;
+  const canSubmit = !busy && !!name.trim() && (!isLibre || !!customArabic.trim()) && targetValid;
+
   const submit = async () => {
-    if (busy) return;
+    if (!canSubmit) return;
     setBusy(true);
     try {
       const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target });
@@ -247,15 +281,15 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
         </label>
       )}
       <label className="zk-field">
-        <span>Objectif total</span>
-        <input type="number" min="1" max={TARGET_MAX} value={target}
+        <span>Objectif total <em className="zk-required">obligatoire</em></span>
+        <input type="number" min={TARGET_MIN} max={TARGET_MAX} value={target} required
           placeholder="100000" onChange={(e) => setTarget(e.target.value)} />
       </label>
       <p className="zk-preview">
         Il n’y a pas de part fixée à l’avance : ce qu’il reste à faire à
         chacun diminue automatiquement au fil des récitations de tout le groupe.
       </p>
-      <button className="zk-btn main" onClick={submit} disabled={busy}>
+      <button className="zk-btn main" onClick={submit} disabled={!canSubmit}>
         {busy ? 'Création…' : 'Créer'}
       </button>
     </div>
@@ -270,6 +304,19 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // Même détection d'acceptation/refus que GroupList (voir son commentaire) —
   // utile ici pour l'utilisateur qui reste sur CETTE page en attendant.
   const prevStatusRef = useRef<GroupStatus | null>(null);
+
+  // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
+  // sondage régulier écraserait une saisie en cours toutes les POLL_MS ms —
+  // même précaution que syncedFait dans MemberCounter).
+  const [wishText, setWishText] = useState('');
+  const [wishBusy, setWishBusy] = useState(false);
+  const wishSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!wishSyncedRef.current && g && typeof g.myWish === 'string') {
+      setWishText(g.myWish);
+      wishSyncedRef.current = true;
+    }
+  }, [g]);
 
   const load = useCallback(async () => {
     try {
@@ -336,6 +383,31 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     try { await fn(groupId, targetUid); load(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
+  const doShare = () => {
+    if (!g) return;
+    shareLink({
+      kind: 'zikr',
+      key: groupId,
+      title: g.name || 'Zikr collectif',
+      text: `🤲 Rejoignez « ${g.name} » — un zikr collectif sur ASRAR PRO !`,
+    });
+  };
+  const doOpenWishes = async () => {
+    try { await openWishes(groupId); notify('🤲 Les vœux sont maintenant ouverts aux participants.'); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const doCloseWishes = async () => {
+    try { await closeWishes(groupId); notify('Les vœux sont refermés.'); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const doSubmitWish = async () => {
+    const t = wishText.trim();
+    if (!t || wishBusy) return;
+    setWishBusy(true);
+    try { await submitWish(groupId, t); notify('🤲 Vœu envoyé.'); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    finally { setWishBusy(false); }
+  };
 
   if (error) return (
     <div className="glass-panel">
@@ -349,7 +421,11 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
   return (
     <div className="glass-panel">
-      <button className="zk-link" onClick={onBack}>← Liste des zikr</button>
+      <div className="zk-detail-topbar">
+        <button className="zk-link" onClick={onBack}>← Liste des zikr</button>
+        <button type="button" className="zk-share-btn" onClick={doShare}
+          title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">📤 Partager</button>
+      </div>
 
       <div className="zk-detail-head">
         <h1>{g.name}</h1>
@@ -443,6 +519,56 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             })}
           </div>
         </div>
+      )}
+
+      {/* Vœux (dua) : ouverts par le créateur une fois l'objectif ATTEINT —
+          voir handleOpenWishes (pages/api/zikr.js), refusé côté serveur avant.
+          Chaque vœu reste PRIVÉ : visible seulement de son auteur et du
+          créateur (liste), jamais des autres membres entre eux. */}
+      {isMember && g.full && (
+        g.status === 'owner' ? (
+          <div className="zk-owner-panel">
+            <h3>🤲 Vœux des participants {g.wishes && g.wishes.length > 0 && <span className="zk-pill">{g.wishes.length}</span>}</h3>
+            {!g.wishesOpen ? (
+              <>
+                <p className="zk-muted">
+                  Une fois ouverts, chaque participant pourra laisser un vœu (dua) après ce
+                  dhikr accompli ensemble — visible seulement de vous, jamais des autres membres.
+                </p>
+                <button className="zk-btn main" onClick={doOpenWishes}>🤲 Ouvrir les vœux</button>
+              </>
+            ) : (
+              <>
+                <button className="zk-btn ghost" onClick={doCloseWishes}>Fermer les vœux</button>
+                {(!g.wishes || g.wishes.length === 0) ? (
+                  <p className="zk-muted">Aucun vœu reçu pour l’instant.</p>
+                ) : (
+                  <div className="zk-wish-list">
+                    {g.wishes.map((w) => (
+                      <div key={w.uid} className="zk-wish-item">
+                        <span className="zk-wish-email">{w.email}</span>
+                        <p className="zk-wish-text">{w.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : g.wishesOpen ? (
+          <div className="zk-owner-panel">
+            <h3>🤲 Faites un vœu</h3>
+            <p className="zk-muted">
+              Le créateur a ouvert la possibilité de faire un vœu (dua) maintenant que
+              l’objectif est atteint — visible seulement de vous et du créateur.
+            </p>
+            <textarea className="zk-wish-input" maxLength={WISH_MAX} rows={3} value={wishText}
+              placeholder="Votre vœu…" onChange={(e) => setWishText(e.target.value)} />
+            <button className="zk-btn main" onClick={doSubmitWish} disabled={wishBusy || !wishText.trim()}>
+              {wishBusy ? 'Envoi…' : g.myWish ? 'Mettre à jour mon vœu' : 'Envoyer mon vœu'}
+            </button>
+          </div>
+        ) : null
       )}
 
       <div className="zk-footer-actions">

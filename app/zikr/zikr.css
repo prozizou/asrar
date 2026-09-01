@@ -35,6 +35,7 @@
   width: 100%;
 }
 .zk-field input:focus { border-color: var(--accent); }
+.zk-required { font-style: normal; font-size: 0.7rem; font-weight: 700; color: #d9a441; margin-left: 6px; }
 .zk-field select {
   background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
   padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem; outline: none;
@@ -75,6 +76,13 @@
 .zk-bar > span.gold { background: linear-gradient(90deg, #d9a441, #f2c14e); }
 
 /* ── Détail ──────────────────────────────────────────────── */
+.zk-detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.zk-share-btn {
+  background: none; border: none; cursor: pointer; color: var(--accent);
+  font-size: 0.85rem; font-weight: 600; font-family: var(--font-ui); padding: 4px 0;
+}
+.zk-share-btn:hover { text-decoration: underline; }
+
 .zk-detail-head { text-align: center; margin: 8px 0 16px; }
 .zk-detail-head h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 6px 0; }
 .zk-phrase-big { font-size: 1.5rem; color: var(--text-main); margin: 6px 0; line-height: 1.5; }
@@ -128,3 +136,17 @@
 .zk-mod-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .zk-footer-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+/* ── Vœux (dua) — ouverts par le créateur une fois l'objectif atteint ────
+   Chaque vœu reste PRIVÉ (auteur + créateur seulement, jamais les autres
+   membres) — voir pages/api/zikr.js. */
+.zk-wish-input {
+  background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem;
+  outline: none; width: 100%; resize: vertical; margin: 10px 0; box-sizing: border-box;
+}
+.zk-wish-input:focus { border-color: var(--accent); }
+.zk-wish-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.zk-wish-item { background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 12px; }
+.zk-wish-email { font-size: 0.78rem; color: var(--text-dim); }
+.zk-wish-text { margin: 6px 0 0; font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; }
