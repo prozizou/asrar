@@ -43,9 +43,16 @@
 // client Firebase RTDB direct.
 //
 // Body (JSON) : { idToken, action, ... }
-//   action="list"           → liste publique des zikr collectifs (+ mon statut)
-//   action="create"         → { name, presetId, arabic?, target } : crée, le
-//                              créateur rejoint aussitôt avec fait=0
+//   action="list"           → liste des zikr collectifs (+ mon statut) — un
+//                              zikr PRIVÉ (private:true) n'y apparaît QUE pour
+//                              son créateur ou un compte déjà membre/en
+//                              attente ; totalement absent pour les autres —
+//                              voir handleList. "get"/"join" restent
+//                              accessibles par lien direct quel que soit ce
+//                              drapeau (private ne restreint QUE la liste).
+//   action="create"         → { name, presetId, arabic?, target, private? } :
+//                              crée, le créateur rejoint aussitôt avec fait=0
+//                              (private, def. false — voir action="list")
 //   action="get"            → { groupId } : détail (membres, ma part, avertissement)
 //   action="join"           → { groupId } : demande d'adhésion
 //   action="requests"       → { groupId } : créateur only — demandes en attente
@@ -70,7 +77,7 @@
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
 //   zikr_groups/{gid}        = { name, presetId, transliteration, arabic,
 //                                 target, total, ownerUid, ownerEmail,
-//                                 createdAt, membersCount, wishesOpen? }
+//                                 createdAt, membersCount, wishesOpen?, private? }
 //   zikr_members/{gid}/{uid} = { email, fait, rythme, avertissement?,
 //                                 joinedAt, updatedAt, lastSeenAt }
 //   zikr_requests/{gid}/{uid}= { email, at }
@@ -144,7 +151,11 @@ export default async function handler(req, res) {
   }
 };
 
-// ── Liste publique + mon statut sur chaque groupe ──────────────
+// ── Liste (+ mon statut sur chaque groupe) ──────────────────────
+// Un zikr PRIVÉ n'est inclus que pour son créateur ou un compte déjà
+// membre/en attente — invisible (aucune trace, même pas son existence) pour
+// quiconque d'autre. "get"/"join" restent accessibles par groupId direct
+// (lien de partage) quel que soit ce drapeau — voir l'en-tête du fichier.
 async function handleList(db, res, user) {
   const snap = await db.ref("zikr_groups").once("value");
   const groups = [];
@@ -164,6 +175,7 @@ async function handleList(db, res, user) {
       ownerEmail: v.ownerEmail || "",
       isOwner: v.ownerUid === user.uid,
       createdAt: v.createdAt || 0,
+      private: v.private === true,
     });
   });
 
@@ -179,8 +191,9 @@ async function handleList(db, res, user) {
     })
   );
 
-  groups.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  return res.status(200).json({ groups });
+  const visible = groups.filter((grp) => !grp.private || grp.status !== "none");
+  visible.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return res.status(200).json({ groups: visible });
 }
 
 // ── Créer un zikr collectif (le créateur rejoint aussitôt, fait=0) ──
@@ -205,6 +218,7 @@ async function handleCreate(db, res, user, body) {
     arabic: norm.arabic,
     target: norm.target,
     total: 0,
+    private: norm.private,
     ownerUid: user.uid,
     ownerEmail: user.email,
     createdAt: now,
@@ -308,6 +322,7 @@ async function handleGet(db, res, user, gid) {
     membersCount: Number(g.membersCount) || 0,
     onlineCount: members.filter((m) => m.online).length,
     full,
+    private: g.private === true,
     wishesOpen: g.wishesOpen === true,
     status,
     myFait: mine ? mine.fait : 0,

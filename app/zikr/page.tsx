@@ -53,6 +53,7 @@ interface Group {
   membersCount: number;
   ownerEmail: string;
   status: GroupStatus;
+  private?: boolean;
 }
 
 interface JoinRequest {
@@ -216,7 +217,7 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   return (
     <button className="zk-card" onClick={onOpen}>
       <div className="zk-card-top">
-        <span className="zk-card-name">{g.name}</span>
+        <span className="zk-card-name">{g.private && <span title="Zikr privé">🔒 </span>}{g.name}</span>
         <span className={'zk-badge zk-badge-' + (full ? 'full' : g.status)}>{statusLabel}</span>
       </div>
       <div className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</div>
@@ -234,6 +235,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
   const [presetId, setPresetId] = useState(DHIKR_PRESETS[0].id);
   const [customArabic, setCustomArabic] = useState('');
   const [target, setTarget] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [busy, setBusy] = useState(false);
   const isLibre = presetId === LIBRE_PRESET_ID;
 
@@ -249,7 +251,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
     if (!canSubmit) return;
     setBusy(true);
     try {
-      const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target });
+      const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate });
       notify('✅ Zikr collectif créé.');
       onCreated(d.id);
     } catch (e: any) {
@@ -284,6 +286,10 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
         <span>Objectif total <em className="zk-required">obligatoire</em></span>
         <input type="number" min={TARGET_MIN} max={TARGET_MAX} value={target} required
           placeholder="100000" onChange={(e) => setTarget(e.target.value)} />
+      </label>
+      <label className="zk-checkbox-field">
+        <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+        <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
       </label>
       <p className="zk-preview">
         Il n’y a pas de part fixée à l’avance : ce qu’il reste à faire à
@@ -435,6 +441,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           Créé par {g.ownerEmail} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
           {g.onlineCount > 0 && <> · <span className="zk-online-text">{g.onlineCount} en ligne</span></>}
         </div>
+        {g.private && (
+          <div className="zk-private-note">🔒 Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.</div>
+        )}
       </div>
 
       {isMember ? (
