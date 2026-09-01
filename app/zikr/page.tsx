@@ -30,12 +30,13 @@ import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
-import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
+import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, warnMember, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
   openWishes, closeWishes, submitWish,
+  sendMessage, getMessages, approveZikr,
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
@@ -54,6 +55,7 @@ interface Group {
   ownerEmail: string;
   status: GroupStatus;
   private?: boolean;
+  approved?: boolean;
 }
 
 interface JoinRequest {
@@ -76,6 +78,14 @@ interface Wish {
   at: number;
 }
 
+interface ChatMessage {
+  id: string;
+  uid: string;
+  email: string;
+  text: string;
+  at: number;
+}
+
 interface GroupDetailData extends Group {
   ownerUid: string;
   full: boolean;
@@ -88,6 +98,7 @@ interface GroupDetailData extends Group {
   wishesOpen?: boolean;
   wishes?: Wish[];
   myWish?: string;
+  isAdmin?: boolean;
 }
 
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
@@ -217,7 +228,11 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   return (
     <button className="zk-card" onClick={onOpen}>
       <div className="zk-card-top">
-        <span className="zk-card-name">{g.private && <span title="Zikr privé">🔒 </span>}{g.name}</span>
+        <span className="zk-card-name">
+          {g.private && <span title="Zikr privé">🔒 </span>}
+          {g.approved === false && <span title="En attente de validation par l'administrateur">⏳ </span>}
+          {g.name}
+        </span>
         <span className={'zk-badge zk-badge-' + (full ? 'full' : g.status)}>{statusLabel}</span>
       </div>
       <div className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</div>
@@ -252,7 +267,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
     setBusy(true);
     try {
       const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate });
-      notify('✅ Zikr collectif créé.');
+      notify('✅ Zikr collectif créé — en attente de validation par l’administrateur avant d’apparaître dans la liste publique.');
       onCreated(d.id);
     } catch (e: any) {
       notify('❌ ' + (e.message || e));
@@ -311,6 +326,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // utile ici pour l'utilisateur qui reste sur CETTE page en attendant.
   const prevStatusRef = useRef<GroupStatus | null>(null);
 
+  // Détecte qu'un AUTRE membre vient de passer hors-ligne → en ligne (donc
+  // très probablement en train de réciter) entre deux sondages, pour le
+  // notifier — jamais au premier chargement (pas de base de comparaison),
+  // jamais pour soi-même. Réservé aux membres du groupe (isMember, plus bas).
+  const prevOnlineRef = useRef<Record<string, boolean> | null>(null);
+
+  // Discussion du groupe façon WhatsApp — chargée seulement quand le
+  // panneau est ouvert (pas de sondage inutile en arrière-plan).
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatText, setChatText] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+  const chatListRef = useRef<HTMLDivElement>(null);
+
   // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
   // sondage régulier écraserait une saisie en cours toutes les POLL_MS ms —
   // même précaution que syncedFait dans MemberCounter).
@@ -334,6 +363,22 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         notify(`Votre demande pour « ${d.name} » a été refusée.`);
       }
       prevStatusRef.current = d.status;
+
+      // Un AUTRE membre vient de passer en ligne (donc très probablement en
+      // train de réciter) : notifie, avec sa progression actuelle — réservé
+      // aux membres (voir le commentaire de prevOnlineRef plus haut).
+      const isMemberNow = d.status === 'member' || d.status === 'owner';
+      if (isMemberNow && prevOnlineRef.current) {
+        const prevOnline = prevOnlineRef.current;
+        for (const m of d.members || []) {
+          if (m.uid === uid) continue;
+          if (!prevOnline[m.uid] && m.online) {
+            notify(`🟢 ${m.email || 'Un membre'} est en train de réciter — ${fmt(m.fait)} grains.`);
+          }
+        }
+      }
+      prevOnlineRef.current = Object.fromEntries((d.members || []).map((m: Member) => [m.uid, m.online]));
+
       setG(d);
       setError('');
       loadedOnce.current = true;
@@ -344,7 +389,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       if (!loadedOnce.current) setError(e.message || 'Erreur de chargement.');
       return null;
     }
-  }, [groupId, notify]);
+  }, [groupId, notify, uid]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -355,6 +400,28 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     const id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  // Discussion : chargée et sondée SEULEMENT pendant que le panneau est
+  // ouvert — pas de requête inutile en arrière-plan quand personne ne lit.
+  const loadMessages = useCallback(async () => {
+    try {
+      const d = await getMessages(groupId);
+      setMessages(d.messages || []);
+    } catch {
+      // Sondage best-effort : une lecture ratée ne doit pas casser le panneau.
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!showChat) return undefined;
+    loadMessages();
+    const id = setInterval(loadMessages, POLL_MS);
+    return () => clearInterval(id);
+  }, [showChat, loadMessages]);
+
+  useEffect(() => {
+    if (chatListRef.current) chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+  }, [messages, showChat]);
 
   const doJoin = async () => {
     try {
@@ -369,9 +436,27 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doDelete = async () => {
-    if (!window.confirm('Supprimer définitivement ce zikr collectif ?')) return;
+    // Deux points d'entrée : le créateur (bouton en pied de page, seulement
+    // s'il est seul) et l'administrateur (panneau admin, n'importe quel zikr —
+    // voir handleDelete, pages/api/zikr.js) ; message adapté au cas.
+    const msg = g && g.status !== 'owner'
+      ? `Supprimer définitivement « ${g.name} » en tant qu’administrateur (${g.membersCount} participant${g.membersCount > 1 ? 's' : ''}) ?`
+      : 'Supprimer définitivement ce zikr collectif ?';
+    if (!window.confirm(msg)) return;
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const doApproveZikr = async () => {
+    try { await approveZikr(groupId); notify('✅ Zikr collectif approuvé — visible dans la liste publique.'); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+  };
+  const doSendMessage = async () => {
+    const t = chatText.trim();
+    if (!t || chatBusy) return;
+    setChatBusy(true);
+    try { await sendMessage(groupId, t); setChatText(''); loadMessages(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    finally { setChatBusy(false); }
   };
   const doDismissWarning = async () => {
     try { await dismissWarning(groupId); load(); } catch { /* best effort */ }
@@ -429,8 +514,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     <div className="glass-panel">
       <div className="zk-detail-topbar">
         <button className="zk-link" onClick={onBack}>← Liste des zikr</button>
-        <button type="button" className="zk-share-btn" onClick={doShare}
-          title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">📤 Partager</button>
+        <span className="zk-topbar-actions">
+          {isMember && (
+            <button type="button" className="zk-share-btn" onClick={() => setShowChat((v) => !v)}
+              title="Discussion du groupe" aria-label="Discussion du groupe">
+              💬 {showChat ? 'Fermer' : 'Discussion'}
+            </button>
+          )}
+          <button type="button" className="zk-share-btn" onClick={doShare}
+            title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">📤 Partager</button>
+        </span>
       </div>
 
       <div className="zk-detail-head">
@@ -444,7 +537,26 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         {g.private && (
           <div className="zk-private-note">🔒 Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.</div>
         )}
+        {g.approved === false && (
+          <div className="zk-private-note">
+            ⏳ En attente de validation par l’administrateur avant d’apparaître dans la liste publique.
+            {isMember && ' Vous pouvez déjà inviter des participants via le lien de partage.'}
+          </div>
+        )}
       </div>
+
+      {/* Panneau admin (prozizou298@gmail.com ou tout compte admins/{clé}) :
+          approuver pour la liste publique, ou supprimer n'importe quel zikr
+          collectif — voir handleApproveZikr/handleDelete, pages/api/zikr.js. */}
+      {g.isAdmin && (
+        <div className="zk-admin-panel">
+          <span className="zk-admin-badge">🛡️ Administration</span>
+          {g.approved === false && (
+            <button type="button" className="zk-mini ok" onClick={doApproveZikr}>✅ Approuver</button>
+          )}
+          <button type="button" className="zk-mini no" onClick={doDelete}>🗑️ Supprimer</button>
+        </div>
+      )}
 
       {isMember ? (
         <>
@@ -526,6 +638,35 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Discussion du groupe façon WhatsApp — réservée aux membres (voir
+          handleSendMessage/handleMessages, pages/api/zikr.js). */}
+      {isMember && showChat && (
+        <div className="zk-chat-panel">
+          <h3>💬 Discussion</h3>
+          <div className="zk-chat-list" ref={chatListRef}>
+            {messages.length === 0 ? (
+              <p className="zk-muted">Aucun message pour l’instant — lancez la discussion !</p>
+            ) : (
+              messages.map((m) => (
+                <div key={m.id} className={'zk-chat-msg' + (m.uid === uid ? ' me' : '')}>
+                  <span className="zk-chat-author">
+                    {m.email || 'Membre'}{m.uid === g.ownerUid && ' 👑'}
+                  </span>
+                  <p className="zk-chat-text">{m.text}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="zk-chat-input-row">
+            <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
+              placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
+            <button type="button" className="zk-chat-send" onClick={doSendMessage}
+              disabled={chatBusy || !chatText.trim()} aria-label="Envoyer">➤</button>
           </div>
         </div>
       )}
