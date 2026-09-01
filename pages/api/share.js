@@ -27,10 +27,14 @@ const SHARE_SHOW_TITLES = true;
 
 // Types partageables → page cible (doit rester aligné avec lib/share.js).
 // product → "/" : le Marché Mystique est désormais la page d'accueil.
+// zikr : PAS dans SOURCES (server/sources.js) — ce n'est pas un nœud de
+// contenu payant, mais un zikr collectif (pages/api/zikr.js) ; son titre est
+// donc lu directement plus bas (readZikrTitle), pas via SOURCES[kind].
 const TARGETS = {
   secret:  { page: "/asrar",                 rubrique: "Secrets Mystiques" },
   book:    { page: "/bibliotheque",   rubrique: "Bibliothèque Almaqtab" },
-  product: { page: "/",                     rubrique: "Marché Mystique" }
+  product: { page: "/",                     rubrique: "Marché Mystique" },
+  zikr:    { page: "/zikr",                 rubrique: "Zikr collectif" }
 };
 
 const TITLE_FIELDS = ["faida", "title", "titre", "text", "produit", "name"];
@@ -49,6 +53,7 @@ export default async function handler(req, res) {
 
   const target = TARGETS[kind];
   const src    = SOURCES[kind];
+  const isZikr = kind === "zikr"; // pas de SOURCES[kind] pour ce type — voir TARGETS ci-dessus
 
   // Destination par défaut : l'application (lien de parrainage simple).
   // Image par défaut : la même carte de partage « professionnelle » que le
@@ -67,16 +72,20 @@ export default async function handler(req, res) {
   let itemTitle = null;
   let itemImage = null;
   let rubrique  = null;
-  const hasItem = !!(target && src && key && (!src.cats || src.cats.includes(cat)));
+  const hasItem = !!(target && key && (isZikr || (src && (!src.cats || src.cats.includes(cat)))));
 
   if (hasItem) {
-    dest = target.page + "?item=" + encodeURIComponent(key) + (cat ? "&cat=" + encodeURIComponent(cat) : "");
-    desc = target.rubrique + " · ASRAR PRO — Ouvrez le lien pour consulter cet élément.";
+    dest = target.page + "?item=" + encodeURIComponent(key) + (!isZikr && cat ? "&cat=" + encodeURIComponent(cat) : "");
+    desc = isZikr
+      ? "Zikr collectif · ASRAR PRO — Rejoignez ce dhikr partagé."
+      : target.rubrique + " · ASRAR PRO — Ouvrez le lien pour consulter cet élément.";
     rubrique = target.rubrique;
 
     if (SHARE_SHOW_TITLES) {
       try {
-        const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
+        const snap = isZikr
+          ? await app().database().ref("zikr_groups/" + key).once("value")
+          : await app().database().ref(src.ref(cat) + "/" + key).once("value");
         const item = snap.val();
         if (item) {
           const t = pick(item, TITLE_FIELDS);
