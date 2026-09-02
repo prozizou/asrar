@@ -156,6 +156,24 @@ html[data-theme='light'] .geo-page::before {
 
 .geo-page .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .geo-page .btn-row .btn { width: auto; margin-top: 0; }
+
+/* Consentement géolocalisation (revue de sécurité) — sobre, sous les boutons,
+   jamais coché par défaut. */
+.geo-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.82rem;
+  color: var(--text-dim, var(--text));
+  cursor: pointer;
+  line-height: 1.4;
+}
+.geo-consent-row input { margin-top: 2px; flex-shrink: 0; }
 .geo-page .btn {
   padding: 10px 20px;
   border-radius: 30px;

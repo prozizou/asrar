@@ -1,4 +1,4 @@
-// api/cloudinary-sign.js — Signature d'upload Cloudinary pour un utilisateur CONNECTÉ.
+// api/cloudinary-sign.js — Signature d'upload Cloudinary pour un vendeur ACTIF.
 // Permet à un vendeur / propriétaire de boutique d'envoyer une image (logo, produit)
 // directement depuis son téléphone. Le secret Cloudinary ne quitte jamais le serveur.
 //
@@ -6,6 +6,7 @@
 
 const crypto = require("crypto");
 const { verifyUser } = require("../../server/access");
+const { isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 
@@ -24,6 +25,19 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+
+  // Réservé à un vendeur ACTIF ou au propriétaire d'une boutique "profil" —
+  // avant cette vérification, N'IMPORTE QUEL compte connecté (même sans
+  // boutique) pouvait obtenir une signature et uploader vers le compte
+  // Cloudinary de l'app (revue de sécurité). Même double voie d'autorisation
+  // que pages/api/shop.js (canManage).
+  const [activeSeller, boutique] = await Promise.all([
+    isActiveSeller(user.uid),
+    getBoutiqueByEmail(user.email),
+  ]);
+  if (!activeSeller && !boutique) {
+    return res.status(403).json({ error: "Boutique inactive : impossible d'envoyer une image." });
+  }
 
   if (!rateLimit("cloudinary-sign:" + user.uid, RATE_LIMIT.max, RATE_LIMIT.windowMs)) {
     return res.status(429).json({ error: "Trop de demandes d'upload, réessayez dans une minute." });
