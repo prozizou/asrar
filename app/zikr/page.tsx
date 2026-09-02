@@ -32,7 +32,7 @@ import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
 import {
-  listGroups, createGroup, getGroup, joinGroup,
+  listGroups, createGroup, updateGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, warnMember, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
   openWishes, closeWishes, submitWish,
@@ -87,6 +87,7 @@ interface ChatMessage {
 }
 
 interface GroupDetailData extends Group {
+  presetId: string;
   ownerUid: string;
   full: boolean;
   pending: number;
@@ -317,6 +318,83 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
   );
 }
 
+// Modification (créateur only) — mêmes champs que CreateForm, préremplis.
+// La formule (presetId/arabe) se verrouille dès que le groupe a commencé à
+// réciter (g.total > 0) — voir handleUpdate, pages/api/zikr.js.
+function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
+  groupId: string; g: GroupDetailData; notify: (msg: string) => void; onSaved: () => void; onCancel: () => void;
+}) {
+  const [name, setName] = useState(g.name);
+  const [presetId, setPresetId] = useState(g.presetId || DHIKR_PRESETS[0].id);
+  const [customArabic, setCustomArabic] = useState(g.presetId === LIBRE_PRESET_ID ? g.arabic : '');
+  const [target, setTarget] = useState(String(g.target || ''));
+  const [isPrivate, setIsPrivate] = useState(!!g.private);
+  const [busy, setBusy] = useState(false);
+  const isLibre = presetId === LIBRE_PRESET_ID;
+  const formulaLocked = (Number(g.total) || 0) > 0;
+
+  const targetNum = Math.floor(Number(target));
+  const targetValid = target !== '' && Number.isFinite(targetNum) && targetNum >= TARGET_MIN && targetNum <= TARGET_MAX;
+  const canSubmit = !busy && !!name.trim() && (!isLibre || !!customArabic.trim()) && targetValid;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    try {
+      await updateGroup(groupId, { name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate });
+      notify('✅ Zikr collectif mis à jour.');
+      onSaved();
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="zk-form">
+      <label className="zk-field">
+        <span>Titre</span>
+        <input type="text" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label className="zk-field">
+        <span>Formule à réciter {formulaLocked && <em className="zk-required">verrouillée</em>}</span>
+        <select value={presetId} disabled={formulaLocked} onChange={(e) => setPresetId(e.target.value)}>
+          {DHIKR_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>{p.transliteration}</option>
+          ))}
+        </select>
+      </label>
+      {isLibre && (
+        <label className="zk-field">
+          <span>Zikr à réciter (arabe)</span>
+          <input type="text" dir="rtl" maxLength={ARABIC_MAX} value={customArabic} disabled={formulaLocked}
+            placeholder="اكتب هنا" onChange={(e) => setCustomArabic(e.target.value)} />
+        </label>
+      )}
+      {formulaLocked && (
+        <p className="zk-preview">
+          🔒 La formule ne peut plus changer : des grains ont déjà été comptabilisés pour ce zikr.
+        </p>
+      )}
+      <label className="zk-field">
+        <span>Objectif total <em className="zk-required">obligatoire</em></span>
+        <input type="number" min={TARGET_MIN} max={TARGET_MAX} value={target} required
+          onChange={(e) => setTarget(e.target.value)} />
+      </label>
+      <label className="zk-checkbox-field">
+        <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+        <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
+      </label>
+      <div className="zk-form-actions">
+        <button className="zk-btn ghost" type="button" onClick={onCancel}>Annuler</button>
+        <button className="zk-btn main" onClick={submit} disabled={!canSubmit}>
+          {busy ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
 function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string) => void; onBack: () => void }) {
   const [g, setG] = useState<GroupDetailData | null>(null);
@@ -331,6 +409,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // notifier — jamais au premier chargement (pas de base de comparaison),
   // jamais pour soi-même. Réservé aux membres du groupe (isMember, plus bas).
   const prevOnlineRef = useRef<Record<string, boolean> | null>(null);
+
+  // Formulaire de modification (créateur only) — voir EditGroupForm plus bas.
+  const [editing, setEditing] = useState(false);
 
   // Discussion du groupe façon WhatsApp — chargée seulement quand le
   // panneau est ouvert (pas de sondage inutile en arrière-plan).
@@ -515,6 +596,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       <div className="zk-detail-topbar">
         <button className="zk-link" onClick={onBack}>← Liste des zikr</button>
         <span className="zk-topbar-actions">
+          {g.status === 'owner' && (
+            <button type="button" className="zk-share-btn" onClick={() => setEditing((v) => !v)}
+              title="Modifier ce zikr collectif" aria-label="Modifier ce zikr collectif">
+              ✏️ {editing ? 'Fermer' : 'Modifier'}
+            </button>
+          )}
           {isMember && (
             <button type="button" className="zk-share-btn" onClick={() => setShowChat((v) => !v)}
               title="Discussion du groupe" aria-label="Discussion du groupe">
@@ -544,6 +631,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           </div>
         )}
       </div>
+
+      {editing && g.status === 'owner' && (
+        <EditGroupForm
+          groupId={groupId}
+          g={g}
+          notify={notify}
+          onSaved={() => { setEditing(false); load(); }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
 
       {/* Panneau admin (prozizou298@gmail.com ou tout compte admins/{clé}) :
           approuver pour la liste publique, ou supprimer n'importe quel zikr
