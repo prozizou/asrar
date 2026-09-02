@@ -6,6 +6,20 @@
 .zk-hero h1 { font-family: var(--font-display); font-size: 1.7rem; margin: 6px 0 4px; }
 .zk-hero p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
 
+/* Rappel de wird quotidien (components/WirdReminderToggle.js) — en tête de
+   la liste, au-dessus du bouton « Lancer un zikr collectif ». */
+.zk-wird-reminder {
+  padding: 12px 14px; margin-bottom: 14px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--glass-border);
+}
+.zk-wird-time-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.zk-wird-time-row input {
+  width: 60px; text-align: center; background: var(--bg-deep); border: 1px solid var(--glass-border);
+  border-radius: 8px; padding: 6px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.85rem;
+}
+.zk-wird-time-row span { color: var(--text-dim); font-weight: 700; }
+.zk-wird-error { color: #e0607a; font-size: 0.78rem; margin: 8px 0 0; }
+
 .zk-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); padding: 24px 0; }
 .zk-error { color: #e0607a; font-size: 0.92rem; }
 .zk-empty { color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.92rem; }

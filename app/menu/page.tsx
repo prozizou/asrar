@@ -41,7 +41,6 @@ const MODULES: ModuleTile[] = [
   { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
   { icon: '🎓', label: 'Formation mystique', desc: 'Ateliers en direct par visioconférence', href: '/formation' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
-  { icon: '🔔', label: 'Rappels', desc: 'Rappel de wird quotidien et sessions Zikr collectif', href: '/rappels' },
 ];
 
 // Modules réservés au palier « 1 An » (PREMIUM_LEVEL) — regroupés à part pour

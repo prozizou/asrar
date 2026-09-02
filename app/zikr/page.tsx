@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
+import WirdReminderToggleUntyped from '@/components/WirdReminderToggle';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
@@ -40,6 +41,7 @@ import {
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
+const WirdReminderToggle = WirdReminderToggleUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 
@@ -204,6 +206,8 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
           monde au fil des récitations du groupe. Créez le vôtre ou rejoignez-en un.
         </p>
       </div>
+
+      <WirdReminderToggle />
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
         {creating ? '✕ Annuler' : '➕ Lancer un zikr collectif'}
