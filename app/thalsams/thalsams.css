@@ -1,0 +1,68 @@
+/* app/thalsams/thalsams.css — Générateur de Thalsam (lib/thalsam.js).
+   Tokens de design globaux (--accent, --surface-2, --text-*, --glass-border,
+   --bg-deep, --font-ui, --font-ar) — mêmes que app/wafq/wafq.css. */
+
+.th-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.th-field span { font-size: 0.78rem; color: var(--text-dim); }
+.th-field input, .th-field select {
+  background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem; outline: none;
+}
+.th-field input:focus, .th-field select:focus { border-color: var(--accent); }
+
+.th-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.th-tab {
+  padding: 7px 14px; border-radius: 999px; border: 1px solid var(--glass-border);
+  background: var(--surface-2); color: var(--text-dim); font-family: var(--font-ui); font-size: 0.85rem; cursor: pointer;
+}
+.th-tab.active { border-color: var(--accent); color: var(--text-main); }
+
+.th-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.th-checkbox-field { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 16px; cursor: pointer; }
+.th-checkbox-field input { accent-color: var(--accent); }
+
+.th-generate-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--accent); color: #fff;
+  font-family: var(--font-ui); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+}
+.th-generate-btn:hover { background: var(--accent-hover); }
+.th-generate-btn:disabled { opacity: 0.6; cursor: default; }
+.th-error { color: #e0607a; font-size: 0.85rem; margin-top: 8px; }
+
+.th-summary {
+  margin-top: 18px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2);
+  border: 1px solid var(--glass-border); font-size: 0.82rem; color: var(--text-dim);
+}
+.th-summary strong { color: var(--text-main); }
+
+.th-length-group { margin-top: 22px; }
+.th-length-title { font-size: 0.9rem; color: var(--accent); margin-bottom: 10px; }
+
+.th-cards { display: flex; flex-direction: column; gap: 12px; }
+.th-card { border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px 16px; background: var(--surface-2); }
+.th-card-word { font-family: var(--font-ar); font-size: 1.6rem; text-align: center; color: var(--text-main); direction: rtl; margin-bottom: 8px; }
+.th-card-meta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; font-size: 0.76rem; color: var(--text-muted); margin-bottom: 8px; }
+.th-card-meta b { color: var(--text-dim); }
+.th-card-verif { text-align: center; font-size: 0.78rem; color: var(--accent); margin-bottom: 4px; }
+
+.th-detail-toggle {
+  display: block; margin: 6px auto 0; background: none; border: none; color: var(--text-dim);
+  font-size: 0.76rem; text-decoration: underline; cursor: pointer; padding: 0;
+}
+.th-calc { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.th-calc-item {
+  font-family: var(--font-ar); font-size: 0.85rem; background: var(--bg-deep); border: 1px solid var(--glass-border);
+  border-radius: 8px; padding: 4px 8px; color: var(--text-main); direction: rtl;
+}
+.th-calc-item span { display: block; font-family: var(--font-ui); font-size: 0.62rem; color: var(--text-muted); direction: ltr; text-align: center; }
+
+.th-empty { font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 20px 0; }
+.th-empty ul { text-align: left; max-width: 340px; margin: 10px auto 0; font-size: 0.8rem; }
+
+.th-truncated { text-align: center; font-size: 0.78rem; color: var(--text-muted); margin-top: 14px; }
+
+.th-disclaimer {
+  font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; margin-top: 18px;
+  padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--glass-border);
+}

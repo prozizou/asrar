@@ -50,6 +50,7 @@ const MODULES_PREMIUM: ModuleTile[] = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
   { icon: '🔯', label: 'Wafq', desc: 'Générer un talisman (carré magique) par intention', href: '/wafq' },
+  { icon: '🧿', label: 'Thalsams', desc: 'Générer une chaîne de lettres au poids exact recherché', href: '/thalsams' },
 ];
 
 function MenuItem({ item }: { item: ModuleTile }) {
