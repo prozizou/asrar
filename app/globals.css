@@ -807,12 +807,33 @@ img, svg, video { max-width: 100%; height: auto; }
   width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
   cursor: pointer; user-select: none; touch-action: manipulation;
   -webkit-tap-highlight-color: transparent; text-align: center;
+  /* Relief de « vrai bouton » (revue design, module Noms d'Allah — « le
+     bouton principal (compter) n'est pas évident ») : sans ce cadre, le
+     chapelet se fondait dans le reste de la carte, sans rien signaler
+     visuellement qu'il s'agit d'une grande zone tactile. */
+  padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border);
+  background: var(--surface-2);
+  transition: background .15s ease, border-color .15s ease;
 }
+.tc:hover { border-color: var(--accent); }
+.tc:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+
 .tc-settings {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
   width: 100%; padding-bottom: 14px; border-bottom: 1px dashed var(--glass-border);
   cursor: default;
 }
+/* Réglages repliés par défaut (voir components/TasbihChapelet.js,
+   `settingsOpen`) : un bouton à libellé clair plutôt que des contrôles
+   ouverts en permanence, qui ajoutaient un rang de « pilules » avant même
+   d'arriver au compteur. */
+.tc-settings-toggle {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--surface-3); border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 6px 12px; color: var(--text-dim); font-family: var(--font-ui); font-size: .82rem;
+  cursor: pointer;
+}
+.tc-settings-toggle:hover { border-color: var(--accent); color: var(--text-main); }
 .tc-group {
   display: flex; align-items: center; gap: 6px; padding: 6px 12px;
   background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px;
@@ -837,13 +858,17 @@ img, svg, video { max-width: 100%; height: auto; }
   padding: 5px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600;
   color: #d9a441; background: rgba(217,164,65,.15); border: 1px solid rgba(217,164,65,.4);
 }
+/* Réinitialiser : un vrai libellé, dans le panneau replié (settingsOpen) —
+   plus le petit cercle toujours visible d'avant, à un tap accidentel du
+   reste des contrôles (revue design, point « remise à zéro accidentelle »). */
 .tc-reset {
-  width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; font-size: .95rem;
-  color: #ff7070; background: rgba(255,80,80,.1); border: 1px solid rgba(255,80,80,.2);
-  transition: background .2s, transform .2s;
+  flex-shrink: 0; border-radius: 10px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: .82rem; font-weight: 600;
+  color: #ff7070; background: rgba(255,80,80,.1); border: 1px solid rgba(255,80,80,.25);
+  transition: background .2s;
+  font-family: var(--font-ui);
 }
-.tc-reset:hover { background: rgba(255,80,80,.25); transform: rotate(-15deg) scale(1.1); }
+.tc-reset:hover { background: rgba(255,80,80,.22); }
 /* .tc-subdiv (menu déroulant des suggestions de répartition) réutilise
    .tc-group pour son apparence (icône + contrôle) — rien à ajouter ici. */
 .tc-counter {
@@ -851,6 +876,10 @@ img, svg, video { max-width: 100%; height: auto; }
   font-variant-numeric: tabular-nums; color: var(--accent);
   text-shadow: 0 0 24px var(--accent-glow);
 }
+/* « sur {objectif} » — un seul repère textuel pour la cible, juste sous le
+   compteur (qui affiche la progression cumulée, voir TasbihChapelet.js) au
+   lieu d'une ligne « Progression N/cible » séparée et redondante. */
+.tc-counter-target { font-size: .9rem; color: var(--text-dim); margin-top: -6px; }
 .tc-streak { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .8rem; color: var(--text-muted); }
 .tc-badge { font-size: .76rem; font-weight: 700; color: var(--accent); animation: tcBadgeIn .4s ease; }
 @keyframes tcBadgeIn {
@@ -873,7 +902,11 @@ img, svg, video { max-width: 100%; height: auto; }
   background: radial-gradient(circle at 38% 32%, #f7e6bd, #d9ab63 58%, #a9743a);
   box-shadow: 0 2px 5px rgba(60,35,10,.45), inset 0 1px 2px rgba(255,245,220,.5);
 }
-.tc-hint { font-size: .72rem; color: var(--text-dim); letter-spacing: .02em; }
+/* Plus grand et plus affirmé que le simple sous-texte d'avant (.72rem,
+   texte atténué) — c'est l'invite d'action de toute la zone `.tc`, pas une
+   légende accessoire (revue design, « rendre appuyer pour égrainer
+   beaucoup plus évident »). */
+.tc-hint { font-size: .88rem; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
 
 /* ── Tableau de bord (accueil) — barre utilisateur + menus groupés ────────── */
 .user-bar {

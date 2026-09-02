@@ -25,13 +25,26 @@ import {
   describeCombo,
   resultSearchText,
   searchCombinations,
+  splitFr,
 } from '@/lib/combinaisons';
 
-const PAGE_SIZE = 50;
+// Résultats par page (revue design, point 8) : 20 par défaut au lieu de 50
+// fixe — 50 restait choisissable, pas retiré, juste plus rarement le
+// premier choix vu depuis mobile.
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const DEFAULT_PAGE_SIZE = 20;
 const K_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const STORE_KEY = 'asrar_last_search';
 
 type Combo = number[]; // indices dans NAMES_SORTED
+
+// Fiche de nom (revue design, point 9) — voir ResultCard/onNameClick.
+interface NameSheetData {
+  display: string;
+  translit: string;
+  desc: string;
+  weight: number;
+}
 
 interface Outcome {
   results: Combo[];
@@ -76,7 +89,12 @@ export default function CombinaisonsPage() {
   const [outcome, setOutcome] = useState<Outcome | null>(null); // résultats finalisés
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [banner, setBanner] = useState<Banner | null>(null); // recherche sauvegardée
+  // Fiche de nom (revue design, point 9) : nom touché dans une carte de
+  // résultat — null = fermée. Réutilise pickName() pour « Utiliser comme
+  // cible » (même geste que le tableau des 99 noms plus bas sur la page).
+  const [nameSheet, setNameSheet] = useState<NameSheetData | null>(null);
 
   // Restauration : bannière si une recherche précédente est en cache.
   useEffect(() => {
@@ -105,10 +123,10 @@ export default function CombinaisonsPage() {
     return out;
   }, [filter, sortedResults, searchTexts]);
 
-  const pages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pages = Math.ceil(filtered.length / pageSize);
   const safePage = Math.min(page, Math.max(0, pages - 1));
-  const start = safePage * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, filtered.length);
+  const start = safePage * pageSize;
+  const end = Math.min(start + pageSize, filtered.length);
   const slice = filtered.slice(start, end);
 
   const runSearch = useCallback(async () => {
@@ -198,6 +216,14 @@ export default function CombinaisonsPage() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // « Utiliser {poids} comme cible » depuis la fiche de nom (revue design,
+  // point 9) — même geste que pickName() (tableau des 99 noms), en plus de
+  // fermer la fiche.
+  const applyNameAsTarget = (w: number) => {
+    setNameSheet(null);
+    pickName(w);
+  };
+
   const count = results.length;
   const showFilterBar = sortedResults.length > 10;
 
@@ -211,8 +237,12 @@ export default function CombinaisonsPage() {
         <header>
           <div className="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
           <h1>
-            Les 99 Noms d'<span>Allah</span> Asrar Pro
+            Les 99 Noms d'<span>Allah</span>
           </h1>
+          {/* « Asrar Pro » détaché du titre (revue design, point 7) : faisait
+              auparavant partie du <h1>, à la même taille — écrasait le vrai
+              titre de la page plutôt que de se lire comme une marque. */}
+          <div className="brand-badge">Asrar Pro</div>
           <p className="subtitle">Combinaisons par poids mystique · Calcul Abjad (حساب الجُمَّل)</p>
         </header>
 
@@ -269,13 +299,17 @@ export default function CombinaisonsPage() {
                 )}
               </div>
             </div>
+            {/* Libellés texte seul (revue design, point 4) : l'icône 🔍 sur
+                le bouton principal, au repos, donnait l'impression d'un
+                bouton « recherche » générique plutôt que l'action de la
+                page — retirée. « Effacer » → « Réinitialiser » (plus
+                explicite : remet le formulaire à zéro, pas juste le champ). */}
             <div className="btn-row">
               <button className="btn-primary" onClick={handleSearch}>
-                <span>{isSearching ? '⏹' : '🔍'}</span>
-                <span>{isSearching ? 'Arrêter la recherche' : 'Rechercher'}</span>
+                {isSearching ? 'Arrêter la recherche' : 'Rechercher'}
               </button>
               <button className="btn-secondary" onClick={clearAll}>
-                Effacer
+                Réinitialiser
               </button>
             </div>
 
@@ -301,11 +335,21 @@ export default function CombinaisonsPage() {
           {/* Résultats */}
           {outcome && (outcome.empty || count > 0) && (
             <div className="card">
-              <div className="results-bar">
-                <div className="card-title" style={{ marginBottom: 0 }}>
-                  Combinaisons trouvées
+              {/* Résumé (revue design, point 3) : « Résultats pour {cible} »
+                  + décompte contextuel — remplace un titre générique qui ne
+                  rappelait ni la cible recherchée ni le nombre de noms. */}
+              <div className="results-summary">
+                <div className="card-title">Résultats pour {outcome.target}</div>
+                <div className="results-count">
+                  {count === 0 ? (
+                    'Aucune combinaison trouvée'
+                  ) : (
+                    <>
+                      <strong>{count}</strong> combinaison{count > 1 ? 's' : ''} de{' '}
+                      <strong>{outcome.k}</strong> noms trouvée{count > 1 ? 's' : ''}
+                    </>
+                  )}
                 </div>
-                <span className="badge">{count === 1 ? '1 résultat' : `${count} résultats`}</span>
               </div>
 
               {outcome.empty ? (
@@ -353,11 +397,23 @@ export default function CombinaisonsPage() {
 
                   <div className="results-list">
                     {slice.map((idx) => (
-                      <ResultCard key={idx} indices={sortedResults[idx]} />
+                      <ResultCard key={idx} indices={sortedResults[idx]} onNameClick={setNameSheet} />
                     ))}
                   </div>
 
-                  <Pagination pages={pages} page={safePage} onGo={setPage} start={start} end={end} total={filtered.length} />
+                  <Pagination
+                    pages={pages}
+                    page={safePage}
+                    onGo={setPage}
+                    start={start}
+                    end={end}
+                    total={filtered.length}
+                    pageSize={pageSize}
+                    onPageSizeChange={(n) => {
+                      setPageSize(n);
+                      setPage(0);
+                    }}
+                  />
                 </>
               )}
             </div>
@@ -367,14 +423,21 @@ export default function CombinaisonsPage() {
           <div className="card">
             <div className="card-title">Calculatrice Abjad — poids d'un texte arabe</div>
             <div className="calc-row">
+              {/* dir explicite (revue design, point 6) — le CSS posait déjà
+                  direction:rtl/text-align:right, mais l'attribut HTML dir
+                  participe plus correctement à l'algorithme bidi Unicode
+                  (frontières avec la ponctuation/les espaces neutres). */}
               <input
                 className="calc-text"
                 type="text"
+                dir="rtl"
                 placeholder="Saisissez un texte en arabe…"
                 value={calcInput}
                 onChange={(e) => setCalcInput(e.target.value)}
               />
-              <div className="calc-display">{calcWeight > 0 ? calcWeight : '—'}</div>
+              <div className="calc-display" dir="ltr">
+                {calcWeight > 0 ? calcWeight : '—'}
+              </div>
             </div>
             <p className="calc-note">
               Le poids est calculé selon le système Abjad (حساب الجُمَّل الكبير). Cliquez sur un nom dans le tableau
@@ -389,10 +452,14 @@ export default function CombinaisonsPage() {
               <div className="names-grid">
                 {NAMES.map((nm: any, i: number) => (
                   <div className="name-chip" key={i} onClick={() => pickName(nm.weight)} title={nm.fr}>
-                    <span className="nc-ar">{nm.display}</span>
+                    <span className="nc-ar" dir="rtl">
+                      {nm.display}
+                    </span>
                     <div className="nc-info">
-                      <div className="nc-weight">{nm.weight}</div>
-                      <div className="nc-fr">{nm.fr.split('—')[0].trim()}</div>
+                      <div className="nc-weight" dir="ltr">
+                        {nm.weight}
+                      </div>
+                      <div className="nc-fr">{splitFr(nm.fr).translit}</div>
                     </div>
                   </div>
                 ))}
@@ -405,6 +472,33 @@ export default function CombinaisonsPage() {
           Les 99 Noms d'Allah · Poids Abjad (حساب الجُمَّل الكبير) · Application éducative et spirituelle
         </footer>
       </div>
+
+      {/* Fiche de nom (revue design, point 9) : touchée depuis une carte de
+          résultat (voir ResultCard.onNameClick ci-dessous) — crée une vraie
+          continuité entre la liste de résultats et la calculatrice, sans
+          quitter la page. */}
+      {nameSheet && (
+        <div className="name-sheet-overlay" onClick={() => setNameSheet(null)}>
+          <div className="name-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="name-sheet-ar" dir="rtl">
+              {nameSheet.display}
+            </div>
+            <div className="name-sheet-translit">{nameSheet.translit}</div>
+            {nameSheet.desc && <div className="name-sheet-desc">{nameSheet.desc}</div>}
+            <div className="name-sheet-weight" dir="ltr">
+              Valeur Abjad : {nameSheet.weight}
+            </div>
+            <div className="name-sheet-actions">
+              <button className="name-sheet-use" onClick={() => applyNameAsTarget(nameSheet.weight)}>
+                Utiliser {nameSheet.weight} comme cible
+              </button>
+              <button className="name-sheet-close" onClick={() => setNameSheet(null)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -447,31 +541,96 @@ function ProgressLabel({ isSearching, progress, outcome }: { isSearching: boolea
   );
 }
 
-function ResultCard({ indices }: { indices: Combo }) {
+// Carte compacte (revue design, point 2) : 4 lignes fixes quel que soit k
+// (2 à 11 noms) — noms arabes → formule → transcriptions → descriptions,
+// jointes par « · » — au lieu d'une ligne par nom (« nom — description »),
+// qui poussait une carte à k+2 lignes.
+//
+// Noms individuellement cliquables (point 9) : ouvrent la fiche de nom
+// (voir la modale name-sheet-* dans le composant parent) — onNameClick reçoit
+// directement les données déjà calculées ici (display/translit/desc/weight),
+// pas juste un index, pour ne rien recalculer côté parent.
+function ResultCard({ indices, onNameClick }: { indices: Combo; onNameClick: (n: NameSheetData) => void }) {
   const { names, formula, isAllah } = describeCombo(indices);
+  const parts = names.map((nn: any) => splitFr(nn.fr));
   return (
     <div className={'result-card' + (isAllah ? ' has-allah' : '')}>
-      <div className="rc-arabic">
-        {names.map((nn: any) => nn.display).join('  +  ')}
+      {/* dir="rtl" explicite (revue design, point 6) sur le conteneur — les
+          noms restent dans l'ordre de lecture arabe naturel, le signe "+"
+          entre eux (neutre bidi) ne provoque pas d'inversion visuelle. */}
+      <div className="rc-arabic" dir="rtl">
+        {names.map((nn: any, i: number) => (
+          <span key={i}>
+            <button
+              type="button"
+              className="rc-name-btn"
+              onClick={() => onNameClick({ display: nn.display, translit: parts[i].translit, desc: parts[i].desc, weight: nn.weight })}
+            >
+              {nn.display}
+            </button>
+            {i < names.length - 1 && '  +  '}
+          </span>
+        ))}
         {isAllah && <span className="rc-allah-badge">★ الله</span>}
       </div>
       <div>
-        <span className="rc-formula">{formula}</span>
+        <span className="rc-formula" dir="ltr">
+          {formula}
+        </span>
       </div>
-      <div className="rc-defs">
-        {names.map((nn: any, i: number) => (
-          <span key={i}>
-            <b>{nn.display}</b> — {nn.fr}
-            {i < names.length - 1 && <br />}
-          </span>
-        ))}
-      </div>
+      <div className="rc-translit">{parts.map((p) => p.translit).join(' · ')}</div>
+      <div className="rc-desc">{parts.map((p) => p.desc).join(' · ')}</div>
     </div>
   );
 }
 
-function Pagination({ pages, page, onGo, start, end, total }: { pages: number; page: number; onGo: (p: number) => void; start: number; end: number; total: number }) {
-  if (pages <= 1) return null;
+function Pagination({
+  pages,
+  page,
+  onGo,
+  start,
+  end,
+  total,
+  pageSize,
+  onPageSizeChange,
+}: {
+  pages: number;
+  page: number;
+  onGo: (p: number) => void;
+  start: number;
+  end: number;
+  total: number;
+  pageSize: number;
+  onPageSizeChange: (n: number) => void;
+}) {
+  // Sélecteur « Afficher : 10 | 20 | 50 » (revue design, point 8) : toujours
+  // utile même sur une seule page (passer à 10 quand 20 tenait déjà en une
+  // page reste un choix légitime), donc rendu même si `pages <= 1` —
+  // seule la navigation ‹ N › est alors masquée, pas tout le bloc.
+  const sizePicker = (
+    <label className="page-size-picker">
+      Afficher :
+      <select value={pageSize} onChange={(e) => onPageSizeChange(parseInt(e.target.value, 10))}>
+        {PAGE_SIZE_OPTIONS.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  if (pages <= 1) {
+    return (
+      <div className="pagination-wrap">
+        {sizePicker}
+        <span className="page-info">
+          {start + 1}–{end} sur {total} résultat{total > 1 ? 's' : ''}
+        </span>
+      </div>
+    );
+  }
+
   const nums = [...new Set([0, pages - 1, page - 1, page, page + 1].filter((p) => p >= 0 && p < pages))].sort(
     (a, b) => a - b
   );
@@ -488,6 +647,7 @@ function Pagination({ pages, page, onGo, start, end, total }: { pages: number; p
   }
   return (
     <div className="pagination-wrap">
+      {sizePicker}
       <button className="page-btn" onClick={() => onGo(page - 1)} disabled={page === 0}>
         ‹
       </button>
@@ -496,7 +656,7 @@ function Pagination({ pages, page, onGo, start, end, total }: { pages: number; p
         ›
       </button>
       <span className="page-info">
-        {start + 1}–{end} / {total}
+        {start + 1}–{end} sur {total}
       </span>
     </div>
   );
