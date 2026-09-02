@@ -49,6 +49,7 @@ const MODULES: ModuleTile[] = [
 const MODULES_PREMIUM: ModuleTile[] = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
+  { icon: '🔯', label: 'Wafq', desc: 'Générer un talisman (carré magique) par intention', href: '/wafq' },
 ];
 
 function MenuItem({ item }: { item: ModuleTile }) {
