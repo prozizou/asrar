@@ -2,8 +2,9 @@
 //
 // Déclenché PÉRIODIQUEMENT par un planificateur externe (Vercel Cron —
 // voir vercel.json — ou tout service de cron capable d'appeler une URL avec
-// un en-tête ; voir CRON_SECRET ci-dessous), PAS par un utilisateur : aucun
-// jeton Firebase ici, protection par secret partagé uniquement.
+// un en-tête ; voir server/cronAuth.js pour CRON_SECRET), PAS par un
+// utilisateur : aucun jeton Firebase ici, protection par secret partagé
+// uniquement. Même mécanisme d'autorisation que pages/api/cron/reminders.js.
 //
 // Pour CHAQUE abonnement (push_subscriptions/{uid}/{subId}, écrit par
 // pages/api/push-subscribe.js), calcule l'heure planétaire actuelle à SA
@@ -12,28 +13,11 @@
 // (lastPlanet) — sinon rien à annoncer, pas de doublon au prochain passage
 // du planificateur avant le changement d'heure suivant.
 
-const crypto = require("crypto");
 const webpush = require("web-push");
 const { app } = require("../../../server/grant");
 const { computePday, currentHour, natureOf } = require("../../../lib/planete");
 const { reportError } = require("../../../server/log");
-
-function authorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false; // pas configuré → jamais déclenché (sécurité par défaut, pas par omission)
-  const header = (req.headers && req.headers.authorization) || "";
-  const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const query = (req.query && req.query.secret) || "";
-  // Comparaison à temps constant : évite qu'une différence de timing sur une
-  // comparaison naïve (===) ne fuite des informations sur le secret attendu.
-  return safeEqual(bearer, secret) || safeEqual(String(query), secret);
-}
-function safeEqual(a, b) {
-  const ba = Buffer.from(String(a));
-  const bb = Buffer.from(String(b));
-  if (ba.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ba, bb);
-}
+const { authorized } = require("../../../server/cronAuth");
 
 export default async function handler(req, res) {
   if (!authorized(req)) return res.status(401).json({ error: "Non autorisé." });

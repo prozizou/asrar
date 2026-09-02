@@ -56,6 +56,7 @@ interface Group {
   status: GroupStatus;
   private?: boolean;
   approved?: boolean;
+  sessionAt?: number | null;
 }
 
 interface JoinRequest {
@@ -103,6 +104,17 @@ interface GroupDetailData extends Group {
 }
 
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
+// Conversion <input type="datetime-local"> (heure LOCALE du navigateur, sans
+// fuseau) ↔ epoch ms : le rappel de session (lib/reminders.js) repose sur un
+// instant absolu, pas sur l'heure affichée telle quelle — d'où la conversion
+// systématique, dans les deux sens, plutôt qu'un stockage de chaîne brute.
+const toLocalInputValue = (ms: number) => {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fmtSessionAt = (ms: number) =>
+  new Date(ms).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 const LIST_POLL_MS = 6000;  // sondage de la liste (moins fréquent : pas de compteur en direct dessus)
@@ -252,6 +264,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
   const [customArabic, setCustomArabic] = useState('');
   const [target, setTarget] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [sessionAt, setSessionAt] = useState(''); // <input type="datetime-local"> — vide = pas de session programmée
   const [busy, setBusy] = useState(false);
   const isLibre = presetId === LIBRE_PRESET_ID;
 
@@ -267,7 +280,10 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
     if (!canSubmit) return;
     setBusy(true);
     try {
-      const d = await createGroup({ name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate });
+      const d = await createGroup({
+        name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate,
+        sessionAt: sessionAt ? new Date(sessionAt).getTime() : undefined,
+      });
       notify('✅ Zikr collectif créé — en attente de validation par l’administrateur avant d’apparaître dans la liste publique.');
       onCreated(d.id);
     } catch (e: any) {
@@ -307,6 +323,16 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
         <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
         <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
       </label>
+      <label className="zk-field">
+        <span>Prochaine session <em className="zk-optional">optionnel</em></span>
+        <input type="datetime-local" value={sessionAt} onChange={(e) => setSessionAt(e.target.value)} />
+      </label>
+      {sessionAt && (
+        <p className="zk-preview">
+          🔔 Un rappel push sera envoyé aux membres approuvés (ayant activé les
+          notifications) avant l’heure choisie.
+        </p>
+      )}
       <p className="zk-preview">
         Il n’y a pas de part fixée à l’avance : ce qu’il reste à faire à
         chacun diminue automatiquement au fil des récitations de tout le groupe.
@@ -329,6 +355,7 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
   const [customArabic, setCustomArabic] = useState(g.presetId === LIBRE_PRESET_ID ? g.arabic : '');
   const [target, setTarget] = useState(String(g.target || ''));
   const [isPrivate, setIsPrivate] = useState(!!g.private);
+  const [sessionAt, setSessionAt] = useState(g.sessionAt ? toLocalInputValue(g.sessionAt) : '');
   const [busy, setBusy] = useState(false);
   const isLibre = presetId === LIBRE_PRESET_ID;
   const formulaLocked = (Number(g.total) || 0) > 0;
@@ -341,7 +368,10 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
     if (!canSubmit) return;
     setBusy(true);
     try {
-      await updateGroup(groupId, { name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate });
+      await updateGroup(groupId, {
+        name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate,
+        sessionAt: sessionAt ? new Date(sessionAt).getTime() : undefined,
+      });
       notify('✅ Zikr collectif mis à jour.');
       onSaved();
     } catch (e: any) {
@@ -384,6 +414,10 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
       <label className="zk-checkbox-field">
         <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
         <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
+      </label>
+      <label className="zk-field">
+        <span>Prochaine session <em className="zk-optional">optionnel</em></span>
+        <input type="datetime-local" value={sessionAt} onChange={(e) => setSessionAt(e.target.value)} />
       </label>
       <div className="zk-form-actions">
         <button className="zk-btn ghost" type="button" onClick={onCancel}>Annuler</button>
@@ -621,6 +655,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           Créé par {g.ownerEmail} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
           {g.onlineCount > 0 && <> · <span className="zk-online-text">{g.onlineCount} en ligne</span></>}
         </div>
+        {!!g.sessionAt && (
+          <div className="zk-private-note">
+            🔔 Prochaine session : {fmtSessionAt(g.sessionAt)}
+            {isMember && ' — un rappel push sera envoyé aux membres approuvés ayant activé les notifications.'}
+          </div>
+        )}
         {g.private && (
           <div className="zk-private-note">🔒 Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.</div>
         )}

@@ -219,6 +219,7 @@ async function handleList(db, res, user) {
       isOwner: v.ownerUid === user.uid,
       createdAt: v.createdAt || 0,
       private: v.private === true,
+      sessionAt: v.sessionAt || null,
       // Legacy (créé avant l'ajout de la modération) : approved absent →
       // déjà public, pas de disparition rétroactive. Seuls les NOUVEAUX zikr
       // (approved écrit explicitement à false, voir handleCreate) sont
@@ -274,6 +275,8 @@ async function handleCreate(db, res, user, body) {
     ownerEmail: user.email,
     createdAt: now,
     membersCount: 1, // le créateur est le premier participant
+    sessionAt: norm.sessionAt, // horaire optionnel de la prochaine session (rappel push, lib/reminders.js)
+    sessionReminderSent: false,
   });
   await db.ref("zikr_members/" + gid + "/" + user.uid).set({
     email: user.email, fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
@@ -305,6 +308,11 @@ async function handleUpdate(db, res, user, gid, body) {
     return res.status(400).json({ error: "La formule récitée ne peut plus être modifiée : des grains ont déjà été comptabilisés pour ce zikr." });
   }
 
+  // Un nouvel horaire (ou son retrait) réarme le rappel : sinon, changer la
+  // session après un premier envoi ne préviendrait plus personne du nouveau
+  // rendez-vous (voir pages/api/cron/reminders.js, sessionReminderSent).
+  const sessionChanged = norm.sessionAt !== (g.sessionAt || null);
+
   await db.ref("zikr_groups/" + gid).update({
     name: norm.name,
     presetId: norm.presetId,
@@ -312,6 +320,8 @@ async function handleUpdate(db, res, user, gid, body) {
     arabic: norm.arabic,
     target: norm.target,
     private: norm.private,
+    sessionAt: norm.sessionAt,
+    ...(sessionChanged ? { sessionReminderSent: false } : {}),
   });
   return res.status(200).json({ ok: true });
 }
@@ -410,6 +420,7 @@ async function handleGet(db, res, user, gid) {
     full,
     private: g.private === true,
     approved: g.approved !== false,
+    sessionAt: g.sessionAt || null,
     isAdmin: admin,
     wishesOpen: g.wishesOpen === true,
     status,
