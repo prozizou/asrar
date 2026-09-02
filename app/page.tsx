@@ -205,6 +205,27 @@ export default function Home() {
   const shopVendor = vendorShopId ? allVendors.find((v) => v.id === vendorShopId) : null;
   const shopProducts = vendorShopId ? allProducts.filter((p) => vendorKey(p) === vendorShopId) : [];
 
+  // `allProducts` n'est chargé QU'UNE FOIS au montage (boot ci-dessus) : sans
+  // ce rafraîchissement, un produit ajouté par N'IMPORTE QUEL vendeur depuis
+  // (y compris par l'utilisateur lui-même, via /boutique, dans un onglet ou
+  // une visite précédente de CETTE session) resterait invisible dans une
+  // boutique tant que la page Marché n'est pas rechargée en dur — on le
+  // recharge donc à chaque fois qu'on ENTRE dans une boutique, pour que ses
+  // derniers produits y apparaissent vraiment.
+  const openVendorShop = useCallback((id: string) => {
+    setVendorShopId(id);
+    (async () => {
+      try {
+        const { items } = await apiPost('list-content', { kind: 'product' });
+        const products: Product[] = (items || []).map((v: any) => ({ _key: v._key, ...v }));
+        setAllProducts(products);
+        setAllVendors(extractVendors(products));
+      } catch {
+        // Best-effort : la liste déjà chargée (potentiellement périmée) reste affichée.
+      }
+    })();
+  }, []);
+
   const closeVendorShop = useCallback(() => setVendorShopId(null), []);
   // Backpress Android : ferme la fiche boutique (pas de vraie navigation de page ici).
   const goBackFromShop = useHistoryClose(!!shopVendor, closeVendorShop);
@@ -283,7 +304,7 @@ export default function Home() {
                     {inner}
                   </Link>
                 ) : (
-                  <div key={v.id} className="vendor-card" onClick={() => setVendorShopId(v.id)}>
+                  <div key={v.id} className="vendor-card" onClick={() => openVendorShop(v.id)}>
                     {inner}
                   </div>
                 );
@@ -381,7 +402,7 @@ export default function Home() {
           product={modalProduct}
           vendor={modalVendor}
           onClose={() => setModalProduct(null)}
-          onVisitShop={(id: string) => setVendorShopId(id)}
+          onVisitShop={openVendorShop}
         />
       )}
 

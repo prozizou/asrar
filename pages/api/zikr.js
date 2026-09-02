@@ -65,6 +65,14 @@
 //                              créés AVANT l'ajout de ce champ restent publics
 //                              (approved absent traité comme "déjà approuvé",
 //                              pas de régression rétroactive — voir handleList).
+//   action="update"         → { groupId, name, presetId, arabic?, target,
+//                              private? } : créateur only — modifie le zikr
+//                              (mêmes règles de validation que "create"). La
+//                              FORMULE (presetId/arabe) reste modifiable
+//                              seulement tant qu'AUCUN grain n'a été
+//                              comptabilisé (total===0) — sinon refusé, pour
+//                              ne pas rendre incohérents les grains déjà
+//                              acquis avec un texte différent.
 //   action="get"            → { groupId } : détail (membres, ma part, avertissement)
 //   action="join"           → { groupId } : demande d'adhésion
 //   action="requests"       → { groupId } : créateur only — demandes en attente
@@ -155,6 +163,7 @@ export default async function handler(req, res) {
     switch (action) {
       case "list":           return await handleList(db, res, user);
       case "create":         return await handleCreate(db, res, user, body);
+      case "update":         return await handleUpdate(db, res, user, gid, body);
       case "get":            return await handleGet(db, res, user, gid);
       case "join":            return await handleJoin(db, res, user, gid);
       case "requests":       return await handleRequests(db, res, user, gid);
@@ -271,6 +280,40 @@ async function handleCreate(db, res, user, body) {
   });
 
   return res.status(200).json({ ok: true, id: gid });
+}
+
+// ── Créateur : modifie les informations du zikr collectif ───────
+// Nom, objectif et visibilité (privé) restent modifiables à tout moment. La
+// FORMULE récitée (presetId/arabe), elle, se verrouille dès que le groupe a
+// commencé à réciter (total > 0) : la changer en cours de route rendrait les
+// grains déjà comptabilisés incohérents avec le texte affiché à tous.
+async function handleUpdate(db, res, user, gid, body) {
+  const g = await assertOwner(db, gid, user);
+  const norm = normalizeGroupInput(body);
+  if (norm.error) {
+    const msg =
+      norm.error === "name" ? "Donnez un titre au zikr collectif."
+      : norm.error === "preset" ? "Choisissez une formule à réciter."
+      : norm.error === "arabic" ? "Précisez le zikr à réciter (en arabe)."
+      : "Objectif invalide (entier positif requis).";
+    return res.status(400).json({ error: msg });
+  }
+
+  const total = Number(g.total) || 0;
+  const formulaChanged = norm.presetId !== g.presetId || norm.arabic !== g.arabic;
+  if (total > 0 && formulaChanged) {
+    return res.status(400).json({ error: "La formule récitée ne peut plus être modifiée : des grains ont déjà été comptabilisés pour ce zikr." });
+  }
+
+  await db.ref("zikr_groups/" + gid).update({
+    name: norm.name,
+    presetId: norm.presetId,
+    transliteration: norm.transliteration,
+    arabic: norm.arabic,
+    target: norm.target,
+    private: norm.private,
+  });
+  return res.status(200).json({ ok: true });
 }
 
 // ── Détail d'un groupe (membres, ma part, avertissement, présence) ──

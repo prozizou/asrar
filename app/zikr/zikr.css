@@ -46,6 +46,8 @@
 .zk-checkbox-field input { flex-shrink: 0; }
 .zk-field-row { display: flex; gap: 12px; }
 .zk-field-row .zk-field { flex: 1; min-width: 0; }
+.zk-form-actions { display: flex; gap: 12px; }
+.zk-form-actions .zk-btn { flex: 1; }
 .zk-preview { font-size: 0.8rem; color: var(--text-muted); margin: -2px 2px 0; }
 .zk-preview strong { color: var(--accent); }
 
