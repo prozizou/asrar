@@ -43,3 +43,42 @@ jobs:
           CLOUDINARY_CLOUD_NAME: example
           CLOUDINARY_API_KEY: example
           CLOUDINARY_API_SECRET: example
+
+  # Tests E2E (Playwright, voir e2e/README.md pour le périmètre) — job séparé
+  # : après lint-and-build (pas de raison de démarrer un navigateur si le
+  # build est déjà cassé), avec son propre `npm run build` (les jobs GitHub
+  # Actions ne partagent pas leur système de fichiers, cf. lint-and-build).
+  e2e:
+    needs: lint-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+        env:
+          FIREBASE_SERVICE_ACCOUNT: '{}'
+          FIREBASE_DB_URL: https://example.firebaseio.com
+          SITE_URL: https://example.com
+          SUPER_ADMIN_EMAIL: admin@example.com
+          WHATSAPP_NUMBER: '000000000'
+          CLOUDINARY_CLOUD_NAME: example
+          CLOUDINARY_API_KEY: example
+          CLOUDINARY_API_SECRET: example
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -89,8 +89,17 @@
    dynamique ; annulée avec le reste de cette tentative, le prérendu
    statique existant est donc intact.)
 2. ✅ **Zéro test automatisé** → 95 tests Vitest sur `lib/` (`npm test`,
-   dans la CI). Reste hors périmètre : tests de composants React (`app/`,
-   `components/`) et tests d'intégration/e2e sur les routes `/api`.
+   dans la CI), **+ suite E2E Playwright** (`e2e/`, job CI dédié — voir
+   `e2e/README.md`) : en-têtes de sécurité, redirects legacy, portail
+   d'authentification (aucune route ne fuit de contenu à un visiteur
+   anonyme), rejet HTTP des routes `/api/*` sans identité valide,
+   installabilité PWA. Reste hors périmètre — documenté dans
+   `e2e/README.md`, section « chantier de suite » — tout parcours qui exige
+   une vraie identité Firebase (connexion Google, génération premium par un
+   abonné réel, commande vendeur, Zikr collectif multi-utilisateur,
+   parrainage) : demande un émulateur Firebase Auth/RTDB, pas encore en
+   place. Tests de composants React (`app/`, `components/`) toujours hors
+   périmètre.
 3. 🟡 **Pas de TypeScript ni de vérification de types** → `tsconfig.lib.json`
    + `npm run typecheck` (CI) type-checke `lib/` en mode `checkJs` (aucun
    fichier `.ts`, juste des diagnostics sur le JS existant, avec quelques
@@ -190,7 +199,11 @@
    Firebase/Cloudinary/webhook réels) les points marqués 🟡 ci-dessus : rien
    dans cette session n'a pu être testé au-delà du local (`next build/start`,
    `curl`) faute d'accès aux services externes de production.
-7. **Tests de composants et e2e** : la couverture actuelle (`lib/*.test.js`)
-   ne touche que la logique pure — `app/`, `components/` et les routes
-   `/api` (comportement HTTP, pas juste leurs fonctions internes) restent
-   sans test automatisé.
+7. **Tests de composants et e2e** : `e2e/` (Playwright) couvre désormais le
+   comportement HTTP réel des routes `/api` (rejet sans identité) et les
+   parcours anonymes (portail d'auth, redirects, en-têtes, PWA) — voir
+   `e2e/README.md`. Restent sans test automatisé : les composants React en
+   isolation (`app/`, `components/`), et tout parcours qui exige une vraie
+   identité Firebase (connexion Google, paywall côté abonné réel, commande
+   vendeur, Zikr collectif, parrainage) — bloqué sur la mise en place d'un
+   émulateur Firebase Auth/RTDB (détaillé dans `e2e/README.md`).

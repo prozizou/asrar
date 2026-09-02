@@ -53,6 +53,12 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    // Tests E2E (Playwright) : projet séparé, sa propre exécution (voir
+    // playwright.config.ts) ne dépend pas de la compilation Next.js — pas de
+    // raison de le faire type-checker par `next build` (comme
+    // tsconfig.lib.json pour lib/, déjà hors de ce fichier).
+    "e2e",
+    "playwright.config.ts"
   ]
 }
