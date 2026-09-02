@@ -15,22 +15,29 @@
 // cohérent avec le reste de l'app, entièrement HTTPS/à la demande, plutôt que
 // de garder un canal RTDB direct fragile pour ce seul gain.
 //
-// Body (JSON) : { idToken, cat, key, action, text? }
-//   cat    → catégorie (id de catégorie de secret, ou "product"/"vendor" pour le Marché)
-//   key    → clé du secret / produit / vendeur
+// Body (JSON) : { idToken, cat, key, action, text?, stars? }
+//   cat    → catégorie (id de catégorie de secret, ou "product"/"vendor"/
+//            "formation" pour les avis — voir lib/reviews.js)
+//   key    → clé du secret / produit / vendeur / formation
 //   action → "get" (lit tout, nécessite cat+key) | "toggle-like" (cat+key) |
-//            "comment" (cat+key+text) | "market-popularity" (bulk, tous
-//            produits — remplace l'ancien get(ref(db,'ratings|comments/product'))
-//            direct de app/page.js) | "vendor-likes" (bulk, tous vendeurs —
-//            remplace get(ref(db,'ratings/vendor')))
+//            "comment" (cat+key+text, stars? 1-5 — un AVIS est un commentaire
+//            qui porte `stars`, voir lib/reviews.js) | "market-popularity"
+//            (bulk, tous produits — remplace l'ancien
+//            get(ref(db,'ratings|comments/product')) direct de app/page.js) |
+//            "vendor-likes" (bulk, tous vendeurs — likes ET commentaires/avis,
+//            remplace get(ref(db,'ratings/vendor'))) | "formation-popularity"
+//            (bulk, toutes formations — avis uniquement, pas de likes)
 //
-// Nœuds partagés (inchangés) : ratings/{cat}/{key}/{uid}, comments/{cat}/{key}/{id}.
+// Nœuds partagés (inchangés) : ratings/{cat}/{key}/{uid} (LIKES — malgré le
+// nom, pas une note en étoiles), comments/{cat}/{key}/{id} (+ `stars`? 1-5
+// pour un avis boutique/formation — voir lib/reviews.js).
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const { cleanStars } = require("../../lib/reviews");
 
 // Like + commentaire restent des actions ponctuelles (pas de boucle de
 // rafraîchissement serveur ici) : une limite large, surtout là pour couper un
@@ -80,8 +87,21 @@ export default async function handler(req, res) {
     }
 
     if (action === "vendor-likes") {
-      const snap = await db.ref("ratings/vendor").once("value");
-      return res.status(200).json({ vendorLikes: snap.val() || {} });
+      const [likesSnap, comsSnap] = await Promise.all([
+        db.ref("ratings/vendor").once("value"),
+        db.ref("comments/vendor").once("value"),
+      ]);
+      // vendorComments (avis, avec `stars`? — voir lib/reviews.js avgStars) :
+      // champ AJOUTÉ, jamais retiré — compat ascendante avec les appelants
+      // qui ne lisaient jusqu'ici que vendorLikes.
+      return res.status(200).json({ vendorLikes: likesSnap.val() || {}, vendorComments: comsSnap.val() || {} });
+    }
+
+    if (action === "formation-popularity") {
+      // Pas de likes pour les formations, seulement des avis (étoiles) —
+      // voir lib/reviews.js avgStars.
+      const snap = await db.ref("comments/formation").once("value");
+      return res.status(200).json({ comments: snap.val() || {} });
     }
 
     // — Actions ciblées sur un secret/produit/vendeur précis —
@@ -98,7 +118,13 @@ export default async function handler(req, res) {
       const comments = [];
       commentsSnap.forEach((child) => {
         const c = child.val() || {};
-        comments.push({ id: child.key, email: c.email || c.pseudo || "Utilisateur", photo: c.photo || "", text: c.text || "" });
+        comments.push({
+          id: child.key,
+          email: c.email || c.pseudo || "Utilisateur",
+          photo: c.photo || "",
+          text: c.text || "",
+          stars: cleanStars(c.stars), // null si ce commentaire n'est pas un avis
+        });
       });
       return res.status(200).json({
         liked: !!likes[user.uid],
@@ -122,15 +148,15 @@ export default async function handler(req, res) {
     if (action === "comment") {
       const text = cleanComment(body.text);
       if (!text) return res.status(400).json({ error: "Commentaire vide." });
+      // `stars` (1-5) : présent → cet commentaire est un AVIS (boutique/
+      // formation), voir lib/reviews.js. Absent/invalide → commentaire
+      // ordinaire, comme avant (Secrets, Marché produit).
+      const stars = cleanStars(body.stars);
       const photo = user.picture || "";
-      const ref = await commentsRef.push({
-        uid: user.uid,
-        email: user.email || "",
-        photo,
-        text,
-        timestamp: Date.now(),
-      });
-      return res.status(200).json({ comment: { id: ref.key, email: user.email || "", photo, text } });
+      const record = { uid: user.uid, email: user.email || "", photo, text, timestamp: Date.now() };
+      if (stars != null) record.stars = stars;
+      const ref = await commentsRef.push(record);
+      return res.status(200).json({ comment: { id: ref.key, email: user.email || "", photo, text, stars } });
     }
 
     return res.status(400).json({ error: "Action inconnue." });

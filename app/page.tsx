@@ -27,8 +27,10 @@ import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
+import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
+import { StarRatingDisplay } from '@/components/StarRating';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import { useToast } from '@/components/useToast';
@@ -69,6 +71,7 @@ export default function Home() {
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [popularite, setPopularite] = useState<Record<string, PopulariteEntry>>({});
   const [vendorLikes, setVendorLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
+  const [vendorReviews, setVendorReviews] = useState<Record<string, { avg: number; count: number }>>({});
   const [modalProduct, setModalProduct] = useState<any>(null);
   const [vendorShopId, setVendorShopId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,14 +118,17 @@ export default function Home() {
   const loadVendorLikes = useCallback(async (vendors: Vendor[], attempt = 0) => {
     try {
       const uid = auth.currentUser?.uid;
-      const { vendorLikes: val } = await apiPost('social', { action: 'vendor-likes' });
+      const { vendorLikes: val, vendorComments } = await apiPost('social', { action: 'vendor-likes' });
       const out: Record<string, { count: number; liked: boolean }> = {};
+      const reviews: Record<string, { avg: number; count: number }> = {};
       vendors.forEach((v) => {
         const k = safeKey(v.id);
         const entry = val[k] || {};
         out[k] = { count: Object.keys(entry).length, liked: !!(uid && entry[uid]) };
+        reviews[k] = avgStars((vendorComments && vendorComments[k]) || {});
       });
       setVendorLikes(out);
+      setVendorReviews(reviews);
     } catch {
       if (attempt < 1) setTimeout(() => loadVendorLikes(vendors, attempt + 1), 3000);
     }
@@ -247,6 +253,7 @@ export default function Home() {
         <VendorShop
           vendor={shopVendor}
           products={shopProducts}
+          isOwn={isOwnVendor(shopVendor)}
           onBack={goBackFromShop}
           onOpenProduct={(key: string) => gatedOpenProduct(key)}
         />
@@ -293,6 +300,10 @@ export default function Home() {
                     {own && <div className="vendor-you-badge">Votre boutique</div>}
                     <div className="vendor-name">{v.name}</div>
                     <div className="vendor-specialty">{v.specialty}</div>
+                    {(() => {
+                      const r = vendorReviews[safeKey(v.id)];
+                      return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.72rem" compact /> : null;
+                    })()}
                     {!own && (
                       // Pas de <button> ici sur sa propre carte : elle devient un <Link>
                       // (imbriquer un bouton dans un lien est invalide en HTML), et « aimer

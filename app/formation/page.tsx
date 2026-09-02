@@ -29,6 +29,7 @@ import { formatPrice } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
+import ReviewsSection from '@/components/ReviewsSection';
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -205,6 +206,8 @@ export default function FormationPage() {
                 <p className="fm-detail-text">{current!.attentes}</p>
               </>
             )}
+
+            <ReviewsSection cat="formation" itemKey={current!._key} title="Avis sur cette formation" />
 
             <h3>🎥 Visioconférence</h3>
             {grantMinutes === null ? (

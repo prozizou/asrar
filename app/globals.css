@@ -1036,3 +1036,46 @@ img, svg, video { max-width: 100%; height: auto; }
   0%, 100% { opacity: .5; transform: scale(1); }
   50%      { opacity: 1; transform: scale(1.12); }
 }
+
+/* ── Avis (étoiles) : components/StarRating.js + components/ReviewsSection.js
+   — partagé Marché (boutiques) et Formation mystique, voir lib/reviews.js.
+   Un avis EST un commentaire qui porte `stars` (1-5) : pas de nœud RTDB
+   séparé, pas de style de "carte commentaire" différent à maintenir. ── */
+.sr-stars { display: inline-flex; gap: 1px; color: var(--text-dim); letter-spacing: -1px; }
+.sr-star.on { color: #d9a441; }
+.sr-display { display: inline-flex; align-items: center; gap: 8px; }
+.sr-display-compact { display: inline-flex; }
+.sr-count { font-size: .82rem; color: var(--text-muted); font-weight: 600; }
+.sr-count-empty { font-weight: 400; font-style: italic; }
+
+.sr-input { display: inline-flex; gap: 2px; }
+.sr-star-btn {
+  background: none; border: none; cursor: pointer; padding: 2px;
+  font-size: 1.5rem; line-height: 1; color: var(--text-dim);
+  transition: color .12s, transform .12s;
+}
+.sr-star-btn:hover { transform: scale(1.12); }
+.sr-star-btn.on { color: #d9a441; }
+
+.sr-section { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.sr-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.sr-section-head h3 { margin: 0; font-size: 1rem; }
+.sr-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.sr-form textarea {
+  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: .9rem;
+  outline: none; resize: vertical; width: 100%; box-sizing: border-box;
+}
+.sr-form textarea:focus { border-color: var(--accent); }
+.sr-submit {
+  align-self: flex-start; border: none; border-radius: 10px; padding: 9px 18px;
+  font-family: var(--font-ui); font-size: .88rem; font-weight: 600; cursor: pointer;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff;
+}
+.sr-submit:disabled { opacity: .5; cursor: default; }
+
+.sr-list { display: flex; flex-direction: column; gap: 10px; }
+.sr-item { background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 12px; }
+.sr-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.sr-item-email { font-size: .8rem; color: var(--text-dim); }
+.sr-item-text { margin: 0; font-size: .88rem; color: var(--text-main); white-space: pre-wrap; }

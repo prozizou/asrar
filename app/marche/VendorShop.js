@@ -1,11 +1,12 @@
 'use client';
 // Vue boutique d'un vendeur — port d'openVendorShop().
 import { useCallback, useState } from 'react';
-import { formatPrice } from '@/lib/market';
+import { formatPrice, safeKey } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
+import ReviewsSection from '@/components/ReviewsSection';
 
-export default function VendorShop({ vendor, products, onBack, onOpenProduct }) {
+export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProduct }) {
   const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
   const markImgError = useCallback((key) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
   return (
@@ -47,11 +48,15 @@ export default function VendorShop({ vendor, products, onBack, onOpenProduct }) 
             {vendor.name} {vendor.verified && <span style={{ color: '#4CAF50', fontSize: '1rem' }}>✔ Vérifié</span>}
           </h2>
           <p style={{ color: '#888', margin: '4px 0' }}>📍 {vendor.location}</p>
-          <p style={{ color: 'var(--mk-gold)' }}>
-            ⭐ {vendor.rating} • {vendor.bio || 'Spécialiste ésotérique'}
-          </p>
+          <p style={{ color: 'var(--mk-gold)' }}>{vendor.bio || 'Spécialiste ésotérique'}</p>
         </div>
       </div>
+
+      {/* La note moyenne était un champ statique saisi à la main
+          (vendeurNote, jamais fiable) — remplacée par de vrais avis (étoiles
+          + texte), calculés à partir des commentaires. Masqué pour le
+          propriétaire de la boutique : il ne se note pas lui-même. */}
+      <ReviewsSection cat="vendor" itemKey={safeKey(vendor.id)} canReview={!isOwn} title="Avis sur cette boutique" />
 
       <div className="prod-grid">
         {products.map((p) => (
