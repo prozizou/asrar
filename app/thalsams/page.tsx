@@ -130,18 +130,18 @@ export default function ThalsamsPage() {
         {lengthMode === 'exact' && (
           <label className="th-field">
             <span>Nombre de lettres</span>
-            <input type="number" min={1} max={30} value={lengthExact} onChange={(e) => setLengthExact(e.target.value)} />
+            <input type="number" min={1} max={100} value={lengthExact} onChange={(e) => setLengthExact(e.target.value)} />
           </label>
         )}
         {lengthMode === 'range' && (
           <div className="th-row2">
             <label className="th-field">
               <span>De</span>
-              <input type="number" min={1} max={30} value={lengthMin} onChange={(e) => setLengthMin(e.target.value)} />
+              <input type="number" min={1} max={100} value={lengthMin} onChange={(e) => setLengthMin(e.target.value)} />
             </label>
             <label className="th-field">
               <span>À</span>
-              <input type="number" min={1} max={30} value={lengthMax} onChange={(e) => setLengthMax(e.target.value)} />
+              <input type="number" min={1} max={100} value={lengthMax} onChange={(e) => setLengthMax(e.target.value)} />
             </label>
           </div>
         )}
