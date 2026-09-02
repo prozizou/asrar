@@ -9,9 +9,20 @@
 // subscribeToPushReminders, pages/api/push-subscribe.js) et les préférences
 // de rappel (lib/remindersClient.js, pages/api/reminders.js) — même moteur
 // que l'ancienne page /rappels, juste redéplacé.
+//
+// Revue design (module Zikr collectif, point 2) : la case à cocher affichait
+// « 🔔 Me rappeler mon wird quotidien à 03h46 » avec l'heure DÉJÀ dans le
+// libellé, puis deux champs 3 / 46 juste en-dessous répétaient cette même
+// heure — confus (« l'heure est affichée deux fois »). Reconstruit en une
+// seule ligne compacte (icône + « Rappel quotidien » + heure en badge) qui
+// déplie l'éditeur d'heure au clic, séparée d'un vrai interrupteur
+// activer/désactiver (plus de case à cocher qui mélange les deux rôles).
 import { useEffect, useState } from 'react';
+import { Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } from '@/lib/push';
 import { getReminderSettings, setReminderSettings } from '@/lib/remindersClient';
+
+const pad2 = (n) => String(n).padStart(2, '0');
 
 export default function WirdReminderToggle() {
   const [pushState, setPushState] = useState('checking'); // checking | unsupported | denied | subscribed | unsubscribed
@@ -19,6 +30,7 @@ export default function WirdReminderToggle() {
   const [enabled, setEnabled] = useState(false);
   const [hour, setHour] = useState(20);
   const [minute, setMinute] = useState(0);
+  const [timeOpen, setTimeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -80,22 +92,44 @@ export default function WirdReminderToggle() {
 
   return (
     <div className="zk-wird-reminder">
-      <label className="zk-checkbox-field">
-        <input type="checkbox" checked={enabled} disabled={busy} onChange={(e) => onToggle(e.target.checked)} />
-        <span>
-          🔔 Me rappeler mon wird quotidien
-          {enabled ? ` à ${String(hour).padStart(2, '0')}h${String(minute).padStart(2, '0')}` : ''}
-        </span>
-      </label>
-      {enabled && (
+      <div className="zk-wird-row">
+        <button
+          type="button"
+          className="zk-wird-toggle"
+          onClick={() => setTimeOpen((v) => !v)}
+          aria-expanded={timeOpen}
+        >
+          <Bell size={16} strokeWidth={2.5} aria-hidden="true" />
+          <span className="zk-wird-label">Rappel quotidien</span>
+          <span className="zk-wird-time-badge">{pad2(hour)}:{pad2(minute)}</span>
+          {timeOpen
+            ? <ChevronUp size={15} strokeWidth={2.5} aria-hidden="true" />
+            : <ChevronDown size={15} strokeWidth={2.5} aria-hidden="true" />}
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Activer le rappel quotidien"
+          className={'zk-switch' + (enabled ? ' on' : '')}
+          disabled={busy}
+          onClick={() => onToggle(!enabled)}
+        >
+          <span className="zk-switch-knob" />
+        </button>
+      </div>
+
+      {timeOpen && (
         <div className="zk-wird-time-row">
           <input
             type="number" min={0} max={23} value={hour} disabled={busy}
+            aria-label="Heure"
             onChange={(e) => onTime(Math.min(23, Math.max(0, Number(e.target.value) || 0)), minute)}
           />
           <span>:</span>
           <input
             type="number" min={0} max={59} value={minute} disabled={busy}
+            aria-label="Minute"
             onChange={(e) => onTime(hour, Math.min(59, Math.max(0, Number(e.target.value) || 0)))}
           />
         </div>

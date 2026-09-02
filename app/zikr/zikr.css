@@ -2,23 +2,73 @@
    globales (.container, .glass-panel, .back-btn, .toast) et les variables de
    thème de globals.css (--accent, --bg-deep, --glass-border, --text-*). */
 
-.zk-hero { text-align: center; margin-bottom: 18px; }
-.zk-hero h1 { font-family: var(--font-display); font-size: 1.7rem; margin: 6px 0 4px; }
-.zk-hero p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+/* Écran liste : plus de .glass-panel englobant (revue design, point 10 —
+   « cartes dans une carte ») — le héros, le rappel et chaque .zk-card sont
+   des éléments indépendants posés directement sur le fond de page, .container
+   fournissant déjà le padding externe. La fiche détail (GroupDetail) garde
+   .glass-panel : écran de lecture unique, pas la même accumulation de boîtes. */
+.zk-list-page { display: flex; flex-direction: column; }
+
+/* En-tête resserré (revue design, point 1) : titre + une ligne, plus le grand
+   emoji ni le paragraphe qui repoussaient l'action principale hors écran. */
+.zk-hero { text-align: center; margin-bottom: 16px; }
+.zk-hero h1 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 4px; }
+.zk-hero p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.4; margin: 0; }
 
 /* Rappel de wird quotidien (components/WirdReminderToggle.js) — en tête de
-   la liste, au-dessus du bouton « Lancer un zikr collectif ». */
+   la liste, au-dessus du bouton « Créer un zikr collectif ». Revue design,
+   point 2 : une seule ligne (icône + libellé + heure en badge), l'éditeur
+   d'heure se déplie au clic plutôt que d'afficher l'heure deux fois (dans le
+   libellé ET dans deux champs juste en-dessous) ; un vrai interrupteur
+   sépare l'activation de l'ouverture du réglage d'heure (avant : une seule
+   case à cocher faisait les deux à la fois). */
 .zk-wird-reminder {
-  padding: 12px 14px; margin-bottom: 14px; border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 14px; border-radius: 12px;
   background: var(--surface-2); border: 1px solid var(--glass-border);
 }
-.zk-wird-time-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.zk-wird-row { display: flex; align-items: center; gap: 10px; }
+.zk-wird-toggle {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  background: none; border: none; padding: 4px 0; cursor: pointer;
+  color: var(--text-main); font-family: var(--font-ui); text-align: left;
+}
+.zk-wird-toggle svg:first-child { color: var(--accent); flex-shrink: 0; }
+.zk-wird-toggle svg:last-child { color: var(--text-dim); flex-shrink: 0; }
+.zk-wird-label { font-size: 0.88rem; font-weight: 600; }
+.zk-wird-time-badge {
+  font-size: 0.8rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums;
+  background: var(--bg-deep); border-radius: 8px; padding: 2px 8px;
+}
+.zk-wird-time-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border); }
 .zk-wird-time-row input {
   width: 60px; text-align: center; background: var(--bg-deep); border: 1px solid var(--glass-border);
   border-radius: 8px; padding: 6px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.85rem;
 }
 .zk-wird-time-row span { color: var(--text-dim); font-weight: 700; }
-.zk-wird-error { color: #e0607a; font-size: 0.78rem; margin: 8px 0 0; }
+.zk-wird-error { color: #f0819a; font-size: 0.78rem; margin: 8px 0 0; }
+
+/* Interrupteur (activer/désactiver) — même styles que .planete-page .switch
+   (app/planete/planete.css), dupliqués ici sous un préfixe .zk-* : pas de
+   classe globale partagée entre modules pour ce composant aujourd'hui. */
+.zk-switch {
+  flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px;
+  background: var(--glass-border); border: none; position: relative; cursor: pointer; padding: 0;
+  transition: background 0.2s ease;
+}
+.zk-switch.on { background: var(--accent); }
+.zk-switch:disabled { opacity: 0.5; cursor: default; }
+.zk-switch-knob {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease;
+}
+.zk-switch.on .zk-switch-knob { transform: translateX(18px); }
+
+/* Titre de section (revue design, point 4) — sépare la création des zikrs
+   déjà en cours. */
+.zk-section-title {
+  display: flex; align-items: center; gap: 8px; font-family: var(--font-display);
+  font-size: 1rem; color: var(--text-main); margin: 4px 0 12px;
+}
 
 .zk-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); padding: 24px 0; }
 .zk-error { color: #e0607a; font-size: 0.92rem; }
@@ -27,6 +77,7 @@
 
 /* ── Boutons ─────────────────────────────────────────────── */
 .zk-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   border: 1px solid var(--glass-border); background: var(--surface-2); color: var(--text-main);
   border-radius: 12px; padding: 11px 16px; font-family: var(--font-ui); font-size: 0.9rem;
   font-weight: 600; cursor: pointer; transition: filter 0.15s, opacity 0.15s; width: 100%;
@@ -76,19 +127,51 @@
 .zk-card:hover { border-color: var(--accent); }
 .zk-card:active { transform: scale(0.995); }
 .zk-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.zk-card-name { font-weight: 700; font-size: 1rem; }
+.zk-card-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 1rem; }
+.zk-card-name svg { color: var(--text-dim); flex-shrink: 0; }
 .zk-card-phrase { color: var(--text-muted); font-size: 0.9rem; }
-.zk-card-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); }
 
-.zk-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
-.zk-badge-owner { background: rgba(201,169,97,0.18); color: #d9a441; }
-.zk-badge-member { background: rgba(45,212,160,0.18); color: #2dd4a0; }
-.zk-badge-pending { background: rgba(240,180,80,0.18); color: #e0a24a; }
-.zk-badge-none { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--glass-border); }
-.zk-badge-full { background: rgba(224,96,122,0.14); color: #e0607a; }
+/* « Créé par vous » (revue design, point 7) : mention discrète à côté du nom
+   plutôt qu'un badge « 👑 Créateur » aussi voyant que le titre lui-même. */
+.zk-owner-tag {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  font-size: 0.7rem; font-weight: 600; color: var(--text-dim);
+}
+.zk-owner-tag svg { color: #d9a441; }
+
+/* Ligne total/objectif + pourcentage (revue design, point 6) : le
+   pourcentage évite d'avoir à calculer mentalement "11 959 / 23 100". */
+.zk-card-progress-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.8rem; color: var(--text-dim); margin-top: 6px;
+}
+.zk-card-pct { font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.zk-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.zk-card-members { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--text-dim); }
+.zk-card-members svg { flex-shrink: 0; }
+
+/* CTA de carte (revue design, point 5) : remplace l'ancien badge de STATUT
+   (« ✓ Membre », « ⏳ En attente »…) par un verbe d'ACTION — l'utilisateur
+   sait immédiatement ce qu'il peut faire ensuite plutôt que de déduire
+   l'action depuis un état. .active = rempli/contrasté (Continuer/
+   Participer) ; .muted = état non actionnable (En attente/Complet), plus
+   sobre pour ne pas se faire passer pour un vrai bouton cliquable séparé. */
+.zk-cta {
+  display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;
+  font-size: 0.78rem; font-weight: 700; padding: 5px 10px 5px 12px; border-radius: 20px; white-space: nowrap;
+}
+.zk-cta-active { background: var(--accent); color: #fff; }
+.zk-cta-muted { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--glass-border); padding: 4px 10px; }
 
 /* ── Barre de progression ────────────────────────────────── */
-.zk-bar { height: 8px; border-radius: 8px; background: var(--glass-border); overflow: hidden; }
+/* Piste non remplie plus contrastée que --glass-border seul (revue design,
+   point 8 : "les barres non remplies deviennent difficiles à distinguer sur
+   le fond violet") — mélangée vers --text-dim (pas un blanc en dur, qui
+   inverserait l'effet en thème clair) : --text-dim est déjà la couleur de
+   texte secondaire de CE thème, donc garantie lisible sur son propre fond,
+   dans les deux thèmes. */
+.zk-bar { height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--text-dim) 22%, var(--glass-border)); overflow: hidden; }
 .zk-bar.big { height: 12px; border-radius: 12px; }
 .zk-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.35s ease; }
 .zk-bar > span.done { background: linear-gradient(90deg, #2dd4a0, #22c55e); }
@@ -98,6 +181,7 @@
 .zk-detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .zk-topbar-actions { display: flex; align-items: center; gap: 14px; }
 .zk-share-btn {
+  display: inline-flex; align-items: center; gap: 5px;
   background: none; border: none; cursor: pointer; color: var(--accent);
   font-size: 0.85rem; font-weight: 600; font-family: var(--font-ui); padding: 4px 0; white-space: nowrap;
 }
@@ -109,14 +193,15 @@
   margin-top: 12px; padding: 10px 12px; border-radius: 10px;
   background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.35);
 }
-.zk-admin-badge { font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-right: 4px; }
+.zk-admin-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-right: 4px; }
 
 .zk-detail-head { text-align: center; margin: 8px 0 16px; }
 .zk-detail-head h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 6px 0; }
 .zk-phrase-big { font-size: 1.5rem; color: var(--text-main); margin: 6px 0; line-height: 1.5; }
 .zk-phrase-translit { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
 .zk-owner { font-size: 0.78rem; color: var(--text-dim); }
-.zk-private-note { margin-top: 8px; font-size: 0.78rem; color: #d9a441; }
+.zk-private-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 8px; font-size: 0.78rem; color: #d9a441; text-align: left; }
+.zk-private-note svg { flex-shrink: 0; margin-top: 2px; }
 .zk-online-text { color: #2dd4a0; font-weight: 600; }
 
 .zk-progress-block { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -131,22 +216,23 @@
 
 /* ── Adhésion ────────────────────────────────────────────
    Le compteur lui-même est le chapelet partagé (.tc-*, app/globals.css). */
-.zk-join-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
+.zk-join-state { display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
 
 /* Avertissement privé du créateur — visible seulement du participant concerné. */
 .zk-warning { background: rgba(224,96,122,0.1); border: 1px solid rgba(224,96,122,0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
-.zk-warning p { margin: 0 0 8px; font-size: 0.88rem; color: var(--text-main); }
+.zk-warning p { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 8px; font-size: 0.88rem; color: var(--text-main); }
+.zk-warning p svg { flex-shrink: 0; margin-top: 2px; }
 .zk-warning .zk-link { color: #e0607a; text-decoration: underline; }
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
 .zk-owner-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-.zk-owner-panel h3, .zk-board h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.zk-owner-panel h3, .zk-board h3, .zk-chat-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
 .zk-req { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
 .zk-req-email { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zk-req-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.zk-mini { border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
+.zk-mini { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
 .zk-mini.ok { background: rgba(45,212,160,0.2); color: #2dd4a0; }
 .zk-mini.no { background: rgba(224,96,122,0.18); color: #e0607a; }
 .zk-mini.warn { background: rgba(217,164,65,0.18); color: #d9a441; }
@@ -160,7 +246,11 @@
 .zk-online-dot.on { background: #2dd4a0; box-shadow: 0 0 0 3px rgba(45,212,160,0.18); }
 .zk-board-email { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zk-board-count { font-weight: 700; font-size: 0.85rem; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.zk-pace { flex-shrink: 0; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--glass-border); color: var(--text-dim); white-space: nowrap; }
+.zk-pace {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: color-mix(in srgb, var(--text-dim) 22%, var(--glass-border)); color: var(--text-dim); white-space: nowrap;
+}
 .zk-pace.suspect { background: rgba(224,96,122,0.15); color: #e0607a; }
 .zk-mod-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
@@ -188,7 +278,8 @@
 }
 .zk-chat-msg { align-self: flex-start; max-width: 85%; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px 12px; }
 .zk-chat-msg.me { align-self: flex-end; background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.4); }
-.zk-chat-author { display: block; font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.zk-chat-author { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.zk-chat-author svg { color: #d9a441; }
 .zk-chat-text { margin: 0; font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; word-break: break-word; }
 .zk-chat-input-row { display: flex; align-items: flex-end; gap: 8px; }
 .zk-chat-input-row textarea {
@@ -198,7 +289,8 @@
 }
 .zk-chat-input-row textarea:focus { border-color: var(--accent); }
 .zk-chat-send {
+  display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
-  background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff; font-size: 1.1rem;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff;
 }
 .zk-chat-send:disabled { opacity: 0.5; cursor: default; }
