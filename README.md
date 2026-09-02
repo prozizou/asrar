@@ -141,11 +141,13 @@ npm run lint        # ESLint (next/core-web-vitals)
 npm run typecheck    # TypeScript incrémental (checkJs), scopé à lib/
 npm test             # Vitest — logique pure de lib/ (calculs ésotériques, accès…)
 npm run build         # build de production (échoue si lint/types cassent)
+npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
 ```
 
-Les quatre tournent sur chaque push/PR (`.github/workflows/ci.yml`). Voir
-`ANALYSE.md` pour ce qui reste hors périmètre (tests app/, TypeScript sur
-app/, règles Firebase RTDB versionnées…).
+Les cinq tournent sur chaque push/PR (`.github/workflows/ci.yml`, deux jobs :
+`lint-and-build` puis `e2e`). Voir `ANALYSE.md` pour ce qui reste hors
+périmètre (tests de composants app/, TypeScript sur app/, règles Firebase
+RTDB versionnées…) et `e2e/README.md` pour le périmètre précis des tests E2E.
 
 ## Modules migrés
 
