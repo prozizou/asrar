@@ -39,11 +39,27 @@ export default function PlanetPushToggle() {
     }
   };
 
+  // Interrupteur plutôt qu'un second gros bouton turquoise identique à
+  // « Déterminer les heures planétaires » (revue design, point 8) : recevoir
+  // une notification est une PRÉFÉRENCE, pas l'action principale de la page
+  // — un bouton de même poids visuel que l'action principale la faisait
+  // passer, à tort, pour tout aussi prioritaire.
+  const isOn = state === 'subscribed';
   return (
-    <div style={{ marginTop: 10 }}>
-      <button className="access-btn" onClick={toggle} disabled={busy || state === 'denied'}>
-        {state === 'subscribed' ? '🔕 Désactiver les notifications d’heure' : '🔔 Recevoir l’heure planétaire'}
-      </button>
+    <div className="push-toggle-row">
+      <label className="push-toggle">
+        <span className="push-toggle-label">Notifications des heures planétaires</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isOn}
+          className={'switch' + (isOn ? ' on' : '')}
+          onClick={toggle}
+          disabled={busy || state === 'denied'}
+        >
+          <span className="switch-knob" />
+        </button>
+      </label>
       {state === 'denied' && (
         <p className="error-text">Notifications bloquées par le navigateur — autorisez-les dans ses réglages pour ce site.</p>
       )}

@@ -6,6 +6,18 @@
 // planétaire est dans lib/planete.js ; ici, l'UI React et les effets (GPS,
 // horloge 1 s, recalcul aux bascules de journée planétaire).
 //
+// Refonte de hiérarchie (revue design, 10 points) : la page listait une
+// dizaine d'informations à plat, toutes de même poids visuel — l'heure
+// planétaire ACTUELLE (ce que l'utilisateur vient chercher en priorité)
+// était noyée au même niveau que « Jour sacré » ou le lever du soleil.
+// Restructurée en : tableau de bord compact (heure/planète/nature/temps
+// restant) → ligne secondaire (phase du jour) → grille compacte d'infos
+// générales → heures planétaires en TIMELINE chronologique (remplace la
+// grille 2×6 en boustrophédon + tracé SVG d'une itération précédente, jugée
+// à son tour perturbante) → notifications en interrupteur (plus un gros
+// bouton) → régents de la semaine repliables. Logique GPS/horloge/accès
+// INCHANGÉE — uniquement la présentation.
+//
 // TypeScript (batch 6/7, cf. tsconfig.json) : Geo/TodaySun/Hours sont des
 // types locaux pour l'état React de cette page — lib/planete.js reste en .js
 // (hors scope de ce batch) : pday/hours restent typés `any` en local plutôt
@@ -14,8 +26,9 @@
 // précédents (#120, #122). useAccess()/Spinner.js suivent le même
 // traitement (cast) que dans les batches précédents.
 import './planete.css';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Globe, Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
 import PlanetPushToggle from '@/components/PlanetPushToggle';
@@ -24,6 +37,7 @@ import {
   CHALDEAN_EMOJIS,
   computePday,
   currentHour,
+  nextHour,
   phaseOf,
   natureOf,
   buildHourList,
@@ -94,6 +108,7 @@ export default function PlanetePage() {
   const [hours, setHours] = useState<Hours | null>(null); // { dayName, day[], night[] }
   const [hoursError, setHoursError] = useState('');
   const [hoursTab, setHoursTab] = useState<'day' | 'night'>('day'); // onglet actif (moins linéaire que 2 tableaux empilés)
+  const [weekExpanded, setWeekExpanded] = useState(false); // régents : replié par défaut (point 9)
 
   // Recalcule la journée planétaire + le soleil du jour à partir d'une position.
   const recompute = useCallback((lat: number | null, lng: number | null) => {
@@ -181,8 +196,23 @@ export default function PlanetePage() {
 
   const ready = geo.ready && pday && pday.sunrise;
   const cur = useMemo(() => (ready ? currentHour(now, pday) : null), [ready, now, pday]);
+  const next = useMemo(() => (ready && cur ? nextHour(pday, cur) : null), [ready, cur, pday]);
   const phase = ready ? phaseOf(now, todaySun!.sunrise, todaySun!.sunset) : { icon: '🌟', name: 'Chargement...', badge: 'Phase en cours' };
   const nature = cur ? natureOf(cur.planet, cur.fraction) : null;
+  // Pas de `fraction` pour l'heure SUIVANTE : elle n'a pas encore commencé —
+  // pour Mercure (seule planète dont la nature dépend de l'avancement dans
+  // l'heure), natureOf() retombe alors sur le libellé générique « 1re moitié
+  // favorable · 2de défavorable ».
+  const nextNature = next ? natureOf(next.planet, undefined) : null;
+
+  // Temps restant de l'heure en cours (tableau de bord — point 1). Arrondi
+  // au-dessus (Math.ceil) : « 0 min restantes » donnerait l'impression
+  // trompeuse que l'heure est déjà finie alors qu'il en reste quelques
+  // secondes.
+  const remainingMin = cur ? Math.max(0, Math.ceil((cur.end.getTime() - now.getTime()) / 60000)) : null;
+  const progressPct = cur
+    ? Math.min(100, Math.max(0, ((now.getTime() - cur.start.getTime()) / (cur.end.getTime() - cur.start.getTime())) * 100))
+    : 0;
 
   const showHours = async () => {
     const ok = await ensureAccess();
@@ -203,8 +233,15 @@ export default function PlanetePage() {
   };
 
   const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  // toLocaleDateString('fr-FR', {weekday:'long'…}) rend le jour en minuscule
+  // ("mercredi 2 septembre") — juste la PREMIÈRE lettre en majuscule
+  // (convention française : seul le premier mot d'une date l'est, pas le
+  // mois — text-transform: capitalize en CSS aurait aussi capitalisé
+  // "septembre", à tort).
+  const rawDateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStr = rawDateStr.charAt(0).toUpperCase() + rawDateStr.slice(1);
   const activeDay = ready ? pday.dayOfWeek : -1;
+  const todayPlanetName = ready ? DAY_PLANETS.planetNames[pday.dayOfWeek] : null;
 
   return (
     <div className="planete-page">
@@ -213,83 +250,136 @@ export default function PlanetePage() {
           ← Retour
         </Link>
 
-        {/* Panneau principal */}
-        <div className="glass-panel" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', marginBottom: 0 }}>🌍 Temporalité Mystique</h2>
-
+        {/* Tableau de bord (revue design, point 1) : l'heure planétaire ACTIVE
+            devient l'information dominante — avant, elle n'était qu'une ligne
+            parmi d'autres, au même niveau que le lever du soleil. */}
+        <div className="glass-panel dash-card">
+          <h2 className="dash-title">
+            <Globe size={20} strokeWidth={2} aria-hidden="true" /> Temporalité Mystique
+          </h2>
           <div className="time-display">{timeStr}</div>
           <div className="date-display">{dateStr}</div>
 
-          <div className="planet-card">
-            <span className="planet-icon">{phase.icon}</span>
-            <div className="planet-name">{phase.name}</div>
-            <span className="phase-badge">{phase.badge}</span>
-          </div>
+          {cur && nature ? (
+            <div className="dash-hero">
+              <div className="dash-hero-planet">
+                <span className="dash-planet-symbol" aria-hidden="true">
+                  {CHALDEAN_EMOJIS[cur.planet]}
+                </span>
+                <span className="dash-planet-name">{cur.planet}</span>
+              </div>
+              <div className="dash-hero-interval">
+                {fmtHM(cur.start)} — {fmtHM(cur.end)}
+              </div>
+              <span className={'dash-nature-badge ' + nature.cls}>● {nature.txt.toUpperCase()}</span>
 
-          <div style={{ marginTop: 12, textAlign: 'left' }}>
-            <InfoRow label="🪐 Planète de l'heure">
-              {geo.error ? '— (GPS requis)' : cur ? `${cur.planet} ${CHALDEAN_EMOJIS[cur.planet]}` : <Spinner />}
-            </InfoRow>
-            <InfoRow label="⚖️ Nature de l'heure" valueClass={nature ? nature.cls : ''}>
-              {nature ? nature.txt : geo.error ? '—' : <Spinner />}
-            </InfoRow>
-            <InfoRow label="🗓️ Jour planétaire">
-              {ready ? (
-                `${DAY_PLANETS.names[pday.dayOfWeek]} — régent ${DAY_PLANETS.planets[pday.dayOfWeek]}${
-                  pday.dayOfWeek !== now.getDay() ? ' (nuit, avant le lever)' : ''
-                }`
-              ) : geo.error ? (
-                '—'
-              ) : (
-                <Spinner />
+              <div className="dash-progress">
+                <div className="dash-progress-track">
+                  <div className="dash-progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+                <span className="dash-progress-label">{remainingMin} min restantes</span>
+              </div>
+
+              {/* Amélioration proposée par l'utilisateur : donner un aperçu de
+                  la SUITE, pas seulement de l'instant présent — l'app connaît
+                  déjà l'intervalle planétaire suivant, sans calcul
+                  supplémentaire (voir lib/planete.js, nextHour()). */}
+              {next && nextNature && (
+                <p className="dash-next">
+                  Ensuite : {CHALDEAN_EMOJIS[next.planet]} {next.planet} — {nextNature.txt} à {fmtHM(next.start)}
+                </p>
               )}
-            </InfoRow>
-            {/* Lever/coucher du soleil : dépendent de la position GPS (jusqu'à
-                12 s d'acquisition, voir GPS_MAX_WAIT_MS) puis de l'API
-                Sunrise-Sunset — sans repère visuel, l'attente ressemblait à un
-                blocage. */}
-            <InfoRow label="🌅 Lever du soleil">
-              {ready ? fmtHM(todaySun!.sunrise) : geo.error ? '—' : <Spinner />}
-            </InfoRow>
-            <InfoRow label="🌇 Coucher du soleil">
-              {ready ? fmtHM(todaySun!.sunset) : geo.error ? '—' : <Spinner />}
-            </InfoRow>
-            <InfoRow label="📍 Position">
-              {geo.error ? (
-                <>
-                  <span style={{ color: '#d9534f' }}>{geo.error}</span>
-                  <button className="retry-btn" onClick={requestGPS}>
-                    Réessayer
-                  </button>
-                </>
-              ) : geo.ready ? (
-                geo.named ? (
-                  `📡 ${geo.city} (GPS)`
+            </div>
+          ) : geo.error ? (
+            <p className="error-text">{geo.error}</p>
+          ) : (
+            <div className="dash-hero">
+              <Spinner /> <span style={{ marginLeft: 6, color: 'var(--text-dim)' }}>Localisation…</span>
+            </div>
+          )}
+        </div>
+
+        {/* « Jour sacré » (revue design, point 2) : réduit à une ligne
+            secondaire — utile en contexte, mais moins prioritaire que
+            l'heure planétaire active ci-dessus. */}
+        <div className="glass-panel phase-line">
+          <span aria-hidden="true">{phase.icon}</span> {phase.name}
+          <span className="phase-line-sep">•</span>
+          {phase.badge}
+        </div>
+
+        {/* Infos générales en grille compacte (revue design, point 3) —
+            remplace une longue colonne label/valeur empilée (≈50% de hauteur
+            en moins pour la même information). */}
+        <div className="glass-panel">
+          <div className="info-grid">
+            <div className="info-cell">
+              <span className="info-cell-icon" aria-hidden="true">
+                {todayPlanetName ? CHALDEAN_EMOJIS[todayPlanetName] : '☿'}
+              </span>
+              <span className="info-cell-label">Régent du jour</span>
+              <span className="info-cell-value">
+                {ready ? (
+                  <>
+                    {todayPlanetName}
+                    {pday.dayOfWeek !== now.getDay() && (
+                      <span className="info-cell-note"> (nuit, avant le lever)</span>
+                    )}
+                  </>
+                ) : geo.error ? (
+                  '—'
                 ) : (
-                  `📡 GPS : ${geo.city}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
-                )
-              ) : (
-                <>
-                  <Spinner /> <span style={{ marginLeft: 6 }}>Localisation…</span>
-                </>
-              )}
-            </InfoRow>
+                  <Spinner />
+                )}
+              </span>
+            </div>
+            <div className="info-cell">
+              <Sunrise size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
+              <span className="info-cell-label">Lever</span>
+              <span className="info-cell-value">{ready ? fmtHM(todaySun!.sunrise) : geo.error ? '—' : <Spinner />}</span>
+            </div>
+            <div className="info-cell">
+              <Sunset size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
+              <span className="info-cell-label">Coucher</span>
+              <span className="info-cell-value">{ready ? fmtHM(todaySun!.sunset) : geo.error ? '—' : <Spinner />}</span>
+            </div>
+            <div className="info-cell">
+              <MapPin size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
+              <span className="info-cell-label">Position</span>
+              <span className="info-cell-value">
+                {geo.error ? (
+                  <>
+                    <span style={{ color: '#d9534f' }}>GPS indisponible</span>
+                    <button className="retry-btn" onClick={requestGPS}>
+                      Réessayer
+                    </button>
+                  </>
+                ) : geo.ready ? (
+                  geo.named ? geo.city : `${geo.city}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
+                ) : (
+                  <Spinner />
+                )}
+              </span>
+            </div>
           </div>
+        </div>
 
-          {/* Bouton protégé : heures planétaires complètes */}
+        {/* Heures planétaires complètes — accès protégé */}
+        <div className="glass-panel" style={{ textAlign: 'center' }}>
           <button className="access-btn" onClick={showHours}>
-            🔮 Déterminer les heures planétaires
+            <Sparkles size={17} strokeWidth={2} aria-hidden="true" /> Déterminer les heures planétaires
           </button>
 
-          {/* Notifications push (lib/push.js) : abonnement indépendant de
-              l'accès au module — sa propre position GPS, capturée à
-              l'abonnement (pas celle, plus précise/instable, de cette page). */}
+          {/* Notifications (revue design, point 8) : un interrupteur, pas un
+              second gros bouton turquoise identique au précédent — c'est une
+              préférence, pas l'action principale de la page. Voir
+              PlanetPushToggle.js. */}
           <PlanetPushToggle />
 
           {hoursError && <p className="error-text">{hoursError}</p>}
           {hours && (
             <div>
-              <p style={{ textAlign: 'center', color: 'var(--accent)', margin: '6px 0' }}>
+              <p className="hours-day-label">
                 Journée planétaire : <strong>{hours.dayName}</strong>
               </p>
               <div className="hours-tabs">
@@ -297,166 +387,124 @@ export default function PlanetePage() {
                   className={'hours-tab' + (hoursTab === 'day' ? ' active' : '')}
                   onClick={() => setHoursTab('day')}
                 >
-                  ☀️ Jour
+                  <span aria-hidden="true">☉</span> Jour
                 </button>
                 <button
                   className={'hours-tab' + (hoursTab === 'night' ? ' active' : '')}
                   onClick={() => setHoursTab('night')}
                 >
-                  🌙 Nuit
+                  <span aria-hidden="true">☽</span> Nuit
                 </button>
               </div>
-              <HourGrid rows={hoursTab === 'day' ? hours.day : hours.night} />
+              <HourTimeline
+                rows={hoursTab === 'day' ? hours.day : hours.night}
+                remainingMin={remainingMin}
+                progressPct={progressPct}
+              />
             </div>
           )}
         </div>
 
-        {/* Planètes de la semaine */}
+        {/* Régents de la semaine (revue design, point 9) : repliés par
+            défaut — un résumé « aujourd'hui » suffit à la plupart des
+            visites, la liste complète reste à un tap. */}
         <div className="glass-panel planets-week">
-          <h4>🪐 Régents de la semaine</h4>
-          <div>
-            {DAY_PLANETS.names.map((day: string, i: number) => (
-              <div className={'day-row' + (i === activeDay ? ' today' : '')} key={i}>
-                <span className="day-name">
-                  {i === activeDay ? '▶ ' : ''}
-                  {day}
-                </span>
-                <span className="day-planet">{DAY_PLANETS.planets[i]}</span>
-              </div>
-            ))}
-          </div>
+          <h4>Régents de la semaine</h4>
+          {ready && (
+            <div className="week-today-card">
+              <span className="week-today-label">Aujourd'hui</span>
+              <span className="week-today-day">{DAY_PLANETS.names[activeDay]}</span>
+              <span className="week-today-planet">
+                {todayPlanetName} <span aria-hidden="true">{CHALDEAN_EMOJIS[todayPlanetName!]}</span>
+              </span>
+            </div>
+          )}
+          <button
+            type="button"
+            className="week-toggle"
+            onClick={() => setWeekExpanded((v) => !v)}
+            aria-expanded={weekExpanded}
+          >
+            {weekExpanded ? 'Masquer les 7 régents' : 'Voir les 7 régents'}
+            {weekExpanded ? (
+              <ChevronUp size={16} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+          {weekExpanded && (
+            <div>
+              {DAY_PLANETS.names.map((day: string, i: number) => (
+                <div className={'day-row' + (i === activeDay ? ' today' : '')} key={i}>
+                  <span className="day-name">
+                    {i === activeDay ? '▶ ' : ''}
+                    {day}
+                  </span>
+                  <span className="day-planet">
+                    {DAY_PLANETS.planetNames[i]} <span aria-hidden="true">{CHALDEAN_EMOJIS[DAY_PLANETS.planetNames[i]]}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function InfoRow({ label, valueClass, children }: { label: string; valueClass?: string; children: React.ReactNode }) {
+// Timeline chronologique des 12 heures (jour OU nuit — voir hoursTab, déjà un
+// vrai filtre : un seul tableau de 12 lignes rendu à la fois, point 7 de la
+// revue). REMPLACE l'ancienne grille 2×6 en boustrophédon + tracé SVG reliant
+// les cartes (ajoutée lors d'une revue précédente pour un souci similaire —
+// « on se perd dans l'ordre en parcourant la grille » — mais qui donnait à
+// son tour, de l'aveu de cette nouvelle revue, une impression de diagramme
+// de dépendances plutôt qu'une simple succession chronologique). `rows` est
+// DÉJÀ dans l'ordre chronologique (buildHourList) : aucun réagencement
+// nécessaire, contrairement à l'ancien composant.
+function HourTimeline({
+  rows,
+  remainingMin,
+  progressPct,
+}: {
+  rows: any[];
+  remainingMin: number | null;
+  progressPct: number;
+}) {
+  const nowIdx = rows.findIndex((r) => r.isNow);
   return (
-    <div className="info-row">
-      <span className="label">{label}</span>
-      <span className={'value ' + (valueClass || '')}>{children}</span>
-    </div>
-  );
-}
-
-// Colonnes fixes de .hours-grid (voir planete.css) — un vrai boustrophédon
-// (ligne suivante lue en sens inverse) suppose de connaître le nombre de
-// colonnes à l'avance ; incompatible avec l'ancien
-// `repeat(auto-fill, minmax(130px, 1fr))` responsive, remplacé par 2 fixes.
-const HOURS_GRID_COLS = 2;
-
-// Réordonne l'affichage en boustrophédon : les lignes d'indice impair sont
-// inversées, si bien que deux heures consécutives sont TOUJOURS des cases
-// physiquement adjacentes (jamais de saut en diagonale d'un bout de ligne à
-// l'autre) — reproduit exactement le tracé « en zigzag à angles droits »
-// dessiné à la main par l'utilisateur, plutôt qu'un simple ordre de lecture
-// classique (gauche→droite puis retour chariot).
-function boustrophedon<T>(items: T[], cols: number): T[] {
-  const out: T[] = [];
-  for (let i = 0; i < items.length; i += cols) {
-    const row = items.slice(i, i + cols);
-    if ((i / cols) % 2 === 1) row.reverse();
-    out.push(...row);
-  }
-  return out;
-}
-
-// Grille de cartes plutôt qu'un tableau de 12 lignes : plus rapide à
-// parcourir d'un coup d'œil que la vue linéaire précédente (deux tableaux
-// empilés de 12 lignes chacun).
-//
-// Retour utilisateur : on se perd dans l'ordre des heures en parcourant la
-// grille (capture avec un cheminement tracé à la main entre les cartes, en
-// zigzag à angles droits). Trois aides, redondantes et complémentaires :
-//   1) l'affichage lui-même suit ce zigzag (boustrophedon ci-dessus) — les
-//      cartes consécutives sont toujours voisines, jamais en diagonale.
-//   2) un numéro d'ordre (①…⑫) sur chaque carte, TOUJOURS l'heure
-//      chronologique réelle (pas la position d'affichage) — fiable à 100 %,
-//      ne dépend d'aucune mesure du DOM.
-//   3) une ligne de cheminement (SVG) reliant les cartes DANS L'ORDRE
-//      CHRONOLOGIQUE (via cardRefs indexé par heure réelle, pas par position
-//      d'affichage) — position réelle mesurée (getBoundingClientRect) et
-//      redessinée à chaque changement de taille (ResizeObserver), puisque
-//      impossible à prévoir en CSS pur.
-function HourGrid({ rows }: { rows: any[] }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]); // indexé par heure CHRONOLOGIQUE (rows[i]), pas par position affichée
-  const [pathD, setPathD] = useState('');
-  const [viewBox, setViewBox] = useState('0 0 0 0');
-
-  const displayRows = useMemo(
-    () => boustrophedon(
-      rows.map((r, i) => ({ ...r, trueIndex: i })),
-      HOURS_GRID_COLS
-    ),
-    [rows]
-  );
-
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return undefined;
-
-    const recompute = () => {
-      const wrapRect = wrap.getBoundingClientRect();
-      const pts = cardRefs.current
-        .slice(0, rows.length)
-        .filter(Boolean)
-        .map((el) => {
-          const r = (el as HTMLDivElement).getBoundingClientRect();
-          return [r.left - wrapRect.left + r.width / 2, r.top - wrapRect.top + r.height / 2];
-        });
-      setPathD(pts.length < 2 ? '' : pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' '));
-      setViewBox(`0 0 ${wrapRect.width} ${wrapRect.height}`);
-    };
-
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    ro.observe(wrap);
-    return () => ro.disconnect();
-  }, [rows]);
-
-  return (
-    <div className="hours-grid-wrap" ref={wrapRef}>
-      <svg className="hours-path" viewBox={viewBox} preserveAspectRatio="none">
-        <defs>
-          <marker id="hourPathArrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
-            <path d="M0,0 L9,4.5 L0,9 Z" fill="var(--accent)" />
-          </marker>
-        </defs>
-        {pathD && (
-          <path
-            d={pathD}
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="2 9"
-            opacity="0.55"
-            markerEnd="url(#hourPathArrow)"
-          />
-        )}
-      </svg>
-      <div className="hours-grid">
-        {displayRows.map((r) => (
-          <div
-            key={r.trueIndex}
-            ref={(el) => {
-              cardRefs.current[r.trueIndex] = el;
-            }}
-            className={'hour-card' + (r.isNow ? ' now-hour' : '')}
-          >
-            <span className="hour-card-order">{r.trueIndex + 1}</span>
-            <div className="hour-card-planet">
-              {r.emoji} {r.planet}
-              {r.isNow ? ' ◀' : ''}
+    <ol className="hour-timeline">
+      {rows.map((r, i) => (
+        <li
+          key={i}
+          className={
+            'timeline-item' + (r.isNow ? ' is-now' : nowIdx >= 0 && i < nowIdx ? ' is-past' : '')
+          }
+        >
+          <span className="timeline-marker" aria-hidden="true">
+            <span className="timeline-dot" />
+          </span>
+          <div className="timeline-content">
+            <div className="timeline-head">
+              <span className="timeline-order">{i + 1}</span>
+              <span className="timeline-planet">
+                <span aria-hidden="true">{r.emoji}</span> {r.planet}
+                {r.isNow ? ' — maintenant' : ''}
+              </span>
+              <span className="timeline-interval">{r.interval}</span>
             </div>
-            <div className="hour-card-interval">{r.interval}</div>
-            <div className={'hour-card-nature ' + r.nat.cls}>{r.nat.txt}</div>
+            <div className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</div>
+            {r.isNow && (
+              <div className="dash-progress timeline-progress">
+                <div className="dash-progress-track">
+                  <div className="dash-progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+                <span className="dash-progress-label">{remainingMin} min restantes</span>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-    </div>
+        </li>
+      ))}
+    </ol>
   );
 }
