@@ -129,9 +129,14 @@ html[data-theme="light"] {
     --card-green-bg:  #e8f8f5;
     --card-green-text:#27ae60;
 
-    --glass-bg:       rgba(255, 255, 255, 0.8);
-    --glass-border:   rgba(20, 60, 55, 0.12);
-    --glass-shadow:   0 8px 32px rgba(20, 100, 90, 0.12);
+    --glass-bg:       rgba(255, 255, 255, 0.82);
+    /* Bordure/ombre renforcées (0.12 → 0.22 ; flou 32px → 22px) : sur le
+       fond clair menthe/lavande, l'ancienne bordure quasi invisible laissait
+       les cartes se fondre dans l'arrière-plan — un flou d'ombre plus serré
+       (au lieu de plus large) donne un bord net plutôt qu'une simple brume
+       sous la carte, sans pour autant l'assombrir. */
+    --glass-border:   rgba(20, 60, 55, 0.22);
+    --glass-shadow:   0 6px 22px rgba(20, 60, 55, 0.16);
 
     /* Fond menthe/lavande déjà clair : un ciel étoilé aussi marqué qu'en
        sombre le ternirait, on le garde en filigrane. */
@@ -688,7 +693,67 @@ img, svg, video { max-width: 100%; height: auto; }
 .sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }
 
 /* Le bouton Google de l'écran de connexion ne doit pas hériter du dégradé global */
-.google-btn { width: 100%; }
+/* Bouton Google (components/AuthProvider.js LoginScreen) — volontairement
+   des couleurs FIXES (pas les tokens --accent/--surface du thème courant) :
+   c'est la charte que Google recommande pour ses boutons « Continuer avec »
+   (blanc net, texte gris foncé #3c4043), justement pour qu'il reste
+   identifiable et contrasté quel que soit le thème de l'app qui l'entoure —
+   contrairement à l'ancien style (fond blanc à 12% d'opacité, pensé pour le
+   thème sombre) qui devenait presque invisible sur le thème clair
+   turquoise/menthe (texte et fond quasi confondus, aucun repère de bouton).
+   `disabled` (pendant la connexion, voir `busy` dans LoginScreen) baisse
+   juste l'opacité et retire le curseur — jamais de changement de couleur qui
+   ferait disparaître le libellé « Connexion en cours… » affiché à la place
+   du logo Google (voir .google-btn-spinner ci-dessous). */
+.google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, .16);
+  color: #3c4043;
+  font-weight: 600;
+  font-size: .98rem;
+  padding: 13px 20px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
+  cursor: pointer;
+  transition: background .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+.google-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .18);
+}
+.google-btn:disabled {
+  opacity: .72;
+  cursor: default;
+}
+.google-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(60, 64, 67, .25);
+  border-top-color: #3c4043;
+  animation: asrar-spin .8s linear infinite; /* @keyframes déjà défini pour #asrar-loader */
+  flex-shrink: 0;
+}
+
+/* Carte de connexion : mêmes tokens --glass-* que le reste de l'app (pas de
+   duplication de valeurs ici), juste un peu plus de air interne — voir
+   .login-secure-hint / .login-error ci-dessous pour le texte sous le bouton. */
+.login-card { padding: 34px 30px; }
+.login-secure-hint {
+  margin-top: 14px;
+  font-size: .82rem;
+  color: var(--text-faint);
+}
+.login-error {
+  margin-top: 14px;
+  font-size: .88rem;
+  color: var(--danger);
+}
 
 /* ── Dialogue « dernier commit » (drawer → Releases) ─────────────────────── */
 .commit-modal-overlay {
@@ -960,16 +1025,22 @@ img, svg, video { max-width: 100%; height: auto; }
 .cosmic-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(30px);
+  /* Flou renforcé (30px → 44px) en compensation de l'intensité réduite
+     ci-dessous : le halo reste "extrêmement diffus" (deux taches de couleur
+     à peine perceptibles) plutôt que de disparaître complètement. */
+  filter: blur(44px);
 }
 .cosmic-blob-a {
   width: 260px; height: 260px; left: -70px; top: -40px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%);
+  /* Mix réduit d'environ 60% (40% → 16%) : le halo turquoise/violet
+     donnait une impression de brume sur toute la carte de connexion — voir
+     aussi .login-logo-glow, seul endroit qui garde un glow marqué. */
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
   animation: cosmicBlobDrift1 14s ease-in-out infinite;
 }
 .cosmic-blob-b {
   width: 220px; height: 220px; right: -60px; bottom: 80px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-hover) 33%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-hover) 13%, transparent), transparent 70%);
   animation: cosmicBlobDrift2 16s ease-in-out infinite;
 }
 @keyframes cosmicBlobDrift1 {
@@ -980,20 +1051,28 @@ img, svg, video { max-width: 100%; height: auto; }
   0%, 100% { transform: translate(14%, 10%) scale(1.1); }
   50%      { transform: translate(-12%, -14%) scale(0.92); }
 }
+/* Couleur des étoiles : --accent, PAS --text-main (bug corrigé ici) —
+   --text-main est blanc en sombre (de vraies étoiles, l'effet voulu) mais
+   devient #16302c (quasi noir) en thème clair : le "ciel étoilé" se
+   transformait alors en petits points gris/noirs qui lisaient comme de la
+   poussière/un artefact de rendu plutôt qu'une texture voulue — sur le fond
+   menthe/lavande clair, aucun humain ne les lit comme des étoiles. --accent
+   les rend cohérents avec le reste de l'identité (turquoise en clair, violet
+   en sombre) dans les deux thèmes. */
 .cosmic-stars {
   position: absolute;
   inset: 0;
   opacity: var(--star-opacity);
   animation: cosmicStarTwinkle 4.5s ease-in-out infinite;
   background-image:
-    radial-gradient(1px 1px at 20% 30%, color-mix(in srgb, var(--text-main) 60%, transparent), transparent),
-    radial-gradient(1px 1px at 70% 20%, color-mix(in srgb, var(--text-main) 53%, transparent), transparent),
-    radial-gradient(1px 1px at 40% 80%, color-mix(in srgb, var(--text-main) 47%, transparent), transparent),
-    radial-gradient(1px 1px at 85% 65%, color-mix(in srgb, var(--text-main) 60%, transparent), transparent),
-    radial-gradient(1px 1px at 55% 45%, color-mix(in srgb, var(--text-main) 40%, transparent), transparent),
-    radial-gradient(1px 1px at 10% 70%, color-mix(in srgb, var(--text-main) 53%, transparent), transparent),
-    radial-gradient(1px 1px at 30% 12%, color-mix(in srgb, var(--text-main) 47%, transparent), transparent),
-    radial-gradient(1px 1px at 92% 40%, color-mix(in srgb, var(--text-main) 40%, transparent), transparent);
+    radial-gradient(1px 1px at 20% 30%, color-mix(in srgb, var(--accent) 60%, transparent), transparent),
+    radial-gradient(1px 1px at 70% 20%, color-mix(in srgb, var(--accent) 53%, transparent), transparent),
+    radial-gradient(1px 1px at 40% 80%, color-mix(in srgb, var(--accent) 47%, transparent), transparent),
+    radial-gradient(1px 1px at 85% 65%, color-mix(in srgb, var(--accent) 60%, transparent), transparent),
+    radial-gradient(1px 1px at 55% 45%, color-mix(in srgb, var(--accent) 40%, transparent), transparent),
+    radial-gradient(1px 1px at 10% 70%, color-mix(in srgb, var(--accent) 53%, transparent), transparent),
+    radial-gradient(1px 1px at 30% 12%, color-mix(in srgb, var(--accent) 47%, transparent), transparent),
+    radial-gradient(1px 1px at 92% 40%, color-mix(in srgb, var(--accent) 40%, transparent), transparent);
 }
 @keyframes cosmicStarTwinkle {
   0%, 100% { opacity: .55; }
@@ -1013,8 +1092,12 @@ img, svg, video { max-width: 100%; height: auto; }
   position: absolute; inset: -17px;
   border-radius: 50%;
   background: var(--accent);
-  opacity: .35;
-  filter: blur(18px);
+  /* Réduit d'environ 60% (.35 → .15) : le halo restait lisible comme un
+     souffle discret derrière le logo tout en cessant de "baver" en brume sur
+     le reste de la carte — c'était le seul endroit de l'écran de connexion
+     où un glow fort se justifie encore (voir aussi .cosmic-blob-a/b). */
+  opacity: .15;
+  filter: blur(16px);
   animation: loginLogoPulse 3.2s ease-in-out infinite;
 }
 .login-logo-ring {
@@ -1033,8 +1116,8 @@ img, svg, video { max-width: 100%; height: auto; }
   border: 2px solid var(--accent-hover);
 }
 @keyframes loginLogoPulse {
-  0%, 100% { opacity: .5; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.12); }
+  0%, 100% { opacity: .6; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.05); }
 }
 
 /* ── Avis (étoiles) : components/StarRating.js + components/ReviewsSection.js
