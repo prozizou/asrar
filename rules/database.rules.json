@@ -3,51 +3,10 @@
     ".read": false,
     ".write": false,
 
-    "purchased_user": {
-      "$key": { ".read": "auth != null" }
-    },
-    "allowedUsers": {
-      "$key": { ".read": "auth != null" }
-    },
-    "admins": {
-      "$key": { ".read": "auth != null" }
-    },
-    "vip_users": {
-      "$uid": {
-        ".read": "auth != null && $uid === auth.uid"
-      }
-    },
-
     "sourate": { ".read": "auth != null" },
     "versetRef": { ".read": "auth != null" },
     "data": {
       "appData": { ".read": "auth != null" }
-    },
-
-    "orders_count": { ".read": "auth != null" },
-
-    "ratings": {
-      ".read": "auth != null",
-      "$cat": {
-        "$key": {
-          "$uid": {
-            ".write": "auth != null && $uid === auth.uid",
-            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
-          }
-        }
-      }
-    },
-
-    "comments": {
-      ".read": "auth != null",
-      "$cat": {
-        "$key": {
-          "$commentId": {
-            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
-            ".validate": "newData.hasChildren(['uid', 'text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500"
-          }
-        }
-      }
     }
   }
 }
