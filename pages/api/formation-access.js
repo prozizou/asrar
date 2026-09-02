@@ -15,14 +15,27 @@
 //     les minutes accordées, pour le décompte visuel côté client. Google Meet
 //     étant un service externe, AUCUNE minuterie ne peut réellement couper
 //     l'appel : purement informatif (voir la décision utilisateur associée).
+//
+//     Le lien est vérifié AVANT tout débit (revue de sécurité, P0) : avant ce
+//     correctif, la transaction posait `minutes: 0` d'abord, puis lisait
+//     meetLink — un lien absent retombait sur un SALON MEET VIDE
+//     (meet.google.com/new, non lié à un formateur) tout en ayant déjà
+//     consommé le crédit de l'utilisateur pour une session qui n'aura pas
+//     lieu. Un lien manquant est désormais une erreur AVANT tout débit, sans
+//     repli — l'admin doit configurer meetLink pour cette formation. Pas de
+//     remboursement automatisé au-delà de ce point (le débit reste, comme
+//     avant, une transaction atomique à usage unique) : un incident après
+//     débit se règle comme aujourd'hui, manuellement, par l'admin qui
+//     recrédite formation_access/{key}/{emailKey} (panneau admin ou console
+//     Firebase) — automatiser un remboursement déclenché par erreur exigerait
+//     de trancher des cas ambigus (session rejointe puis coupée en cours ?)
+//     hors du périmètre de cette passe.
 
 const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
-
-const MEET_FALLBACK = "https://meet.google.com/new";
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -46,8 +59,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ minutes });
     }
 
-    // action === "join" : consomme le crédit de façon atomique (un double-clic
-    // ne doit pas "rejoindre" deux fois avec le même grant).
+    // action === "join" : le lien est vérifié D'ABORD (voir le commentaire
+    // d'en-tête) — un lien absent ne débite jamais de crédit.
+    const linkSnap = await db.ref(SOURCES.formation.ref() + "/" + key + "/meetLink").once("value");
+    const meetLink = linkSnap.val();
+    if (!meetLink) {
+      return res.status(503).json({
+        error: "Aucun lien de visioconférence configuré pour cette formation. Contactez l'administration.",
+      });
+    }
+
+    // Consomme le crédit de façon atomique (un double-clic ne doit pas
+    // "rejoindre" deux fois avec le même grant).
     let minutesAtStart = 0;
     await gRef.transaction((cur) => {
       minutesAtStart = cur && Number(cur.minutes) > 0 ? Number(cur.minutes) : 0;
@@ -60,8 +83,6 @@ export default async function handler(req, res) {
       });
     }
 
-    const linkSnap = await db.ref(SOURCES.formation.ref() + "/" + key + "/meetLink").once("value");
-    const meetLink = linkSnap.val() || MEET_FALLBACK;
     return res.status(200).json({ meetLink, minutes: minutesAtStart });
   } catch (e) {
     if (!e.statusCode) await reportError("formation-access", e, { key, action });

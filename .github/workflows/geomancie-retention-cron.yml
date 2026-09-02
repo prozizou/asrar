@@ -1,0 +1,30 @@
+name: Purge géolocalisation géomancie (rétention)
+
+# Appelle quotidiennement /api/cron/geomancie-retention (purge des logs de
+# géolocalisation au-delà de RETENTION_DAYS, voir ce fichier) — volontairement
+# PAS dans vercel.json : le plan Vercel Hobby du projet limite le nombre de
+# cron jobs, déjà utilisés par planet-push et reminders (voir le commentaire
+# d'en-tête de pages/api/cron/reminders.js). Même secret de dépôt CRON_SECRET
+# que .github/workflows/reminders-cron.yml (== variable d'environnement
+# Vercel CRON_SECRET, voir server/cronAuth.js).
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  trigger-retention:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler /api/cron/geomancie-retention
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.asrarpro.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Secret CRON_SECRET absent — voir .github/workflows/reminders-cron.yml."
+            exit 1
+          fi
+          curl -sSf -X POST "$SITE_URL/api/cron/geomancie-retention" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -o /dev/null -w "HTTP %{http_code}\n"

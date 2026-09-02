@@ -39,6 +39,14 @@ test.describe('Routes /api — rejet sans identité valide', () => {
     expect(res.status()).toBe(401);
   });
 
+  // Revue de sécurité : cloudinary-sign vérifie maintenant l'identité AVANT
+  // le statut vendeur (403) — un idToken absent doit donc encore échouer en
+  // 401, pas en 403 (qui suppose une identité déjà vérifiée).
+  test('POST /api/cloudinary-sign sans idToken → 401 (pas 403)', async ({ request }) => {
+    const res = await request.post('/api/cloudinary-sign', { data: { folder: 'products' } });
+    expect(res.status()).toBe(401);
+  });
+
   test('GET sur une route POST-only → 405 (pas un crash générique)', async ({ request }) => {
     const res = await request.get('/api/check-access');
     expect(res.status()).toBe(405);

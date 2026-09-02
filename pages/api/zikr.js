@@ -340,22 +340,47 @@ async function handleGet(db, res, user, gid) {
   const remaining = Math.max(0, target - total);
   const now = Date.now();
 
-  const membersSnap = await db.ref("zikr_members/" + gid).once("value");
-  const members = [];
+  // Ma propre entrée UNIQUEMENT, d'abord — pas tout `zikr_members/{gid}`
+  // (revue de sécurité) : avant ce correctif, "get" renvoyait le uid + email
+  // + activité de TOUS les membres à quiconque connaissait le groupId, même
+  // sans y être (y compris un groupe `private:true`). Le trousseau complet
+  // (avec uid/email) n'est désormais construit que pour le créateur/un
+  // membre, ci-dessous — un visiteur non-membre n'obtient qu'un aperçu
+  // (compteurs déjà publics via `membersCount`/`total`/`remaining`), jamais
+  // l'identité des participants. Le tableau client (app/zikr/page.tsx) ne lit
+  // d'ailleurs `members` que derrière `isMember`, donc rien ne change pour
+  // un membre réel.
+  const mineSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   let mine = null;
-  membersSnap.forEach((m) => {
-    const v = m.val() || {};
-    const entry = {
-      uid: m.key,
+  if (mineSnap.exists()) {
+    const v = mineSnap.val() || {};
+    mine = {
+      uid: user.uid,
       email: v.email || "",
       fait: Number(v.fait) || 0,
       rythme: Number(v.rythme) || 0,
       online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
+      avertissement: v.avertissement || "",
     };
-    if (m.key === user.uid) mine = { ...entry, avertissement: v.avertissement || "" };
-    members.push(entry);
-  });
-  members.sort((a, b) => b.fait - a.fait); // classement décroissant
+  }
+
+  // L'administrateur voit aussi le trousseau complet (modération — même
+  // logique que handleList, qui lui montre tous les groupes sans filtre).
+  let members = [];
+  if (isOwner || mine || admin) {
+    const membersSnap = await db.ref("zikr_members/" + gid).once("value");
+    membersSnap.forEach((m) => {
+      const v = m.val() || {};
+      members.push({
+        uid: m.key,
+        email: v.email || "",
+        fait: Number(v.fait) || 0,
+        rythme: Number(v.rythme) || 0,
+        online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
+      });
+    });
+    members.sort((a, b) => b.fait - a.fait); // classement décroissant
+  }
 
   // Statut de l'appelant : créateur > membre > (demande en attente) > aucun.
   let status;

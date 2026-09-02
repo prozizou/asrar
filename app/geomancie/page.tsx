@@ -38,8 +38,25 @@ const Spinner = SpinnerUntyped as any;
 type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
 type Mothers = Figure[]; // les 4 Mères
 
-// Journalise l'usage de la géomancie (suivi admin) avec la localisation.
-function logGeomancie() {
+// Clé de consentement distinct (localStorage, par appareil) — voir shareLocation
+// ci-dessous. Choix explicite du terme "share" plutôt que "geo" seul : couvre
+// aussi une éventuelle extension future (ville déclarée, etc.).
+const GEO_CONSENT_KEY = 'geomancie_share_location';
+
+// Arrondit à ~11 km (1 décimale) — assez pour une carte régionale côté admin,
+// sans jamais transmettre de position précise (revue de sécurité, § géoloc).
+function roundApprox(v: number) {
+  return Math.round(v * 10) / 10;
+}
+
+// Journalise l'usage de la géomancie (suivi admin), avec localisation
+// APPROXIMATIVE et SEULEMENT si l'utilisateur l'a explicitement autorisé
+// (`shareLocation`, coché par défaut à FALSE — voir le bouton dédié dans le
+// panneau). Avant ce correctif, `getCurrentPosition` (position PRÉCISE)
+// était appelé automatiquement à chaque calcul, sans consentement séparé de
+// l'accès général à l'app, puis stocké avec uid+email (pages/api/track.js) —
+// revue de sécurité, point P0.
+function logGeomancie(shareLocation: boolean) {
   const user = auth.currentUser;
   if (!user) return;
   const send = (lat: number | null, lng: number | null) =>
@@ -53,9 +70,9 @@ function logGeomancie() {
         })
       )
       .catch(() => {});
-  if (navigator.geolocation) {
+  if (shareLocation && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (p) => send(p.coords.latitude, p.coords.longitude),
+      (p) => send(roundApprox(p.coords.latitude), roundApprox(p.coords.longitude)),
       () => send(null, null),
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
     );
@@ -102,6 +119,25 @@ export default function GeomanciePage() {
   const [modalIndex, setModalIndex] = useState<number | null>(null);
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Consentement distinct pour la localisation (voir logGeomancie) — lu APRÈS
+  // le premier rendu (localStorage indisponible en SSR), donc décoché par
+  // défaut tant que l'effet n'a pas tourné : jamais activé silencieusement.
+  const [shareLocation, setShareLocation] = useState(false);
+  useEffect(() => {
+    try {
+      setShareLocation(localStorage.getItem(GEO_CONSENT_KEY) === 'true');
+    } catch {}
+  }, []);
+  const toggleShareLocation = () => {
+    setShareLocation((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(GEO_CONSENT_KEY, String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const houses = useMemo<any[]>(() => generateAllHouses(mothers), [mothers]);
   const synth = calculated ? synthesis(houses) : null;
@@ -156,7 +192,7 @@ export default function GeomanciePage() {
       if (!fbData || fbData.length === 0) await fetchFirebaseData();
       setCalculated(true);
       setActiveFig(null);
-      logGeomancie();
+      logGeomancie(shareLocation);
     } finally {
       setCalculating(false);
     }
@@ -250,6 +286,15 @@ export default function GeomanciePage() {
               🔄 Réinitialiser
             </button>
           </div>
+
+          {/* Consentement distinct de la géolocalisation (revue de sécurité) —
+              décoché par défaut ; voir logGeomancie/shareLocation ci-dessus. */}
+          <label className="geo-consent-row">
+            <input type="checkbox" checked={shareLocation} onChange={toggleShareLocation} />
+            <span>
+              📍 Partager ma position approximative (statistiques anonymisées, jamais précise)
+            </span>
+          </label>
         </div>
 
         {/* L'Écu */}

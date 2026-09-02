@@ -1,0 +1,40 @@
+name: Reminders cron (haute fréquence)
+
+# Vercel Cron (vercel.json) ne peut déclencher /api/cron/reminders qu'UNE
+# FOIS par jour sur le plan Hobby actuel du projet (les crons plus fréquents
+# exigent le plan Pro) — voir le commentaire d'en-tête de
+# pages/api/cron/reminders.js pour l'impact fonctionnel (rappels de wird
+# manqués pour toute heure cible après le passage quotidien fixe). Ce
+# workflow contourne la limite sans dépendre d'un upgrade de plan : GitHub
+# Actions n'a pas de contrainte de fréquence sur les cron schedules.
+#
+# Nécessite un secret de dépôt CRON_SECRET portant EXACTEMENT la même valeur
+# que la variable d'environnement Vercel CRON_SECRET (voir
+# server/cronAuth.js — comparaison à temps constant contre le même secret,
+# quel que soit l'appelant). Sans ce secret configuré (Settings → Secrets and
+# variables → Actions), ce workflow échoue à l'appel (401) : le cron Vercel
+# quotidien reste alors le seul filet de secours, comme avant ce changement.
+#
+# SITE_URL : variable de dépôt (Settings → Secrets and variables → Actions →
+# Variables) si le domaine diffère de la production actuelle.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  trigger-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler /api/cron/reminders
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.asrarpro.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Secret CRON_SECRET absent — voir le commentaire d'en-tête de ce workflow."
+            exit 1
+          fi
+          curl -sSf -X POST "$SITE_URL/api/cron/reminders" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -o /dev/null -w "HTTP %{http_code}\n"
