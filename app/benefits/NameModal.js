@@ -37,8 +37,17 @@ export default function NameModal({ item, accessGranted, isFav, onClose, onToggl
           </button>
         </div>
         <div className="modal-body">
-          <div className="modal-arabic">{implore(item.name)}</div>
+          {/* Le Nom lui-même (item.name, ex. « الرَّحْمَٰنُ ») en titre — pas la
+              formule d'imploration (implore(), « يا رحمن ») : même correction que
+              NameCard.js (revue design, point 6), pour ne pas brouiller la
+              relation entre le Nom et la formule à réciter. */}
+          <div className="modal-arabic">{item.name}</div>
           <div className="modal-translit">{item.translit}</div>
+          {accessGranted && (
+            <div className="modal-dhikr-formula" title="Formule du dhikr">
+              <i className="fas fa-hands-praying" /> {implore(item.name)}
+            </div>
+          )}
           <div className="modal-number-badge">{numberBadge}</div>
 
           {accessGranted ? (
