@@ -32,6 +32,7 @@ interface ModuleTile {
 const MODULES: ModuleTile[] = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
   { icon: '🔢', label: 'Abajad', desc: 'Calculer le poids numérique des lettres arabes', href: '/abajad' },
+  { icon: '🌙', label: 'Tafsir al-Ahlam', desc: 'Interpréter un rêve par symbole ou récit libre', href: '/tafsir' },
   { icon: '🌍', label: 'Planète', desc: "Voir l'heure planétaire du moment", href: '/planete' },
   { icon: '✨', label: 'Combinaisons', desc: 'Associer les 99 Noms par calcul', href: '/combinaisons' },
   { icon: '🕌', label: "Noms d'Allah", desc: "Découvrir les 99 Noms d'Allah", href: '/benefits' },
