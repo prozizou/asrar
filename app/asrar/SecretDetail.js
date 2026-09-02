@@ -3,12 +3,14 @@
 // le partage, le PDF et l'image plein écran. L'état (like, commentaires,
 // favori, feuille de commentaires) est géré par React au lieu du DOM.
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Share2, FileText, Heart, MessageCircle, Bookmark } from 'lucide-react';
 import MixedText from '@/components/MixedText';
 import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
 import { useAccess } from '@/components/AccessProvider';
 import { share as shareLink, toast } from '@/lib/share';
 import { optimImg } from '@/lib/img';
+import { sentenceCaseIfShouting } from '@/lib/text';
 import SmartImage from '@/components/SmartImage';
 import { downloadSecretPdf, PDF_MIN_LEVEL } from '@/lib/pdf';
 
@@ -68,14 +70,14 @@ export default function SecretDetail({ secret, onBack }) {
     <div>
       <div className="detail-head">
         <button className="detail-back" onClick={onBack}>
-          ← Retour aux secrets
+          <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" /> Retour aux secrets
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="detail-expand" onClick={doShare} title="Partager ce secret">
-            📤 Partager
+            <Share2 size={14} strokeWidth={2} aria-hidden="true" /> Partager
           </button>
           <button className="detail-expand" onClick={doPdf} title="Télécharger en PDF">
-            📄 PDF
+            <FileText size={14} strokeWidth={2} aria-hidden="true" /> PDF
           </button>
         </div>
       </div>
@@ -92,18 +94,21 @@ export default function SecretDetail({ secret, onBack }) {
             />
           </div>
         )}
-        <MixedText className="detail-title" text={data.faida || ''} />
+        <MixedText className="detail-title" text={sentenceCaseIfShouting(data.faida || '')} />
         <MixedText className="mix" text={data.sirr || ''} />
       </div>
 
       <div className="interaction-bar" style={{ display: 'flex' }}>
         <div className="meta">
           <span className={'like-btn' + (liked ? ' liked' : '')} onClick={toggleLike}>
-            {liked ? '❤️' : '🤍'} <span>{likeCount}</span>
+            <Heart size={18} strokeWidth={2} fill={liked ? 'currentColor' : 'none'} aria-hidden="true" />{' '}
+            <span>{likeCount}</span>
           </span>
-          <span onClick={() => setSheetOpen(true)}>💬 {comments.length}</span>
+          <span onClick={() => setSheetOpen(true)}>
+            <MessageCircle size={18} strokeWidth={2} aria-hidden="true" /> {comments.length}
+          </span>
           <span className={'bookmark-icon' + (bookmarked ? ' saved' : '')} onClick={toggleBookmark}>
-            🔖
+            <Bookmark size={18} strokeWidth={2} fill={bookmarked ? 'currentColor' : 'none'} aria-hidden="true" />
           </span>
         </div>
       </div>

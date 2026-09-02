@@ -109,6 +109,24 @@ body {
   gap: 1rem;
 }
 
+/* Indice visuel de défilement (revue design, point 4) : un dégradé fixe sur
+   le bord droit signale qu'il reste des catégories hors champ, plutôt que la
+   barre nette et coupée qui donnait une impression d'interface tronquée (5
+   catégories au total, ~3 visibles au repos sur mobile). Volontairement
+   statique (pas de disparition au scroll — demanderait de suivre la position
+   de scroll en JS) : suffisant comme indice, sans complexité supplémentaire. */
+.cat-rail-wrap {
+  position: relative;
+}
+.cat-rail-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, transparent, var(--asrar-bg-deep));
+  pointer-events: none;
+}
+
 .cat-rail {
   display: flex;
   flex-direction: row;
@@ -118,6 +136,9 @@ body {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   gap: 0.6rem;
+  /* Espace de respiration avant le dégradé ci-dessus, pour que le dernier
+     onglet ne soit jamais partiellement masqué par le fondu. */
+  padding-right: 20px;
 }
 .cat-rail::-webkit-scrollbar { display: none; }
 
@@ -143,7 +164,10 @@ body {
 }
 
 .cat-item .ic {
-  font-size: 1.1rem;
+  /* Icône vectorielle (lucide-react, taille posée en prop) : hérite de
+     `color` via currentColor — bascule automatiquement au blanc quand
+     .active passe le fond en accent, sans règle supplémentaire. */
+  flex-shrink: 0;
 }
 
 .cat-item .lb {
@@ -165,62 +189,159 @@ body {
   gap: 0.8rem;
 }
 
+/* En-tête de section (revue design, point 1) : la catégorie sélectionnée
+   redevient un TITRE DE PAGE (pas seulement l'onglet actif dans le rail),
+   avec un décompte — l'ancien écran passait directement des onglets à de
+   grandes cartes, sans repère de contexte. */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--asrar-text);
+  margin: 0;
+}
+.section-count {
+  font-size: 0.8rem;
+  color: var(--asrar-text-dim);
+  white-space: nowrap;
+}
+
+/* Recherche (revue design, point 9) : filtre CLIENT sur la catégorie déjà
+   chargée (voir app/asrar/page.tsx) — pas d'appel serveur, la liste
+   complète de la catégorie est déjà en cache. */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-input);
+  border: 1px solid var(--asrar-border);
+  border-radius: 12px;
+  padding: 0 12px;
+  margin-bottom: 1rem;
+  color: var(--asrar-text-dim);
+}
+.search-bar input {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 11px 0;
+  color: var(--asrar-text);
+  font-size: 0.92rem;
+  outline: none;
+}
+.search-bar input::placeholder {
+  color: var(--asrar-text-dim);
+  opacity: 1;
+}
+
+.secrets-empty {
+  color: var(--asrar-text-dim);
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Grille de cartes (revue design, points 2/3/6) : REMPLACE l'ancien système
+   à deux présentations (carte compacte en ligne sans image vs. grande carte
+   verticale à vignette 180px avec image) — celui-ci donnait l'impression de
+   deux composants différents selon que le contenu avait une image ou non, et
+   la version avec image poussait une seule carte à occuper presque tout
+   l'écran sur un titre long. UNE seule structure de carte maintenant, dans
+   les deux cas : vignette à RATIO FIXE (pas de hauteur fixe qui dépend de la
+   présence d'une image) + repli icône cohérent (voir .secret-thumb) quand
+   l'image manque, la même structure "chip catégorie + titre" partout.
+   2 colonnes dès le mobile (auto-fill sur grand écran) : 2 à 3 contenus
+   visibles à l'écran au lieu d'un seul. */
+.secrets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.8rem;
+}
+@media (min-width: 520px) {
+  .secrets-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+
 .secret-card {
   background: var(--asrar-surface);
   border: 1px solid var(--asrar-border);
   border-radius: 12px;
-  padding: 1rem;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.2s, transform 0.2s, border-color 0.2s;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .secret-card:hover {
   background: var(--asrar-surface-2);
-  transform: translateX(4px);
+  border-color: var(--asrar-border-2);
+  transform: translateY(-2px);
 }
 
+/* Cadre d'image standardisé (revue design, point 3) : le contenu mélange
+   photos, captures d'écran, texte arabe photographié, dessins, schémas
+   manuscrits — des dimensions et cadrages très hétérogènes. `aspect-ratio`
+   + `object-fit: cover` (posé sur SmartImage, voir page.tsx) impose un
+   CADRE fixe plutôt que de laisser l'image dicter la hauteur de la carte,
+   quelle que soit la source. Le repli (pas d'image) montre une icône plutôt
+   que l'ancien emoji 📜 — cohérent avec le reste de l'identité vectorielle. */
 .secret-thumb {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  object-fit: cover;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   background: var(--asrar-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  color: var(--asrar-text);
+  color: var(--asrar-text-dim);
   flex-shrink: 0;
+}
+
+.secret-body {
+  padding: 0.7rem 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Repère de catégorie sur la carte (revue design, point 8) : la liste ne
+   porte pas de champ durée/description dans son modèle de données actuel
+   (métadonnées servies par /api/list-content — voir server/sources.js) sans
+   aller chercher le CONTENU complet de chaque élément juste pour l'afficher
+   en liste, ce qui casserait la frontière métadonnées/contenu payant que le
+   reste de l'app respecte (voir ANALYSE.md, sécurité du paywall). Le libellé
+   de catégorie, lui, est déjà connu côté client (onglet actif) — l'afficher
+   ici donne au moins un repère de classement sans appel supplémentaire. */
+.secret-cat-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--asrar-gold);
 }
 
 .secret-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
+  font-size: 0.92rem;
+  line-height: 1.35;
   color: var(--asrar-text);
-}
-
-/* Carte avec cover */
-.secret-card.has-cover {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
-  padding: 0;
+  /* Casse déjà adoucie en amont (sentenceCaseIfShouting, voir page.tsx) —
+     pas de text-transform ici : un titre légitimement mixte ne doit jamais
+     être reforcé dans un sens ou l'autre par la CSS. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-}
-.secret-card.has-cover .secret-thumb {
-  width: 100%;
-  height: 180px;
-  border-radius: 0;
-}
-.secret-card.has-cover .secret-title {
-  padding: 0 1rem 1rem;
-  text-align: center;
 }
 
 /* Vue détail */
@@ -532,6 +653,9 @@ body.comment-open #asrarViewBtn { display: none !important; }
   cursor: pointer;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .close-sheet-btn {
@@ -548,6 +672,7 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .detail-expand {
   background: var(--asrar-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
   padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: .82rem;
+  display: inline-flex; align-items: center; gap: 6px;
 }
 .detail-expand:hover { filter: brightness(1.08); }
 
