@@ -81,3 +81,11 @@
   cursor: pointer;
 }
 .wq-generate-btn:hover { background: var(--accent-hover); }
+
+.wq-kanzou-link {
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; margin-bottom: 18px;
+  border-radius: 12px; border: 1px solid var(--glass-border); background: var(--surface-2);
+  text-decoration: none; color: var(--text-main); font-weight: 600; font-size: 0.9rem;
+}
+.wq-kanzou-link:hover { border-color: var(--accent); }
+.wq-kanzou-sub { font-weight: 400; font-size: 0.76rem; color: var(--text-muted); }
