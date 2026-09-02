@@ -83,7 +83,17 @@ export default function Home() {
   // certains réseaux ce canal restait bloqué en silence, laissant les cartes
   // produit sans likes/commentaires alors que le reste de la page (la liste
   // elle-même, via /api/list-content) s'affichait normalement.
-  const loadPopularite = useCallback(async (products: Product[]) => {
+  //
+  // UN SEUL essai raté ici (délai réseau, fonction froide — apiPost n'a AUCUN
+  // retry intégré, cf. lib/api.js) laissait `popularite` à `{}` pour le reste
+  // de la session : `filtered` (plus bas) calcule alors un score de 0 pour
+  // TOUS les produits, et son tri retombe silencieusement sur la seule date
+  // — le tri par popularité semble avoir « disparu », sans la moindre erreur
+  // visible, jusqu'au prochain rechargement complet de la page. Un second
+  // essai après un court délai suffit à s'en remettre dans l'immense
+  // majorité des cas (même logique que le reste de l'app face à un réseau
+  // qui peut rester bloqué en silence — cf. lib/rouwhania.js).
+  const loadPopularite = useCallback(async (products: Product[], attempt = 0) => {
     try {
       const { likes, comments: coms, orders } = await apiPost('social', { action: 'market-popularity' });
       const pop: Record<string, PopulariteEntry> = {};
@@ -96,12 +106,13 @@ export default function Home() {
       });
       setPopularite(pop);
     } catch {
-      /* bonus : ne bloque pas l'affichage */
+      if (attempt < 1) setTimeout(() => loadPopularite(products, attempt + 1), 3000);
     }
   }, []);
 
-  // — Likes des boutiques —
-  const loadVendorLikes = useCallback(async (vendors: Vendor[]) => {
+  // — Likes des boutiques — même garde-fou (un seul retry) que ci-dessus,
+  // pour la même raison (apiPost sans retry intégré).
+  const loadVendorLikes = useCallback(async (vendors: Vendor[], attempt = 0) => {
     try {
       const uid = auth.currentUser?.uid;
       const { vendorLikes: val } = await apiPost('social', { action: 'vendor-likes' });
@@ -113,7 +124,7 @@ export default function Home() {
       });
       setVendorLikes(out);
     } catch {
-      /* non bloquant */
+      if (attempt < 1) setTimeout(() => loadVendorLikes(vendors, attempt + 1), 3000);
     }
   }, []);
 
