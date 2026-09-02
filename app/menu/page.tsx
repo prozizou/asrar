@@ -32,14 +32,19 @@ interface ModuleTile {
 const MODULES: ModuleTile[] = [
   { icon: '📜', label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar' },
   { icon: '🔢', label: 'Abajad', desc: 'Calculer le poids numérique des lettres arabes', href: '/abajad' },
-  { icon: '🌙', label: 'Tafsir al-Ahlam', desc: 'Interpréter un rêve par symbole ou récit libre', href: '/tafsir' },
+  // 🌙 Tafsir al-Ahlam — masqué temporairement à la demande de l'utilisateur
+  // (2026-09-02). Page /tafsir toujours en place, juste retirée du menu :
+  // décommenter la ligne pour la réafficher.
+  // { icon: '🌙', label: 'Tafsir al-Ahlam', desc: 'Interpréter un rêve par symbole ou récit libre', href: '/tafsir' },
   { icon: '🌍', label: 'Planète', desc: "Voir l'heure planétaire du moment", href: '/planete' },
   { icon: '✨', label: 'Combinaisons', desc: 'Associer les 99 Noms par calcul', href: '/combinaisons' },
   { icon: '🕌', label: "Noms d'Allah", desc: "Découvrir les 99 Noms d'Allah", href: '/benefits' },
   { icon: '🤲', label: 'Zikr collectif', desc: 'Réciter un dhikr ensemble vers un objectif commun', href: '/zikr' },
   { icon: '🌀', label: 'Rouwhanes', desc: 'Générer des noms d\'anges et un vœu', href: '/rouwhania' },
   { icon: '📚', label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque' },
-  { icon: '🎓', label: 'Formation mystique', desc: 'Ateliers en direct par visioconférence', href: '/formation' },
+  // 🎓 Formation mystique — masqué temporairement à la demande de
+  // l'utilisateur (2026-09-02). Page /formation toujours en place.
+  // { icon: '🎓', label: 'Formation mystique', desc: 'Ateliers en direct par visioconférence', href: '/formation' },
   { icon: '🎁', label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage' },
 ];
 
@@ -49,8 +54,10 @@ const MODULES: ModuleTile[] = [
 const MODULES_PREMIUM: ModuleTile[] = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
-  { icon: '🔯', label: 'Wafq', desc: 'Générer un talisman (carré magique) par intention', href: '/wafq' },
-  { icon: '🧿', label: 'Thalsams', desc: 'Générer une chaîne de lettres au poids exact recherché', href: '/thalsams' },
+  // 🔯 Wafq et 🧿 Thalsams — masqués temporairement à la demande de
+  // l'utilisateur (2026-09-02). Pages /wafq et /thalsams toujours en place.
+  // { icon: '🔯', label: 'Wafq', desc: 'Générer un talisman (carré magique) par intention', href: '/wafq' },
+  // { icon: '🧿', label: 'Thalsams', desc: 'Générer une chaîne de lettres au poids exact recherché', href: '/thalsams' },
 ];
 
 function MenuItem({ item }: { item: ModuleTile }) {
