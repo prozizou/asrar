@@ -1,7 +1,13 @@
 /* Module Planète — styles portés de planete/planete.html.
    Scopé sous .planete-page : le module surcharge .container/.glass-panel et
    ajoute des classes propres (horloge, heures planétaires…). Le scoping évite
-   toute fuite vers les autres pages de la SPA. */
+   toute fuite vers les autres pages de la SPA.
+
+   Refonte de hiérarchie (revue design, 10 points, voir page.tsx pour le
+   détail) : la page listait une dizaine d'informations à plat, toutes de
+   même poids visuel. Restructurée en tableau de bord → ligne secondaire →
+   grille compacte → timeline chronologique → interrupteur → régents
+   repliables. Les panneaux ci-dessous suivent cet ordre. */
 
 .planete-page .container { max-width: 700px; }
 .planete-page .glass-panel {
@@ -13,8 +19,17 @@
   backdrop-filter: none;
 }
 
-/* Horloge sacrée — marges resserrées (retour : trop d'espace vide entre
-   l'horloge, la phase et les infos ci-dessous). */
+/* ───── Tableau de bord (point 1) ───── */
+.planete-page .dash-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .planete-page .time-display {
   font-size: clamp(2.4rem, 12vw, 3.5rem);
   font-family: var(--font-display);
@@ -31,60 +46,171 @@
   margin-bottom: 10px;
   font-size: 1rem;
   font-style: italic;
+  /* Majuscule de tête déjà posée en amont (page.tsx, dateStr) — PAS via
+     text-transform: capitalize ici : ça capitaliserait aussi "septembre",
+     hors convention française (seul le premier mot d'une date l'est). */
 }
 
-/* Phase & planète actuelles */
-.planete-page .planet-card { text-align: center; padding: 4px 0; }
-.planete-page .planet-icon {
-  font-size: 3.2rem;
-  display: block;
-  margin-bottom: 4px;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15));
+/* Bloc « héros » : la planète de l'heure ACTIVE devient l'information
+   dominante de la page — avant, une ligne parmi d'autres au même niveau que
+   le lever du soleil. */
+.planete-page .dash-hero { text-align: center; padding-top: 6px; }
+.planete-page .dash-hero-planet {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
 }
-.planete-page .planet-name { font-size: 1.6rem; font-weight: 700; font-family: var(--font-display); }
-.planete-page .phase-badge {
-  display: inline-block;
-  padding: 6px 20px;
-  border-radius: 20px;
-  margin-top: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+.planete-page .dash-planet-symbol {
+  font-size: 2.4rem;
+  line-height: 1;
   color: var(--accent);
-  border: 1px solid var(--accent);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+.planete-page .dash-planet-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+.planete-page .dash-hero-interval { color: var(--text-dim); font-size: 0.95rem; margin-top: 2px; }
+
+.planete-page .dash-nature-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  border: 1px solid currentColor;
 }
 
-/* Étiquette au-dessus de la valeur (au lieu d'une ligne label:valeur côte à
-   côte) : avec un contenu long (« Jour planétaire » / « Dimanche — régent
-   Soleil ☀️ »), les deux se mettaient à retomber sur plusieurs lignes en même
-   temps et s'entremêlaient (retour : « textes pas bien ordonnés »). Empilées,
-   elles restent lisibles quelle que soit leur longueur. */
-.planete-page .info-row {
+/* Temps restant + barre de progression — la donnée que l'utilisateur vient
+   chercher en priorité (« jusqu'à quand dure l'heure actuelle ? »),
+   totalement absente de l'ancienne version. */
+.planete-page .dash-progress { margin: 14px auto 0; max-width: 280px; }
+.planete-page .dash-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.planete-page .dash-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+.planete-page .dash-progress-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* « Ensuite : … » — amélioration suggérée : donne un aperçu de la suite
+   sans calcul supplémentaire (lib/planete.js, nextHour()). */
+.planete-page .dash-next {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* ───── « Jour sacré » réduit à une ligne (point 2) ───── */
+.planete-page .phase-line {
+  text-align: center;
+  padding: 0.9rem 1.4rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.planete-page .phase-line-sep { margin: 0 8px; opacity: 0.5; }
+
+/* ───── Grille compacte d'infos générales (point 3) ─────
+   Remplace une longue colonne label/valeur empilée : même information,
+   environ moitié moins de hauteur. */
+.planete-page .info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+.planete-page .info-cell {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 9px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  font-size: 0.95rem;
 }
-.planete-page .info-row .label {
+.planete-page .info-cell-icon {
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+span.info-cell-icon { font-size: 1.3rem; line-height: 1; } /* symbole planétaire (texte), pas une icône lucide */
+.planete-page .info-cell-label {
   color: var(--text-dim);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.planete-page .info-cell-value {
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.92rem;
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
-.planete-page .info-row .value { color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.planete-page .info-cell-note { font-weight: 400; color: var(--text-dim); font-size: 0.8rem; }
 
 /* Semaine planétaire */
 .planete-page .planets-week h4 {
   color: var(--text-dim);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 400;
 }
+
+/* Carte « Aujourd'hui » toujours visible (point 9) : résumé suffisant à la
+   plupart des visites, sans dérouler les 7 jours. */
+.planete-page .week-today-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid var(--accent);
+  margin-bottom: 12px;
+}
+.planete-page .week-today-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+.planete-page .week-today-day { font-weight: 600; flex: 1 1 auto; }
+.planete-page .week-today-planet { color: var(--accent); font-weight: 700; }
+
+.planete-page .week-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px;
+  cursor: pointer;
+}
+
 .planete-page .day-row {
   display: flex;
   align-items: center;
@@ -92,6 +218,7 @@
   padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 6px;
+  margin-top: 10px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid transparent;
   transition: all 0.2s;
@@ -100,7 +227,10 @@
 .planete-page .day-name { font-weight: 500; }
 .planete-page .day-planet { color: var(--accent); font-weight: 600; }
 
-/* Bouton d'accès aux heures planétaires */
+/* Bouton d'accès aux heures planétaires — reste l'action PRINCIPALE de la
+   page (déclenche à la fois le contrôle d'accès et la révélation des 12
+   heures) : contrairement aux notifications (point 8, voir .push-toggle
+   plus bas), ce n'est pas une simple préférence à réduire. */
 .planete-page .access-btn {
   background: var(--accent);
   border: none;
@@ -110,15 +240,59 @@
   border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
-  margin: 20px 0;
-  display: block;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   text-align: center;
 }
 .planete-page .access-btn:hover { filter: brightness(1.1); }
 
-/* Heures planétaires : onglets Jour/Nuit + grille de cartes (remplace les
-   deux tableaux de 12 lignes empilés — vue jugée trop linéaire). */
+/* Interrupteur de notifications (point 8) — components/PlanetPushToggle.js.
+   Remplace un second .access-btn identique au premier : une préférence, pas
+   une action principale, ne doit pas rivaliser visuellement avec elle. */
+.planete-page .push-toggle-row { margin-top: 14px; }
+.planete-page .push-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: default;
+}
+.planete-page .push-toggle-label { font-size: 0.88rem; color: var(--text-main); }
+.planete-page .switch {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+.planete-page .switch.on { background: var(--accent); }
+.planete-page .switch:disabled { opacity: 0.5; cursor: default; }
+.planete-page .switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+.planete-page .switch.on .switch-knob { transform: translateX(18px); }
+
+/* Heures planétaires : onglets Jour/Nuit (point 7 — déjà un vrai filtre :
+   un seul des deux tableaux de 12 est rendu à la fois, voir page.tsx) +
+   timeline chronologique ci-dessous. */
+.planete-page .hours-day-label { text-align: center; color: var(--accent); margin: 6px 0; }
 .planete-page .hours-tabs { display: flex; gap: 8px; justify-content: center; margin: 14px 0 4px; }
 .planete-page .hours-tab {
   background: var(--surface);
@@ -129,65 +303,100 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .planete-page .hours-tab.active { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
 
-/* Enveloppe positionnée : sert de repère pour le SVG de cheminement, dessiné
-   par-dessus la grille (position absolute, inset 0) sans bloquer les clics. */
-.planete-page .hours-grid-wrap { position: relative; margin-top: 14px; }
-.planete-page .hours-path {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
+/* ───── Timeline chronologique (points 4/5/6) ─────
+   REMPLACE l'ancienne grille 2×6 en boustrophédon + tracé SVG pointillé
+   reliant les cartes (ajoutée pour un souci similaire lors d'une revue
+   précédente — « on se perd dans l'ordre » — mais qui donnait à son tour
+   une impression de diagramme de dépendances). Une simple ligne verticale
+   continue suffit : les heures sont successives, pas un réseau de
+   dépendances. */
+.planete-page .hour-timeline {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  text-align: left;
 }
-/* 2 colonnes FIXES (pas de repeat(auto-fill, ...) responsive) : le
-   boustrophédon (page.js, HOURS_GRID_COLS) a besoin d'un nombre de colonnes
-   connu à l'avance pour inverser une ligne sur deux — un nombre de colonnes
-   qui varierait selon la largeur d'écran casserait le zigzag. */
-.planete-page .hours-grid {
+.planete-page .timeline-item {
   position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  padding-left: 30px;
+  padding-bottom: 20px;
 }
-.planete-page .hour-card {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px;
-  text-align: center;
-}
-/* Numéro d'ordre chronologique — repère fiable qui ne dépend d'aucune mesure
-   du DOM (contrairement au tracé SVG), pour toujours savoir où on en est. */
-.planete-page .hour-card-order {
+.planete-page .timeline-item:last-child { padding-bottom: 0; }
+.planete-page .timeline-marker {
   position: absolute;
-  top: -8px;
-  left: -8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--text-on-accent);
-  font-size: 0.68rem;
-  font-weight: 700;
+  left: 0;
+  top: 3px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
-.planete-page .hour-card-planet { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
-.planete-page .hour-card-interval { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
-.planete-page .hour-card-nature { font-size: 0.75rem; margin-top: 4px; font-weight: 600; }
-.planete-page .hour-card.now-hour { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); }
+/* Ligne reliant CE point au SUIVANT (pas de ligne après le dernier). */
+.planete-page .timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  bottom: -20px;
+  width: 2px;
+  background: var(--border);
+}
+.planete-page .timeline-item.is-now:not(:last-child)::after { background: var(--accent); }
+.planete-page .timeline-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+/* Heures déjà passées : atténuées — l'attention va au présent et au futur
+   proche, pas à ce qui est révolu. */
+.planete-page .timeline-item.is-past { opacity: 0.5; }
+.planete-page .timeline-item.is-past .timeline-dot { background: var(--text-faint); }
+/* Heure ACTUELLE : fortement mise en évidence (point 6). */
+.planete-page .timeline-item.is-now .timeline-dot {
+  width: 15px;
+  height: 15px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.planete-page .timeline-item.is-now .timeline-marker { left: -3px; top: 0; }
+
+.planete-page .timeline-content { min-width: 0; }
+.planete-page .timeline-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.planete-page .timeline-order {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.planete-page .timeline-item.is-now .timeline-order { background: var(--accent); color: var(--text-on-accent); }
+.planete-page .timeline-planet { font-weight: 700; color: var(--text-main); font-size: 0.92rem; }
+.planete-page .timeline-interval { margin-left: auto; font-size: 0.8rem; color: var(--text-dim); }
+.planete-page .timeline-nature { font-size: 0.8rem; font-weight: 600; margin-top: 3px; padding-left: 28px; }
+.planete-page .timeline-progress { margin: 8px 0 0 28px; max-width: 260px; }
 
 .planete-page .loading-text { color: var(--text-dim); text-align: center; padding: 20px; }
 .planete-page .error-text { color: #d9534f; text-align: center; }
-.planete-page .nat-tfav { color: #38d66b; font-weight: 700; }
+.planete-page .nat-tfav { color: #38d66b; }
 .planete-page .nat-fav { color: #8fd694; }
 .planete-page .nat-def { color: #d9534f; }
 .planete-page .nat-mix { color: var(--accent); }
