@@ -91,6 +91,10 @@ html[data-theme='light'] .rw-page {
   transition: box-shadow 0.3s;
 }
 .rw-page #editor:focus { box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.5); }
+/* Espace réservé si jamais le champ redevient vide (l'utilisateur efface
+   l'exemple pré-rempli) — sans ça, un champ vide se referme à sa hauteur
+   minimale sans aucun repère visuel indiquant qu'il reste modifiable. */
+.rw-page #editor:empty::before { content: attr(data-placeholder); color: var(--text-secondary); }
 
 .rw-page .button-row { display: flex; gap: 5px; }
 .rw-page .primary-btn,
@@ -116,33 +120,41 @@ html[data-theme='light'] .rw-page {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
 }
 
-.rw-page .result-box { min-height: 100px; padding: 15px; position: relative; border-radius: 15px; }
+.rw-page .result-box { min-height: 100px; padding: 15px; border-radius: 15px; }
+/* Titre + badge de poids en tête, dans le flux normal (revue design, point
+   4 : ces deux nombres n'avaient aucun titre, l'utilisateur devait deviner
+   ce qu'ils représentaient) — l'ancien badge en position absolute existait
+   pour se superposer au texte ; devenu inutile une fois qu'un vrai en-tête
+   lui réserve sa propre ligne. */
+.rw-page .rw-result-box-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.rw-page .rw-result-box-title { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); }
 .rw-page .scroll-text {
   text-align: right;
   font-size: 18px;
-  padding-top: 25px;
   word-wrap: break-word;
   line-height: 1.5;
   color: var(--text-primary);
 }
 .rw-page .total-indicator {
-  position: absolute;
-  top: 10px;
-  left: 15px;
+  flex-shrink: 0;
   font-weight: bold;
   background: var(--glass-bg);
   backdrop-filter: blur(8px);
   padding: 4px 10px;
   border-radius: 8px;
-  z-index: 2;
   direction: ltr;
   unicode-bidi: isolate;
   border: 1px solid var(--glass-border);
 }
 
 .rw-page .stats-footer { text-align: center; font-size: 14px; padding: 15px; border-radius: 15px; }
-.rw-page .stat-line { margin: 6px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.rw-page .stat-line span {
+.rw-page .stat-line { margin: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rw-page .stat-line:first-child { margin-top: 0; }
+/* Titre de chaque ligne de formule (revue design, point 5 : « leur raison
+   d'être n'est pas expliquée ») — quelle méthode (V1/V2/V3) produit ces deux
+   opérations. */
+.rw-page .stat-line-title { font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 2px; }
+.rw-page .stat-line span:not(.stat-line-title) {
   font-family: 'Courier New', monospace;
   direction: ltr;
   background: var(--stat-bg);
@@ -150,31 +162,71 @@ html[data-theme='light'] .rw-page {
   border-radius: 5px;
   color: var(--text-primary);
 }
-.rw-page .total-final {
-  font-size: 24px;
-  font-weight: bold;
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--text-secondary);
+
+/* Résultat principal (revue design, points 5, 6) : le total sort de la carte
+   de calcul, devient le premier résultat visible avec sa propre explication
+   — au lieu d'un "المجموع: 1 859" en toute fin de carte, après plusieurs
+   nombres déjà non expliqués. */
+.rw-page .rw-result-hero {
+  text-align: center;
+  padding: 22px 18px;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
+.rw-page .rw-result-hero-label { display: block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; }
+.rw-page .rw-result-hero-value { display: block; font-size: 2.4rem; font-weight: 800; color: var(--btn-primary); font-variant-numeric: tabular-nums; }
+.rw-page .rw-result-hero-note { margin: 8px auto 0; max-width: 380px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+
+/* Détail du calcul, replié par défaut (revue design, point 5) — même
+   principe que .wafq-expander (app/benefits/benefits.css) : <details> natif,
+   chevron CSS plutôt qu'une bibliothèque d'icônes que ce module ne charge
+   pas ailleurs. */
+.rw-page .rw-calc-details {
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.rw-page .rw-calc-details summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px; cursor: pointer; list-style: none; font-weight: 700; color: var(--text-primary);
+}
+.rw-page .rw-calc-details summary::-webkit-details-marker { display: none; }
+.rw-page .rw-calc-toggle-hint { font-size: 0.78rem; font-weight: 600; color: var(--btn-primary); }
+.rw-page .rw-calc-toggle-hint::after { content: ' ⌄'; display: inline-block; transition: transform 0.2s ease; }
+.rw-page .rw-calc-details[open] .rw-calc-toggle-hint::after { transform: rotate(180deg); }
+.rw-page .rw-calc-details-body { display: flex; flex-direction: column; gap: 14px; padding: 0 16px 16px; }
 
 .rw-page .angel-names-container { padding: 20px 15px; margin-top: 10px; border-radius: 16px; }
 .rw-page .angel-names-container h3 { text-align: center; margin-bottom: 15px; font-size: 18px; color: var(--text-primary); }
+/* Chaque rouwhane en 2 lignes — nom arabe, puis translittération · nombre —
+   plutôt qu'un pseudo-tableau à 3 colonnes (revue design, point 7) : sur
+   petit écran, une translittération longue (ex. "Zay-Ha-Cha-Ja-Ya-Ha-ilou")
+   passait sur 2 lignes dans une colonne à 35% de large. */
 .rw-page .angel-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  gap: 4px;
   border-bottom: 1px solid var(--border-color);
   padding: 12px 0;
-  gap: 10px;
   border-radius: 8px;
   transition: background 0.15s ease;
 }
 .rw-page .angel-row:last-child { border-bottom: none; }
 .rw-page .angel-row:hover { background: var(--stat-bg); }
-.rw-page .angel-number { font-weight: bold; font-size: 15px; flex: 0 0 25%; text-align: left; color: var(--text-secondary); }
-.rw-page .angel-arabic { font-size: 22px; color: var(--text-primary); flex: 1; text-align: center; font-weight: bold; }
-.rw-page .angel-transcript { font-size: 14px; color: var(--text-secondary); flex: 0 0 35%; text-align: right; word-break: break-word; }
+.rw-page .angel-arabic { font-size: 22px; color: var(--text-primary); font-weight: bold; }
+.rw-page .angel-meta { display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: var(--text-secondary); }
+.rw-page .angel-sep { opacity: 0.6; }
+.rw-page .angel-number { font-weight: 700; }
+.rw-page .angel-transcript { word-break: break-word; }
 
 /* Groupes de noms d'Allah par lettre : une lettre du nom-racine, tous les
    noms qui lui correspondent (plus de sélection automatique d'un seul
@@ -188,7 +240,7 @@ html[data-theme='light'] .rw-page {
    dépasser la largeur de son parent. */
 .rw-page .allah-letters-list { display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 0; }
 .rw-page .allah-letter-group { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; min-width: 0; }
-.rw-page .allah-names-list { display: flex; flex-direction: column; gap: 14px; width: 100%; min-width: 0; }
+.rw-page .allah-names-list { display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
 .rw-page .allah-card-letter {
   font-size: 16px;
   color: var(--text-secondary);
@@ -203,27 +255,34 @@ html[data-theme='light'] .rw-page {
   align-items: center;
   flex-shrink: 0;
 }
-/* Carte d'un nom d'Allah — width:100% (jamais une largeur fixe en px) et
-   box-sizing:border-box : occupe toute la largeur disponible SANS jamais la
-   dépasser, quel que soit l'écran. */
+/* Carte d'un nom d'Allah, en accordéon <details> replié par défaut (revue
+   design, point 8 : deux cartes dépliées d'origine pouvaient déjà occuper
+   plusieurs écrans — nom/sens/traduction/secret sur plusieurs paragraphes
+   chacune). width:100% (jamais une largeur fixe en px) et box-sizing:
+   border-box : occupe toute la largeur disponible SANS jamais la dépasser. */
 .rw-page .allah-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   background: var(--card-bg);
-  padding: 20px 15px;
   border-radius: 12px;
   border: 1px solid var(--card-border);
-  box-shadow: var(--glass-shadow);
+  overflow: hidden;
 }
-.rw-page .allah-card-head { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 15px; }
-.rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 28px; word-break: break-word; }
-.rw-page .allah-card-body { width: 100%; box-sizing: border-box; border-top: 1px dashed var(--card-border); padding-top: 15px; }
-.rw-page .allah-card-translit { text-align: left; color: var(--text-secondary); margin-bottom: 15px; font-weight: bold; }
+.rw-page .allah-card-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 15px; cursor: pointer; list-style: none;
+}
+.rw-page .allah-card-summary::-webkit-details-marker { display: none; }
+.rw-page .allah-card-summary-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 22px; word-break: break-word; }
+.rw-page .allah-card-translit { color: var(--text-secondary); font-size: 0.82rem; font-weight: 600; }
+.rw-page .allah-card-toggle-hint { flex-shrink: 0; font-size: 0.78rem; font-weight: 600; color: var(--btn-primary); white-space: nowrap; }
+.rw-page .allah-card-toggle-hint::after { content: ' ⌄'; display: inline-block; transition: transform 0.2s ease; }
+.rw-page .allah-card[open] .allah-card-toggle-hint::after { transform: rotate(180deg); }
+.rw-page .allah-card-body { width: 100%; box-sizing: border-box; border-top: 1px dashed var(--card-border); padding: 15px; }
 .rw-page .allah-card-section-title { text-align: center; font-weight: bold; margin-bottom: 8px; border-radius: 8px; padding: 6px; }
+.rw-page .allah-card-section-title:not(:first-child) { margin-top: 15px; }
 .rw-page .allah-card-section-title.sens { color: var(--card-text); background: var(--card-accent); }
 .rw-page .allah-card-section-title.secret { color: var(--card-green-text); background: var(--card-green-bg); }
 .rw-page .allah-card-empty {
@@ -241,6 +300,24 @@ html[data-theme='light'] .rw-page {
 .rw-page .allah-card-empty span:first-child { font-size: 18px; }
 .rw-page .mixed-rtl { text-align: right; line-height: 1.6; margin-bottom: 8px; }
 .rw-page .mixed-ltr { text-align: left; line-height: 1.6; margin-bottom: 8px; }
+
+/* Conteneur de la section « Noms d'Allah » : plus léger que le conteneur
+   verre standard (revue design, point 9 — « trop de cadres imbriqués ») :
+   chaque carte porte déjà sa propre bordure, un second cadre englobant
+   n'ajoutait qu'un niveau de plus sans le distinguer visuellement du reste.
+   Le titre reprend le violet déjà utilisé partout ailleurs (point 10 —
+   l'orange du titre d'origine, seul de son genre dans toute la page,
+   supprimé du JSX plutôt que réécrit ici). */
+.rw-page .rw-allah-container {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 20px 0 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--glass-border);
+}
 
 /* Suggestions de versets */
 .rw-page .verses-suggestions {
@@ -264,12 +341,52 @@ html[data-theme='light'] .rw-page {
 .rw-page .verses-suggestions li { padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 16px; }
 .rw-page .verses-suggestions li:hover { background: rgba(255, 255, 255, 0.2); }
 
-/* Visuel d'attente (colonne droite avant calcul) — masqué sur mobile */
+/* Visuel d'attente (colonne droite avant calcul) — masqué sur mobile : sur
+   petit écran, le contexte vient du .rw-form-card lui-même (titre +
+   instructions), toujours visible — pas besoin de le répéter ici. */
 .rw-page .rw-hint { display: none; }
 
 /* Colonnes : neutres sur mobile (display:contents) */
 .rw-page .rw-left,
 .rw-page .rw-right { display: contents; }
+
+/* Formulaire (titre + instructions + champ labellisé + bouton) — TOUJOURS
+   la même boîte, à toutes les tailles d'écran, qu'un calcul existe ou non
+   (revue design, point 3 : "le formulaire devrait conserver exactement la
+   même largeur avant et après le calcul"). Portée ici depuis .rw-left, qui
+   ne devient une vraie boîte positionnée qu'en version desktop ci-dessous —
+   .rw-form-card, lui, ne dépend d'aucun état ni d'aucune media query pour
+   sa largeur ou son padding. */
+.rw-page .rw-form-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rw-page .rw-title { font-size: 1.3rem; margin: 0; color: var(--text-primary); }
+.rw-page .rw-intro { margin: 0 0 4px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+.rw-page .rw-field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); }
+.rw-page .rw-field-hint { margin: -4px 0 0; font-size: 0.76rem; color: var(--text-secondary); }
+
+/* Navigation d'ancres une fois les résultats affichés (revue design, point
+   12) — la page devient longue après calcul. */
+.rw-page .rw-anchor-nav {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 4px;
+}
+.rw-page .rw-anchor-nav a {
+  font-size: 0.8rem; font-weight: 600; color: var(--text-primary); text-decoration: none;
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 6px 14px;
+}
+.rw-page .rw-anchor-nav a:hover { border-color: var(--btn-primary); color: var(--btn-primary); }
 
 @media (max-width: 480px) {
   .rw-page .main-container { gap: 12px; }
@@ -277,9 +394,8 @@ html[data-theme='light'] .rw-page {
   .rw-page .angel-transcript { font-size: 12px; }
   .rw-page .angel-number { font-size: 13px; }
   .rw-page .scroll-text { font-size: 16px; }
-  .rw-page .angel-row { gap: 5px; }
-  .rw-page .allah-card { padding: 16px 12px; }
-  .rw-page .allah-card-name { font-size: 22px; }
+  .rw-page .allah-card-summary { padding: 12px; }
+  .rw-page .allah-card-body { padding: 12px; }
 }
 
 /* Version desktop (≥1024px) : deux colonnes */
@@ -291,19 +407,14 @@ html[data-theme='light'] .rw-page {
     align-items: start;
     gap: 28px;
   }
+  /* Positionnement seulement : le rendu visuel (fond/bordure/padding) vit
+     désormais sur .rw-form-card lui-même, identique aux deux tailles. */
   .rw-page .rw-left {
     display: flex;
     flex-direction: column;
     gap: 15px;
     position: sticky;
     top: 40px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    box-shadow: var(--glass-shadow);
-    padding: 24px;
   }
   .rw-page .rw-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
   .rw-page .angel-names-list { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 32px; }
