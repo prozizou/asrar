@@ -23,6 +23,10 @@
 import './zikr.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import {
+  Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
+  ShieldCheck, Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
+} from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
@@ -106,6 +110,11 @@ interface GroupDetailData extends Group {
 }
 
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
+// Pourcentage lisible sur les cartes (revue design, point 6) : un entier une
+// fois la barre visiblement remplie ("52 %"), une décimale en dessous de 1 %
+// (sinon "0 %" laisserait croire qu'aucun grain n'a encore été récité alors
+// que la progression réelle — ex. 1 096/165 000 — reste non nulle).
+const fmtPct = (pct: number) => (pct > 0 && pct < 1 ? pct.toFixed(1) : Math.floor(pct)).toString().replace('.', ',') + ' %';
 // Conversion <input type="datetime-local"> (heure LOCALE du navigateur, sans
 // fuseau) ↔ epoch ms : le rappel de session (lib/reminders.js) repose sur un
 // instant absolu, pas sur l'heure affichée telle quelle — d'où la conversion
@@ -196,21 +205,23 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
   }, [load]);
 
   return (
-    <div className="glass-panel">
+    <div className="zk-list-page">
+      {/* En-tête resserré (revue design, point 1) : un titre + une ligne de
+          sens, plus le grand emoji ni le paragraphe qui repoussaient l'action
+          principale et les zikrs existants hors du premier écran. */}
       <div className="zk-hero">
-        <div style={{ fontSize: '2.6rem' }}>🤲</div>
         <h1>Zikr collectif</h1>
-        <p>
-          Réciter un dhikr ensemble vers un objectif commun et partagé — pas de
-          part fixée à l’avance : ce qu’il reste à faire diminue pour tout le
-          monde au fil des récitations du groupe. Créez le vôtre ou rejoignez-en un.
-        </p>
+        <p>Récitez ensemble pour atteindre un objectif commun.</p>
       </div>
 
       <WirdReminderToggle />
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
-        {creating ? '✕ Annuler' : '➕ Lancer un zikr collectif'}
+        {creating ? (
+          <><X size={16} strokeWidth={2.5} aria-hidden="true" /> Annuler</>
+        ) : (
+          <><Plus size={16} strokeWidth={2.5} aria-hidden="true" /> Créer un zikr collectif</>
+        )}
       </button>
 
       {creating && (
@@ -224,39 +235,60 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
       ) : groups.length === 0 ? (
         <p className="zk-empty">Aucun zikr collectif pour l’instant. Soyez le premier à en créer un 🌙</p>
       ) : (
-        <div className="zk-list">
-          {groups.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
-        </div>
+        <>
+          {/* Titre de section (revue design, point 4) — sépare clairement la
+              création des zikrs déjà en cours, au lieu d'un enchaînement direct
+              sans repère. */}
+          <h2 className="zk-section-title">Zikrs en cours <span className="zk-pill">{groups.length}</span></h2>
+          <div className="zk-list">
+            {groups.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
+          </div>
+        </>
       )}
     </div>
   );
 }
 
+// Revue design (points 5, 6, 7) : le badge de statut ("👑 Créateur", "✓
+// Membre"…) décrivait un ÉTAT mais ne disait pas à l'utilisateur quoi faire
+// ensuite — remplacé par un verbe d'action clair (Continuer/Participer),
+// distinct visuellement des états non actionnables (En attente/Complet). Le
+// badge "Créateur", trop voyant, devient une mention discrète à côté du nom.
+const CTA_BY_STATUS: Record<GroupStatus, { label: string; active: boolean }> = {
+  owner: { label: 'Continuer', active: true },
+  member: { label: 'Continuer', active: true },
+  pending: { label: 'En attente', active: false },
+  none: { label: 'Participer', active: true },
+};
+
 function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   const pct = progressPct(g.total, g.target);
   const full = g.remaining <= 0 && g.status === 'none';
-  const statusLabel = ({
-    owner: '👑 Créateur',
-    member: '✓ Membre',
-    pending: '⏳ En attente',
-    none: full ? 'Complet' : 'Voir',
-  } as Record<GroupStatus, string>)[g.status] || 'Voir';
+  const cta = full ? { label: 'Complet', active: false } : CTA_BY_STATUS[g.status];
 
   return (
     <button className="zk-card" onClick={onOpen}>
       <div className="zk-card-top">
         <span className="zk-card-name">
-          {g.private && <span title="Zikr privé">🔒 </span>}
-          {g.approved === false && <span title="En attente de validation par l'administrateur">⏳ </span>}
+          {g.private && <Lock size={13} strokeWidth={2.5} aria-label="Zikr privé" />}
+          {g.approved === false && <Clock size={13} strokeWidth={2.5} aria-label="En attente de validation par l'administrateur" />}
           {g.name}
         </span>
-        <span className={'zk-badge zk-badge-' + (full ? 'full' : g.status)}>{statusLabel}</span>
+        {g.status === 'owner' && (
+          <span className="zk-owner-tag"><Crown size={11} strokeWidth={2.5} aria-hidden="true" /> Créé par vous</span>
+        )}
       </div>
       <div className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</div>
       <div className="zk-bar"><span style={{ width: pct + '%' }} /></div>
-      <div className="zk-card-meta">
+      <div className="zk-card-progress-row">
         <span>{fmt(g.total)} / {fmt(g.target)}</span>
-        <span>👥 {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
+        <span className="zk-card-pct">{fmtPct(pct)}</span>
+      </div>
+      <div className="zk-card-meta">
+        <span className="zk-card-members"><Users size={13} strokeWidth={2.5} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
+        <span className={'zk-cta' + (cta.active ? ' zk-cta-active' : ' zk-cta-muted')}>
+          {cta.label} {cta.active && <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />}
+        </span>
       </div>
     </button>
   );
@@ -637,17 +669,19 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           {g.status === 'owner' && (
             <button type="button" className="zk-share-btn" onClick={() => setEditing((v) => !v)}
               title="Modifier ce zikr collectif" aria-label="Modifier ce zikr collectif">
-              ✏️ {editing ? 'Fermer' : 'Modifier'}
+              <Pencil size={14} strokeWidth={2.5} aria-hidden="true" /> {editing ? 'Fermer' : 'Modifier'}
             </button>
           )}
           {isMember && (
             <button type="button" className="zk-share-btn" onClick={() => setShowChat((v) => !v)}
               title="Discussion du groupe" aria-label="Discussion du groupe">
-              💬 {showChat ? 'Fermer' : 'Discussion'}
+              <MessageCircle size={14} strokeWidth={2.5} aria-hidden="true" /> {showChat ? 'Fermer' : 'Discussion'}
             </button>
           )}
           <button type="button" className="zk-share-btn" onClick={doShare}
-            title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">📤 Partager</button>
+            title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
+            <Share2 size={14} strokeWidth={2.5} aria-hidden="true" /> Partager
+          </button>
         </span>
       </div>
 
@@ -661,16 +695,18 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         </div>
         {!!g.sessionAt && (
           <div className="zk-private-note">
-            🔔 Prochaine session : {fmtSessionAt(g.sessionAt)}
+            <Bell size={13} strokeWidth={2.5} aria-hidden="true" /> Prochaine session : {fmtSessionAt(g.sessionAt)}
             {isMember && ' — un rappel push sera envoyé aux membres approuvés ayant activé les notifications.'}
           </div>
         )}
         {g.private && (
-          <div className="zk-private-note">🔒 Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.</div>
+          <div className="zk-private-note">
+            <Lock size={13} strokeWidth={2.5} aria-hidden="true" /> Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.
+          </div>
         )}
         {g.approved === false && (
           <div className="zk-private-note">
-            ⏳ En attente de validation par l’administrateur avant d’apparaître dans la liste publique.
+            <Clock size={13} strokeWidth={2.5} aria-hidden="true" /> En attente de validation par l’administrateur avant d’apparaître dans la liste publique.
             {isMember && ' Vous pouvez déjà inviter des participants via le lien de partage.'}
           </div>
         )}
@@ -691,11 +727,15 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           collectif — voir handleApproveZikr/handleDelete, pages/api/zikr.js. */}
       {g.isAdmin && (
         <div className="zk-admin-panel">
-          <span className="zk-admin-badge">🛡️ Administration</span>
+          <span className="zk-admin-badge"><ShieldCheck size={13} strokeWidth={2.5} aria-hidden="true" /> Administration</span>
           {g.approved === false && (
-            <button type="button" className="zk-mini ok" onClick={doApproveZikr}>✅ Approuver</button>
+            <button type="button" className="zk-mini ok" onClick={doApproveZikr}>
+              <Check size={13} strokeWidth={2.5} aria-hidden="true" /> Approuver
+            </button>
           )}
-          <button type="button" className="zk-mini no" onClick={doDelete}>🗑️ Supprimer</button>
+          <button type="button" className="zk-mini no" onClick={doDelete}>
+            <Trash2 size={13} strokeWidth={2.5} aria-hidden="true" /> Supprimer
+          </button>
         </div>
       )}
 
@@ -710,11 +750,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         <>
           <StaticProgress total={g.total} target={g.target} />
           {g.status === 'pending' ? (
-            <div className="zk-join-state">⏳ Votre demande est en attente de validation par le créateur.</div>
+            <div className="zk-join-state"><Clock size={14} strokeWidth={2.5} aria-hidden="true" /> Votre demande est en attente de validation par le créateur.</div>
           ) : g.full ? (
             <div className="zk-join-state">Ce zikr collectif est complet — objectif entièrement récité.</div>
           ) : (
-            <button className="zk-btn main" onClick={doJoin}>🤝 Demander à rejoindre</button>
+            <button className="zk-btn main" onClick={doJoin}>
+              <Handshake size={16} strokeWidth={2.5} aria-hidden="true" /> Demander à rejoindre
+            </button>
           )}
         </>
       )}
@@ -765,15 +807,19 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                   <span className="zk-board-count">{fmt(m.fait)} grains</span>
                   {m.rythme > 0 && (
                     <span className={'zk-pace' + (suspect ? ' suspect' : '')} title="Rythme instantané">
-                      {suspect ? '⚠️' : '⚡'} {m.rythme}/min
+                      {suspect ? <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> : <Zap size={11} strokeWidth={2.5} aria-hidden="true" />} {m.rythme}/min
                     </span>
                   )}
                   {g.status === 'owner' && m.uid !== uid && (
                     <span className="zk-mod-actions">
                       <button type="button" className="zk-mini warn" title="Avertir en privé"
-                        aria-label={`Avertir ${m.email} en privé`} onClick={() => doWarn(m.uid, m.email)}>⚠️</button>
+                        aria-label={`Avertir ${m.email} en privé`} onClick={() => doWarn(m.uid, m.email)}>
+                        <AlertTriangle size={13} strokeWidth={2.5} aria-hidden="true" />
+                      </button>
                       <button type="button" className="zk-mini no" title="Exclure"
-                        aria-label={`Exclure ${m.email}`} onClick={() => doExclude(m.uid, m.email)}>✕</button>
+                        aria-label={`Exclure ${m.email}`} onClick={() => doExclude(m.uid, m.email)}>
+                        <X size={13} strokeWidth={2.5} aria-hidden="true" />
+                      </button>
                     </span>
                   )}
                 </div>
@@ -787,7 +833,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           handleSendMessage/handleMessages, pages/api/zikr.js). */}
       {isMember && showChat && (
         <div className="zk-chat-panel">
-          <h3>💬 Discussion</h3>
+          <h3><MessageCircle size={15} strokeWidth={2.5} aria-hidden="true" /> Discussion</h3>
           <div className="zk-chat-list" ref={chatListRef}>
             {messages.length === 0 ? (
               <p className="zk-muted">Aucun message pour l’instant — lancez la discussion !</p>
@@ -795,7 +841,8 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
               messages.map((m) => (
                 <div key={m.id} className={'zk-chat-msg' + (m.uid === uid ? ' me' : '')}>
                   <span className="zk-chat-author">
-                    {m.email || 'Membre'}{m.uid === g.ownerUid && ' 👑'}
+                    {m.email || 'Membre'}
+                    {m.uid === g.ownerUid && <Crown size={10} strokeWidth={2.5} aria-label="Créateur" />}
                   </span>
                   <p className="zk-chat-text">{m.text}</p>
                 </div>
@@ -807,7 +854,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
               placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
             <button type="button" className="zk-chat-send" onClick={doSendMessage}
-              disabled={chatBusy || !chatText.trim()} aria-label="Envoyer">➤</button>
+              disabled={chatBusy || !chatText.trim()} aria-label="Envoyer">
+              <Send size={16} strokeWidth={2.5} aria-hidden="true" />
+            </button>
           </div>
         </div>
       )}
@@ -879,7 +928,7 @@ function StaticProgress({ total, target }: { total: number; target: number }) {
     <div className="zk-progress-block">
       <div className="zk-bar big"><span style={{ width: pct + '%' }} className={reached ? 'done' : ''} /></div>
       <div className="zk-progress-meta">
-        <strong>{fmt(total)}</strong> / {fmt(target)} ({Math.floor(pct)}%)
+        <strong>{fmt(total)}</strong> / {fmt(target)} ({fmtPct(pct)})
       </div>
     </div>
   );
@@ -989,7 +1038,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
           concernée, jamais des autres participants. */}
       {g.myWarning && (
         <div className="zk-warning">
-          <p>⚠️ {g.myWarning}</p>
+          <p><AlertTriangle size={14} strokeWidth={2.5} aria-hidden="true" /> {g.myWarning}</p>
           <button type="button" className="zk-link" onClick={onDismissWarning}>C’est noté</button>
         </div>
       )}
@@ -999,7 +1048,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
         <div className="zk-bar big">
           <span style={{ width: groupPct + '%' }} className={target > 0 && groupTotal >= target ? 'done' : ''} />
         </div>
-        <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({Math.floor(groupPct)}%)</div>
+        <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({fmtPct(groupPct)})</div>
 
         <div className="zk-progress-meta" style={{ marginTop: 10 }}><span>Mes grains récités</span></div>
         <strong className="zk-my-fait">{fmt(myFait)}</strong>
