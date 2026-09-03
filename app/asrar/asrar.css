@@ -495,26 +495,6 @@ body {
   margin: 16px 0;
 }
 
-/* Encart sécurité (revue design : reformulation d'une affirmation médicale
-   trop forte) — générique, affiché sur TOUTE fiche sans exception (voir
-   SecretDetail.js) plutôt que de réécrire le contenu de chaque fiche en
-   base, hors périmètre d'une passe d'affichage. Teinte or discrète, pas une
-   alerte rouge alarmante — cohérent avec l'identité du module. */
-.safety-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: color-mix(in srgb, var(--asrar-gold) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--asrar-gold) 30%, transparent);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 16px;
-  color: var(--asrar-text-soft);
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-.safety-notice svg { flex-shrink: 0; margin-top: 2px; color: var(--asrar-gold); }
-
 .mix { margin-top: 8px; }
 
 .seg-fr {
