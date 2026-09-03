@@ -13,7 +13,7 @@
 import './asrar.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Unlock, Flame, Sparkles, Shield, DoorOpen, ScrollText, Search } from 'lucide-react';
+import { Unlock, Flame, Sparkles, Shield, DoorOpen, ScrollText, Search, Bookmark } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
@@ -78,6 +78,30 @@ export default function AsrarPage() {
   const [currentSecret, setCurrentSecret] = useState<CurrentSecret | null>(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const bootRef = useRef(false);
+
+  // Repère favori sur les cartes (revue design, point 5 : « aucun indicateur
+  // permettant de distinguer rapidement les contenus... favori » — la seule
+  // donnée de ce type déjà disponible SANS appel réseau supplémentaire : le
+  // favori est stocké en local par SecretDetail.js (bmKey), simplement relu
+  // ici. Popularité/type de contenu écartés : /api/list-content ne sert pas
+  // ces champs pour ce nœud (voir le commentaire sur .secret-cat-chip,
+  // asrar.css) et les ajouter demanderait un appel par fiche ou un
+  // changement serveur, hors périmètre d'une passe d'affichage.
+  // Recalculé au changement de catégorie/liste ET au retour depuis la fiche
+  // détail (currentSecret redevient null) — un favori qui vient d'être
+  // ajouté/retiré s'y reflète sans recharger la page.
+  const [bookmarkedKeys, setBookmarkedKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const s = new Set<string>();
+      for (const item of list) {
+        if (localStorage.getItem(`bookmark_${currentCat.id}_${item.key}`)) s.add(item.key);
+      }
+      setBookmarkedKeys(s);
+    } catch {
+      setBookmarkedKeys(new Set());
+    }
+  }, [list, currentCat.id, currentSecret]);
 
   const loadSecrets = useCallback(async (catId: string) => {
     if (cacheRef.current[catId]) {
@@ -233,7 +257,7 @@ export default function AsrarPage() {
                       ? '…'
                       : search.trim()
                       ? `${filteredList.length} résultat${filteredList.length > 1 ? 's' : ''} pour « ${search.trim()} »`
-                      : `${list.length} contenu${list.length > 1 ? 's' : ''} disponible${list.length > 1 ? 's' : ''}`}
+                      : `${list.length} contenu${list.length > 1 ? 's' : ''}`}
                   </span>
                 </div>
                 {!loadingList && list.length > 0 && (
@@ -285,6 +309,11 @@ export default function AsrarPage() {
                           />
                         ) : (
                           <ScrollText size={26} strokeWidth={1.6} aria-hidden="true" />
+                        )}
+                        {bookmarkedKeys.has(item.key) && (
+                          <span className="secret-bookmark-badge" title="Dans vos favoris">
+                            <Bookmark size={13} strokeWidth={2} fill="currentColor" aria-hidden="true" />
+                          </span>
                         )}
                       </div>
                       <div className="secret-body">

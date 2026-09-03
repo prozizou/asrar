@@ -24,6 +24,15 @@
 
     --asrar-gold:      var(--accent);
     --asrar-cream:     var(--accent);
+
+    /* Fond étoilé assourdi sur ce module (revue design, point 10 : « le fond
+       est visuellement chargé » combiné aux images manuscrites et aux
+       dégradés des cartes). --star-opacity pilote .cosmic-stars
+       (components/CosmicBackground.js, monté globalement dans
+       app/layout.js — voir globals.css) : cette redéfinition n'a d'effet
+       QUE pendant que asrar.css est chargée (donc uniquement sur ce
+       module), sans toucher le fond des autres pages. */
+    --star-opacity: 0.32;
 }
 
 /* ───── Style ───── */
@@ -192,48 +201,65 @@ body {
 /* En-tête de section (revue design, point 1) : la catégorie sélectionnée
    redevient un TITRE DE PAGE (pas seulement l'onglet actif dans le rail),
    avec un décompte — l'ancien écran passait directement des onglets à de
-   grandes cartes, sans repère de contexte. */
+   grandes cartes, sans repère de contexte.
+   Empilé plutôt qu'espacé aux extrémités (revue design, point 3) : le
+   décompte plaqué à droite du titre, sur toute la largeur, se lisait comme
+   un élément indépendant plutôt que lié au titre — juste en dessous, il se
+   rattache visuellement au titre en un seul repère « où je suis / combien
+   de contenus », plus compact verticalement en plus. */
 .section-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
 }
 .section-title {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--asrar-text);
   margin: 0;
 }
 .section-count {
-  font-size: 0.8rem;
-  color: var(--asrar-text-dim);
+  font-size: 0.78rem;
+  color: var(--asrar-text-soft); /* était --asrar-text-dim : plus près du titre, gagne à être un peu plus lisible (revue design, point 9) */
   white-space: nowrap;
 }
 
-/* Recherche (revue design, point 9) : filtre CLIENT sur la catégorie déjà
-   chargée (voir app/asrar/page.tsx) — pas d'appel serveur, la liste
-   complète de la catégorie est déjà en cache. */
+/* Recherche (revue design, point 9 de la revue précédente) : filtre CLIENT
+   sur la catégorie déjà chargée (voir app/asrar/page.tsx) — pas d'appel
+   serveur, la liste complète de la catégorie est déjà en cache.
+   Hauteur figée explicitement (revue design la plus récente, priorité n°1 :
+   « ressemble davantage à une grande carte vide qu'à un champ de
+   recherche ») — box-sizing: border-box + height fixe sur le conteneur ET
+   l'input garantissent ~46px quoi qu'il arrive, plutôt que de dépendre
+   d'un padding vertical sur l'input qu'une règle globale plus générique
+   pourrait faire dériver. Sélecteur `input[type="search"]` (spécificité
+   supérieure à `input[type="text"]` du fond global, voir globals.css) : ne
+   dépend pas de l'ordre de chargement des feuilles de style. */
 .search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 46px;
+  box-sizing: border-box;
   background: var(--surface-input);
   border: 1px solid var(--asrar-border);
   border-radius: 12px;
-  padding: 0 12px;
-  margin-bottom: 1rem;
+  padding: 0 14px;
+  margin-bottom: 10px;
   color: var(--asrar-text-dim);
 }
-.search-bar input {
+.search-bar input[type="search"] {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
   background: transparent;
   border: none;
-  padding: 11px 0;
+  padding: 0;
+  margin: 0;
   color: var(--asrar-text);
   font-size: 0.92rem;
   outline: none;
@@ -241,6 +267,17 @@ body {
 .search-bar input::placeholder {
   color: var(--asrar-text-dim);
   opacity: 1;
+}
+/* Neutralise le chrome natif d'un <input type="search"> sur WebKit
+   (icône loupe/bouton d'effacement ajoutés par le navigateur) — double
+   emploi avec l'icône Search (lucide) déjà affichée, et source possible
+   d'un rendu/alignement incohérent selon le navigateur. */
+.search-bar input[type="search"]::-webkit-search-decoration,
+.search-bar input[type="search"]::-webkit-search-cancel-button,
+.search-bar input[type="search"]::-webkit-search-results-button,
+.search-bar input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .secrets-empty {
@@ -263,15 +300,19 @@ body {
 .secrets-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.8rem;
+  gap: 14px; /* était 0.8rem (12.8px) — un peu plus de respiration entre les cartes (revue design, point 8) */
 }
 @media (min-width: 520px) {
   .secrets-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 }
 
+/* Bordure --asrar-border-2 (au lieu de --asrar-border) : même correctif de
+   contraste que .detail-card (revue design, point 9 — « les bordures se
+   perdent dans le fond violet très sombre »), pour une identité cohérente
+   entre la liste et le détail. */
 .secret-card {
   background: var(--asrar-surface);
-  border: 1px solid var(--asrar-border);
+  border: 1px solid var(--asrar-border-2);
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s, border-color 0.2s;
@@ -303,6 +344,44 @@ body {
   justify-content: center;
   color: var(--asrar-text-dim);
   flex-shrink: 0;
+}
+/* Léger voile uniforme (revue design, point 6 : « les images sont très
+   hétérogènes... éventuellement un léger overlay sombre ») — une teinte
+   neutre et discrète (10 %) qui rapproche visuellement des sources aussi
+   différentes qu'une photo contrastée, un manuscrit clair ou une capture
+   d'écran, sans jamais les assombrir au point de les rendre illisibles.
+   Au-dessus de l'image (SmartImage rendue avant ce pseudo-élément dans le
+   DOM), en dessous de la puce favori (voir .secret-bookmark-badge). */
+.secret-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+/* Puce favori (revue design, point 5 : « aucun indicateur... favori,
+   popularité... »). Popularité/type de contenu écartés : /api/list-content
+   ne sert pas ces champs pour ce nœud (voir le commentaire sur
+   .secret-cat-chip un peu plus bas) et les ajouter demanderait un appel par
+   fiche ou un changement serveur, hors périmètre d'une passe d'affichage.
+   Le favori, lui, est une donnée RÉELLEMENT déjà disponible : déjà stocké
+   en local (voir bmKey dans SecretDetail.js), simple à relire ici sans
+   appel réseau supplémentaire. */
+.secret-bookmark-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--asrar-gold);
 }
 
 .secret-body {
@@ -339,7 +418,7 @@ body {
      pas de text-transform ici : un titre légitimement mixte ne doit jamais
      être reforcé dans un sens ou l'autre par la CSS. */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2; /* était 3 (revue design, point 7) — grille plus régulière, quelle que soit la longueur du titre */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
