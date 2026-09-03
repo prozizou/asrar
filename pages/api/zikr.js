@@ -81,6 +81,10 @@
 //   action="reject"         → { groupId, uid } : créateur only
 //   action="progress"       → { groupId, fait, rythme? } : membre only
 //   action="warn"           → { groupId, uid } : créateur only — avertissement privé
+//   action="notifyInactive" → { groupId } : créateur only — avertissement privé +
+//                              notification push (si abonné) à TOUS les comptes
+//                              du groupe n'ayant récité aucun grain (fait===0),
+//                              en un clic (voir handleNotifyInactive)
 //   action="dismissWarning" → { groupId } : membre only (soi-même)
 //   action="exclude"        → { groupId, uid } : créateur only — jamais sur lui-même
 //   action="leave"          → { groupId } : membre (créateur inclus, si un
@@ -116,6 +120,7 @@
 //   zikr_chat/{gid}/{msgId}  = { uid, email, text, at } — discussion de groupe
 //                                 (façon WhatsApp), réservée aux membres
 
+const webpush = require("web-push");
 const { verifyUser, isAdmin } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
@@ -123,7 +128,7 @@ const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const {
   normalizeGroupInput, normalizeFait, normalizeRythme, cleanText,
-  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, WISH_MAX, CHAT_MESSAGE_MAX,
+  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE, WISH_MAX, CHAT_MESSAGE_MAX,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -171,6 +176,7 @@ export default async function handler(req, res) {
       case "reject":         return await handleReject(db, res, user, gid, safeKey(body.uid));
       case "progress":       return await handleProgress(db, res, user, gid, body.fait, body.rythme);
       case "warn":           return await handleWarn(db, res, user, gid, safeKey(body.uid));
+      case "notifyInactive": return await handleNotifyInactive(db, res, user, gid);
       case "dismissWarning": return await handleDismissWarning(db, res, user, gid);
       case "exclude":        return await handleExclude(db, res, user, gid, safeKey(body.uid));
       case "leave":           return await handleLeave(db, res, user, gid);
@@ -563,6 +569,79 @@ async function handleWarn(db, res, user, gid, uid) {
   if (!memSnap.exists()) return res.status(404).json({ error: "Ce compte n'est plus dans le groupe." });
   await db.ref("zikr_members/" + gid + "/" + uid + "/avertissement").set(MESSAGE_AVERTISSEMENT);
   return res.status(200).json({ ok: true });
+}
+
+// ── Créateur : avertit EN UNE FOIS tous les comptes inactifs ────
+// Contrairement à "warn" (un compte choisi à la main), cible directement
+// TOUS les membres n'ayant récité AUCUN grain (fait===0) — utile quand un
+// groupe a accepté plusieurs demandes qui n'ont ensuite jamais participé
+// (voir l'en-tête du fichier). Avertissement privé (relu à la prochaine
+// ouverture de l'app) + notification push best-effort (si le compte est
+// abonné, cf. pages/api/push-subscribe.js) : sans le push, un compte qui
+// n'ouvre déjà plus l'app ne verrait jamais l'avertissement.
+async function handleNotifyInactive(db, res, user, gid) {
+  await assertOwner(db, gid, user);
+  const membersSnap = await db.ref("zikr_members/" + gid).once("value");
+  const targets = [];
+  membersSnap.forEach((m) => {
+    if (m.key === user.uid) return; // jamais le créateur lui-même
+    const v = m.val() || {};
+    if ((Number(v.fait) || 0) === 0) targets.push(m.key);
+  });
+  if (targets.length === 0) return res.status(200).json({ ok: true, notified: 0 });
+
+  await Promise.all(
+    targets.map((uid) => db.ref("zikr_members/" + gid + "/" + uid + "/avertissement").set(MESSAGE_INACTIVITE))
+  );
+  // Best-effort : l'avertissement en application ci-dessus reste enregistré
+  // même si VAPID est mal configuré ou qu'un envoi échoue.
+  await pushInactivityWarning(db, targets, gid).catch(() => {});
+
+  return res.status(200).json({ ok: true, notified: targets.length });
+}
+
+// Notification push (mêmes clés VAPID que pages/api/cron/reminders.js et
+// pages/api/cron/planet-push.js), déclenchée ici à la demande par le
+// créateur — pas par un planificateur externe, donc aucune vérification
+// server/cronAuth (l'appelant est déjà authentifié plus haut, verifyUser).
+// Nettoie les abonnements expirés (404/410) comme les deux jobs cron — même
+// politique, dupliquée ici plutôt que factorisée pour ne pas faire dépendre
+// ce fichier (déclenché par un utilisateur) de pages/api/cron/* (déclenché
+// par un secret partagé).
+async function pushInactivityWarning(db, uids, gid) {
+  const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+  const vapidSubject = process.env.VAPID_SUBJECT;
+  if (!vapidPublic || !vapidPrivate || !vapidSubject) return; // pas configuré : l'avertissement en app suffit
+  webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+
+  const payload = JSON.stringify({
+    title: '⏳ Zikr collectif',
+    body: MESSAGE_INACTIVITE,
+    url: '/s?k=zikr&i=' + gid,
+    tag: 'zikr-inactivite-' + gid,
+  });
+
+  await Promise.all(uids.map(async (uid) => {
+    const subsSnap = await db.ref("push_subscriptions/" + uid).once("value");
+    if (!subsSnap.exists()) return;
+    const tasks = [];
+    subsSnap.forEach((subSnap) => {
+      const key = subSnap.key;
+      const sub = subSnap.val() || {};
+      if (!sub.endpoint || !sub.keys) return;
+      tasks.push(
+        webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
+          if (e && (e.statusCode === 404 || e.statusCode === 410)) {
+            await db.ref("push_subscriptions/" + uid + "/" + key).remove();
+          } else {
+            await reportError("zikr:notifyInactive", e, { uid });
+          }
+        })
+      );
+    });
+    await Promise.all(tasks);
+  }));
 }
 
 // ── Membre : efface l'avertissement une fois lu (soi-même) ─────
