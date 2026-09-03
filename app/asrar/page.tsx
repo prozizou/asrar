@@ -217,7 +217,7 @@ export default function AsrarPage() {
         <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
           <div className="asrar-main">
             {inDetail ? (
-              <SecretDetail secret={currentSecret} onBack={goBackFromSecret} />
+              <SecretDetail secret={currentSecret} catLabel={currentCat.label} onBack={goBackFromSecret} />
             ) : (
               <div className="secrets-list">
                 {/* Titre de page = catégorie sélectionnée (pas seulement dans
