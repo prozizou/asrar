@@ -93,21 +93,102 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   .bq-stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Formulaires */
-.bq-form { display: flex; flex-direction: column; gap: 12px; }
-.bq-form label { display: flex; flex-direction: column; gap: 5px; font-size: .82rem; color: var(--bq-text-soft); }
-.bq-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-.bq-form input, .bq-form textarea {
+/* Formulaires
+   Rythme vertical standardisé (revue design du formulaire produit) : 20px
+   entre deux groupes de champs, 6px entre un label et son champ, 52px de
+   hauteur minimale par champ — un espacement auparavant assez lâche et peu
+   régulier (voir aussi .bq-form input/textarea/select ci-dessous). */
+.bq-form { display: flex; flex-direction: column; gap: 20px; }
+.bq-form label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; color: var(--bq-text-soft); }
+.bq-form input, .bq-form textarea, .bq-form select {
+  min-height: 52px;
+  box-sizing: border-box;
   background: var(--bq-surface-2); border: 1px solid var(--bq-border); border-radius: 10px;
   padding: 10px 12px; color: var(--bq-text); font-size: .95rem; font-family: inherit;
 }
-.bq-form input:focus, .bq-form textarea:focus { outline: none; border-color: var(--bq-gold); }
+.bq-form textarea { min-height: unset; } /* hauteur pilotée par l'attribut rows, pas ce plancher */
+.bq-form input:focus, .bq-form textarea:focus, .bq-form select:focus { outline: none; border-color: var(--bq-gold); }
 .bq-btn {
   background: var(--bq-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
-  padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: .95rem;
+  padding: 13px 16px; font-weight: 700; cursor: pointer; font-size: .95rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
 .bq-btn:hover { filter: brightness(1.08); }
 .bq-btn.small { padding: 7px 12px; font-size: .85rem; }
+.bq-btn:disabled { opacity: .7; cursor: default; filter: none; }
+
+/* Prix + devise regroupés en un seul champ visuel (revue design) — un
+   conteneur au même habillage que .bq-form input, deux sous-champs sans
+   bordure propre à l'intérieur, séparés par un simple filet. */
+.bq-price-group {
+  display: flex;
+  align-items: stretch;
+  min-height: 52px;
+  box-sizing: border-box;
+  background: var(--bq-surface-2);
+  border: 1px solid var(--bq-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.bq-price-group:focus-within { border-color: var(--bq-gold); }
+.bq-price-group input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  min-height: unset !important;
+  box-sizing: border-box;
+}
+.bq-price-group input:first-child { flex: 1; min-width: 0; padding: 0 12px; }
+.bq-price-sep { width: 1px; align-self: stretch; margin: 10px 0; background: var(--bq-border); }
+.bq-price-group .bq-price-currency { flex: 0 0 76px; width: 76px; padding: 0 10px; text-align: center; font-weight: 600; }
+
+/* Select catégorie : même habillage que les autres champs (revue design :
+   « ressemble à un composant HTML natif ») — appearance:none neutralise le
+   chevron du navigateur, .bq-select-wrap::after en dessine un cohérent avec
+   le reste de l'identité (même principe que les accordéons du module
+   Rouwhanes). */
+.bq-select-wrap { position: relative; }
+.bq-form select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.bq-select-wrap::after {
+  content: '⌄';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--bq-text-dim);
+  pointer-events: none;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Libellé + info secondaire sur la même ligne (ex. « Images du produit * ·
+   2 minimum · 5 maximum ») — même niveau que .bq-form label. */
+.bq-field-label { display: block; font-size: .82rem; color: var(--bq-text-soft); margin-bottom: 6px; }
+.bq-field-hint { font-weight: 400; color: var(--bq-text-dim); }
+
+/* Encart d'information secondaire (revue design : le texte WhatsApp en bas
+   de formulaire se perdait) — même habillage surface-2 + bordure que les
+   champs du formulaire, mais pensé comme une info calme, pas un champ. */
+.bq-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--bq-surface-2);
+  border: 1px solid var(--bq-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--bq-text-dim);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+.bq-info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--bq-gold); }
 
 /* Produits */
 .bq-products-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -135,24 +216,104 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   cursor: pointer; font-size: 1rem;
 }
 
-/* Modale produit */
+/* Modale produit — fiche plein écran mobile (revue design, point le plus
+   important de cette revue) : l'ancienne modale centrée à hauteur non
+   bornée (padding:16px + max-height:90vh + overflow-y sur .bq-modal
+   lui-même) donnait un long scroll interne et laissait la liste de produits
+   derrière largement visible. Sur mobile, plus de fenêtre flottante : une
+   vraie page (inset:0, pas de border-radius/bordure), barre supérieure et
+   CTA fixes, SEUL le contenu du formulaire scrolle (.bq-form-scroll,
+   ci-dessous) — pas la structure entière de la fiche. À partir de 640px, la
+   fiche redevient une carte centrée classique (l'espace horizontal ne
+   justifie plus le plein écran). */
 .bq-modal-overlay {
   position: fixed; inset: 0; z-index: 999; display: none;
-  align-items: center; justify-content: center; padding: 16px;
+  align-items: stretch; justify-content: center;
   background: var(--bq-overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .bq-modal-overlay.open { display: flex; }
 .bq-modal {
-  position: relative; background: var(--bq-surface); border: 1px solid var(--bq-border);
-  border-radius: 18px; padding: 22px; width: 100%; max-width: 460px;
-  max-height: 90vh; overflow-y: auto; color: var(--bq-text);
+  position: relative;
+  background: var(--bq-surface);
+  color: var(--bq-text);
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* le scroll se fait dans .bq-form-scroll, pas ici */
 }
-.bq-modal-close {
-  position: absolute; top: 12px; right: 16px; cursor: pointer;
-  font-size: 1.3rem; color: var(--bq-text-dim);
+@media (min-width: 640px) {
+  .bq-modal-overlay { padding: 24px; }
+  .bq-modal {
+    max-width: 480px;
+    height: auto;
+    max-height: 90vh;
+    margin: auto;
+    border: 1px solid var(--bq-border);
+    border-radius: 18px;
+  }
 }
-.bq-modal-close:hover { color: var(--bq-text); }
-.bq-modal h3 { margin-top: 0; }
+
+/* Barre supérieure fixe : flèche retour + titre + fermeture, boutons
+   circulaires 44×44px (revue design : « bouton tactile plus propre » —
+   l'ancien ✕ était un simple caractère collé au bord). */
+.bq-modal-topbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--bq-border);
+  flex-shrink: 0;
+}
+.bq-modal-topbar h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--bq-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bq-modal-back, .bq-modal-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--bq-text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.bq-modal-back:hover, .bq-modal-close:hover { background: var(--bq-surface-2); color: var(--bq-text); }
+
+/* Seule zone qui scrolle dans la fiche (revue design : « un long scroll
+   interne » portait auparavant sur la modale entière, y compris son
+   padding et son titre). */
+.bq-form-scroll {
+  flex: 1;
+  min-height: 0; /* laisse flex calculer une vraie hauteur scrollable */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+/* CTA fixe en bas, hors du flux scrollable — safe-area gérée comme les
+   autres barres fixes de l'app (voir marche.css/asrar.css). */
+.bq-modal-footer {
+  flex-shrink: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--bq-border);
+  background: var(--bq-surface);
+}
+.bq-modal-footer .bq-btn { width: 100%; }
 
 /* Aperçu logo / image produit */
 .bq-logo-preview {
@@ -164,37 +325,74 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   color: var(--bq-gold-soft); font-size: .8rem; text-align: center;
 }
 .bq-logo-preview img { width: 100%; height: 100%; object-fit: cover; }
-/* ───── Galerie d'images du produit (2 à 5) ───── */
-.bq-images-preview {
+/* ───── Sélecteur d'images du produit, personnalisé (2 à 5) ─────
+   Remplace l'ancien <input type="file"> nu + « Aucune image » + décompte
+   brut (revue design : « fait très HTML natif, alors que le reste de
+   l'application possède une identité visuelle personnalisée »). Deux
+   états : une grande zone tactile tant qu'aucune image n'est choisie
+   (.bq-image-dropzone), puis une rangée de tuiles carrées + une tuile "+"
+   une fois la première image ajoutée (.bq-image-tile/.bq-image-add). */
+.bq-image-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 8px;
-  padding: 10px;
-  min-height: 84px;
+}
+.bq-image-dropzone {
+  width: 100%;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: var(--bq-surface-2);
+  border: 1.5px dashed var(--bq-border);
+  border-radius: 12px;
+  color: var(--bq-text-dim);
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.bq-image-dropzone:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
+.bq-image-dropzone strong { font-size: .85rem; color: var(--bq-text); font-weight: 600; }
+.bq-image-dropzone small { font-size: .72rem; }
+
+.bq-image-tile {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
   background: var(--bq-surface-2);
   border: 1px solid var(--bq-border);
-  border-radius: 12px;
 }
-.bq-images-empty { color: var(--bq-text-dim); font-size: .85rem; }
-.bq-image-item { position: relative; width: 72px; height: 72px; flex: 0 0 auto; }
-.bq-image-item img {
-  width: 100%; height: 100%; object-fit: cover;
-  border-radius: 10px; border: 1px solid var(--bq-border);
+.bq-image-add {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bq-surface-2);
+  border: 1.5px dashed var(--bq-border);
+  border-radius: 10px;
+  color: var(--bq-text-dim);
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
 }
-.bq-image-item button {
-  position: absolute; top: -6px; right: -6px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: #c0392b; color: #fff; border: none;
-  font-size: .7rem; line-height: 1; cursor: pointer;
+.bq-image-add:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
+.bq-image-remove {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0, 0, 0, .6); color: #fff; border: none;
+  cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .bq-image-main {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,.7); color: var(--bq-gold, var(--accent));
+  background: rgba(0, 0, 0, .7); color: var(--bq-gold, var(--accent));
   font-size: .58rem; text-align: center;
-  border-radius: 0 0 10px 10px; padding: 2px 0;
+  padding: 2px 0;
 }
 
 /* Champ en erreur (validation du formulaire produit) */
@@ -211,9 +409,6 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   .container { padding: .75rem; }
   .glass-panel { padding: 1.1rem; border-radius: 16px; }
 
-  /* Le formulaire prix/devise passe en pleine largeur */
-  .bq-row { grid-template-columns: 1fr; }
-
   /* Plans : 2 par ligne minimum même sur petit écran */
   .bq-plans { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
@@ -224,7 +419,10 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   .bq-prod { flex-wrap: wrap; }
   .bq-prod-actions { margin-left: auto; }
 
-  .bq-modal { padding: 18px; border-radius: 14px; }
+  /* .bq-modal (fiche produit) : déjà plein écran par défaut, sans padding
+     ni coin arrondi propres — voir la règle de base plus haut, qui gère ce
+     cas sans media query (le point de bascule "carte centrée" est à 640px,
+     au-dessus de ce seuil-ci). */
 }
 
 @media (max-width: 380px) {

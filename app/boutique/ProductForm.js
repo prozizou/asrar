@@ -2,7 +2,16 @@
 // Modale d'ajout / édition d'un produit — port d'ouvrirFormProduit(),
 // validerFormProduit() et enregistrerProduit(). Galerie 2 à 5 images,
 // validation champ par champ, upload Cloudinary des nouvelles images.
+//
+// Restructurée en fiche plein écran mobile (revue design) : l'ancienne
+// modale centrée, à hauteur non bornée, ressemblait à un formulaire desktop
+// plaqué dans une popup — long scroll interne, contenu derrière encore très
+// lisible, sélecteur de fichiers natif du navigateur en rupture avec le
+// reste de l'identité visuelle de l'app. Voir boutique.css pour le détail
+// de chaque correctif (barre supérieure fixe, CTA fixe en bas, sélecteur
+// d'images personnalisé, prix+devise regroupés, rythme vertical resserré).
 import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, X, Plus, Info } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
@@ -34,6 +43,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
   });
 
   const refs = { pName: useRef(null), pPrice: useRef(null), pDevise: useRef(null), pChain: useRef(null), pDesc: useRef(null) };
+  const fileInputRef = useRef(null);
 
   // Révoque les object URLs des images locales au démontage.
   useEffect(() => {
@@ -138,101 +148,162 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
   return (
     <div className="bq-modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bq-modal">
-        <span className="bq-modal-close" onClick={onClose}>
-          ✕
-        </span>
-        <h3>{isEdit ? 'Modifier le produit' : 'Ajouter un produit'}</h3>
-        <div className="bq-form">
-          <label>
-            Nom du produit *
-            <input
-              ref={refs.pName}
-              type="text"
-              maxLength={120}
-              placeholder="Ex : Encens de protection"
-              className={cls('pName').trim()}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <div className="bq-row">
+        {/* Barre supérieure fixe (revue design, point 1) : remplace le petit
+            ✕ flottant au-dessus d'un très long formulaire — flèche retour +
+            titre + fermeture, toujours visibles, quelle que soit la position
+            du scroll dans le formulaire. */}
+        <div className="bq-modal-topbar">
+          <button type="button" className="bq-modal-back" onClick={onClose} aria-label="Retour">
+            <ArrowLeft size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <h3>{isEdit ? 'Modifier le produit' : 'Ajouter un produit'}</h3>
+          <button type="button" className="bq-modal-close" onClick={onClose} aria-label="Fermer">
+            <X size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="bq-form-scroll">
+          <div className="bq-form">
+            <label>
+              Nom du produit *
+              <input
+                ref={refs.pName}
+                type="text"
+                maxLength={120}
+                placeholder="Ex : Encens de protection"
+                className={cls('pName').trim()}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+
+            {/* Prix + devise regroupés dans un seul champ visuel (revue
+                design) — deux blocs verticaux séparés pour deux informations
+                qui se lisent naturellement ensemble prenaient deux fois plus
+                de hauteur que nécessaire. */}
             <label>
               Prix *
-              <input
-                ref={refs.pPrice}
-                type="number"
-                min={1}
-                placeholder="2000"
-                className={cls('pPrice').trim()}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
+              <div className={'bq-price-group' + (cls('pPrice') || cls('pDevise'))}>
+                <input
+                  ref={refs.pPrice}
+                  type="number"
+                  min={1}
+                  placeholder="2 000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+                <span className="bq-price-sep" aria-hidden="true" />
+                <input
+                  ref={refs.pDevise}
+                  type="text"
+                  maxLength={8}
+                  className="bq-price-currency"
+                  value={devise}
+                  onChange={(e) => setDevise(e.target.value)}
+                  aria-label="Devise"
+                />
+              </div>
             </label>
+
             <label>
-              Devise
-              <input
-                ref={refs.pDevise}
-                type="text"
-                maxLength={8}
-                className={cls('pDevise').trim()}
-                value={devise}
-                onChange={(e) => setDevise(e.target.value)}
+              Catégorie *
+              {/* appearance:none + chevron dessiné en CSS (revue design) — le
+                  rendu natif du <select> tranchait avec le reste des champs. */}
+              <div className="bq-select-wrap">
+                <select ref={refs.pChain} className={cls('pChain').trim()} value={chain} onChange={(e) => setChain(e.target.value)}>
+                  <option value="">— Choisir une catégorie —</option>
+                  {CHAINS.map((c) => (
+                    <option key={c} value={c}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </label>
+
+            {/* Sélecteur d'images personnalisé (revue design, point le plus
+                cité) : remplace l'<input type="file"> nu + « Aucune image »
+                + décompte brut, qui tranchaient avec le reste de
+                l'identité visuelle. Grande zone tactile tant qu'aucune image
+                n'est choisie ; petites tuiles + tuile "+" ensuite. */}
+            <div>
+              <span className="bq-field-label">
+                Images du produit * <span className="bq-field-hint">{MIN_IMAGES} minimum · {MAX_IMAGES} maximum</span>
+              </span>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={addImages} style={{ display: 'none' }} />
+              <div className={'bq-image-grid' + (imagesError ? ' bq-field-error' : '')}>
+                {images.length === 0 ? (
+                  <button type="button" className="bq-image-dropzone" onClick={() => fileInputRef.current?.click()}>
+                    <Plus size={22} strokeWidth={2} aria-hidden="true" />
+                    <strong>Ajouter des images</strong>
+                    <small>JPG, PNG · max {MAX_IMAGES} images</small>
+                  </button>
+                ) : (
+                  <>
+                    {images.map((im, i) => (
+                      <div key={i} className="bq-image-tile">
+                        <SmartImage src={optimImg(im.url, 200)} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} />
+                        <button type="button" className="bq-image-remove" onClick={() => removeImage(i)} aria-label="Retirer">
+                          <X size={12} strokeWidth={2.5} aria-hidden="true" />
+                        </button>
+                        {i === 0 && <span className="bq-image-main">Principale</span>}
+                      </div>
+                    ))}
+                    {images.length < MAX_IMAGES && (
+                      <button
+                        type="button"
+                        className="bq-image-add"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Ajouter une image"
+                      >
+                        <Plus size={20} strokeWidth={2} aria-hidden="true" />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <small className="bq-note" style={{ margin: '6px 0 0', textAlign: 'left' }}>
+                {images.length} / {MAX_IMAGES} images
+                {images.length < MIN_IMAGES ? ` — ${MIN_IMAGES} minimum` : ''}
+              </small>
+            </div>
+
+            <label>
+              Description *
+              <textarea
+                ref={refs.pDesc}
+                maxLength={1000}
+                rows={3}
+                placeholder="Détaillez le produit…"
+                className={cls('pDesc').trim()}
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
               />
             </label>
-          </div>
-          <label>
-            Catégorie *
-            <select ref={refs.pChain} className={cls('pChain').trim()} value={chain} onChange={(e) => setChain(e.target.value)}>
-              <option value="">— Choisir une catégorie —</option>
-              {CHAINS.map((c) => (
-                <option key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Images du produit * <small style={{ opacity: 0.7 }}>(2 minimum, 5 maximum)</small>
-            <input type="file" accept="image/*" multiple onChange={addImages} />
-            <div className={'bq-images-preview' + (imagesError ? ' bq-field-error' : '')}>
-              {images.length === 0 ? (
-                <span className="bq-images-empty">Aucune image</span>
-              ) : (
-                images.map((im, i) => (
-                  <div key={i} className="bq-image-item">
-                    <SmartImage src={optimImg(im.url, 200)} alt="" fill sizes="72px" style={{ objectFit: 'cover' }} />
-                    <button type="button" onClick={() => removeImage(i)} aria-label="Retirer">
-                      ✕
-                    </button>
-                    {i === 0 && <span className="bq-image-main">Principale</span>}
-                  </div>
-                ))
-              )}
+
+            {/* Information secondaire présentée en encart discret (revue
+                design) plutôt qu'en simple ligne de texte perdue en bas du
+                formulaire. */}
+            <div className="bq-info-box">
+              <Info size={15} strokeWidth={2} aria-hidden="true" />
+              <span>Le numéro WhatsApp de votre boutique sera affiché automatiquement aux acheteurs.</span>
             </div>
-            <small className="bq-note" style={{ margin: '4px 0 0' }}>
-              {images.length} / {MAX_IMAGES} image(s)
-              {images.length < MIN_IMAGES ? ` — ${MIN_IMAGES} minimum` : ''}
-            </small>
-          </label>
-          <label>
-            Description *
-            <textarea
-              ref={refs.pDesc}
-              maxLength={1000}
-              rows={3}
-              placeholder="Détaillez le produit…"
-              className={cls('pDesc').trim()}
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-            />
-          </label>
-          <p className="bq-note" style={{ marginTop: 0 }}>
-            📞 Le numéro WhatsApp de votre boutique sera automatiquement affiché aux acheteurs.
-          </p>
+          </div>
+        </div>
+
+        {/* CTA fixe en bas (revue design, point 1) — toujours accessible
+            sans avoir à scroller jusqu'au bout du formulaire. */}
+        <div className="bq-modal-footer">
+          {note && <p className="bq-note" style={{ margin: '0 0 8px' }}>{note}</p>}
           <button className="bq-btn" onClick={save} disabled={saving}>
-            💾 Enregistrer le produit
+            {saving ? (
+              'Enregistrement…'
+            ) : (
+              <>
+                <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> {isEdit ? 'Enregistrer les modifications' : 'Ajouter le produit'}
+              </>
+            )}
           </button>
-          <p className="bq-note">{note}</p>
         </div>
       </div>
     </div>
