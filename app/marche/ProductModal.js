@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
-import { formatPrice } from '@/lib/market';
+import { formatPrice, displayProductName } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import { share as shareLink } from '@/lib/share';
@@ -143,7 +143,10 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
           </div>
         )}
 
-        <h3>{product.produit || 'Produit'}</h3>
+        {/* Casse normalisée à l'affichage seulement (voir app/page.tsx,
+            même correctif) — la donnée brute (product.produit) reste celle
+            utilisée plus bas dans order()/doShare(), jamais celle-ci. */}
+        <h3>{displayProductName(product.produit) || 'Produit'}</h3>
         <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#6bffb8', margin: '8px 0' }}>
           {formatPrice(product.Prix, product.devise)}
         </div>

@@ -29,7 +29,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
-import { vendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, CHAINS } from '@/lib/market';
+import { vendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
@@ -441,23 +441,26 @@ export default function Home() {
                         />
                       </div>
                     ) : (
-                      <div className="prod-img-placeholder">🔮</div>
+                      // Placeholder neutre + légende (revue design : le 🔮 seul,
+                      // dans une app à thème mystique, pouvait se lire comme une
+                      // vraie illustration plutôt que comme « image manquante »).
+                      <div className="prod-img-placeholder">
+                        <span className="prod-img-placeholder-icon" aria-hidden="true">🖼️</span>
+                        <span className="prod-img-placeholder-label">Image indisponible</span>
+                      </div>
                     )}
                     <div className="prod-body">
-                      <div className="prod-name">{p.produit || 'Produit'}</div>
+                      {/* Casse normalisée à l'affichage seulement (revue
+                          design : « titres incohérents, mélangent casse et
+                          styles » — voir displayProductName, lib/market.js).
+                          La donnée brute (p.produit) reste inchangée
+                          partout ailleurs (recherche, WhatsApp, etc.). */}
+                      <div className="prod-name">{displayProductName(p.produit) || 'Produit'}</div>
                       <ProductPrice prix={p.Prix} devise={p.devise} />
-                      <div className="prod-chain">{p.chain || ''}</div>
-                      {/* Cœur PLEIN (pas vide) : ce compteur n'est pas une
-                          action au niveau de la carte (le like réel se fait
-                          dans la fiche produit, ProductModal) — un cœur vide
-                          laissait croire à tort qu'un tap ici « aimerait » le
-                          produit (revue design, point 4 : « ❤️ sur une
-                          boutique et 🤍 sur un produit peuvent signifier
-                          favoris, likes ou popularité »). Plein = un
-                          indicateur passé/agrégé, pas une invite à agir. */}
-                      <div className="prod-stats">
-                        ❤️ {formatCount(s.likes)} &nbsp; 💬 {formatCount(s.comments)}
-                      </div>
+                      {/* Hiérarchie : titre → prix → vendeur → métadonnées
+                          (revue design). Le vendeur passe avant la catégorie/
+                          les stats, qui deviennent des métadonnées de bas de
+                          carte plutôt que de se mêler au prix. */}
                       {vendor && (
                         <div className="prod-vendor-line">
                           {vendor.avatar && (
@@ -475,6 +478,23 @@ export default function Home() {
                           <span>
                             {vendor.name} {vendor.verified && <span className="verified-badge">✔ Vérifié</span>}
                           </span>
+                        </div>
+                      )}
+                      {p.chain && <div className="prod-chain">{p.chain}</div>}
+                      {/* Compteurs masqués quand les deux sont à zéro (revue
+                          design : « ❤️ 0 💬 0 très présents... encombrent
+                          chaque carte sans apporter d'info »). Cœur PLEIN
+                          (pas vide) : ce compteur n'est pas une action au
+                          niveau de la carte (le like réel se fait dans la
+                          fiche produit, ProductModal) — un cœur vide laissait
+                          croire à tort qu'un tap ici « aimerait » le produit
+                          (revue design précédente, point 4). Plein = un
+                          indicateur passé/agrégé, pas une invite à agir. */}
+                      {(s.likes > 0 || s.comments > 0) && (
+                        <div className="prod-stats">
+                          {s.likes > 0 && <>❤️ {formatCount(s.likes)}</>}
+                          {s.likes > 0 && s.comments > 0 && <>&nbsp;&nbsp;</>}
+                          {s.comments > 0 && <>💬 {formatCount(s.comments)}</>}
                         </div>
                       )}
                     </div>

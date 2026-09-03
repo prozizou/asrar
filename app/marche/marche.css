@@ -14,6 +14,7 @@
     --mk-text-dim:    var(--text-dim);
     --mk-text-faint:  var(--text-faint);
     --mk-gold:        var(--accent);
+    --mk-bg-deep:     var(--bg-deep);
     --mk-overlay:     rgba(0, 0, 0, 0.6);
     --mk-modal-bg:    rgba(0, 0, 0, 0.85);
     --mk-soft-2:      var(--surface-2);
@@ -294,6 +295,7 @@ h2 {
   transform: translateY(-3px);
   background: var(--mk-surface-2);
 }
+.vendor-card:active { transform: scale(0.97); background: var(--mk-surface-2); }
 
 .vendor-avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
@@ -332,7 +334,10 @@ h2 {
 }
 
 .vendor-specialty {
-  color: var(--mk-text-dim);
+  /* --mk-text-soft plutôt que --mk-text-dim (revue design : « contraste
+     secondaire faible ») — reste un cran sous .vendor-name, mais restait
+     limite en thème clair sur le fond du Marché. */
+  color: var(--mk-text-soft);
   font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
@@ -392,10 +397,18 @@ h2 {
   flex-direction: column;
 }
 
-/* Compteurs likes / commentaires sur la carte produit */
-.prod-stats { font-size: 0.76rem; color: var(--mk-text-dim); margin-top: 6px; }
+/* Compteurs likes / commentaires sur la carte produit — masqués quand les
+   deux sont à zéro (voir app/page.tsx) : « ❤️ 0 💬 0 » sur chaque carte
+   n'apporte rien et encombre (revue design). --mk-text-soft plutôt que
+   --mk-text-dim : même correctif de contraste que .vendor-specialty. */
+.prod-stats { font-size: 0.76rem; color: var(--mk-text-soft); margin-top: 6px; }
 
 .prod-card:hover { transform: translateY(-4px); background: var(--mk-surface-2); }
+/* :active (pas seulement :hover, qui ne se déclenche pas au toucher) — retour
+   tactile immédiat au tap, pour qu'une carte entièrement cliquable se
+   ressente comme telle sur mobile (revue design : « on ne sait pas
+   immédiatement si toucher la carte ouvre le produit »). */
+.prod-card:active { transform: scale(0.97); background: var(--mk-surface-2); }
 
 /* aspect-ratio plutôt qu'une hauteur fixe en px (revue design, point 7) :
    object-fit:cover forçait déjà le MÊME cadrage quelle que soit la photo
@@ -412,15 +425,26 @@ h2 {
   background: var(--mk-surface-3);
 }
 
+/* 🖼️ + texte plutôt que le 🔮 seul (revue design : « peut être interprété
+   comme une fonctionnalité mystique plutôt qu'un placeholder ») — sur une
+   app à thème mystique, une boule de cristal pleine carte ressemblait
+   justement trop à une vraie illustration produit. Icône neutre, en sourdine
+   (opacity), avec sa légende : sans ambiguïté possible sur le fait qu'il
+   manque une image. */
 .prod-img-placeholder {
   width: 100%;
   aspect-ratio: 4 / 3;
   background: var(--mk-surface-3);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 2.4rem;
+  gap: 4px;
+  color: var(--mk-text-dim);
 }
+
+.prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.55; }
+.prod-img-placeholder-label { font-size: 0.68rem; }
 
 .prod-body { padding: 10px; flex: 1; color: var(--mk-text); }
 
@@ -447,7 +471,21 @@ h2 {
 .prod-price-amount { color: var(--mk-price-green); font-weight: 700; font-size: 1rem; }
 .prod-price-currency { color: var(--mk-price-green); font-weight: 600; font-size: 0.74rem; opacity: 0.85; }
 
-.prod-chain { color: var(--mk-text-dim); font-size: 0.76rem; }
+/* Badge plutôt que texte nu (revue design : « Secret répété sur chaque
+   carte... occupe de l'espace sans expliquer clairement sa fonction ») — la
+   catégorie devient visuellement une étiquette identifiable (comme les
+   pastilles de filtre .market-cat-pill au-dessus de la grille, mais en plus
+   discret : simple lecture, pas une action). */
+.prod-chain {
+  display: inline-block;
+  color: var(--mk-text-soft);
+  background: var(--mk-surface-3);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-top: 2px;
+}
 
 .prod-vendor-line {
   display: flex;
@@ -455,7 +493,18 @@ h2 {
   gap: 8px;
   margin-top: 8px;
   font-size: 0.8rem;
+  font-weight: 500;
   color: var(--mk-text-soft);
+}
+
+/* Une seule ligne quoi qu'il arrive (revue design : « avatar + nom prennent
+   parfois deux lignes » — un nom de boutique long, ex. « 100% ZOULMANIYOU »,
+   repoussait le reste de la carte au lieu de tronquer). */
+.prod-vendor-line span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prod-vendor-avatar {
@@ -572,6 +621,14 @@ h2 {
    largeur et concurrençait la barre système Android. Scopée à cette page
    (voir le commentaire dans app/page.tsx) : pas de classe partagée avec
    d'autres écrans, donc pas de risque de collision ailleurs dans l'app. */
+/* Fond OPAQUE (revue design, retour utilisateur : « la nav basse recouvre
+   les cartes ») — var(--mk-surface) n'est qu'un voile à 10 % d'opacité en
+   thème sombre (glassmorphism, voir app/globals.css) : les cartes du bas de
+   grille se voyaient PAR TRANSPARENCE à travers la barre, donnant
+   l'impression qu'elle « recouvrait » le contenu au lieu de simplement
+   flotter dessus. --mk-bg-deep (déjà utilisé pour les panneaux latéraux
+   opaques ailleurs dans l'app) + un léger flou règlent le fond ; le
+   padding-bottom réservé plus bas (voir .container) règle l'espace. */
 .market-bottom-nav {
   position: fixed;
   left: 0;
@@ -579,7 +636,9 @@ h2 {
   bottom: 0;
   z-index: 60; /* sous .modal-overlay (100) et .cart-panel (200) : une modale ouverte doit rester au-dessus */
   display: flex;
-  background: var(--mk-surface);
+  background: var(--mk-bg-deep);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--mk-border);
   padding: 6px max(6px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
@@ -604,21 +663,31 @@ h2 {
 
 .market-bottom-nav-item:hover { color: var(--mk-text); }
 
+/* Une seule convention forte pour l'onglet actif (revue design : « plusieurs
+   effets simultanés » — le fond ET la couleur changeaient déjà ensemble, ici
+   on l'assume comme LA convention unique — pastille de fond pleine, au lieu
+   de la nuancer en plus par un simple changement de couleur de texte comme
+   les autres états (:hover) le font déjà). */
 .market-bottom-nav-item.active {
   color: var(--mk-gold);
-  background: color-mix(in srgb, var(--mk-gold) 12%, transparent);
+  background: color-mix(in srgb, var(--mk-gold) 16%, transparent);
 }
 
 /* Place pour ne pas laisser la nav fixe recouvrir la fin de la grille
    produit ni le bas de .market-search-box/.market-categories en cas de
-   contenu court. */
-.container { padding-bottom: 76px; }
+   contenu court. 76px = la hauteur réelle de la barre (padding 6px×2 +
+   contenu) ; env(safe-area-inset-bottom) s'ajoute EN PLUS (pas inclus dans
+   les 76px) car la barre l'ajoute déjà à SON propre padding interne — sans
+   ce complément, la zone réservée était trop courte sur un écran à encoche/
+   barre de gestes, et le bas de la grille restait masqué (revue design,
+   retour utilisateur). */
+.container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 
 /* La barre de notification globale (.toast, app/globals.css) reste
    au-dessus de la nav fixe plutôt que masquée derrière — override propre à
    cette page, marche.css n'étant chargée qu'ici (même mécanisme que les
    surcharges .container/.glass-panel déjà en place dans ce fichier). */
-.toast { bottom: 76px; }
+.toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
 
 .add-to-cart-btn {
   background: var(--mk-gold);
