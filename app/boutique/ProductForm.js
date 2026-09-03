@@ -6,11 +6,11 @@ import { useEffect, useRef, useState } from 'react';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
+import { CHAINS } from '@/lib/market';
 import SmartImage from '@/components/SmartImage';
 
 const MAX_IMAGES = 5;
 const MIN_IMAGES = 2;
-const CHAINS = ['Secret', 'chaîne', 'encens', 'bague', 'livre', 'autres'];
 
 export default function ProductForm({ product, onClose, onSaved, notify }) {
   const isEdit = !!product;

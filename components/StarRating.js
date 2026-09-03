@@ -5,7 +5,7 @@
 // pour l'assemblage complet (liste + formulaire). Styles : app/globals.css,
 // section « Avis » (préfixe .sr-).
 
-export function StarRatingDisplay({ value, count = 0, size = '1rem', compact = false }) {
+export function StarRatingDisplay({ value, count = 0, size = '1rem', compact = false, numeric = false }) {
   const rounded = Math.round(Number(value) || 0);
   const stars = (
     <span className="sr-stars" aria-hidden="true">
@@ -15,6 +15,21 @@ export function StarRatingDisplay({ value, count = 0, size = '1rem', compact = f
     </span>
   );
   const label = `${(Number(value) || 0).toFixed(1)} sur 5${compact ? '' : `, ${count} avis`}`;
+
+  // « ★ 4,8 · 23 avis » — une seule étoile + la note chiffrée, plus compact
+  // que les 5 étoiles quand la place manque (ex. carte boutique resserrée du
+  // Marché — revue design, point 3 : « ★★★★★ partout n'aide pas à comparer,
+  // on ne sait pas si c'est une vraie note, un nombre d'avis, ou juste
+  // décoratif »).
+  if (numeric) {
+    return (
+      <span className="sr-display sr-display-numeric" style={{ fontSize: size }} aria-label={label}>
+        <span className="sr-star on" aria-hidden="true">★</span>
+        <span className="sr-numeric-value">{(Number(value) || 0).toFixed(1).replace('.', ',')}</span>
+        {count > 0 && <span className="sr-count">· {count} avis</span>}
+      </span>
+    );
+  }
   if (compact) {
     return (
       <span className="sr-display sr-display-compact" style={{ fontSize: size }} aria-label={label}>

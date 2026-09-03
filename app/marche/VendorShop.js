@@ -1,10 +1,11 @@
 'use client';
 // Vue boutique d'un vendeur — port d'openVendorShop().
 import { useCallback, useState } from 'react';
-import { formatPrice, safeKey } from '@/lib/market';
+import { safeKey } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import ReviewsSection from '@/components/ReviewsSection';
+import ProductPrice from './ProductPrice';
 
 export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProduct }) {
   const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
@@ -77,7 +78,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
             )}
             <div className="prod-body">
               <div className="prod-name">{p.produit || 'Produit'}</div>
-              <div className="prod-price">{formatPrice(p.Prix, p.devise)}</div>
+              <ProductPrice prix={p.Prix} devise={p.devise} />
             </div>
           </div>
         ))}

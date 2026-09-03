@@ -1,13 +1,16 @@
 'use client';
 // Page d'accueil = Marché Mystique (décision produit : le module le plus
 // utilisé devient la porte d'entrée de l'app). Le tableau de bord — la liste
-// des autres modules — est déplacé sur /menu, accessible via le grand bouton
-// « ☰ Accéder au menu » en bas de page (compte/thème/déconnexion ont suivi
-// sur /menu, cf. app/menu/page.tsx). Port de marche.html/marche.js en React.
+// des autres modules — est déplacé sur /menu, accessible depuis la
+// navigation fixe en bas de page (compte/thème/déconnexion ont suivi sur
+// /menu, cf. app/menu/page.tsx). Port de marche.html/marche.js en React.
 // Produits (via /api/list-content kind=product), vendeurs reconstruits depuis
 // les métadonnées, tri par popularité, modale produit et boutique vendeur.
-// Volontairement épuré : pas de barre de recherche ni de filtre par
-// catégorie — juste la liste des vendeurs puis les produits.
+// Recherche (matchesSearch) et filtre par catégorie (CHAINS, lib/market.js)
+// au-dessus de la liste des vendeurs puis des produits — réintroduits par
+// une revue design ultérieure après avoir été volontairement retirés lors
+// d'un nettoyage antérieur (voir git blame) : cette fois demandés
+// explicitement comme outils de découverte d'un vrai marketplace.
 //
 // NB : le panier de marche.js ciblait des éléments DOM absents du HTML (code
 // mort) ; la commande réelle se fait par produit via WhatsApp. On porte donc
@@ -26,7 +29,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
-import { vendorKey, safeKey, formatCount, formatPrice, extractVendors, scorePopularite } from '@/lib/market';
+import { vendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
@@ -36,6 +39,7 @@ import { useProgressiveList } from '@/components/useProgressiveList';
 import { useToast } from '@/components/useToast';
 import ProductModal from './marche/ProductModal';
 import VendorShop from './marche/VendorShop';
+import ProductPrice from './marche/ProductPrice';
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -79,6 +83,13 @@ export default function Home() {
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({}); // { [productKey]: true } — image indisponible → repli 🔮
   const markImgError = useCallback((key: string) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
   const bootRef = useRef(false);
+  // Recherche + catégorie (revue design, point 5) : réintroduites après avoir
+  // été volontairement retirées lors d'un précédent nettoyage (voir
+  // l'en-tête du fichier, git blame) — cette fois demandées explicitement
+  // comme « outils fondamentaux de découverte » d'un marketplace. Purement
+  // client (filtre sur allProducts déjà chargé), aucun nouvel appel réseau.
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState(''); // '' = Tous
 
   // — Popularité (likes + commentaires + achats) : chargée après l'affichage —
   // via /api/social (HTTPS, Admin SDK), pas le SDK client RTDB (get() direct
@@ -205,14 +216,17 @@ export default function Home() {
     return v.id === email || v.id === me.uid;
   }, []);
 
-  // Triés par popularité (achats > likes > commentaires, puis plus récents à
-  // score égal) — plus de recherche ni de filtre par catégorie (retirés).
+  // Filtrés par recherche + catégorie, puis triés par popularité (achats >
+  // likes > commentaires, puis plus récents à score égal).
   const filtered = useMemo(() => {
-    return allProducts.slice().sort((a, b) => {
-      const d = scorePopularite(popularite, b._key) - scorePopularite(popularite, a._key);
-      return d !== 0 ? d : Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
-    });
-  }, [allProducts, popularite]);
+    return allProducts
+      .filter((p) => matchesSearch(p.produit, search))
+      .filter((p) => !category || p.chain === category)
+      .sort((a, b) => {
+        const d = scorePopularite(popularite, b._key) - scorePopularite(popularite, a._key);
+        return d !== 0 ? d : Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
+      });
+  }, [allProducts, popularite, search, category]);
 
   // Rendu progressif : la grille produit ne monte plus toutes ses cartes
   // (chacune avec son image) dans la même frame.
@@ -263,13 +277,54 @@ export default function Home() {
             <h2 className="market-title">Marché ASRAR PRO</h2>
             {/* Rapatrié depuis /menu : les commandes se passent ici (via WhatsApp,
                 cf. ProductModal), donc les retrouver doit rester à portée de main
-                sur le Marché plutôt que dans le tableau de bord des modules. */}
-            <Link href="/commandes" className="market-orders-link">
-              🧾 Mes commandes
+                sur le Marché plutôt que dans le tableau de bord des modules.
+                Icône compacte en haut à droite (revue design, point 6) — le
+                lien texte centré sous le titre ressemblait à un filtre et
+                flottait, isolé, plutôt que de se lire comme une action rapide. */}
+            <Link href="/commandes" className="market-orders-icon" aria-label="Mes commandes" title="Mes commandes">
+              📦
             </Link>
           </div>
 
+          {/* Recherche + catégories (revue design, point 5) : les seuls
+              « outils fondamentaux de découverte » qui manquaient pour que
+              cet écran se lise comme un vrai marketplace, pas juste une liste. */}
+          <div className="market-search-box">
+            <span aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              className="market-search-input"
+              placeholder="Rechercher un produit..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="market-categories" role="tablist" aria-label="Filtrer par catégorie">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={category === ''}
+              className={'market-cat-pill' + (category === '' ? ' active' : '')}
+              onClick={() => setCategory('')}
+            >
+              Tous
+            </button>
+            {CHAINS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="tab"
+                aria-selected={category === c}
+                className={'market-cat-pill' + (category === c ? ' active' : '')}
+                onClick={() => setCategory(c)}
+              >
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </button>
+            ))}
+          </div>
+
           <div className="vendors-section">
+            <h3 className="market-section-title">Boutiques populaires</h3>
             <div className="vendors-scroll">
               {loading ? (
                 <>
@@ -300,22 +355,31 @@ export default function Home() {
                     {own && <div className="vendor-you-badge">Votre boutique</div>}
                     <div className="vendor-name">{v.name}</div>
                     <div className="vendor-specialty">{v.specialty}</div>
-                    {(() => {
-                      const r = vendorReviews[safeKey(v.id)];
-                      return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.72rem" compact /> : null;
-                    })()}
-                    {!own && (
-                      // Pas de <button> ici sur sa propre carte : elle devient un <Link>
-                      // (imbriquer un bouton dans un lien est invalide en HTML), et « aimer
-                      // sa propre boutique » n'a de toute façon pas de sens.
-                      <button
-                        className={'vendor-like' + (l.liked ? ' liked' : '')}
-                        onClick={(e) => toggleVendorLike(v.id, e)}
-                        aria-label="Aimer cette boutique"
-                      >
-                        <span>{l.liked ? '❤️' : '🤍'}</span> <span>{formatCount(l.count)}</span>
-                      </button>
-                    )}
+                    {/* Note + like sur une seule ligne compacte (revue design,
+                        points 2, 3) — logo + nom + catégorie + note + like,
+                        pas plus, au lieu d'empiler chaque info sur sa propre
+                        ligne dans une carte deux fois plus large. Le like
+                        garde son cœur vide/rempli (déjà la bonne sémantique
+                        pour une action favoris, revue design point 4) —
+                        seule la mise en page change ici. */}
+                    <div className="vendor-meta-row">
+                      {(() => {
+                        const r = vendorReviews[safeKey(v.id)];
+                        return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.72rem" numeric /> : null;
+                      })()}
+                      {!own && (
+                        // Pas de <button> ici sur sa propre carte : elle devient un <Link>
+                        // (imbriquer un bouton dans un lien est invalide en HTML), et « aimer
+                        // sa propre boutique » n'a de toute façon pas de sens.
+                        <button
+                          className={'vendor-like' + (l.liked ? ' liked' : '')}
+                          onClick={(e) => toggleVendorLike(v.id, e)}
+                          aria-label="Aimer cette boutique"
+                        >
+                          <span>{l.liked ? '❤️' : '🤍'}</span> <span>{formatCount(l.count)}</span>
+                        </button>
+                      )}
+                    </div>
                   </>
                 );
                 // Sa propre boutique est reconnue automatiquement (email/uid) : on
@@ -341,6 +405,7 @@ export default function Home() {
             </div>
           </div>
 
+          <h3 className="market-section-title">Produits populaires</h3>
           <div className="prod-grid">
             {loading ? (
               <>
@@ -380,10 +445,18 @@ export default function Home() {
                     )}
                     <div className="prod-body">
                       <div className="prod-name">{p.produit || 'Produit'}</div>
-                      <div className="prod-price">{formatPrice(p.Prix, p.devise)}</div>
+                      <ProductPrice prix={p.Prix} devise={p.devise} />
                       <div className="prod-chain">{p.chain || ''}</div>
+                      {/* Cœur PLEIN (pas vide) : ce compteur n'est pas une
+                          action au niveau de la carte (le like réel se fait
+                          dans la fiche produit, ProductModal) — un cœur vide
+                          laissait croire à tort qu'un tap ici « aimerait » le
+                          produit (revue design, point 4 : « ❤️ sur une
+                          boutique et 🤍 sur un produit peuvent signifier
+                          favoris, likes ou popularité »). Plein = un
+                          indicateur passé/agrégé, pas une invite à agir. */}
                       <div className="prod-stats">
-                        🤍 {formatCount(s.likes)} &nbsp; 💬 {formatCount(s.comments)}
+                        ❤️ {formatCount(s.likes)} &nbsp; 💬 {formatCount(s.comments)}
                       </div>
                       {vendor && (
                         <div className="prod-vendor-line">
@@ -413,9 +486,33 @@ export default function Home() {
             )}
           </div>
 
-          <Link href="/menu" className="menu-cta-bottom">
-            ☰ Accéder au menu
-          </Link>
+          {/* Navigation fixe (revue design, point 12) — remplace le gros bouton
+              « Accéder au menu » qui prenait toute la largeur en bas et
+              concurrençait la barre système Android, alors qu'un marketplace
+              ne devrait pas obliger à tout descendre pour changer d'écran.
+              3 destinations réelles, pas 4 : cette page EST déjà à la fois
+              l'accueil et le Marché (voir l'en-tête du fichier) — un item
+              « Accueil » séparé pointerait vers cette même page, ce qui
+              semblerait cassé (rien ne changerait au tap). Favoris omis :
+              aucune page ne les regroupe aujourd'hui (seuls les favoris
+              propres à Noms d'Allah existent) — chantier à part entière.
+              Scopée à cette page pour l'instant, pas montée globalement
+              (aurait supposé un état actif partagé entre écrans ET décider
+              ce qu'agrège « Favoris » — décision produit distincte). */}
+          <nav className="market-bottom-nav" aria-label="Navigation principale">
+            <Link href="/" className="market-bottom-nav-item active" aria-current="page">
+              <span aria-hidden="true">⌂</span>
+              <span>Marché</span>
+            </Link>
+            <Link href="/commandes" className="market-bottom-nav-item">
+              <span aria-hidden="true">📦</span>
+              <span>Commandes</span>
+            </Link>
+            <Link href="/menu" className="market-bottom-nav-item">
+              <span aria-hidden="true">☰</span>
+              <span>Menu</span>
+            </Link>
+          </nav>
         </div>
       )}
 
