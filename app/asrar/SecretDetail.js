@@ -3,7 +3,7 @@
 // le partage, le PDF et l'image plein écran. L'état (like, commentaires,
 // favori, feuille de commentaires) est géré par React au lieu du DOM.
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Share2, FileText, Heart, MessageCircle, Bookmark } from 'lucide-react';
+import { ArrowLeft, Share2, FileText, Heart, MessageCircle, Bookmark, ShieldAlert } from 'lucide-react';
 import MixedText from '@/components/MixedText';
 import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
@@ -14,7 +14,7 @@ import { sentenceCaseIfShouting } from '@/lib/text';
 import SmartImage from '@/components/SmartImage';
 import { downloadSecretPdf, PDF_MIN_LEVEL } from '@/lib/pdf';
 
-export default function SecretDetail({ secret, onBack }) {
+export default function SecretDetail({ secret, catLabel, onBack }) {
   const { catId, key, data } = secret;
   const { liked, likeCount, comments, toggleLike, postComment } = useSecretRealtime(catId, key);
   const { getLevel, openGate } = useAccess();
@@ -72,8 +72,12 @@ export default function SecretDetail({ secret, onBack }) {
         <button className="detail-back" onClick={onBack}>
           <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" /> Retour aux secrets
         </button>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="detail-expand" onClick={doShare} title="Partager ce secret">
+        {/* Hiérarchie entre les deux actions (revue design) : Partager reste
+            l'action principale (bouton plein) ; PDF devient secondaire
+            (contour discret) — les deux boutons pleins de même poids
+            attiraient autant l'attention l'un que l'autre. */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="detail-expand primary" onClick={doShare} title="Partager ce secret">
             <Share2 size={14} strokeWidth={2} aria-hidden="true" /> Partager
           </button>
           <button className="detail-expand" onClick={doPdf} title="Télécharger en PDF">
@@ -94,18 +98,42 @@ export default function SecretDetail({ secret, onBack }) {
             />
           </div>
         )}
+        {/* Repère de catégorie au-dessus du titre (revue design) — la même
+            puce que sur les cartes de la liste (.secret-cat-chip), pour
+            situer la fiche avant même de lire son titre. */}
+        {catLabel && <span className="secret-cat-chip">{catLabel}</span>}
         <MixedText className="detail-title" text={sentenceCaseIfShouting(data.faida || '')} />
-        <MixedText className="mix" text={data.sirr || ''} />
+
+        <div className="detail-divider" />
+
+        {/* Encart générique, jamais lié au contenu d'une fiche précise (revue
+            design : le contenu est saisi librement par les auteurs, parfois
+            formulé comme une affirmation médicale forte — corriger chaque
+            texte en base serait un chantier éditorial à part, hors périmètre
+            d'une passe d'affichage). Affiché sur TOUTE fiche, sans exception. */}
+        <div className="safety-notice">
+          <ShieldAlert size={16} strokeWidth={2} aria-hidden="true" />
+          <span>Pratique traditionnelle et spirituelle — ne remplace pas un diagnostic ou un traitement médical.</span>
+        </div>
+
+        {/* detectLists : reconnaît une numérotation déjà présente dans le
+            texte source (« 1. …», « 2. … ») et la rend en étapes numérotées
+            plutôt qu'en un unique bloc de prose — voir MixedText.js. */}
+        <MixedText className="mix" text={data.sirr || ''} detectLists />
       </div>
 
       <div className="interaction-bar" style={{ display: 'flex' }}>
         <div className="meta">
+          {/* Icône toujours visible (affordance de l'action) ; le compteur
+              n'est affiché que s'il est non nul — deux "0" ne veulent rien
+              dire tant que personne n'a interagi (revue design). */}
           <span className={'like-btn' + (liked ? ' liked' : '')} onClick={toggleLike}>
-            <Heart size={18} strokeWidth={2} fill={liked ? 'currentColor' : 'none'} aria-hidden="true" />{' '}
-            <span>{likeCount}</span>
+            <Heart size={18} strokeWidth={2} fill={liked ? 'currentColor' : 'none'} aria-hidden="true" />
+            {likeCount > 0 && <span>{likeCount}</span>}
           </span>
           <span onClick={() => setSheetOpen(true)}>
-            <MessageCircle size={18} strokeWidth={2} aria-hidden="true" /> {comments.length}
+            <MessageCircle size={18} strokeWidth={2} aria-hidden="true" />
+            {comments.length > 0 && <span>{comments.length}</span>}
           </span>
           <span className={'bookmark-icon' + (bookmarked ? ' saved' : '')} onClick={toggleBookmark}>
             <Bookmark size={18} strokeWidth={2} fill={bookmarked ? 'currentColor' : 'none'} aria-hidden="true" />
