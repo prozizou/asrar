@@ -3,7 +3,7 @@
 // le partage, le PDF et l'image plein écran. L'état (like, commentaires,
 // favori, feuille de commentaires) est géré par React au lieu du DOM.
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Share2, FileText, Heart, MessageCircle, Bookmark, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Share2, FileText, Heart, MessageCircle, Bookmark } from 'lucide-react';
 import MixedText from '@/components/MixedText';
 import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
@@ -105,16 +105,6 @@ export default function SecretDetail({ secret, catLabel, onBack }) {
         <MixedText className="detail-title" text={sentenceCaseIfShouting(data.faida || '')} />
 
         <div className="detail-divider" />
-
-        {/* Encart générique, jamais lié au contenu d'une fiche précise (revue
-            design : le contenu est saisi librement par les auteurs, parfois
-            formulé comme une affirmation médicale forte — corriger chaque
-            texte en base serait un chantier éditorial à part, hors périmètre
-            d'une passe d'affichage). Affiché sur TOUTE fiche, sans exception. */}
-        <div className="safety-notice">
-          <ShieldAlert size={16} strokeWidth={2} aria-hidden="true" />
-          <span>Pratique traditionnelle et spirituelle — ne remplace pas un diagnostic ou un traitement médical.</span>
-        </div>
 
         {/* detectLists : reconnaît une numérotation déjà présente dans le
             texte source (« 1. …», « 2. … ») et la rend en étapes numérotées
