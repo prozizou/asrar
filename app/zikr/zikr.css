@@ -239,6 +239,20 @@
 
 /* ── Participants (présence, rythme, modération) ─────────── */
 .zk-board { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+/* En-tête + bouton « Notifier les inactifs » (créateur only) sur la même
+   ligne — le h3 garde son gap interne (pastille de compte) mais perd sa
+   propre marge basse, reportée ici sur toute la ligne. */
+.zk-board-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 12px; }
+.zk-board-head h3 { margin: 0; }
+.zk-notify-inactive {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
+  color: #d9a441; border-radius: 20px; padding: 5px 12px;
+  font-size: 0.74rem; font-weight: 700; font-family: var(--font-ui);
+  cursor: pointer; white-space: nowrap;
+}
+.zk-notify-inactive:hover:not(:disabled) { background: rgba(217,164,65,0.2); }
+.zk-notify-inactive:disabled { opacity: 0.4; cursor: default; }
 .zk-board-list { display: flex; flex-direction: column; gap: 6px; }
 .zk-board-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
 .zk-board-row.me { border: 1px solid var(--accent); }

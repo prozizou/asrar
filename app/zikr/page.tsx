@@ -38,7 +38,7 @@ import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
-  approveMember, rejectMember, saveProgress, warnMember, dismissWarning,
+  approveMember, rejectMember, saveProgress, warnMember, notifyInactiveMembers, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
   openWishes, closeWishes, submitWish,
   sendMessage, getMessages, approveZikr,
@@ -483,6 +483,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // Formulaire de modification (créateur only) — voir EditGroupForm plus bas.
   const [editing, setEditing] = useState(false);
 
+  // « Notifier les inactifs » (créateur only) — voir doNotifyInactive.
+  const [notifyBusy, setNotifyBusy] = useState(false);
+
   // Discussion du groupe façon WhatsApp — chargée seulement quand le
   // panneau est ouvert (pas de sondage inutile en arrière-plan).
   const [showChat, setShowChat] = useState(false);
@@ -612,6 +615,27 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const doDismissWarning = async () => {
     try { await dismissWarning(groupId); load(); } catch { /* best effort */ }
   };
+  // Avertit en une fois tous les comptes n'ayant récité aucun grain — voir
+  // pages/api/zikr.js handleNotifyInactive (avertissement privé + push
+  // best-effort). `notified` reflète ce que le SERVEUR a réellement trouvé
+  // (recalculé côté serveur, pas simplement inactiveCount côté client).
+  const doNotifyInactive = async () => {
+    if (notifyBusy) return;
+    setNotifyBusy(true);
+    try {
+      const d = await notifyInactiveMembers(groupId);
+      const n = Number(d.notified) || 0;
+      notify(
+        n > 0
+          ? `🔔 ${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.`
+          : 'Aucun compte inactif pour l’instant.'
+      );
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+    } finally {
+      setNotifyBusy(false);
+    }
+  };
   const doWarn = async (targetUid: string, email: string) => {
     try { await warnMember(groupId, targetUid); notify(`Avertissement privé envoyé à ${email}.`); load(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
@@ -660,6 +684,11 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   if (!g) return <div className="glass-panel zk-loading"><Spinner /> Chargement…</div>;
 
   const isMember = g.status === 'member' || g.status === 'owner';
+  // Compte purement indicatif (bouton « Notifier les inactifs ») — le
+  // décompte qui fait foi est celui recalculé par le serveur, voir
+  // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
+  // sondage affiché côté client).
+  const inactiveCount = g.members.filter((m) => m.uid !== uid && m.fait === 0).length;
 
   return (
     <div className="glass-panel">
@@ -788,7 +817,21 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           rejoint), avec les outils de modération pour le créateur. */}
       {isMember && g.members.length > 0 && (
         <div className="zk-board">
-          <h3>Participants ({g.members.length})</h3>
+          <div className="zk-board-head">
+            <h3>Participants ({g.members.length})</h3>
+            {g.status === 'owner' && (
+              <button
+                type="button"
+                className="zk-notify-inactive"
+                onClick={doNotifyInactive}
+                disabled={notifyBusy || inactiveCount === 0}
+                title="Avertir les comptes n'ayant récité aucun grain — sinon ils seront retirés du groupe"
+              >
+                <Bell size={13} strokeWidth={2.5} aria-hidden="true" />
+                Notifier les inactifs{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
+              </button>
+            )}
+          </div>
           <div className="zk-board-list">
             {g.members.map((m) => {
               const suspect = m.rythme >= RYTHME_SUSPECT;
