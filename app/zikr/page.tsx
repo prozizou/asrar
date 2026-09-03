@@ -76,6 +76,7 @@ interface Member {
   fait: number;
   rythme: number;
   online: boolean;
+  dailyTotal: number; // total du jour (fenêtre UTC commune au groupe, lib/zikrLogic.js utcDateKey)
 }
 
 interface Wish {
@@ -102,6 +103,7 @@ interface GroupDetailData extends Group {
   requests?: JoinRequest[];
   members: Member[];
   myFait?: number;
+  myDailyTotal?: number;
   myWarning?: string;
   wishesOpen?: boolean;
   wishes?: Wish[];
@@ -847,7 +849,10 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                     {m.uid === g.ownerUid && <span className="zk-muted"> (créateur)</span>}
                     {m.uid === uid && <span className="zk-muted"> (vous)</span>}
                   </span>
-                  <span className="zk-board-count">{fmt(m.fait)} grains</span>
+                  <span className="zk-board-stats">
+                    <span className="zk-board-count">{fmt(m.fait)} grains</span>
+                    <span className="zk-board-today">auj. {fmt(m.dailyTotal)}</span>
+                  </span>
                   {m.rythme > 0 && (
                     <span className={'zk-pace' + (suspect ? ' suspect' : '')} title="Rythme instantané">
                       {suspect ? <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> : <Zap size={11} strokeWidth={2.5} aria-hidden="true" />} {m.rythme}/min
@@ -1093,8 +1098,23 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
         </div>
         <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({fmtPct(groupPct)})</div>
 
-        <div className="zk-progress-meta" style={{ marginTop: 10 }}><span>Mes grains récités</span></div>
-        <strong className="zk-my-fait">{fmt(myFait)}</strong>
+        {/* Deux compteurs personnels côte à côte : le total (jamais remis à
+            zéro) et le total DU JOUR — fenêtre UTC commune à tout le groupe,
+            pas un minuit par membre (lib/zikrLogic.js utcDateKey). Ce second
+            total est celui rapporté par le SERVEUR au dernier sondage — pas
+            corrigé comme `myFait` (t.total/syncedFait) : un léger décalage
+            (rattrapé au prochain envoi groupé, SAVE_DEBOUNCE) est sans
+            conséquence pour un simple repère "aujourd'hui". */}
+        <div className="zk-my-stats">
+          <div>
+            <div className="zk-progress-meta"><span>Mes grains récités</span></div>
+            <strong className="zk-my-fait">{fmt(myFait)}</strong>
+          </div>
+          <div>
+            <div className="zk-progress-meta"><span>Aujourd’hui</span></div>
+            <strong className="zk-my-fait">{fmt(Number(g.myDailyTotal) || 0)}</strong>
+          </div>
+        </div>
       </div>
 
       {/* Réglages masqués : pas de part personnelle en Zikr collectif,

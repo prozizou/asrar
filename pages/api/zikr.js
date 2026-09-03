@@ -79,7 +79,15 @@
 //   action="approve"        → { groupId, uid } : créateur only — accepte un
 //                              membre (à ne pas confondre avec "approveZikr")
 //   action="reject"         → { groupId, uid } : créateur only
-//   action="progress"       → { groupId, fait, rythme? } : membre only
+//   action="progress"       → { groupId, fait, rythme? } : membre only — met
+//                              aussi à jour le total DU JOUR (fenêtre UTC
+//                              commune à tout le groupe, voir zikr_members
+//                              ci-dessous) et, à la reprise d'activité (le
+//                              compte était hors ligne juste avant cet appel),
+//                              prévient les AUTRES membres en push que ce
+//                              compte est en train de réciter — au plus une
+//                              fois par heure et par destinataire (voir
+//                              handleProgress/notifyReciting)
 //   action="warn"           → { groupId, uid } : créateur only — avertissement privé
 //   action="notifyInactive" → { groupId } : créateur only — avertissement privé +
 //                              notification push (si abonné) à TOUS les comptes
@@ -112,7 +120,15 @@
 //                                 createdAt, membersCount, wishesOpen?,
 //                                 private?, approved? }
 //   zikr_members/{gid}/{uid} = { email, fait, rythme, avertissement?,
-//                                 joinedAt, updatedAt, lastSeenAt }
+//                                 joinedAt, updatedAt, lastSeenAt,
+//                                 daily?: { date, total } — total DU JOUR
+//                                 (fenêtre UTC commune à tout le groupe,
+//                                 lib/zikrLogic.js utcDateKey) : bascule
+//                                 paresseuse à la LECTURE (handleGet compare
+//                                 juste `date` au jour courant), jamais de job
+//                                 de remise à zéro à programmer,
+//                                 lastRecitingPushAt? — throttle du push
+//                                 « reprise d'activité » (voir notifyReciting) }
 //   zikr_requests/{gid}/{uid}= { email, at }
 //   zikr_wishes/{gid}/{uid}  = { email, text, at } — vœu PRIVÉ : visible
 //                                 seulement du créateur (liste) et de son
@@ -127,8 +143,9 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const {
-  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText,
-  ONLINE_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE, WISH_MAX, CHAT_MESSAGE_MAX,
+  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey,
+  ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
+  WISH_MAX, CHAT_MESSAGE_MAX,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -345,6 +362,13 @@ async function handleGet(db, res, user, gid) {
   const total = Number(g.total) || 0;
   const remaining = Math.max(0, target - total);
   const now = Date.now();
+  const today = utcDateKey(now); // fenêtre du "total du jour" — voir lib/zikrLogic.js
+
+  // Total DU JOUR (v.daily = { date, total }, écrit par handleProgress) —
+  // bascule paresseuse : un `daily` d'une date différente d'aujourd'hui est
+  // simplement traité comme 0, sans qu'aucun job n'ait besoin de le remettre
+  // à zéro à minuit.
+  const dailyOf = (v) => (v.daily && v.daily.date === today ? Number(v.daily.total) || 0 : 0);
 
   // Ma propre entrée UNIQUEMENT, d'abord — pas tout `zikr_members/{gid}`
   // (revue de sécurité) : avant ce correctif, "get" renvoyait le uid + email
@@ -367,6 +391,7 @@ async function handleGet(db, res, user, gid) {
       rythme: Number(v.rythme) || 0,
       online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
       avertissement: v.avertissement || "",
+      dailyTotal: dailyOf(v),
     };
   }
 
@@ -383,6 +408,7 @@ async function handleGet(db, res, user, gid) {
         fait: Number(v.fait) || 0,
         rythme: Number(v.rythme) || 0,
         online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
+        dailyTotal: dailyOf(v),
       });
     });
     members.sort((a, b) => b.fait - a.fait); // classement décroissant
@@ -456,6 +482,7 @@ async function handleGet(db, res, user, gid) {
     wishesOpen: g.wishesOpen === true,
     status,
     myFait: mine ? mine.fait : 0,
+    myDailyTotal: mine ? mine.dailyTotal : 0,
     myWarning: mine ? mine.avertissement : "",
     myWish,
     members,
@@ -537,6 +564,12 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
   const mem = memSnap.val() || {};
 
   const oldFait = Number(mem.fait) || 0;
+  const now = Date.now();
+  // Le compte était-il considéré hors ligne JUSTE AVANT cet appel (avant la
+  // mise à jour de lastSeenAt ci-dessous) ? Sert de déclencheur pour
+  // notifyReciting — une reprise d'activité, pas chaque grain (voir sa
+  // propre doc plus bas).
+  const wasOffline = now - (Number(mem.lastSeenAt) || 0) >= ONLINE_WINDOW_MS;
   // Avancement MONOTONE, SANS PLAFOND (objectif partagé, pas de part
   // individuelle) : on ne retient jamais une valeur inférieure à celle déjà
   // enregistrée. Le client envoie un absolu déduit de son compteur local
@@ -547,7 +580,7 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
   const delta = newFait - oldFait;
   const rythme = normalizeRythme(rawRythme);
 
-  await memRef.update({ fait: newFait, rythme, updatedAt: Date.now(), lastSeenAt: Date.now() });
+  await memRef.update({ fait: newFait, rythme, updatedAt: now, lastSeenAt: now });
   let total = Number(g.total) || 0;
   if (delta !== 0) {
     // Total CUMULATIF (jamais décrémenté, même quand un membre quitte plus
@@ -555,6 +588,26 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
     // reste juste même si plusieurs membres avancent en même temps).
     const totalTx = await db.ref("zikr_groups/" + gid + "/total").transaction((t) => Math.max(0, (t || 0) + delta));
     total = Number(totalTx.snapshot && totalTx.snapshot.val()) || 0;
+  }
+
+  if (delta > 0) {
+    // Total DU JOUR (fenêtre UTC commune à tout le groupe, lib/zikrLogic.js
+    // utcDateKey) : transaction (pas une simple lecture-écriture) — un même
+    // compte ouvert sur deux appareils pourrait sinon faire courir deux
+    // écritures concurrentes qui s'écrasent l'une l'autre.
+    const today = utcDateKey(now);
+    await db.ref("zikr_members/" + gid + "/" + user.uid + "/daily").transaction((cur) =>
+      !cur || cur.date !== today ? { date: today, total: delta } : { date: today, total: (Number(cur.total) || 0) + delta }
+    );
+
+    // Reprise d'activité — best-effort (jamais d'erreur remontée au client
+    // pour un push manqué), mais ATTENDU avant de répondre : une promesse
+    // simplement lancée sans await risquerait d'être interrompue par le
+    // runtime serverless dès la réponse envoyée (pas de worker persistant
+    // entre deux requêtes ici). Sans incidence notable sur la latence de
+    // "progress" : ne se déclenche qu'à la reprise d'activité, jamais à
+    // chaque grain (voir notifyReciting).
+    if (wasOffline) await notifyReciting(db, gid, user.uid, user.email, newFait).catch(() => {});
   }
 
   return res.status(200).json({ ok: true, fait: newFait, total });
@@ -600,48 +653,99 @@ async function handleNotifyInactive(db, res, user, gid) {
   return res.status(200).json({ ok: true, notified: targets.length });
 }
 
-// Notification push (mêmes clés VAPID que pages/api/cron/reminders.js et
-// pages/api/cron/planet-push.js), déclenchée ici à la demande par le
-// créateur — pas par un planificateur externe, donc aucune vérification
-// server/cronAuth (l'appelant est déjà authentifié plus haut, verifyUser).
-// Nettoie les abonnements expirés (404/410) comme les deux jobs cron — même
-// politique, dupliquée ici plutôt que factorisée pour ne pas faire dépendre
-// ce fichier (déclenché par un utilisateur) de pages/api/cron/* (déclenché
-// par un secret partagé).
-async function pushInactivityWarning(db, uids, gid) {
+// Configure VAPID (mêmes clés que pages/api/cron/reminders.js et
+// pages/api/cron/planet-push.js) si disponible, sinon renvoie false — les
+// deux appelants (pushInactivityWarning, notifyReciting) traitent alors
+// l'envoi push comme silencieusement indisponible (l'avertissement/l'action
+// elle-même reste de toute façon déjà enregistrée ailleurs).
+function configureVapid() {
   const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
   const vapidSubject = process.env.VAPID_SUBJECT;
-  if (!vapidPublic || !vapidPrivate || !vapidSubject) return; // pas configuré : l'avertissement en app suffit
+  if (!vapidPublic || !vapidPrivate || !vapidSubject) return false;
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+  return true;
+}
 
+// Envoie `payload` à TOUS les abonnements push de `uid` (best-effort, jamais
+// bloquant) — nettoie les abonnements expirés (404/410), même politique que
+// pages/api/cron/reminders.js/planet-push.js (dupliquée ici plutôt que
+// factorisée avec eux : ce fichier est déclenché par un UTILISATEUR déjà
+// authentifié, ces deux-là par un secret de planificateur — server/cronAuth
+// n'a pas de sens ici). VAPID doit déjà avoir été configuré par l'appelant
+// (configureVapid()).
+async function sendPushToUid(db, uid, payload, logTag) {
+  const subsSnap = await db.ref("push_subscriptions/" + uid).once("value");
+  if (!subsSnap.exists()) return;
+  const tasks = [];
+  subsSnap.forEach((subSnap) => {
+    const key = subSnap.key;
+    const sub = subSnap.val() || {};
+    if (!sub.endpoint || !sub.keys) return;
+    tasks.push(
+      webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
+        if (e && (e.statusCode === 404 || e.statusCode === 410)) {
+          await db.ref("push_subscriptions/" + uid + "/" + key).remove();
+        } else {
+          await reportError(logTag, e, { uid });
+        }
+      })
+    );
+  });
+  await Promise.all(tasks);
+}
+
+// Notification push déclenchée ici à la demande du créateur — voir
+// configureVapid/sendPushToUid ci-dessus.
+async function pushInactivityWarning(db, uids, gid) {
+  if (!configureVapid()) return; // pas configuré : l'avertissement en app suffit
   const payload = JSON.stringify({
     title: '⏳ Zikr collectif',
     body: MESSAGE_INACTIVITE,
     url: '/s?k=zikr&i=' + gid,
     tag: 'zikr-inactivite-' + gid,
   });
+  await Promise.all(uids.map((uid) => sendPushToUid(db, uid, payload, "zikr:notifyInactive")));
+}
 
-  await Promise.all(uids.map(async (uid) => {
-    const subsSnap = await db.ref("push_subscriptions/" + uid).once("value");
-    if (!subsSnap.exists()) return;
-    const tasks = [];
-    subsSnap.forEach((subSnap) => {
-      const key = subSnap.key;
-      const sub = subSnap.val() || {};
-      if (!sub.endpoint || !sub.keys) return;
-      tasks.push(
-        webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
-          if (e && (e.statusCode === 404 || e.statusCode === 410)) {
-            await db.ref("push_subscriptions/" + uid + "/" + key).remove();
-          } else {
-            await reportError("zikr:notifyInactive", e, { uid });
-          }
-        })
-      );
-    });
-    await Promise.all(tasks);
-  }));
+// ── Prévient les AUTRES membres qu'un compte REPREND son activité ──
+// Appelée par handleProgress uniquement à la reprise (le compte était hors
+// ligne juste avant cet appel, cf. ONLINE_WINDOW_MS) — jamais à chaque
+// grain, le débit serait ingérable sur une récitation continue. Un second
+// filtre, CETTE FOIS PAR DESTINATAIRE (lastRecitingPushAt, persistant —
+// l'app tournant en serverless, un compteur en mémoire comme lib/rateLimit.js
+// ne survivrait pas aux cold starts, cf. pages/api/cron/reminders.js pour le
+// même choix de state persisté), plafonne encore l'envoi à au plus 1x/heure
+// PAR MEMBRE (RECITING_PUSH_WINDOW_MS, lib/zikrLogic.js) — même si plusieurs
+// comptes reprennent leur récitation entre-temps, personne n'est inondé.
+async function notifyReciting(db, gid, senderUid, senderEmail, fait) {
+  if (!configureVapid()) return;
+  const [nameSnap, membersSnap] = await Promise.all([
+    db.ref("zikr_groups/" + gid + "/name").once("value"),
+    db.ref("zikr_members/" + gid).once("value"),
+  ]);
+  const groupName = nameSnap.val() || "Zikr collectif";
+  const now = Date.now();
+  const payload = JSON.stringify({
+    title: '🟢 ' + groupName,
+    body: `${senderEmail || "Un membre"} est en train de réciter — ${Number(fait).toLocaleString("fr-FR")} grains.`,
+    url: '/s?k=zikr&i=' + gid,
+    tag: 'zikr-reciting-' + gid,
+  });
+
+  const tasks = [];
+  membersSnap.forEach((m) => {
+    const uid = m.key;
+    if (uid === senderUid) return;
+    const v = m.val() || {};
+    if (now - (Number(v.lastRecitingPushAt) || 0) < RECITING_PUSH_WINDOW_MS) return; // déjà notifié récemment
+    tasks.push(
+      db.ref("zikr_members/" + gid + "/" + uid + "/lastRecitingPushAt")
+        .set(now)
+        .then(() => sendPushToUid(db, uid, payload, "zikr:notifyReciting"))
+    );
+  });
+  await Promise.all(tasks);
 }
 
 // ── Membre : efface l'avertissement une fois lu (soi-même) ─────

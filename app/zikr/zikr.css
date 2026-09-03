@@ -208,6 +208,10 @@
 .zk-progress-meta { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
 .zk-progress-meta strong { color: var(--text-main); }
 .zk-my-fait { display: block; text-align: center; font-size: 1.4rem; font-weight: 700; color: #d9a441; }
+/* Total (jamais remis à zéro) + total du jour côte à côte — voir MemberCounter. */
+.zk-my-stats { display: flex; gap: 10px; margin-top: 10px; }
+.zk-my-stats > div { flex: 1; min-width: 0; }
+.zk-my-stats .zk-my-fait { font-size: 1.15rem; }
 .zk-reached-banner {
   text-align: center; font-size: 0.9rem; font-weight: 700; color: #d9a441;
   background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
@@ -259,7 +263,11 @@
 .zk-online-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--glass-border); }
 .zk-online-dot.on { background: #2dd4a0; box-shadow: 0 0 0 3px rgba(45,212,160,0.18); }
 .zk-board-email { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Total (jamais remis à zéro) + total du jour, empilés — voir la boucle des
+   participants, app/zikr/page.tsx. */
+.zk-board-stats { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
 .zk-board-count { font-weight: 700; font-size: 0.85rem; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zk-board-today { font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .zk-pace {
   display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
   font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
