@@ -1161,6 +1161,8 @@ img, svg, video { max-width: 100%; height: auto; }
 .sr-star.on { color: #d9a441; }
 .sr-display { display: inline-flex; align-items: center; gap: 8px; }
 .sr-display-compact { display: inline-flex; }
+.sr-display-numeric { gap: 4px; font-size: .82rem; }
+.sr-numeric-value { font-weight: 700; color: var(--text-main); }
 .sr-count { font-size: .82rem; color: var(--text-muted); font-weight: 600; }
 .sr-count-empty { font-weight: 400; font-style: italic; }
 
