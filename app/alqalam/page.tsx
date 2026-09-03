@@ -17,6 +17,7 @@
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -490,323 +491,347 @@ export default function AlQalamPage() {
           ← Retour
         </Link>
 
-        {/* Panneau de contrôle */}
-        <div className="controls-section">
-          {writingMode === null ? (
-            // Menu de sélection : quel type d'écriture ? Précède l'outil —
-            // évite d'atterrir directement sur un formulaire générique avec un
-            // sélecteur « Outils » qui mélangeait des choses très différentes.
-            <div className="mode-picker">
-              <div className="mode-card" onClick={() => selectWritingMode('simple')}>
-                <span className="mode-card-icon">🔁</span>
-                <div className="mode-card-title">Écriture simple</div>
-                <div className="mode-card-desc">Répéter un texte un certain nombre de fois.</div>
-              </div>
-              <div className="mode-card" onClick={() => selectWritingMode('intercalee')}>
-                <span className="mode-card-icon">🔗</span>
-                <div className="mode-card-title">Écriture intercalée</div>
-                <div className="mode-card-desc">Insérer un texte entre les versets d'une sourate.</div>
-              </div>
-              <div className="mode-card" onClick={() => selectWritingMode('rasmique')}>
-                <span className="mode-card-icon">✒️</span>
-                <div className="mode-card-title">Écriture rasmique</div>
-                <div className="mode-card-desc">Écriture sans points ni voyelles (rasm).</div>
-              </div>
+        {writingMode === null ? (
+          // Menu de sélection : quel type d'écriture ? Précède l'outil — évite
+          // d'atterrir directement sur un formulaire générique avec un
+          // sélecteur « Outils » qui mélangeait des choses très différentes.
+          //
+          // Pas de .controls-section ici (revue design) : le grand conteneur
+          // à bordure arrondie autour des trois cartes, chacune ayant déjà sa
+          // propre bordure, empilait deux niveaux de "carte dans une carte"
+          // pour un simple menu de trois choix — les cartes flottent
+          // directement sur le fond, comme un menu d'outils mobile.
+          <div className="mode-picker-section">
+            <div className="mode-picker-head">
+              <h2>Outils d&apos;écriture</h2>
+              <p>Choisissez le mode d&apos;écriture à utiliser.</p>
             </div>
-          ) : (
-            <>
-              <div className="mode-current">
-                <span>
-                  Mode : <strong>{MODE_LABELS[writingMode]}</strong>
+            <div className="mode-picker">
+              <button type="button" className="mode-card" onClick={() => selectWritingMode('simple')}>
+                <span className="mode-card-icon">
+                  <Repeat size={20} strokeWidth={2} aria-hidden="true" />
                 </span>
-                <button type="button" className="mode-change-btn" onClick={changeWritingMode}>
-                  ↺ Changer
-                </button>
-              </div>
+                <span className="mode-card-body">
+                  <span className="mode-card-title">Écriture simple</span>
+                  <span className="mode-card-desc">Répéter un texte plusieurs fois.</span>
+                </span>
+                <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <button type="button" className="mode-card" onClick={() => selectWritingMode('intercalee')}>
+                <span className="mode-card-icon">
+                  <LinkIcon size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="mode-card-body">
+                  <span className="mode-card-title">Écriture intercalée</span>
+                  <span className="mode-card-desc">Insérer un texte entre les versets d&apos;une sourate.</span>
+                </span>
+                <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <button type="button" className="mode-card" onClick={() => selectWritingMode('rasmique')}>
+                <span className="mode-card-icon">
+                  <PenTool size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="mode-card-body">
+                  <span className="mode-card-title">Écriture rasmique</span>
+                  <span className="mode-card-desc">Écriture sans points ni voyelles (rasm).</span>
+                </span>
+                <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="controls-section">
+            <div className="mode-current">
+              <span>
+                Mode : <strong>{MODE_LABELS[writingMode]}</strong>
+              </span>
+              <button type="button" className="mode-change-btn" onClick={changeWritingMode}>
+                ↺ Changer
+              </button>
+            </div>
 
-              <div style={{ position: 'relative', width: '100%' }}>
-                <textarea
-                  ref={inputRef}
-                  className="glass-input top-textarea"
-                  placeholder="يحبونهم كحب الله..."
-                  aria-label="Zone de saisie du texte arabe"
-                  value={inputText}
-                  onChange={(e) => onInput(e.target.value)}
-                  onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                />
-                {suggestions.length > 0 && (
-                  <div className="suggestions-container show-panel" role="listbox">
-                    {suggestions.map((match, i) => (
-                      <div
-                        className="suggestion-item"
-                        key={i}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setInputText(match);
-                          setBaseText(match);
-                          setSuggestions([]);
-                        }}
-                      >
-                        {match}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <textarea
+                ref={inputRef}
+                className="glass-input top-textarea"
+                placeholder="يحبونهم كحب الله..."
+                aria-label="Zone de saisie du texte arabe"
+                value={inputText}
+                onChange={(e) => onInput(e.target.value)}
+                onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              />
+              {suggestions.length > 0 && (
+                <div className="suggestions-container show-panel" role="listbox">
+                  {suggestions.map((match, i) => (
+                    <div
+                      className="suggestion-item"
+                      key={i}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setInputText(match);
+                        setBaseText(match);
+                        setSuggestions([]);
+                      }}
+                    >
+                      {match}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              <div className="grid-row-2-1">
-                <input
-                  type="number"
+            <div className="grid-row-2-1">
+              <input
+                type="number"
+                className="glass-input"
+                placeholder="100"
+                value={repCount}
+                onChange={(e) => {
+                  setRepCount(e.target.value);
+                  savePref('repCount', e.target.value);
+                }}
+                aria-label="Nombre de répétitions de base"
+                max={config.MAX_TOTAL_REPEAT}
+              />
+              <button className="btn-glass" onClick={onWrite}>
+                Écrire
+              </button>
+            </div>
+
+            {writingMode === 'intercalee' && (
+              <div className="hidden-panel show-panel">
+                <select
                   className="glass-input"
-                  placeholder="100"
-                  value={repCount}
-                  onChange={(e) => {
-                    setRepCount(e.target.value);
-                    savePref('repCount', e.target.value);
-                  }}
-                  aria-label="Nombre de répétitions de base"
-                  max={config.MAX_TOTAL_REPEAT}
-                />
-                <button className="btn-glass" onClick={onWrite}>
-                  Écrire
-                </button>
-              </div>
+                  style={{ direction: 'rtl', fontFamily: "'Scheherazade New', serif" }}
+                  value={interKey}
+                  onChange={(e) => setInterKey(e.target.value)}
+                >
+                  <option value="">{sourates.length ? 'Sélectionnez une sourate' : '⏳ Chargement des sourates...'}</option>
+                  {sourates.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
 
-              {writingMode === 'intercalee' && (
-                <div className="hidden-panel show-panel">
-                  <select
-                    className="glass-input"
-                    style={{ direction: 'rtl', fontFamily: "'Scheherazade New', serif" }}
-                    value={interKey}
-                    onChange={(e) => setInterKey(e.target.value)}
+                <div className="version-toggle" role="radiogroup" aria-label="Version du texte de la sourate">
+                  <button
+                    type="button"
+                    className={'version-btn' + (textVersion === 'simple' ? ' active' : '')}
+                    onClick={() => chooseTextVersion('simple')}
                   >
-                    <option value="">{sourates.length ? 'Sélectionnez une sourate' : '⏳ Chargement des sourates...'}</option>
-                    {sourates.map((s) => (
-                      <option key={s.key} value={s.key}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="version-toggle" role="radiogroup" aria-label="Version du texte de la sourate">
-                    <button
-                      type="button"
-                      className={'version-btn' + (textVersion === 'simple' ? ' active' : '')}
-                      onClick={() => chooseTextVersion('simple')}
-                    >
-                      Sans voyelles
-                    </button>
-                    <button
-                      type="button"
-                      className={'version-btn' + (textVersion === 'voyelles' ? ' active' : '')}
-                      onClick={() => chooseTextVersion('voyelles')}
-                    >
-                      {uthmaniLoading ? (
-                        <>
-                          <Spinner /> Chargement…
-                        </>
-                      ) : (
-                        'Avec voyelles'
-                      )}
-                    </button>
-                  </div>
-
-                  <p style={{ fontSize: 12, color: 'var(--text-gray)', margin: 0 }}>
-                    ✍️ Entre chaque verset, on insère l'expression de la zone de texte, <b>répétée</b> selon le nombre de
-                    « répétitions ».
-                    {textVersion === 'voyelles' && ' Texte Uthmani complet (source : alquran.cloud).'}
-                  </p>
-                  <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
-                    Combiner le texte
+                    Sans voyelles
                   </button>
                   <button
                     type="button"
-                    className="btn-glass-outline"
-                    style={{ width: '100%' }}
-                    onClick={onSourateSeule}
-                    title="Insère la sourate seule, sans y intercaler d'expression"
+                    className={'version-btn' + (textVersion === 'voyelles' ? ' active' : '')}
+                    onClick={() => chooseTextVersion('voyelles')}
                   >
-                    📖 Sourate seule (sans intercaler)
+                    {uthmaniLoading ? (
+                      <>
+                        <Spinner /> Chargement…
+                      </>
+                    ) : (
+                      'Avec voyelles'
+                    )}
                   </button>
                 </div>
-              )}
 
-              <select
-                className="glass-input"
-                aria-label="Outils d'édition"
-                value={activeTool}
-                onChange={(e) => onToolSelect(e.target.value)}
-              >
-                <option value="">🛠️ Outils</option>
-                <option value="doc">📄 Documents</option>
-                <option value="search">🔍 Recherche</option>
-              </select>
+                <p style={{ fontSize: 12, color: 'var(--text-gray)', margin: 0 }}>
+                  ✍️ Entre chaque verset, on insère l'expression de la zone de texte, <b>répétée</b> selon le nombre de
+                  « répétitions ».
+                  {textVersion === 'voyelles' && ' Texte Uthmani complet (source : alquran.cloud).'}
+                </p>
+                <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
+                  Combiner le texte
+                </button>
+                <button
+                  type="button"
+                  className="btn-glass-outline"
+                  style={{ width: '100%' }}
+                  onClick={onSourateSeule}
+                  title="Insère la sourate seule, sans y intercaler d'expression"
+                >
+                  📖 Sourate seule (sans intercaler)
+                </button>
+              </div>
+            )}
 
-              {showDoc && (
-                <div className="hidden-panel show-panel">
-                  <div className="doc-name-row">
-                    <input
-                      type="text"
-                      className="glass-input flex-grow"
-                      placeholder="Nom du document"
-                      value={docName}
-                      onChange={(e) => {
-                        setDocName(e.target.value);
-                        savePref('docName', e.target.value);
-                      }}
-                    />
-                    <button className="btn-glass" onClick={onDoc}>
-                      DOCS
-                    </button>
-                    <button className="btn-glass" onClick={onPdf}>
-                      PDF
-                    </button>
-                  </div>
-                  <div className="grid-row-1-1">
-                    <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
-                      ➕ Cumuler
-                    </button>
-                    <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #870000, #190a05)' }} onClick={onClearTemp}>
-                      🗑️ Vider ({accumulatedBlocks.length})
-                    </button>
-                  </div>
+            <select
+              className="glass-input"
+              aria-label="Outils d'édition"
+              value={activeTool}
+              onChange={(e) => onToolSelect(e.target.value)}
+            >
+              <option value="">🛠️ Outils</option>
+              <option value="doc">📄 Documents</option>
+              <option value="search">🔍 Recherche</option>
+            </select>
 
-                  {accumulatedBlocks.length > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-glass"
-                        style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,.08)' }}
-                        onClick={() => setShowAccList((v) => !v)}
-                      >
-                        {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
-                      </button>
-
-                      {showAccList && (
-                        <div className="acc-list">
-                          {accumulatedBlocks.map((block, i) => (
-                            <div className="acc-item" key={i}>
-                              {editingIndex === i ? (
-                                <>
-                                  <textarea
-                                    className="glass-input acc-edit-textarea"
-                                    value={editDraft.texte}
-                                    onChange={(e) => setEditDraft((d) => ({ ...d, texte: e.target.value }))}
-                                    aria-label={`Texte du bloc ${i + 1}`}
-                                  />
-                                  <div className="acc-edit-row">
-                                    <input
-                                      type="number"
-                                      className="glass-input"
-                                      style={{ maxWidth: 110 }}
-                                      value={editDraft.totalMultiplier}
-                                      min={1}
-                                      max={config.MAX_TOTAL_REPEAT}
-                                      onChange={(e) => setEditDraft((d) => ({ ...d, totalMultiplier: e.target.value }))}
-                                      aria-label={`Répétitions du bloc ${i + 1}`}
-                                    />
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-gray)' }}>
-                                      <input
-                                        type="checkbox"
-                                        checked={editDraft.isRasmMode}
-                                        onChange={(e) => setEditDraft((d) => ({ ...d, isRasmMode: e.target.checked }))}
-                                      />
-                                      Mode Rasm
-                                    </label>
-                                  </div>
-                                  <div className="acc-item-actions">
-                                    <button type="button" className="acc-btn" onClick={saveEdit}>
-                                      💾 Enregistrer
-                                    </button>
-                                    <button type="button" className="acc-btn" onClick={cancelEdit}>
-                                      ✖️ Annuler
-                                    </button>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="acc-item-head">
-                                    <span className="acc-item-index">{i + 1}.</span>
-                                    <span className="acc-item-text">{htmlToPlainText(block.texte)}</span>
-                                  </div>
-                                  <span className="acc-item-meta">
-                                    ×{Number(block.totalMultiplier || 0).toLocaleString('fr-FR')}
-                                    {block.isRasmMode ? ' · ✒️ Rasm' : ''}
-                                  </span>
-                                  <div className="acc-item-actions">
-                                    <button
-                                      type="button"
-                                      className="acc-btn"
-                                      onClick={() => moveBlock(i, -1)}
-                                      disabled={i === 0}
-                                      aria-label={`Monter le bloc ${i + 1}`}
-                                    >
-                                      ⬆️
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="acc-btn"
-                                      onClick={() => moveBlock(i, 1)}
-                                      disabled={i === accumulatedBlocks.length - 1}
-                                      aria-label={`Descendre le bloc ${i + 1}`}
-                                    >
-                                      ⬇️
-                                    </button>
-                                    <button type="button" className="acc-btn" onClick={() => startEdit(i)}>
-                                      ✏️ Modifier
-                                    </button>
-                                    <button type="button" className="acc-btn acc-btn-danger" onClick={() => removeBlock(i)}>
-                                      🗑️ Supprimer
-                                    </button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {showSearch && (
-                <div className="hidden-panel search-container glass-input show-panel">
+            {showDoc && (
+              <div className="hidden-panel show-panel">
+                <div className="doc-name-row">
                   <input
                     type="text"
-                    className="search-input-inner"
-                    placeholder="Mot à rechercher"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    aria-label="Rechercher un mot dans le texte"
+                    className="glass-input flex-grow"
+                    placeholder="Nom du document"
+                    value={docName}
+                    onChange={(e) => {
+                      setDocName(e.target.value);
+                      savePref('docName', e.target.value);
+                    }}
                   />
-                  <span className="search-count-text" aria-live="polite">
-                    {preview.searchCount != null
-                      ? preview.searchCount > 0
-                        ? `${preview.searchCount.toLocaleString('fr-FR')} trouvés`
-                        : '0 trouvé'
-                      : ''}
-                  </span>
+                  <button className="btn-glass" onClick={onDoc}>
+                    DOCS
+                  </button>
+                  <button className="btn-glass" onClick={onPdf}>
+                    PDF
+                  </button>
                 </div>
-              )}
+                <div className="grid-row-1-1">
+                  <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
+                    ➕ Cumuler
+                  </button>
+                  <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #870000, #190a05)' }} onClick={onClearTemp}>
+                    🗑️ Vider ({accumulatedBlocks.length})
+                  </button>
+                </div>
 
-              <div className="slider-container">
-                <span className="slider-label">Taille du texte</span>
-                <input
-                  type="range"
-                  className="slider"
-                  min="12"
-                  max="60"
-                  value={fontSize}
-                  onChange={(e) => {
-                    setFontSize(parseInt(e.target.value, 10));
-                    savePref('fontSize', e.target.value);
-                  }}
-                />
+                {accumulatedBlocks.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-glass"
+                      style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,.08)' }}
+                      onClick={() => setShowAccList((v) => !v)}
+                    >
+                      {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
+                    </button>
+
+                    {showAccList && (
+                      <div className="acc-list">
+                        {accumulatedBlocks.map((block, i) => (
+                          <div className="acc-item" key={i}>
+                            {editingIndex === i ? (
+                              <>
+                                <textarea
+                                  className="glass-input acc-edit-textarea"
+                                  value={editDraft.texte}
+                                  onChange={(e) => setEditDraft((d) => ({ ...d, texte: e.target.value }))}
+                                  aria-label={`Texte du bloc ${i + 1}`}
+                                />
+                                <div className="acc-edit-row">
+                                  <input
+                                    type="number"
+                                    className="glass-input"
+                                    style={{ maxWidth: 110 }}
+                                    value={editDraft.totalMultiplier}
+                                    min={1}
+                                    max={config.MAX_TOTAL_REPEAT}
+                                    onChange={(e) => setEditDraft((d) => ({ ...d, totalMultiplier: e.target.value }))}
+                                    aria-label={`Répétitions du bloc ${i + 1}`}
+                                  />
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-gray)' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={editDraft.isRasmMode}
+                                      onChange={(e) => setEditDraft((d) => ({ ...d, isRasmMode: e.target.checked }))}
+                                    />
+                                    Mode Rasm
+                                  </label>
+                                </div>
+                                <div className="acc-item-actions">
+                                  <button type="button" className="acc-btn" onClick={saveEdit}>
+                                    💾 Enregistrer
+                                  </button>
+                                  <button type="button" className="acc-btn" onClick={cancelEdit}>
+                                    ✖️ Annuler
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="acc-item-head">
+                                  <span className="acc-item-index">{i + 1}.</span>
+                                  <span className="acc-item-text">{htmlToPlainText(block.texte)}</span>
+                                </div>
+                                <span className="acc-item-meta">
+                                  ×{Number(block.totalMultiplier || 0).toLocaleString('fr-FR')}
+                                  {block.isRasmMode ? ' · ✒️ Rasm' : ''}
+                                </span>
+                                <div className="acc-item-actions">
+                                  <button
+                                    type="button"
+                                    className="acc-btn"
+                                    onClick={() => moveBlock(i, -1)}
+                                    disabled={i === 0}
+                                    aria-label={`Monter le bloc ${i + 1}`}
+                                  >
+                                    ⬆️
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="acc-btn"
+                                    onClick={() => moveBlock(i, 1)}
+                                    disabled={i === accumulatedBlocks.length - 1}
+                                    aria-label={`Descendre le bloc ${i + 1}`}
+                                  >
+                                    ⬇️
+                                  </button>
+                                  <button type="button" className="acc-btn" onClick={() => startEdit(i)}>
+                                    ✏️ Modifier
+                                  </button>
+                                  <button type="button" className="acc-btn acc-btn-danger" onClick={() => removeBlock(i)}>
+                                    🗑️ Supprimer
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            </>
-          )}
-        </div>
+            )}
+
+            {showSearch && (
+              <div className="hidden-panel search-container glass-input show-panel">
+                <input
+                  type="text"
+                  className="search-input-inner"
+                  placeholder="Mot à rechercher"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Rechercher un mot dans le texte"
+                />
+                <span className="search-count-text" aria-live="polite">
+                  {preview.searchCount != null
+                    ? preview.searchCount > 0
+                      ? `${preview.searchCount.toLocaleString('fr-FR')} trouvés`
+                      : '0 trouvé'
+                    : ''}
+                </span>
+              </div>
+            )}
+
+            <div className="slider-container">
+              <span className="slider-label">Taille du texte</span>
+              <input
+                type="range"
+                className="slider"
+                min="12"
+                max="60"
+                value={fontSize}
+                onChange={(e) => {
+                  setFontSize(parseInt(e.target.value, 10));
+                  savePref('fontSize', e.target.value);
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Aperçu */}
         <div className="output-section">
