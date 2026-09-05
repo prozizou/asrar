@@ -62,7 +62,10 @@ const OrneePiece = forwardRef<SVGSVGElement, OrneePieceProps>(function OrneePiec
         viewBox={`0 0 ${piece.W} ${piece.H}`}
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label={`Pièce calligraphique : ${piece.word || 'sans mot'}`}
+        // Le MOT COMPLET (prop, pas piece.word) : celui-ci a la lettre gonflée
+        // retirée pour l'affichage (voir composePiece), mais un lecteur
+        // d'écran doit annoncer le vrai mot, pas le fragment amputé.
+        aria-label={`Pièce calligraphique : ${word.trim() || 'sans mot'}`}
       >
         <rect x="0" y="0" width={piece.W} height={piece.H} fill="#ffffff" />
 

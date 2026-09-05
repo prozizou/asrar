@@ -26,6 +26,7 @@ import {
   buildPreview,
   formaterTexteIntercale,
   buildIntercalatedText,
+  convertirEnRasm,
   generateDocx,
   generatePdf,
   loadSourates,
@@ -174,6 +175,46 @@ export default function AlQalamPage() {
     : orneeLetters.length
       ? orneeLetters[0].char
       : '';
+
+  // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé dans les
+  // AUTRES modes — simple, intercalée, rasmique — pour le proposer comme
+  // contenu de la boucle : la pratique visée écrit souvent une formule
+  // répétée des centaines de fois, pas une courte phrase tapée à la main
+  // spécifiquement pour ce mode.
+  //   • accumulatedBlocks : les blocs déjà « ➕ Cumulés » (n'importe quel
+  //     mode). block.texte porte parfois le balisage <span> de
+  //     l'intercalation (posé par onAddTemp) — htmlToPlainText le retire ;
+  //     le Rasm, lui, n'est PAS appliqué au stockage (seul le drapeau
+  //     isRasmMode l'est), donc reproduit ici à la reconstruction.
+  //   • baseText/totalMultiplier : le brouillon courant, si l'utilisateur a
+  //     écrit sans cumuler avant de passer en mode Écriture ornée — ces
+  //     variables sont partagées par tous les modes, donc encore présentes.
+  const buildOrneeSourceText = useCallback((): string => {
+    const parts: string[] = [];
+    accumulatedBlocks.forEach((b) => {
+      const raw = htmlToPlainText(b.texte).trim();
+      if (!raw) return;
+      const t = b.isRasmMode ? convertirEnRasm(raw) : raw;
+      parts.push(t.repeat(Math.max(1, Number(b.totalMultiplier) || 1)));
+    });
+    if (baseText.trim() && totalMultiplier > 0) {
+      const t = isRasmMode ? convertirEnRasm(baseText) : baseText;
+      parts.push(t.repeat(totalMultiplier));
+    }
+    return parts.join(' ').trim();
+  }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
+
+  const orneeHasSourceText = accumulatedBlocks.length > 0 || (baseText.trim() !== '' && totalMultiplier > 0);
+
+  const onImportOrneeSourceText = () => {
+    const text = buildOrneeSourceText();
+    if (!text) {
+      showToast("Rien à reprendre : composez d'abord un texte en écriture simple, intercalée ou rasmique.", 'error');
+      return;
+    }
+    setOrneeInner(text);
+    showToast('Texte inséré dans la boucle.', 'info');
+  };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sugTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -634,6 +675,17 @@ export default function AlQalamPage() {
             <label className="orne-label" htmlFor="orne-inner">
               Vœu ou verset à écrire dans la boucle
             </label>
+            {orneeHasSourceText && (
+              <button
+                type="button"
+                className="btn-glass"
+                style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }}
+                onClick={onImportOrneeSourceText}
+              >
+                ↧ Reprendre le texte déjà composé
+                {accumulatedBlocks.length > 0 ? ` (${accumulatedBlocks.length} bloc${accumulatedBlocks.length > 1 ? 's' : ''})` : ''}
+              </button>
+            )}
             <textarea
               id="orne-inner"
               className="glass-input orne-inner-input"
