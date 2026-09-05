@@ -191,6 +191,11 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
    sortira à l'impression. */
 .alq-page .orne-label { font-size: 13px; font-weight: 700; color: var(--text-gray); font-family: var(--font-ui); }
 .alq-page .orne-word-input { direction: rtl; font-family: 'Scheherazade New', serif; font-size: 30px; text-align: center; }
+/* Sous-mode « phrase » : plusieurs mots, donc plus de hauteur qu'un simple
+   mot porteur (input) mais toujours centré et sans redimensionnement manuel
+   (une phrase courte type basmala tient sur 1-2 lignes). */
+.alq-page .orne-phrase-input { min-height: 64px; resize: vertical; padding-top: 14px; }
+.alq-page .orne-hint-inline { font-size: 11px; font-weight: 400; color: var(--text-gray); }
 .alq-page .orne-inner-input { min-height: 110px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 19px; }
 .alq-page .orne-letters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .alq-page .orne-letter {
