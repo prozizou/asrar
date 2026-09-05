@@ -185,6 +185,35 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
 
 /* var(--text-red) = var(--danger), déjà adapté clair/sombre (globals.css) —
    #8b0000 (bordeaux foncé) était illisible sur fond sombre. */
+/* ── Écriture ornée (mode 'ornee') ─────────────────────────────────────────
+   La pièce reste à l'encre noire sur fond blanc dans les deux thèmes : c'est
+   une œuvre destinée au papier, et l'aperçu doit montrer EXACTEMENT ce qui
+   sortira à l'impression. */
+.alq-page .orne-label { font-size: 13px; font-weight: 700; color: var(--text-gray); font-family: var(--font-ui); }
+.alq-page .orne-word-input { direction: rtl; font-family: 'Scheherazade New', serif; font-size: 30px; text-align: center; }
+.alq-page .orne-inner-input { min-height: 110px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 19px; }
+.alq-page .orne-letters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.alq-page .orne-letter {
+  width: 52px; height: 52px; margin: 0; padding: 0; flex: 0 0 auto;
+  border-radius: 14px; cursor: pointer;
+  background: var(--surface-3); border: 1px solid var(--glass-border);
+  color: var(--text-main); font-family: 'Scheherazade New', serif; font-size: 30px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, border-color .15s, background .15s;
+}
+.alq-page .orne-letter:hover { transform: translateY(-2px); }
+.alq-page .orne-letter.is-active {
+  background: var(--accent); color: var(--text-on-accent);
+  border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.alq-page .orne-hint { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-gray); font-family: var(--font-ui); }
+.alq-page .orne-stage {
+  height: 100%; min-height: 260px; display: flex; align-items: center; justify-content: center;
+  padding: 14px; overflow: auto;
+}
+.alq-page .orne-svg { width: 100%; height: auto; border-radius: 10px; background: #fff; }
+.alq-page .orne-loading { font-family: var(--font-ui); font-size: 14px; color: var(--text-gray); text-align: center; }
+
 .alq-page .verset-brun { color: var(--text-red); font-family: inherit; font-weight: 700; }
 
 /* direction: ltr — sinon ce texte français hérite du RTL de .output-area
