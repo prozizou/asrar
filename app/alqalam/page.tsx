@@ -17,7 +17,7 @@
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Circle, Printer } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -36,7 +36,6 @@ import {
   matchUthmaniSourate,
 } from '@/lib/alqalam';
 import { detectRoundLetters, printPiece } from '@/lib/alqalamOrne';
-import OrneePiece from './OrneePiece';
 import OrneePhrasePiece from './OrneePhrasePiece';
 
 const Spinner = SpinnerUntyped as any;
@@ -54,13 +53,12 @@ const getPref = (k: string): string | null => {
   }
 };
 
-type WritingMode = 'simple' | 'intercalee' | 'rasmique' | 'ornee' | null;
+type WritingMode = 'simple' | 'intercalee' | 'rasmique' | null;
 
 const MODE_LABELS: Record<Exclude<WritingMode, null>, string> = {
   simple: 'Écriture simple',
   intercalee: 'Écriture intercalée',
   rasmique: 'Écriture rasmique',
-  ornee: 'Écriture ornée',
 };
 
 interface AccBlock {
@@ -140,6 +138,7 @@ export default function AlQalamPage() {
 
   const [showDoc, setShowDoc] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showOrnement, setShowOrnement] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [sourates, setSourates] = useState<Sourate[]>([]);
@@ -161,70 +160,33 @@ export default function AlQalamPage() {
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  // ─── Écriture ornée (mode 'ornee') ───
-  const [orneeWord, setOrneeWord] = useState('رزقك');
-  const [orneeLetter, setOrneeLetter] = useState('');
-  const [orneeInner, setOrneeInner] = useState('');
-  const orneeSvgRef = useRef<SVGSVGElement | null>(null);
-
-  // Lettres rondes réellement présentes dans le mot saisi. La sélection est
-  // DÉRIVÉE plutôt que stockée : si le mot change et ne contient plus la
-  // lettre choisie, on retombe sur la première disponible sans effet de bord.
-  const orneeLetters = useMemo(() => detectRoundLetters(orneeWord), [orneeWord]);
-  const orneeActive = orneeLetters.some((l) => l.char === orneeLetter)
-    ? orneeLetter
-    : orneeLetters.length
-      ? orneeLetters[0].char
-      : '';
-
-  // ─── Écriture ornée : sous-mode PHRASE (plusieurs boucles) ───
-  // Distinct du sous-mode « un mot » ci-dessus : une phrase entière (ex. la
-  // basmala), où CHAQUE occurrence des lettres choisies devient sa propre
-  // boucle — pas une seule boucle dominante par pièce. Voir composePhrasePiece
-  // (lib/alqalamOrne.js). Sous-mode séparé plutôt que généralisation du
-  // premier : celui-ci est déjà en production, mieux vaut ajouter à côté que
-  // risquer de le déstabiliser.
-  const [orneeSubMode, setOrneeSubMode] = useState<'mot' | 'phrase'>('mot');
-  const [orneePhrase, setOrneePhrase] = useState('بسم الله الرحمن الرحيم');
-  const [orneePhraseLetters, setOrneePhraseLetters] = useState<string[]>([]);
+  // ─── Ornement (outil, disponible dans les trois modes) ───
+  // Ancien 4e mode « Écriture ornée » retiré (menu simplifié) : le gonflement
+  // de lettres en boucles rejoint les autres outils (Documents / Recherche),
+  // appliqué directement au texte DÉJÀ composé dans le mode courant — plus de
+  // mot/phrase séparément saisis pour l'occasion.
+  const [ornementLetters, setOrnementLetters] = useState<string[]>([]);
   // Passe à true dès le premier clic manuel sur une case à cocher : avant ce
   // point, la sélection se resynchronise automatiquement sur TOUTES les
   // lettres détectées à chaque frappe (l'intention par défaut est de gonfler
   // CHAQUE occurrence ronde, pas d'en choisir une seule) ; après, on respecte
   // le choix de l'utilisateur — ne retirer que les lettres qui ont disparu du
   // texte, jamais réinjecter les autres à sa place.
-  const [orneePhraseLettersTouched, setOrneePhraseLettersTouched] = useState(false);
-  const orneePhraseSvgRef = useRef<SVGSVGElement | null>(null);
+  const [ornementLettersTouched, setOrnementLettersTouched] = useState(false);
+  const [ornementVoeu, setOrnementVoeu] = useState('');
+  const ornementSvgRef = useRef<SVGSVGElement | null>(null);
 
-  const orneePhraseDetected = useMemo(() => detectRoundLetters(orneePhrase), [orneePhrase]);
-
-  useEffect(() => {
-    setOrneePhraseLetters((prev) =>
-      orneePhraseLettersTouched
-        ? prev.filter((l) => orneePhraseDetected.some((d) => d.char === l))
-        : orneePhraseDetected.map((d) => d.char)
-    );
-  }, [orneePhraseDetected, orneePhraseLettersTouched]);
-
-  const toggleOrneePhraseLetter = (char: string) => {
-    setOrneePhraseLettersTouched(true);
-    setOrneePhraseLetters((prev) => (prev.includes(char) ? prev.filter((l) => l !== char) : [...prev, char]));
-  };
-
-  // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé dans les
-  // AUTRES modes — simple, intercalée, rasmique — pour le proposer comme
-  // contenu de la boucle : la pratique visée écrit souvent une formule
-  // répétée des centaines de fois, pas une courte phrase tapée à la main
-  // spécifiquement pour ce mode.
+  // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé — c'est
+  // ce texte que l'ornement analyse pour y détecter les lettres choisies :
   //   • accumulatedBlocks : les blocs déjà « ➕ Cumulés » (n'importe quel
   //     mode). block.texte porte parfois le balisage <span> de
   //     l'intercalation (posé par onAddTemp) — htmlToPlainText le retire ;
   //     le Rasm, lui, n'est PAS appliqué au stockage (seul le drapeau
   //     isRasmMode l'est), donc reproduit ici à la reconstruction.
-  //   • baseText/totalMultiplier : le brouillon courant, si l'utilisateur a
-  //     écrit sans cumuler avant de passer en mode Écriture ornée — ces
-  //     variables sont partagées par tous les modes, donc encore présentes.
-  const buildOrneeSourceText = useCallback((): string => {
+  //   • baseText/totalMultiplier : le brouillon courant (« Écrire », ou le
+  //     résultat de « Combiner le texte » en mode intercalé), même sans avoir
+  //     cumulé.
+  const buildOrnementSourceText = useCallback((): string => {
     const parts: string[] = [];
     accumulatedBlocks.forEach((b) => {
       const raw = htmlToPlainText(b.texte).trim();
@@ -239,16 +201,20 @@ export default function AlQalamPage() {
     return parts.join(' ').trim();
   }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
 
-  const orneeHasSourceText = accumulatedBlocks.length > 0 || (baseText.trim() !== '' && totalMultiplier > 0);
+  const ornementSourceText = useMemo(() => buildOrnementSourceText(), [buildOrnementSourceText]);
+  const ornementDetected = useMemo(() => detectRoundLetters(ornementSourceText), [ornementSourceText]);
 
-  const onImportOrneeSourceText = () => {
-    const text = buildOrneeSourceText();
-    if (!text) {
-      showToast("Rien à reprendre : composez d'abord un texte en écriture simple, intercalée ou rasmique.", 'error');
-      return;
-    }
-    setOrneeInner(text);
-    showToast('Texte inséré dans la boucle.', 'info');
+  useEffect(() => {
+    setOrnementLetters((prev) =>
+      ornementLettersTouched
+        ? prev.filter((l) => ornementDetected.some((d) => d.char === l))
+        : ornementDetected.map((d) => d.char)
+    );
+  }, [ornementDetected, ornementLettersTouched]);
+
+  const toggleOrnementLetter = (char: string) => {
+    setOrnementLettersTouched(true);
+    setOrnementLetters((prev) => (prev.includes(char) ? prev.filter((l) => l !== char) : [...prev, char]));
   };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -326,17 +292,19 @@ export default function AlQalamPage() {
   // ─── Panneau d'outils (Documents / Recherche — sélecteur unique, protégé).
   // Intercaler et Mode Rasm sont désormais choisis en amont via le menu de
   // sélection (writingMode), pas ici. ───
-  const activeTool = showDoc ? 'doc' : showSearch ? 'search' : '';
+  const activeTool = showDoc ? 'doc' : showSearch ? 'search' : showOrnement ? 'ornement' : '';
   const onToolSelect = async (value: string) => {
     if (!value) {
       setShowDoc(false);
       setShowSearch(false);
+      setShowOrnement(false);
       return;
     }
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     setShowDoc(value === 'doc');
     setShowSearch(value === 'search');
+    setShowOrnement(value === 'ornement');
   };
 
   // ─── Menu de sélection du type d'écriture (précède l'outil) ───
@@ -349,22 +317,12 @@ export default function AlQalamPage() {
     savePref('isRasmMode', String(rasm));
   };
 
-  // ─── Écriture ornée : impression (protégé) ───
-  const onPrintOrnee = async () => {
+  // ─── Ornement : impression (protégé) ───
+  const onPrintOrnement = async () => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     try {
-      await printPiece(orneeSvgRef.current, docName.trim() || orneeWord.trim() || 'piece-ornee');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
-    }
-  };
-
-  const onPrintOrneePhrase = async () => {
-    const ok = await ensureAccess(PREMIUM_LEVEL);
-    if (!ok) return;
-    try {
-      await printPiece(orneePhraseSvgRef.current, docName.trim() || 'phrase-ornee');
+      await printPiece(ornementSvgRef.current, docName.trim() || 'ornement');
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
     }
@@ -376,6 +334,7 @@ export default function AlQalamPage() {
     savePref('isRasmMode', 'false');
     setShowDoc(false);
     setShowSearch(false);
+    setShowOrnement(false);
   };
 
   // ─── Écrire (protégé) ───
@@ -653,194 +612,7 @@ export default function AlQalamPage() {
                 </span>
                 <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
               </button>
-              <button type="button" className="mode-card" onClick={() => selectWritingMode('ornee')}>
-                <span className="mode-card-icon">
-                  <Circle size={20} strokeWidth={2} aria-hidden="true" />
-                </span>
-                <span className="mode-card-body">
-                  <span className="mode-card-title">Écriture ornée</span>
-                  <span className="mode-card-desc">
-                    Gonfler la boucle d&apos;une lettre ronde et y écrire un vœu ou un verset.
-                  </span>
-                </span>
-                <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
-              </button>
             </div>
-          </div>
-        ) : writingMode === 'ornee' ? (
-          // Mode GRAPHIQUE : ni répétition, ni cumul, ni export Word — la pièce
-          // est un tracé SVG, pas du texte (voir lib/alqalamOrne.js).
-          <div className="controls-section">
-            <div className="mode-current">
-              <span>
-                Mode : <strong>{MODE_LABELS.ornee}</strong>
-              </span>
-              <button type="button" className="mode-change-btn" onClick={changeWritingMode}>
-                ↺ Changer
-              </button>
-            </div>
-
-            <div className="tab-container">
-              <button
-                type="button"
-                className={'tab' + (orneeSubMode === 'mot' ? ' active' : '')}
-                onClick={() => setOrneeSubMode('mot')}
-              >
-                Un mot, une boucle
-              </button>
-              <button
-                type="button"
-                className={'tab' + (orneeSubMode === 'phrase' ? ' active' : '')}
-                onClick={() => setOrneeSubMode('phrase')}
-              >
-                Phrase, plusieurs boucles
-              </button>
-            </div>
-
-            {orneeSubMode === 'mot' ? (
-              <>
-                <label className="orne-label" htmlFor="orne-mot">
-                  Le mot porteur
-                </label>
-                <input
-                  id="orne-mot"
-                  type="text"
-                  className="glass-input orne-word-input"
-                  value={orneeWord}
-                  onChange={(e) => setOrneeWord(e.target.value)}
-                  placeholder="رزقك"
-                  aria-label="Mot porteur en arabe"
-                />
-
-                <div>
-                  <span className="orne-label">Lettre à gonfler</span>
-                  {orneeLetters.length ? (
-                    <div className="orne-letters" role="group" aria-label="Lettre à gonfler">
-                      {orneeLetters.map((l) => (
-                        <button
-                          key={l.char}
-                          type="button"
-                          className={'orne-letter' + (l.char === orneeActive ? ' is-active' : '')}
-                          onClick={() => setOrneeLetter(l.char)}
-                          aria-pressed={l.char === orneeActive}
-                          title={l.name}
-                        >
-                          {l.char}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="orne-hint">
-                      Ce mot ne contient aucune lettre à boucle. Les lettres possibles sont م ق ه ص ض ط.
-                    </p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <label className="orne-label" htmlFor="orne-phrase">
-                  La phrase
-                </label>
-                <textarea
-                  id="orne-phrase"
-                  className="glass-input orne-word-input orne-phrase-input"
-                  value={orneePhrase}
-                  onChange={(e) => setOrneePhrase(e.target.value)}
-                  placeholder="بسم الله الرحمن الرحيم"
-                  aria-label="Phrase en arabe"
-                />
-
-                <div>
-                  <span className="orne-label">
-                    Lettres à gonfler <span className="orne-hint-inline">(chaque occurrence devient une boucle)</span>
-                  </span>
-                  {orneePhraseDetected.length ? (
-                    <div className="orne-letters" role="group" aria-label="Lettres à gonfler">
-                      {orneePhraseDetected.map((l) => (
-                        <button
-                          key={l.char}
-                          type="button"
-                          className={'orne-letter' + (orneePhraseLetters.includes(l.char) ? ' is-active' : '')}
-                          onClick={() => toggleOrneePhraseLetter(l.char)}
-                          aria-pressed={orneePhraseLetters.includes(l.char)}
-                          title={l.name}
-                        >
-                          {l.char}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="orne-hint">
-                      Cette phrase ne contient aucune lettre à boucle. Les lettres possibles sont م ق ه ص ض ط.
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            <label className="orne-label" htmlFor="orne-inner">
-              {orneeSubMode === 'phrase' ? 'Vœu ou verset — répété dans chaque boucle' : 'Vœu ou verset à écrire dans la boucle'}
-            </label>
-            {orneeHasSourceText && (
-              <button
-                type="button"
-                className="btn-glass"
-                style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }}
-                onClick={onImportOrneeSourceText}
-              >
-                ↧ Reprendre le texte déjà composé
-                {accumulatedBlocks.length > 0 ? ` (${accumulatedBlocks.length} bloc${accumulatedBlocks.length > 1 ? 's' : ''})` : ''}
-              </button>
-            )}
-            <textarea
-              id="orne-inner"
-              className="glass-input orne-inner-input"
-              value={orneeInner}
-              onChange={(e) => setOrneeInner(e.target.value)}
-              placeholder="اللهم ارزقني…"
-              aria-label="Texte à écrire dans la boucle"
-            />
-
-            {versets.length > 0 && (
-              <select
-                className="glass-input"
-                style={{ direction: 'rtl', fontFamily: "'Scheherazade New', serif" }}
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) setOrneeInner(e.target.value);
-                }}
-                aria-label="Reprendre un verset enregistré"
-              >
-                <option value="">↓ Reprendre un verset enregistré</option>
-                {versets.map((v, i) => (
-                  <option key={i} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <input
-              type="text"
-              className="glass-input"
-              placeholder="Nom du fichier"
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-              aria-label="Nom du fichier PDF"
-            />
-
-            {orneeSubMode === 'mot' ? (
-              <button className="btn-glass" onClick={onPrintOrnee} disabled={!orneeActive}>
-                <Printer size={16} strokeWidth={2} aria-hidden="true" /> PDF / Impression
-              </button>
-            ) : (
-              <button className="btn-glass" onClick={onPrintOrneePhrase} disabled={!orneePhrase.trim()}>
-                <Printer size={16} strokeWidth={2} aria-hidden="true" /> PDF / Impression
-              </button>
-            )}
-            <p className="orne-hint">
-              Choisissez « Enregistrer en PDF » comme destination. La pièce s&apos;imprime en A4 paysage.
-            </p>
           </div>
         ) : (
           <div className="controls-section">
@@ -969,6 +741,7 @@ export default function AlQalamPage() {
               <option value="">🛠️ Outils</option>
               <option value="doc">📄 Documents</option>
               <option value="search">🔍 Recherche</option>
+              <option value="ornement">◯ Ornement</option>
             </select>
 
             {showDoc && (
@@ -1119,6 +892,60 @@ export default function AlQalamPage() {
               </div>
             )}
 
+            {showOrnement && (
+              <div className="hidden-panel show-panel">
+                {!ornementSourceText ? (
+                  <p className="orne-hint">
+                    Écrivez d&apos;abord un texte (bouton « Écrire », ou « Combiner le texte » en mode intercalé) pour
+                    pouvoir y gonfler des lettres.
+                  </p>
+                ) : ornementDetected.length ? (
+                  <>
+                    <span className="orne-label">
+                      Lettres à gonfler <span className="orne-hint-inline">(chaque occurrence devient une boucle)</span>
+                    </span>
+                    <div className="orne-letters" role="group" aria-label="Lettres à gonfler">
+                      {ornementDetected.map((l) => (
+                        <button
+                          key={l.char}
+                          type="button"
+                          className={'orne-letter' + (ornementLetters.includes(l.char) ? ' is-active' : '')}
+                          onClick={() => toggleOrnementLetter(l.char)}
+                          aria-pressed={ornementLetters.includes(l.char)}
+                          title={l.name}
+                        >
+                          {l.char}
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className="orne-label" htmlFor="ornement-voeu">
+                      Vœu ou verset — répété dans chaque boucle
+                    </label>
+                    <textarea
+                      id="ornement-voeu"
+                      className="glass-input orne-inner-input"
+                      value={ornementVoeu}
+                      onChange={(e) => setOrnementVoeu(e.target.value)}
+                      placeholder="اللهم ارزقني…"
+                      aria-label="Texte à écrire dans les boucles"
+                    />
+
+                    <button className="btn-glass" onClick={onPrintOrnement} disabled={!ornementLetters.length}>
+                      <Printer size={16} strokeWidth={2} aria-hidden="true" /> PDF / Impression
+                    </button>
+                    <p className="orne-hint">
+                      Choisissez « Enregistrer en PDF » comme destination. La pièce s&apos;imprime en A4 paysage.
+                    </p>
+                  </>
+                ) : (
+                  <p className="orne-hint">
+                    Ce texte ne contient aucune lettre à boucle. Les lettres possibles sont م ق ه ص ض ط.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="slider-container">
               <span className="slider-label">Taille du texte</span>
               <input
@@ -1138,18 +965,14 @@ export default function AlQalamPage() {
 
         {/* Aperçu */}
         <div className="output-section">
-          {writingMode === 'ornee' ? (
+          {showOrnement && ornementLetters.length > 0 ? (
             <div className="orne-stage glass-panel">
-              {orneeSubMode === 'mot' ? (
-                <OrneePiece ref={orneeSvgRef} word={orneeWord} letter={orneeActive} innerText={orneeInner} />
-              ) : (
-                <OrneePhrasePiece
-                  ref={orneePhraseSvgRef}
-                  phrase={orneePhrase}
-                  letters={orneePhraseLetters}
-                  innerText={orneeInner}
-                />
-              )}
+              <OrneePhrasePiece
+                ref={ornementSvgRef}
+                phrase={ornementSourceText}
+                letters={ornementLetters}
+                innerText={ornementVoeu}
+              />
             </div>
           ) : (
             <div

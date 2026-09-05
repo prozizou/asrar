@@ -1,9 +1,9 @@
 'use client';
-// Rendu du sous-mode PHRASE de l'écriture ornée : plusieurs boucles dans une
-// même phrase (ex. la basmala avec م et ه gonflés), chacune contenant le même
-// vœu. Toute la mise en page vient de composePhrasePiece (lib/alqalamOrne.js) ;
-// ce composant ne fait que la peindre — même principe que OrneePiece.tsx, son
-// pendant pour le sous-mode « un mot, une boucle ».
+// Rendu de l'outil Ornement (disponible dans les trois modes d'écriture) :
+// plusieurs boucles dans une même phrase (ex. la basmala avec م et ه
+// gonflés), chacune contenant le même vœu. Toute la mise en page vient de
+// composePhrasePiece (lib/alqalamOrne.js) ; ce composant ne fait que la
+// peindre.
 //
 // Pièce TOUJOURS à l'encre noire sur fond blanc, quel que soit le thème de
 // l'app : l'aperçu doit montrer exactement ce qui sortira à l'impression.
@@ -84,7 +84,7 @@ const OrneePhrasePiece = forwardRef<SVGSVGElement, OrneePhrasePieceProps>(functi
           }
           // Sorti de `item` : le rétrécissement de type ne survit pas au
           // passage dans la fonction de rendu de chaque ligne (même piège
-          // que OrneePiece.tsx pour son unique boucle).
+          // que l'ancien sous-mode « un mot » pour son unique boucle).
           const inner = item.inner;
           return (
             <g key={i} transform={`translate(${item.cx} ${item.cy})`}>
