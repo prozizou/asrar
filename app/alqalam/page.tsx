@@ -949,7 +949,7 @@ export default function AlQalamPage() {
                   </>
                 ) : (
                   <p className="orne-hint">
-                    Ce texte ne contient aucune lettre à boucle. Les lettres possibles sont م ق ه ص ض ط.
+                    Ce texte ne contient aucune lettre à boucle. Les lettres possibles sont م ه ص ض ط.
                   </p>
                 )}
               </div>

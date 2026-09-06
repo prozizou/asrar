@@ -22,7 +22,7 @@ const FONT_SPEC = '700 40px "Scheherazade New"';
 interface OrneePhrasePieceProps {
   /** Phrase porteuse, en arabe (plusieurs mots). */
   phrase: string;
-  /** Lettres dont CHAQUE occurrence est gonflée en boucle (م ق ه ص ض ط). */
+  /** Lettres dont CHAQUE occurrence est gonflée en boucle (م ه ص ض ط). */
   letters: string[];
   /** Vœu ou verset, répété dans chaque boucle. */
   innerText: string;
