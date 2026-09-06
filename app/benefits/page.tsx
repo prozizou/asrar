@@ -160,7 +160,7 @@ export default function BenefitsPage() {
         <div className="header-stats">
           <div className="stat-pill">
             <i className="fas fa-dharmachakra" />
-            <span>{filtered.length}</span> noms révélés
+            <span>{filtered.length}</span> noms disponibles
           </div>
         </div>
       </header>
@@ -170,7 +170,7 @@ export default function BenefitsPage() {
           <i className="fas fa-search search-icon" />
           <input
             type="text"
-            placeholder="Rechercher par nom, translitération ou sens..."
+            placeholder="Rechercher un nom, une translitération…"
             autoComplete="off"
             value={search}
             onChange={(e) => {

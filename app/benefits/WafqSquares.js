@@ -94,7 +94,7 @@ export default function WafqSquares({ meaning, benefit, numericTarget }) {
       <summary className="wafq-summary" aria-expanded="false">
         <span>
           <i className="fas fa-table-cells" style={{ marginRight: 6 }} />
-          Awfaq — Carrés Magiques
+          Awfaq &amp; carrés magiques
         </span>
         <i className="fas fa-chevron-down toggle-icon" />
       </summary>
