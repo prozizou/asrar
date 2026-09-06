@@ -167,9 +167,10 @@ h2 {
 
 /* Icône compacte « Mes commandes » — déplacée depuis le menu d'accueil sur
    le Marché lui-même (c'est ici que les commandes se passent), en haut à
-   droite plutôt qu'en lien texte centré sous le titre. Reprise aussi, en
-   toutes lettres, dans la navigation fixe en bas de page (.market-bottom-nav)
-   — un raccourci rapide en plus, pas à la place. */
+   droite plutôt qu'en lien texte centré sous le titre. SEUL accès aux
+   commandes depuis cet écran (retiré de la navigation fixe en bas de page,
+   .market-bottom-nav, qui le proposait une seconde fois — signalé comme
+   redondant). */
 .market-orders-icon {
   flex-shrink: 0;
   display: inline-flex;
@@ -235,8 +236,8 @@ h2 {
      Un très gros bouton plein écran à la place d'une pastille discrète, et
      les catégories suivantes (Rituels, Livres...) poussées hors champ, à
      scroller un plein écran à la fois pour les atteindre — signalé.
-     `.vendor-like`/`.market-bottom-nav-item` y échappaient déjà (flex:1 ou
-     flex-shrink par défaut absorbent ce width hérité), mais pas ici. */
+     `.vendor-like` y échappait déjà (flex-shrink par défaut absorbe ce
+     width hérité), mais pas ici. */
   flex: 0 0 auto;
   width: auto;
   margin-top: 0;
@@ -629,11 +630,12 @@ h2 {
   font-size: 0.8rem;
 }
 
-/* Navigation fixe en bas de la page d'accueil/Marché (revue design, point
-   12) — remplace le grand bouton « Accéder au menu » qui prenait toute la
-   largeur et concurrençait la barre système Android. Scopée à cette page
-   (voir le commentaire dans app/page.tsx) : pas de classe partagée avec
-   d'autres écrans, donc pas de risque de collision ailleurs dans l'app. */
+/* Navigation fixe en bas de la page d'accueil/Marché. Passée à 3 items
+   (revue design, point 12), puis réduite à un SEUL raccourci — « Marché »
+   et « Commandes » (voir app/page.tsx) : redondants sur cette page même
+   (déjà le Marché ; commandes déjà en haut). Scopée à cette page (voir le
+   commentaire dans app/page.tsx) : pas de classe partagée avec d'autres
+   écrans, donc pas de risque de collision ailleurs dans l'app. */
 /* Fond OPAQUE (revue design, retour utilisateur : « la nav basse recouvre
    les cartes ») — var(--mk-surface) n'est qu'un voile à 10 % d'opacité en
    thème sombre (glassmorphism, voir app/globals.css) : les cartes du bas de
@@ -657,50 +659,47 @@ h2 {
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
 }
 
-.market-bottom-nav-item {
+/* Un seul item désormais — plus d'onglet actif à distinguer des autres
+   (il n'y a plus « des autres ») : une ligne icône+texte, pas la colonne
+   icône-au-dessus-du-texte des items multiples d'avant (qui n'avait de
+   sens que pour aligner plusieurs items côte à côte). */
+.market-bottom-nav-single {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 4px;
   border-radius: 10px;
-  color: var(--mk-text-dim);
+  color: var(--mk-text);
   text-decoration: none;
-  font-size: 0.68rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  transition: color 0.2s, background 0.2s;
+  transition: background 0.2s;
 }
 
-.market-bottom-nav-item span:first-child { font-size: 1.15rem; line-height: 1; }
+.market-bottom-nav-single span:first-child { font-size: 1.15rem; line-height: 1; }
 
-.market-bottom-nav-item:hover { color: var(--mk-text); }
-
-/* Une seule convention forte pour l'onglet actif (revue design : « plusieurs
-   effets simultanés » — le fond ET la couleur changeaient déjà ensemble, ici
-   on l'assume comme LA convention unique — pastille de fond pleine, au lieu
-   de la nuancer en plus par un simple changement de couleur de texte comme
-   les autres états (:hover) le font déjà). */
-.market-bottom-nav-item.active {
-  color: var(--mk-gold);
-  background: color-mix(in srgb, var(--mk-gold) 16%, transparent);
-}
+.market-bottom-nav-single:hover { background: color-mix(in srgb, var(--mk-gold) 12%, transparent); }
+.market-bottom-nav-single:active { background: color-mix(in srgb, var(--mk-gold) 16%, transparent); }
 
 /* Place pour ne pas laisser la nav fixe recouvrir la fin de la grille
    produit ni le bas de .market-search-box/.market-categories en cas de
-   contenu court. 76px = la hauteur réelle de la barre (padding 6px×2 +
-   contenu) ; env(safe-area-inset-bottom) s'ajoute EN PLUS (pas inclus dans
-   les 76px) car la barre l'ajoute déjà à SON propre padding interne — sans
-   ce complément, la zone réservée était trop courte sur un écran à encoche/
-   barre de gestes, et le bas de la grille restait masqué (revue design,
-   retour utilisateur). */
-.container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+   contenu court. 60px = la hauteur réelle de la barre à un seul item
+   (mesurée : ~51px de contenu + marge de sécurité — moins que les 76px
+   d'avant, la ligne icône+texte étant plus basse que l'ancienne colonne
+   icône-au-dessus-du-texte × 3 items) ; env(safe-area-inset-bottom)
+   s'ajoute EN PLUS (pas inclus dans les 60px) car la barre l'ajoute déjà à
+   SON propre padding interne — sans ce complément, la zone réservée était
+   trop courte sur un écran à encoche/barre de gestes, et le bas de la
+   grille restait masqué (revue design, retour utilisateur). */
+.container { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
 
 /* La barre de notification globale (.toast, app/globals.css) reste
    au-dessus de la nav fixe plutôt que masquée derrière — override propre à
    cette page, marche.css n'étant chargée qu'ici (même mécanisme que les
    surcharges .container/.glass-panel déjà en place dans ce fichier). */
-.toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
+.toast { bottom: calc(60px + env(safe-area-inset-bottom)); }
 
 .add-to-cart-btn {
   background: var(--mk-gold);

@@ -506,31 +506,20 @@ export default function Home() {
             )}
           </div>
 
-          {/* Navigation fixe (revue design, point 12) — remplace le gros bouton
-              « Accéder au menu » qui prenait toute la largeur en bas et
-              concurrençait la barre système Android, alors qu'un marketplace
-              ne devrait pas obliger à tout descendre pour changer d'écran.
-              3 destinations réelles, pas 4 : cette page EST déjà à la fois
-              l'accueil et le Marché (voir l'en-tête du fichier) — un item
-              « Accueil » séparé pointerait vers cette même page, ce qui
-              semblerait cassé (rien ne changerait au tap). Favoris omis :
-              aucune page ne les regroupe aujourd'hui (seuls les favoris
-              propres à Noms d'Allah existent) — chantier à part entière.
-              Scopée à cette page pour l'instant, pas montée globalement
-              (aurait supposé un état actif partagé entre écrans ET décider
-              ce qu'agrège « Favoris » — décision produit distincte). */}
+          {/* Navigation fixe (revue design, point 12 ; puis retour utilisateur
+              sur la version à 3 items) — un SEUL raccourci, vers le menu
+              principal. « Marché » retiré : cette page EST déjà le Marché
+              (voir l'en-tête du fichier), l'item pointait vers la page déjà
+              affichée — rien ne se passait au tap, ce qui semblait cassé.
+              « Commandes » retiré : déjà à portée de main en haut de page
+              (.market-orders-icon) — le proposer une seconde fois ici était
+              redondant. Il ne reste donc que la vraie destination qui manque
+              depuis cet écran : le menu principal (autres modules, compte,
+              thème...). */}
           <nav className="market-bottom-nav" aria-label="Navigation principale">
-            <Link href="/" className="market-bottom-nav-item active" aria-current="page">
-              <span aria-hidden="true">⌂</span>
-              <span>Marché</span>
-            </Link>
-            <Link href="/commandes" className="market-bottom-nav-item">
-              <span aria-hidden="true">📦</span>
-              <span>Commandes</span>
-            </Link>
-            <Link href="/menu" className="market-bottom-nav-item">
+            <Link href="/menu" className="market-bottom-nav-single">
               <span aria-hidden="true">☰</span>
-              <span>Menu</span>
+              <span>Accéder au menu principal</span>
             </Link>
           </nav>
         </div>
