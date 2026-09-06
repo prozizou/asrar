@@ -90,6 +90,11 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
               <rect x="0" y="0" width={page.W} height={page.H} fill="#ffffff" />
 
               {page.connectors.map((c, i) => (
+                // Épaisseur PROPRE à chaque connecteur (celle de la lettre
+                // qu'il prolonge, voir composePhrasePages) — jamais une
+                // valeur fixe. Un connecteur n'existe déjà que là où la
+                // lettre précédente joint réellement vers l'avant (voir
+                // tokenizePhrase / NON_FORWARD_JOINING) : rien à filtrer ici.
                 <line
                   key={i}
                   x1={c.x1}
@@ -97,7 +102,7 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                   x2={c.x2}
                   y2={c.y}
                   stroke="#000"
-                  strokeWidth={2.5}
+                  strokeWidth={c.width}
                   strokeLinecap="round"
                 />
               ))}
