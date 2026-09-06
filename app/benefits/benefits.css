@@ -34,10 +34,11 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
     --border:       rgba(255, 255, 255, 0.08);
     --border-strong:rgba(255, 255, 255, 0.15);
 
-    /* Ombres */
-    --shadow-sm:    0 2px 8px rgba(0,0,0,0.25);
-    --shadow-md:    0 8px 24px rgba(0,0,0,0.35);
-    --shadow-lg:    0 20px 48px rgba(0,0,0,0.45);
+    /* Ombres — légères plutôt que marquées (revue design : « ombres trop
+       fortes »), la distinction entre éléments vient d'abord des bordures. */
+    --shadow-sm:    0 1px 4px rgba(0,0,0,0.14);
+    --shadow-md:    0 6px 16px rgba(0,0,0,0.18);
+    --shadow-lg:    0 16px 34px rgba(0,0,0,0.24);
 
     /* Arrière-plan décoratif */
     --bg-noise:     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
@@ -249,7 +250,11 @@ body::before {
     -webkit-backdrop-filter: blur(24px) saturate(1.5);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-pill);
-    padding: 0.65rem 1.25rem;
+    /* Hauteur resserrée à 52–56px (revue design : « champ trop grand pour une
+       fonction secondaire ») plutôt qu'un padding généreux calé sur la barre
+       principale d'une app de recherche. */
+    min-height: 54px;
+    padding: 0 1.25rem;
     box-shadow: var(--shadow-md), 0 0 0 0 rgba(201,168,76,0);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -392,6 +397,21 @@ body::before {
 }
 
 /* ── TYPOGRAPHIE DES CARTES ───────────────────────────────── */
+/* Repère discret (revue design : « # 1 trop visible ») — texte simple, plus
+   de pilule/badge tenant lieu de titre. */
+.name-index {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    margin-bottom: 0.5rem;
+}
+
+/* Identité regroupée : arabe, translittération et sens forment UN seul bloc
+   visuel (revue design : « arabe séparé de Rahman ») plutôt que la
+   translittération détachée en pilule à bordure. */
+.name-identity { margin-bottom: 0.6rem; }
+
 .arabic-name {
     font-family: 'Amiri', 'Noto Naskh Arabic', 'hudhudh bold', serif;
     font-size: 2.1rem;
@@ -400,42 +420,36 @@ body::before {
     direction: rtl;
     color: var(--text-1);
     line-height: 1.3;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     letter-spacing: 0.02em;
 }
 
 .translit-name {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: var(--gold);
-    padding-left: 10px;
-    border-left: 2px solid var(--gold);
-    margin-bottom: 0.5rem;
     letter-spacing: 0.01em;
 }
 
-.poids-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.75rem;
+/* Poids/objectif redevenus du texte simple (revue design : « Awfaq/pilules
+   trop dominants » — l'esprit vaut aussi pour cette ligne, auparavant une
+   pilule à fond/bordure) — libellés explicites plutôt que l'abréviation
+   ambiguë « Obj. ». */
+.name-props {
+    font-size: 0.82rem;
     color: var(--text-2);
-    background: var(--gold-dim);
-    border: 1px solid var(--gold-border);
-    padding: 0.2rem 0.65rem;
-    border-radius: var(--radius-pill);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.7rem;
 }
 
-.poids-badge i { color: var(--gold); font-size: 0.7rem; }
-.poids-badge strong { color: var(--gold); font-weight: 600; }
+.name-props strong { color: var(--gold); font-weight: 700; }
+.name-props-sep { margin: 0 0.45rem; opacity: 0.5; }
 
 /* Une seule ligne de sens sur la carte (le sens complet + le bienfait restent
    dans NameModal.js, ouverte via le bouton « Détails ») — évite de dupliquer
    un paragraphe entier sur les 99 cartes de la grille (revue design : « une
    carte = presque 2 écrans »). */
 .meaning-line {
-    margin-top: 0.5rem;
+    margin-top: 0.3rem;
     font-size: 0.88rem;
     color: var(--text-2);
     line-height: 1.5;
@@ -445,74 +459,88 @@ body::before {
     overflow: hidden;
 }
 /* ── PIED DE CARTE ─────────────────────────────────────────── */
-/* Boutons pilules (fond + bordure visibles par défaut, pas seulement au
-   survol) plutôt que de la simple icône flottante sur padding invisible —
-   plus lisible comme « vrais » boutons. Favori/écoute groupés à gauche,
-   compteur de dhikr détaché à droite (margin-left:auto) : deux groupes
-   d'actions distincts plutôt qu'un empilement en vrac. */
+/* Trois actions compactes et de taille uniforme, séparées par un simple
+   filet plutôt que trois pilules pleines fond+bordure (revue design :
+   « Favori/Écouter/Détails trop lourds ») — la couleur turquoise ne marque
+   plus que l'état actif (favori), pas les trois boutons au repos. */
 .card-footer {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    padding-top: 0.75rem;
+    align-items: stretch;
+    margin-top: 0.9rem;
+    padding-top: 0.6rem;
     border-top: 1px solid var(--border);
 }
 
 .card-action-btn {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
+    flex: 1;
+    background: none;
+    border: none;
     color: var(--text-2);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
-    padding: 0.45rem 0.75rem;
-    border-radius: var(--radius-pill);
-    transition: all 0.2s;
+    padding: 0.4rem 0.3rem;
+    transition: color 0.2s;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    gap: 0.35rem;
     white-space: nowrap;
 }
 
-.card-action-btn i { font-size: 0.82rem; }
+.card-action-btn + .card-action-btn { border-left: 1px solid var(--border); }
 
-.card-action-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--text-1); }
+.card-action-btn i { font-size: 0.8rem; }
 
-.favorite-btn.active { color: var(--gold) !important; border-color: var(--gold-border); background: var(--gold-dim); }
+.card-action-btn:hover { color: var(--text-1); }
+
+.favorite-btn.active { color: var(--gold) !important; }
 
 /* ── DHIKR (compteur) ──────────────────────────────────────
-   Toujours visible sur la carte (plus une simple icône empreinte à
-   déchiffrer, revue design point 4) : un en-tête pliable « Dhikr » au-dessus
-   d'un état compact (formule + compteur + barre + gros bouton de tap) ; le
-   chapelet complet (TasbihChapelet, via Tasbih.js) ne se monte qu'au premier
-   tap — voir NameCard.js pour le pourquoi (coût de montage). */
-.dhikr-section {
-    margin-top: 1rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--border);
+   Carte à part entière, dédiée (revue design : « Dhikr peu mis en valeur »
+   → « créer une zone dédiée »), plutôt qu'une sous-section de plus dans la
+   carte d'identité. Repliée par défaut : formule + compteur N/objectif + % +
+   barre + un bouton « Égrainer » ; le chapelet complet (TasbihChapelet, via
+   Tasbih.js) ne se monte qu'au premier tap — voir NameCard.js pour le
+   pourquoi (coût de montage). .name-card-group regroupe cette carte et la
+   carte d'identité dans UNE seule cellule de .cards-grid. */
+.name-card-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
 }
 
-.dhikr-header {
-    width: 100%;
-    background: none;
-    border: none;
-    padding: 0;
+.dhikr-card {
+    /* Fond légèrement teinté pour signaler « zone principale d'action »,
+       cohérent avec le reste (bordures/rayons partagés avec .glass-card) —
+       pas une carte de plus qui se fond dans le décor. */
+    background: color-mix(in srgb, var(--gold) 6%, var(--surface-1));
+    cursor: default;
+}
+
+.dhikr-card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.dhikr-card-label {
     font-size: 0.78rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--text-2);
+}
+
+.dhikr-expand-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: var(--text-3);
+    font-size: 0.72rem;
     cursor: pointer;
 }
-
-.dhikr-header i { font-size: 0.7rem; color: var(--text-3); }
-
-.dhikr-compact {
-    margin-top: 0.65rem;
-}
+.dhikr-expand-btn:hover { color: var(--gold); }
 
 .dhikr-formula {
     font-family: 'Amiri', 'Noto Naskh Arabic', 'hudhudh bold', serif;
@@ -520,31 +548,27 @@ body::before {
     text-align: center;
     direction: rtl;
     color: var(--gold-light);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
 }
 
-/* Compteur = seule information numérique mise en avant sur la carte (revue
-   design : trop de nombres différents affichés côte à côte — poids, objectif,
-   « 00 », 2086… on ne garde que ceci en grand, le reste dans .poids-badge). */
-.dhikr-counter-row {
+/* Compteur au format N / objectif · pourcentage (revue design : « 0 sur 2086
+   peu lisible ») — plutôt que « N sur cible » seul, sans repère de %. */
+.dhikr-progress-row {
     display: flex;
     align-items: baseline;
-    justify-content: center;
-    gap: 0.4rem;
-    margin-bottom: 0.5rem;
-}
-
-.dhikr-counter-row strong {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--gold);
-    line-height: 1;
-}
-
-.dhikr-counter-row span {
+    justify-content: space-between;
     font-size: 0.85rem;
     color: var(--text-2);
+    margin-bottom: 0.4rem;
 }
+
+.dhikr-progress-row strong {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-1);
+}
+
+.dhikr-pct { color: var(--gold); font-weight: 700; }
 
 .dhikr-tap-cta {
     width: 100%;
@@ -654,35 +678,43 @@ body::before {
     animation: goalPulse 0.9s var(--ease) forwards;
 }
 /* ── WAFQ (Carrés Magiques) ───────────────────────────────── */
+/* Repliée : une simple ligne cliquable, sans cadre ni fond propre (revue
+   design : « Awfaq trop dominant » → accordéon secondaire) — le bloc coloré
+   à bordure n'apparaît qu'une fois ouverte, pour contenir le contenu avancé
+   sans peser sur l'écran quand elle ne l'est pas. */
 .wafq-expander {
     width: 100%;
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
-    margin: 0.75rem 0;
-    background: rgba(0,0,0,0.08);
+    margin: 0.6rem 0 0;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
 }
 
-.wafq-expander[open] { border-color: var(--border-strong); }
+.wafq-expander[open] {
+    border-color: var(--border);
+    background: rgba(0,0,0,0.08);
+}
 
 .wafq-summary {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.65rem 0.9rem;
+    padding: 0.4rem 0.1rem;
     cursor: pointer;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--gold);
+    color: var(--text-2);
     list-style: none;
     user-select: none;
-    transition: background 0.15s;
+    transition: color 0.15s;
     gap: 0.5rem;
 }
 
+.wafq-expander[open] .wafq-summary { padding: 0.65rem 0.9rem; color: var(--gold); }
+
 .wafq-summary::-webkit-details-marker { display: none; }
-.wafq-summary:hover { background: var(--gold-dim); }
+.wafq-summary:hover { color: var(--gold); }
 .wafq-summary .toggle-icon { transition: transform 0.3s var(--ease); font-size: 0.75rem; }
 .wafq-expander[open] .toggle-icon { transform: rotate(180deg); }
 

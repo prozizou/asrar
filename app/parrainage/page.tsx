@@ -9,9 +9,10 @@
 import './parrainage.css';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { me, share as shareApp, copy, post } from '@/lib/share';
+import { me, share as shareApp, copy, post, toast } from '@/lib/share';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
+import { Gift, Lock, Copy as CopyIcon, Share2, ChevronRight, PartyPopper } from 'lucide-react';
 
 // Spinner.js reste en .js pour l'instant (composant partagé, hors scope de
 // ce batch — cf. tsconfig.json) : sans JSDoc, TS infère depuis son
@@ -42,6 +43,7 @@ export default function ParrainagePage() {
   const [msg, setMsg] = useState('');
   const [redeeming, setRedeeming] = useState(false);
   const [error, setError] = useState('');
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const load = useCallback(async (force?: boolean) => {
     try {
@@ -64,6 +66,18 @@ export default function ParrainagePage() {
     });
 
   const copierLien = () => info && copy(info.link);
+  const copierCode = () => {
+    if (!info) return;
+    const code = info.code;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(code)
+        .then(() => toast('Code copié : ' + code))
+        .catch(() => prompt('Copiez le code :', code));
+    } else {
+      prompt('Copiez le code :', code);
+    }
+  };
 
   const convertir = async () => {
     if (!info) return;
@@ -82,19 +96,27 @@ export default function ParrainagePage() {
   };
 
   const d = info;
-  const need = d ? d.pointsForReward : 0;
+  const need = d ? d.pointsForReward : 1000;
   const pts = d ? d.points : 0;
-  const goalText = !d
+  const reached = !!d && pts >= need;
+  const pct = d ? Math.min(100, Math.round((pts / need) * 100)) : 0;
+  const rewardMonths = d ? Math.round(d.rewardDays / 30) : 3;
+
+  const subText = !d
     ? error || (
         <>
-          <Spinner /> Chargement…
+          <Spinner size={14} /> Chargement…
         </>
       )
-    : pts >= need
-    ? `🎉 Objectif atteint — activez vos ${d.rewardDays} jours !`
-    : `${(need - pts).toLocaleString('fr-FR')} points restants sur ${need.toLocaleString('fr-FR')} (soit ${Math.ceil(
+    : reached
+    ? (
+        <>
+          <PartyPopper size={15} strokeWidth={2} aria-hidden="true" /> {d.rewardDays} jours d'abonnement débloqués !
+        </>
+      )
+    : `${(need - pts).toLocaleString('fr-FR')} points avant votre récompense (${Math.ceil(
         (need - pts) / d.pointsPerInvite
-      )} filleul(s))`;
+      )} inscription${Math.ceil((need - pts) / d.pointsPerInvite) > 1 ? 's' : ''})`;
 
   return (
     <div className="container" style={{ maxWidth: 620 }}>
@@ -104,95 +126,137 @@ export default function ParrainagePage() {
 
       <div className="glass-panel">
         <div className="pr-hero">
-          <div style={{ fontSize: '2.6rem' }}>🎁</div>
+          <div className="pr-hero-icon">
+            <Gift size={26} strokeWidth={2} aria-hidden="true" />
+          </div>
           <h1>Parrainage</h1>
-          <p>Pas les moyens de vous abonner ? Partagez ASRAR PRO et gagnez votre accès.</p>
+          <p>Invitez vos proches et gagnez jusqu'à 3 mois d'accès offerts.</p>
         </div>
 
-        {/* Progression */}
-        <div className="pr-card">
-          <h3>MES POINTS</h3>
-          <div className="pr-points">{d ? pts.toLocaleString('fr-FR') : <Spinner size={18} />}</div>
-          <div className="pr-bar">
-            <span style={{ width: d ? Math.min(100, (pts / need) * 100) + '%' : 0 }} />
+        {/* Récompenses */}
+        <div className="pr-card pr-reward-card">
+          <div className="pr-reward-head">
+            <h3>Vos récompenses</h3>
+            {d && <span className="pr-pct">{pct}%</span>}
           </div>
-          <div className="pr-goal">{goalText}</div>
-          <button
-            className="pr-btn main"
-            style={{ marginTop: 14, width: '100%', flex: 'none' }}
-            disabled={!d || !d.canRedeem || redeeming}
-            onClick={convertir}
-          >
-            🔓 Activer {d ? d.rewardDays / 30 : 3} mois d'abonnement
-          </button>
+          <div className="pr-reward-points">
+            {d ? (
+              <>
+                {pts.toLocaleString('fr-FR')} <span className="pr-reward-total">/ {need.toLocaleString('fr-FR')} points</span>
+              </>
+            ) : (
+              <Spinner size={18} />
+            )}
+          </div>
+          <div className="pr-bar">
+            <span style={{ width: (d ? pct : 0) + '%' }} />
+          </div>
+          <div className="pr-goal">{subText}</div>
+
+          {d && reached ? (
+            <button className="pr-btn main pr-cta-main" disabled={redeeming} onClick={convertir}>
+              <Gift size={18} strokeWidth={2} aria-hidden="true" /> Activer {rewardMonths} mois d'abonnement
+            </button>
+          ) : (
+            <div className="pr-locked-row">
+              <Lock size={15} strokeWidth={2} aria-hidden="true" />
+              <span>
+                {rewardMonths} mois d'abonnement — disponible à {need.toLocaleString('fr-FR')} points
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Lien de parrainage */}
         <div className="pr-card">
-          <h3>MON LIEN DE PARRAINAGE</h3>
-          <div className="pr-link-row">
-            <div className="pr-link">
+          <h3>Votre lien de parrainage</h3>
+
+          <div className="pr-field">
+            <span className="pr-field-value">
               {d ? (
-                d.link
+                d.link.replace(/^https?:\/\//, '')
               ) : (
                 <>
-                  <Spinner /> Chargement…
+                  <Spinner size={14} /> Chargement…
                 </>
               )}
-            </div>
-          </div>
-          <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: '.82rem' }}>
-            Mon code : <span className="pr-code">{d ? d.code : '—'}</span>
-          </div>
-          <div className="pr-actions">
-            <button className="pr-btn main" onClick={partagerApp}>
-              📤 Partager
-            </button>
-            <button className="pr-btn" onClick={copierLien}>
-              🔗 Copier le lien
+            </span>
+            <button className="pr-copy-btn" onClick={copierLien} disabled={!d}>
+              <CopyIcon size={14} strokeWidth={2} aria-hidden="true" /> Copier
             </button>
           </div>
+
+          <div className="pr-field">
+            <span className="pr-field-value">
+              Code : <span className="pr-code">{d ? d.code : '—'}</span>
+            </span>
+            <button className="pr-copy-btn" onClick={copierCode} disabled={!d}>
+              <CopyIcon size={14} strokeWidth={2} aria-hidden="true" /> Copier
+            </button>
+          </div>
+
+          <button className="pr-btn main pr-share-btn" onClick={partagerApp}>
+            <Share2 size={18} strokeWidth={2} aria-hidden="true" /> Partager mon invitation
+          </button>
           <p className="pr-msg">{msg}</p>
         </div>
 
         {/* Statistiques */}
-        <div className="pr-card">
-          <h3>STATISTIQUES</h3>
-          <div className="pr-stats">
-            <div className="pr-stat">
-              <b>{d ? d.clicks : 0}</b>
-              <small>Clics sur mon lien</small>
-            </div>
-            <div className="pr-stat">
-              <b>{d ? d.invited : 0}</b>
-              <small>Filleuls inscrits</small>
-            </div>
-            <div className="pr-stat">
-              <b>{d ? d.rewards : 0}</b>
-              <small>Abonnements gagnés</small>
-            </div>
+        <div className="pr-stats-row">
+          <div className="pr-stat">
+            <b>{d ? d.clicks : 0}</b>
+            <small>Clics</small>
+          </div>
+          <div className="pr-stat">
+            <b>{d ? d.invited : 0}</b>
+            <small>Inscrits</small>
+          </div>
+          <div className="pr-stat">
+            <b>{d ? d.rewards : 0}</b>
+            <small>Récompenses</small>
           </div>
         </div>
 
-        {/* Règles */}
+        {/* Comment ça marche */}
         <div className="pr-card">
-          <h3>COMMENT ÇA MARCHE</h3>
-          <ul className="pr-rules">
-            <li>Partagez votre lien sur WhatsApp, Facebook, TikTok…</li>
-            <li>
-              <b>{d ? d.pointsPerInvite : 10}</b> points quand une personne <b>crée un compte</b> ASRAR PRO depuis
-              votre lien.
-            </li>
-            <li>
-              À <b>{d ? need : 1000}</b> points, activez <b>3 mois d'abonnement</b> gratuit en un clic.
-            </li>
-            <li>
-              Le clic seul ne rapporte rien (il est seulement compté) : c'est l'inscription du filleul qui crédite les
-              points.
-            </li>
-            <li>Un compte ne peut être parrainé qu'une seule fois. L'auto-parrainage n'est pas crédité.</li>
-            <li>Tous les liens que vous partagez depuis l'app (secrets, livres, produits) contiennent déjà votre code.</li>
-          </ul>
+          <h3>Comment ça marche ?</h3>
+          <div className="pr-steps">
+            <div className="pr-step">
+              <span className="pr-step-num">1</span>
+              <div>
+                <b>Partagez</b>
+                <p>Envoyez votre lien à vos proches.</p>
+              </div>
+            </div>
+            <div className="pr-step">
+              <span className="pr-step-num">2</span>
+              <div>
+                <b>Gagnez {d ? d.pointsPerInvite : 10} points</b>
+                <p>Lorsqu'une personne crée son compte avec votre lien.</p>
+              </div>
+            </div>
+            <div className="pr-step">
+              <span className="pr-step-num">3</span>
+              <div>
+                <b>Débloquez votre récompense</b>
+                <p>
+                  À {need.toLocaleString('fr-FR')} points, obtenez {rewardMonths} mois d'abonnement.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button className="pr-rules-toggle" onClick={() => setRulesOpen((o) => !o)}>
+            Voir les conditions du parrainage
+            <ChevronRight size={15} strokeWidth={2} className={rulesOpen ? 'pr-chevron open' : 'pr-chevron'} aria-hidden="true" />
+          </button>
+          {rulesOpen && (
+            <ul className="pr-rules">
+              <li>Le clic seul ne rapporte rien (il est seulement compté) : c'est l'inscription du filleul qui crédite les points.</li>
+              <li>Un compte ne peut être parrainé qu'une seule fois. L'auto-parrainage n'est pas crédité.</li>
+              <li>Tous les liens que vous partagez depuis l'app (secrets, livres, produits) contiennent déjà votre code.</li>
+            </ul>
+          )}
         </div>
       </div>
     </div>
