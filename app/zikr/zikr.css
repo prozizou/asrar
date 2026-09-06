@@ -316,3 +316,67 @@
   background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff;
 }
 .zk-chat-send:disabled { opacity: 0.5; cursor: default; }
+
+/* Boutons outil de la ligne de saisie (emoji, image, micro) — même gabarit
+   que .zk-chat-send (cercle 40px) mais neutres (pas l'action principale). */
+.zk-chat-tool {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
+  cursor: pointer; font-size: 1.1rem; transition: color 0.2s, border-color 0.2s;
+}
+.zk-chat-tool:hover { color: var(--accent); border-color: var(--accent); }
+.zk-chat-tool:disabled { opacity: 0.5; cursor: default; }
+
+/* Pièce jointe d'un message (image/vocal) — demandé explicitement. */
+.zk-chat-media-img {
+  display: block; max-width: 100%; max-height: 220px; border-radius: 8px;
+  margin: 4px 0; object-fit: cover; cursor: pointer;
+}
+.zk-chat-media-audio { display: block; width: 100%; max-width: 260px; margin: 4px 0; height: 36px; }
+
+/* Barre d'enregistrement d'un vocal — remplace la ligne de saisie tant que
+   `voice.recording` est vrai (components/useVoiceRecorder.js). */
+.zk-voice-recording { background: rgba(217,90,90,0.08); border: 1px solid rgba(217,90,90,0.3); border-radius: 12px; padding: 6px 10px; }
+.zk-voice-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: #e05050; flex-shrink: 0;
+  animation: zk-voice-pulse 1.1s ease-in-out infinite;
+}
+@keyframes zk-voice-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.zk-voice-time { flex: 1; font-family: var(--font-ui); font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--text-main); }
+
+/* Sélecteur d'emoji (components/EmojiPicker.js) — popover ancré au bouton. */
+.zk-emoji-wrap { position: relative; flex-shrink: 0; }
+.zk-emoji-pop {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 20;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 12px;
+  padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); width: 216px;
+}
+.zk-emoji-btn {
+  background: transparent; border: none; cursor: pointer; font-size: 1.25rem;
+  padding: 4px; border-radius: 8px; line-height: 1;
+}
+.zk-emoji-btn:hover { background: var(--surface-2); }
+
+/* ── Partage d'un vœu (opt-in) + mur des vœux partagés + Amine ──────────
+   Demandé explicitement (« les gens du groupe peuvent interagir avec ces
+   publications pour dire Amine »). Le partage reste un choix de SON auteur
+   (checkbox dans le formulaire) — le mur (`.zk-wish-shared`) est visible de
+   tout membre, contrairement à la liste privée du créateur. */
+.zk-wish-share-toggle {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  font-size: 0.82rem; color: var(--text-dim); cursor: pointer;
+}
+.zk-wish-share-toggle input { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+.zk-wish-shared { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.zk-amine-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+  background: var(--surface-3); border: 1px solid var(--glass-border); color: var(--text-dim);
+  border-radius: 999px; padding: 4px 12px; font-size: 0.78rem; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.zk-amine-btn:hover { border-color: var(--accent); color: var(--accent); }
+.zk-amine-btn.amined { color: #e0245e; border-color: rgba(224,36,94,0.4); background: rgba(224,36,94,0.08); }
+.zk-amine-btn.amined svg { fill: #e0245e; }
+.zk-amine-btn:disabled { opacity: 0.6; cursor: default; }

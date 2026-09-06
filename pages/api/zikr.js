@@ -108,8 +108,21 @@
 //                              déjà enregistrés restent visibles au créateur)
 //   action="submitWish"     → { groupId, text } : membre only — enregistre (ou
 //                              met à jour) SON PROPRE vœu, tant que c'est ouvert
-//   action="sendMessage"    → { groupId, text } : membre only — discussion de
-//                              groupe façon WhatsApp (voir handleSendMessage)
+//   action="shareWish"      → { groupId, shared } : membre only — partage (ou
+//                              retire du partage) SON PROPRE vœu déjà envoyé,
+//                              vers le mur commun (sharedWishes, voir "get")
+//                              où les autres membres peuvent dire Amine —
+//                              OPT-IN, un vœu reste privé par défaut
+//   action="amineWish"      → { groupId, wishUid } : membre only — dit
+//                              « Amine » (ou le retire, toggle) sur un vœu
+//                              PARTAGÉ par un autre membre — refusé sur un
+//                              vœu resté privé
+//   action="sendMessage"    → { groupId, text?, mediaType?, mediaUrl?,
+//                              mediaDuration? } : membre only — discussion de
+//                              groupe façon WhatsApp, texte et/ou pièce jointe
+//                              (image ou audio — voir handleSendMessage) ;
+//                              notifie en push (best-effort) tous les AUTRES
+//                              membres (voir notifyNewMessage)
 //   action="messages"       → { groupId } : membre only — 200 derniers messages
 //   action="approveZikr"    → { groupId } : ADMINISTRATEUR only — fait passer
 //                              approved à true (voir action="list"/"create")
@@ -130,11 +143,20 @@
 //                                 lastRecitingPushAt? — throttle du push
 //                                 « reprise d'activité » (voir notifyReciting) }
 //   zikr_requests/{gid}/{uid}= { email, at }
-//   zikr_wishes/{gid}/{uid}  = { email, text, at } — vœu PRIVÉ : visible
-//                                 seulement du créateur (liste) et de son
-//                                 auteur (sa propre entrée, jamais les autres)
-//   zikr_chat/{gid}/{msgId}  = { uid, email, text, at } — discussion de groupe
-//                                 (façon WhatsApp), réservée aux membres
+//   zikr_wishes/{gid}/{uid}  = { email, text, at, shared? } — vœu PRIVÉ par
+//                                 défaut : visible seulement du créateur
+//                                 (liste) et de son auteur (sa propre entrée,
+//                                 jamais les autres) ; shared:true (opt-in,
+//                                 action="shareWish") le fait apparaître sur
+//                                 le mur commun (sharedWishes, action="get")
+//                                 où n'importe quel membre peut dire Amine
+//   zikr_wish_amines/{gid}/{wishUid}/{uid} = true — qui a dit Amine sur QUEL
+//                                 vœu partagé (action="amineWish", toggle)
+//   zikr_chat/{gid}/{msgId}  = { uid, email, text, at, mediaType?, mediaUrl?,
+//                                 mediaDuration? } — discussion de groupe
+//                                 (façon WhatsApp), réservée aux membres ;
+//                                 mediaType ∈ {"image","audio"} si une pièce
+//                                 jointe accompagne (ou remplace) le texte
 
 const webpush = require("web-push");
 const { verifyUser, isAdmin } = require("../../server/access");
@@ -145,7 +167,7 @@ const { reportError } = require("../../server/log");
 const {
   normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
-  WISH_MAX, CHAT_MESSAGE_MAX,
+  WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -201,7 +223,9 @@ export default async function handler(req, res) {
       case "openWishes":     return await handleOpenWishes(db, res, user, gid);
       case "closeWishes":    return await handleCloseWishes(db, res, user, gid);
       case "submitWish":     return await handleSubmitWish(db, res, user, gid, body.text);
-      case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text);
+      case "shareWish":      return await handleShareWish(db, res, user, gid, body.shared);
+      case "amineWish":      return await handleAmineWish(db, res, user, gid, safeKey(body.wishUid));
+      case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
       case "messages":       return await handleMessages(db, res, user, gid);
       case "approveZikr":    return await handleApproveZikr(db, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
@@ -417,6 +441,21 @@ async function handleGet(db, res, user, gid) {
   // Statut de l'appelant : créateur > membre > (demande en attente) > aucun.
   let status;
   const owner = {};
+  const isRealMember = isOwner || !!mine;
+
+  // Vœux : lus UNE SEULE FOIS pour tout membre réel (créateur ou participant)
+  // — sert à construire à la fois la liste PRIVÉE (créateur only, ci-dessous)
+  // et le mur des vœux PARTAGÉS (n'importe quel membre, plus bas), sans lire
+  // deux fois le même nœud RTDB.
+  let allWishes = [];
+  if (isRealMember) {
+    const wSnap = await db.ref("zikr_wishes/" + gid).once("value");
+    wSnap.forEach((w) => {
+      const v = w.val() || {};
+      allWishes.push({ uid: w.key, email: v.email || "", text: v.text || "", at: v.at || 0, shared: v.shared === true });
+    });
+  }
+
   if (isOwner) {
     status = "owner";
     const rSnap = await db.ref("zikr_requests/" + gid).once("value");
@@ -428,16 +467,10 @@ async function handleGet(db, res, user, gid) {
     owner.requests = requests;
     owner.pending = requests.length;
 
-    // Vœux des participants : visibles UNIQUEMENT du créateur (liste complète),
-    // jamais des autres membres entre eux — voir l'en-tête du fichier.
-    const wSnap = await db.ref("zikr_wishes/" + gid).once("value");
-    const wishes = [];
-    wSnap.forEach((w) => {
-      const v = w.val() || {};
-      wishes.push({ uid: w.key, email: v.email || "", text: v.text || "", at: v.at || 0 });
-    });
-    wishes.sort((a, b) => (b.at || 0) - (a.at || 0));
-    owner.wishes = wishes;
+    // Vœux des participants, liste COMPLÈTE (y compris non partagés) :
+    // visible UNIQUEMENT du créateur — jamais des autres membres entre eux,
+    // voir l'en-tête du fichier.
+    owner.wishes = [...allWishes].sort((a, b) => (b.at || 0) - (a.at || 0));
   } else if (mine) {
     status = "member";
   } else {
@@ -452,12 +485,41 @@ async function handleGet(db, res, user, gid) {
   const full = remaining <= 0; // objectif entièrement récité
 
   // Mon propre vœu (jamais celui des autres) — pour préremplir le formulaire
-  // si j'en avais déjà envoyé un. Un membre simple (pas le créateur) n'a pas
-  // besoin de la liste complète, seulement de sa propre entrée.
+  // si j'en avais déjà envoyé un, et savoir si je l'ai déjà partagé (case à
+  // cocher « Partager au groupe », voir handleShareWish).
   let myWish = "";
+  let myWishShared = false;
   if (mine && !isOwner) {
-    const mwSnap = await db.ref("zikr_wishes/" + gid + "/" + user.uid).once("value");
-    myWish = (mwSnap.val() && mwSnap.val().text) || "";
+    const own = allWishes.find((w) => w.uid === user.uid);
+    myWish = own ? own.text : "";
+    myWishShared = own ? own.shared : false;
+  }
+
+  // Mur des vœux PARTAGÉS (opt-in, handleShareWish) : visible de TOUT membre
+  // réel (créateur inclus) — contrairement à `owner.wishes` ci-dessus, qui
+  // reste réservé au créateur et inclut aussi les vœux restés privés. Chaque
+  // entrée porte son nombre de « Amine » et si MOI je l'ai déjà dit (jamais
+  // l'identité des autres réactants — pas demandé, juste le compte).
+  let sharedWishes = [];
+  if (isRealMember) {
+    const shared = allWishes.filter((w) => w.shared);
+    if (shared.length > 0) {
+      const aminesSnap = await db.ref("zikr_wish_amines/" + gid).once("value");
+      const aminesVal = aminesSnap.val() || {};
+      sharedWishes = shared
+        .map((w) => {
+          const forThis = aminesVal[w.uid] || {};
+          return {
+            uid: w.uid,
+            email: w.email,
+            text: w.text,
+            at: w.at,
+            amineCount: amineCount(forThis),
+            aminedByMe: !!forThis[user.uid],
+          };
+        })
+        .sort((a, b) => (b.at || 0) - (a.at || 0));
+    }
   }
 
   return res.status(200).json({
@@ -485,6 +547,8 @@ async function handleGet(db, res, user, gid) {
     myDailyTotal: mine ? mine.dailyTotal : 0,
     myWarning: mine ? mine.avertissement : "",
     myWish,
+    myWishShared,
+    sharedWishes,
     members,
     ...owner,
   });
@@ -881,8 +945,10 @@ async function handleCloseWishes(db, res, user, gid) {
 }
 
 // ── Membre : enregistre (ou met à jour) SON PROPRE vœu ──────────
-// Jamais visible des autres membres — seulement de son auteur et du créateur
-// (liste complète, voir handleGet) : un vœu reste une démarche personnelle.
+// Reste PRIVÉ par défaut (créateur + auteur seulement, voir handleGet) — le
+// partage au groupe (`shared`) est une démarche SÉPARÉE et explicite
+// (handleShareWish). `.update()`, pas `.set()` : un `set()` complet aurait
+// effacé un `shared:true` déjà posé à chaque simple correction du texte.
 async function handleSubmitWish(db, res, user, gid, rawText) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const gSnap = await db.ref("zikr_groups/" + gid).once("value");
@@ -898,24 +964,90 @@ async function handleSubmitWish(db, res, user, gid, rawText) {
   const text = cleanText(rawText, WISH_MAX);
   if (!text) return res.status(400).json({ error: "Écrivez votre vœu avant d'envoyer." });
 
-  await db.ref("zikr_wishes/" + gid + "/" + user.uid).set({ email: user.email, text, at: Date.now() });
+  await db.ref("zikr_wishes/" + gid + "/" + user.uid).update({ email: user.email, text, at: Date.now() });
   return res.status(200).json({ ok: true, text });
+}
+
+// ── Membre : partage (ou retire du partage) SON PROPRE vœu ──────
+// Opt-in demandé explicitement : un vœu reste privé (créateur + auteur
+// seulement) tant qu'il n'est pas partagé — seul son propre auteur peut
+// décider de l'exposer au mur commun (sharedWishes, voir handleGet), où les
+// autres membres peuvent dire Amine (handleAmineWish).
+async function handleShareWish(db, res, user, gid, rawShared) {
+  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
+  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+
+  const wishSnap = await db.ref("zikr_wishes/" + gid + "/" + user.uid).once("value");
+  if (!wishSnap.exists()) return res.status(400).json({ error: "Envoyez d'abord votre vœu avant de le partager." });
+
+  const shared = !!rawShared;
+  await db.ref("zikr_wishes/" + gid + "/" + user.uid + "/shared").set(shared);
+  return res.status(200).json({ ok: true, shared });
+}
+
+// ── Membre : dit « Amine » (ou le retire, toggle) sur un vœu partagé ──
+// Refusé sur un vœu resté privé, même par groupId+wishUid valides — le
+// partage (`shared`) est la seule chose qui rend un vœu visible/réactible
+// par quiconque d'autre que son auteur et le créateur.
+async function handleAmineWish(db, res, user, gid, wishUid) {
+  if (!gid || !wishUid) return res.status(400).json({ error: "Vœu introuvable." });
+  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
+  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+
+  const wishSnap = await db.ref("zikr_wishes/" + gid + "/" + wishUid).once("value");
+  const wish = wishSnap.val();
+  if (!wish || wish.shared !== true) return res.status(404).json({ error: "Ce vœu n'est pas partagé." });
+
+  const ref = db.ref("zikr_wish_amines/" + gid + "/" + wishUid + "/" + user.uid);
+  const already = (await ref.once("value")).exists();
+  if (already) await ref.remove();
+  else await ref.set(true);
+
+  const countSnap = await db.ref("zikr_wish_amines/" + gid + "/" + wishUid).once("value");
+  return res.status(200).json({ ok: true, amined: !already, amineCount: amineCount(countSnap.val()) });
 }
 
 // ── Membre : discussion de groupe façon WhatsApp ─────────────────
 // Réservée aux membres (créateur inclus) : jamais accessible à un visiteur
 // qui n'a pas encore rejoint (même par lien direct — contrairement à
-// get/join, volontairement plus permissifs).
-async function handleSendMessage(db, res, user, gid, rawText) {
+// get/join, volontairement plus permissifs). Texte ET/OU pièce jointe
+// (image/audio, voir CHAT_MEDIA_TYPES) — demandé explicitement (« envoyer
+// des audios, images... »). Le FICHIER lui-même n'est jamais reçu ici : il a
+// déjà été envoyé DIRECTEMENT à Cloudinary par le client (voir
+// pages/api/cloudinary-sign.js, folder="zikr_chat") ; seule l'URL déjà
+// hébergée transite par cet appel, comme pour les images produit (marché).
+async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawMediaUrl, rawMediaDuration) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   const text = cleanText(rawText, CHAT_MESSAGE_MAX);
-  if (!text) return res.status(400).json({ error: "Écrivez un message avant d'envoyer." });
+  const mediaType = CHAT_MEDIA_TYPES.includes(rawMediaType) ? rawMediaType : null;
+  // L'URL vient de NOTRE propre compte Cloudinary (res.cloudinary.com) —
+  // jamais une URL arbitraire fournie par le client, qui permettrait
+  // d'afficher/faire jouer n'importe quelle ressource externe dans la
+  // discussion (usurpation, contenu non modéré) sous couvert d'un "message".
+  const mediaUrl = mediaType && /^https:\/\/res\.cloudinary\.com\//.test(String(rawMediaUrl || "")) ? String(rawMediaUrl) : null;
+  if (!isValidChatMessage(text, mediaType, mediaUrl)) {
+    return res.status(400).json({ error: "Écrivez un message ou joignez une image/un audio avant d'envoyer." });
+  }
+
+  const msg = { uid: user.uid, email: user.email, text, at: Date.now() };
+  if (mediaUrl) {
+    msg.mediaType = mediaType;
+    msg.mediaUrl = mediaUrl;
+    // Purement indicatif (affichage du minuteur du vocal côté client) —
+    // jamais vérifié ici, voir CHAT_AUDIO_MAX_S (lib/zikrLogic.js).
+    const dur = Math.floor(Number(rawMediaDuration));
+    if (mediaType === "audio" && Number.isFinite(dur) && dur > 0) msg.mediaDuration = dur;
+  }
 
   const ref = db.ref("zikr_chat/" + gid).push();
-  await ref.set({ uid: user.uid, email: user.email, text, at: Date.now() });
+  await ref.set(msg);
+  // Best-effort : le message reste enregistré ci-dessus même si VAPID est
+  // mal configuré ou qu'un envoi push échoue — jamais bloquant pour l'auteur.
+  await notifyNewMessage(db, gid, user.uid, user.email, text, !!mediaUrl).catch(() => {});
   return res.status(200).json({ ok: true, id: ref.key });
 }
 
@@ -931,9 +1063,45 @@ async function handleMessages(db, res, user, gid) {
   const messages = [];
   snap.forEach((m) => {
     const v = m.val() || {};
-    messages.push({ id: m.key, uid: v.uid || "", email: v.email || "", text: v.text || "", at: v.at || 0 });
+    const msg = { id: m.key, uid: v.uid || "", email: v.email || "", text: v.text || "", at: v.at || 0 };
+    if (CHAT_MEDIA_TYPES.includes(v.mediaType) && v.mediaUrl) {
+      msg.mediaType = v.mediaType;
+      msg.mediaUrl = v.mediaUrl;
+      if (v.mediaDuration) msg.mediaDuration = Number(v.mediaDuration) || 0;
+    }
+    messages.push(msg);
   });
   return res.status(200).json({ messages });
+}
+
+// ── Prévient les AUTRES membres qu'un nouveau message a été posté ──
+// Demandé explicitement (« bip sonore + notification aux membres ») : le bip
+// lui-même est joué CÔTÉ CLIENT (app/zikr/page.tsx, sur le sondage qui
+// détecte un nouveau message pas de soi) — cette notification push couvre le
+// cas où l'app n'est pas au premier plan (même infra que notifyReciting/
+// pushInactivityWarning ci-dessus). Aucun plafond par destinataire (contraste
+// avec notifyReciting) : un message reste un événement ponctuel et voulu par
+// son auteur, pas un signal répété automatiquement comme la reprise d'activité.
+async function notifyNewMessage(db, gid, senderUid, senderEmail, text, hasMedia) {
+  if (!configureVapid()) return;
+  const [nameSnap, membersSnap] = await Promise.all([
+    db.ref("zikr_groups/" + gid + "/name").once("value"),
+    db.ref("zikr_members/" + gid).once("value"),
+  ]);
+  const groupName = nameSnap.val() || "Zikr collectif";
+  const body = text
+    ? `${senderEmail || "Un membre"} : ${text}`
+    : `${senderEmail || "Un membre"} a envoyé ${hasMedia ? "une pièce jointe" : "un message"}.`;
+  const payload = JSON.stringify({
+    title: '💬 ' + groupName,
+    body,
+    url: '/s?k=zikr&i=' + gid,
+    tag: 'zikr-chat-' + gid,
+  });
+
+  const targets = [];
+  membersSnap.forEach((m) => { if (m.key !== senderUid) targets.push(m.key); });
+  await Promise.all(targets.map((uid) => sendPushToUid(db, uid, payload, "zikr:notifyNewMessage")));
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur

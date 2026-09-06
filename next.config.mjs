@@ -41,7 +41,11 @@ const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), payment=(), usb=(), geolocation=(self)' },
+  // microphone=(self) — PAS () — depuis l'enregistrement d'un vocal dans la
+  // discussion d'un zikr collectif (app/zikr/page.tsx, MediaRecorder),
+  // demandé explicitement. Reste refusé à tout contenu tiers embarqué
+  // (aucune origine cross-site autorisée) : seul CE site peut demander l'accès.
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), payment=(), usb=(), geolocation=(self)' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
 ];
 

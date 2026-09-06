@@ -26,6 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   ShieldCheck, Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
+  Image as ImageIcon, Mic, Square, Heart,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -33,19 +34,27 @@ import SpinnerUntyped from '@/components/Spinner';
 import WirdReminderToggleUntyped from '@/components/WirdReminderToggle';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
+import { useVoiceRecorder } from '@/components/useVoiceRecorder';
+import EmojiPickerUntyped from '@/components/EmojiPicker';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
-import { progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX, RYTHME_SUSPECT } from '@/lib/zikrLogic';
+import {
+  progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
+  RYTHME_SUSPECT, CHAT_AUDIO_MAX_S,
+} from '@/lib/zikrLogic';
+import { uploadZikrChatMedia } from '@/lib/cloudinary';
+import { playNotificationBeep } from '@/lib/notifSound';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, warnMember, notifyInactiveMembers, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
-  openWishes, closeWishes, submitWish,
+  openWishes, closeWishes, submitWish, shareWish, amineWish,
   sendMessage, getMessages, approveZikr,
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
 const WirdReminderToggle = WirdReminderToggleUntyped as any;
+const EmojiPicker = EmojiPickerUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 
@@ -86,12 +95,29 @@ interface Wish {
   at: number;
 }
 
+// Vœu PARTAGÉ (opt-in, voir lib/zikrCollectif.js shareWish) : visible de tout
+// le groupe, avec son décompte de « Amine » — jamais l'identité des autres
+// réactants, juste le compte et si MOI je l'ai déjà dit.
+interface SharedWish {
+  uid: string;
+  email: string;
+  text: string;
+  at: number;
+  amineCount: number;
+  aminedByMe: boolean;
+}
+
+type ChatMediaType = 'image' | 'audio';
+
 interface ChatMessage {
   id: string;
   uid: string;
   email: string;
   text: string;
   at: number;
+  mediaType?: ChatMediaType;
+  mediaUrl?: string;
+  mediaDuration?: number;
 }
 
 interface GroupDetailData extends Group {
@@ -108,6 +134,8 @@ interface GroupDetailData extends Group {
   wishesOpen?: boolean;
   wishes?: Wish[];
   myWish?: string;
+  myWishShared?: boolean;
+  sharedWishes?: SharedWish[];
   isAdmin?: boolean;
 }
 
@@ -493,14 +521,23 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatText, setChatText] = useState('');
-  const [chatBusy, setChatBusy] = useState(false);
+  const [chatBusy, setChatBusy] = useState(false); // envoi d'un message texte
+  const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
   const chatListRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  // Dernier message vu (par SON id, pas juste son nombre — un message
+  // supprimé ferait sinon rebaisser artificiellement le compte) : sert à
+  // détecter un NOUVEAU message d'un AUTRE membre entre deux sondages pour
+  // jouer le bip (voir loadMessages) — jamais au tout premier chargement.
+  const lastMsgIdRef = useRef<string | null>(null);
 
   // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
   // sondage régulier écraserait une saisie en cours toutes les POLL_MS ms —
   // même précaution que syncedFait dans MemberCounter).
   const [wishText, setWishText] = useState('');
   const [wishBusy, setWishBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [amineBusy, setAmineBusy] = useState<string | null>(null); // uid du vœu en cours
   const wishSyncedRef = useRef(false);
   useEffect(() => {
     if (!wishSyncedRef.current && g && typeof g.myWish === 'string') {
@@ -559,14 +596,26 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
   // Discussion : chargée et sondée SEULEMENT pendant que le panneau est
   // ouvert — pas de requête inutile en arrière-plan quand personne ne lit.
+  // Bip sonore (demandé explicitement) : joué quand le DERNIER message a
+  // changé depuis le sondage précédent ET qu'il ne vient pas de MOI — jamais
+  // au premier chargement (rien à comparer), jamais pour son propre envoi
+  // (déjà su, pas une "nouvelle" à signaler). Le cas où l'app n'est pas au
+  // premier plan est couvert séparément par la notification push serveur
+  // (pages/api/zikr.js notifyNewMessage), qui a son propre son (système).
   const loadMessages = useCallback(async () => {
     try {
       const d = await getMessages(groupId);
-      setMessages(d.messages || []);
+      const list: ChatMessage[] = d.messages || [];
+      const last = list[list.length - 1];
+      if (last && lastMsgIdRef.current !== null && last.id !== lastMsgIdRef.current && last.uid !== uid) {
+        playNotificationBeep();
+      }
+      if (last) lastMsgIdRef.current = last.id;
+      setMessages(list);
     } catch {
       // Sondage best-effort : une lecture ratée ne doit pas casser le panneau.
     }
-  }, [groupId]);
+  }, [groupId, uid]);
 
   useEffect(() => {
     if (!showChat) return undefined;
@@ -613,6 +662,68 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     try { await sendMessage(groupId, t); setChatText(''); loadMessages(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
     finally { setChatBusy(false); }
+  };
+  // Image jointe au message — upload DIRECT vers Cloudinary (lib/cloudinary.js
+  // uploadZikrChatMedia, autorisé par appartenance au groupe), puis
+  // enregistrement du pointeur seulement (le fichier ne transite jamais par
+  // notre propre API — même flux que les images produit du marché).
+  const doSendImage = async (file: File) => {
+    if (!file || mediaBusy) return;
+    setMediaBusy(true);
+    try {
+      const url = await uploadZikrChatMedia(file, groupId, 'image');
+      await sendMessage(groupId, '', { type: 'image', url });
+      loadMessages();
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+    } finally {
+      setMediaBusy(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+  // Vocal enregistré (components/useVoiceRecorder.js) — même flux que
+  // l'image : upload direct, puis pointeur enregistré comme message.
+  // Cloudinary héberge l'audio sous resource_type="video" (pas "audio",
+  // absent de son API Upload — voir lib/cloudinary.js).
+  const onVoiceDone = useCallback(
+    async (blob: Blob, duration: number) => {
+      setMediaBusy(true);
+      try {
+        const url = await uploadZikrChatMedia(blob, groupId, 'video');
+        await sendMessage(groupId, '', { type: 'audio', url, duration });
+        loadMessages();
+      } catch (e: any) {
+        notify('❌ ' + (e.message || e));
+      } finally {
+        setMediaBusy(false);
+      }
+    },
+    [groupId, notify, loadMessages]
+  );
+  const voice = useVoiceRecorder(onVoiceDone);
+  const doStartVoice = async () => {
+    try { await voice.start(); }
+    catch { notify('❌ Accès au micro refusé ou indisponible.'); }
+  };
+  const doShareWish = async (shared: boolean) => {
+    if (shareBusy) return;
+    setShareBusy(true);
+    try {
+      await shareWish(groupId, shared);
+      notify(shared ? '🤲 Vœu partagé avec le groupe.' : 'Vœu retiré du partage.');
+      load();
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+  const doAmineWish = async (wishUid: string) => {
+    if (amineBusy) return;
+    setAmineBusy(wishUid);
+    try { await amineWish(groupId, wishUid); load(); }
+    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    finally { setAmineBusy(null); }
   };
   const doDismissWarning = async () => {
     try { await dismissWarning(groupId); load(); } catch { /* best effort */ }
@@ -878,7 +989,8 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       )}
 
       {/* Discussion du groupe façon WhatsApp — réservée aux membres (voir
-          handleSendMessage/handleMessages, pages/api/zikr.js). */}
+          handleSendMessage/handleMessages, pages/api/zikr.js). Texte ET/OU
+          pièce jointe (image, vocal, emoji) — demandé explicitement. */}
       {isMember && showChat && (
         <div className="zk-chat-panel">
           <h3><MessageCircle size={15} strokeWidth={2.5} aria-hidden="true" /> Discussion</h3>
@@ -892,20 +1004,62 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                     {m.email || 'Membre'}
                     {m.uid === g.ownerUid && <Crown size={10} strokeWidth={2.5} aria-label="Créateur" />}
                   </span>
-                  <p className="zk-chat-text">{m.text}</p>
+                  {m.mediaType === 'image' && m.mediaUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary dynamique, next/image inutile ici (déjà optimisée à l'upload)
+                    <img className="zk-chat-media-img" src={m.mediaUrl} alt="" loading="lazy" />
+                  )}
+                  {m.mediaType === 'audio' && m.mediaUrl && (
+                    <audio className="zk-chat-media-audio" src={m.mediaUrl} controls preload="none" />
+                  )}
+                  {m.text && <p className="zk-chat-text">{m.text}</p>}
                 </div>
               ))
             )}
           </div>
-          <div className="zk-chat-input-row">
-            <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
-              placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
-            <button type="button" className="zk-chat-send" onClick={doSendMessage}
-              disabled={chatBusy || !chatText.trim()} aria-label="Envoyer">
-              <Send size={16} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-          </div>
+
+          {voice.recording ? (
+            // Barre d'enregistrement — remplace la ligne de saisie tant que
+            // le vocal est en cours (un tap sur le micro relance l'écriture).
+            <div className="zk-chat-input-row zk-voice-recording">
+              <span className="zk-voice-dot" aria-hidden="true" />
+              <span className="zk-voice-time">
+                {String(Math.floor(voice.seconds / 60)).padStart(1, '0')}:{String(voice.seconds % 60).padStart(2, '0')}
+                {' / '}{Math.floor(CHAT_AUDIO_MAX_S / 60)}:{String(CHAT_AUDIO_MAX_S % 60).padStart(2, '0')}
+              </span>
+              <button type="button" className="zk-chat-tool" onClick={voice.cancel} aria-label="Annuler le vocal">
+                <X size={16} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+              <button type="button" className="zk-chat-send" onClick={voice.stop} aria-label="Envoyer le vocal">
+                <Send size={16} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <div className="zk-chat-input-row">
+              <EmojiPicker onPick={(e: string) => setChatText((t: string) => (t + e).slice(0, CHAT_MESSAGE_MAX))} />
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doSendImage(f); }}
+              />
+              <button type="button" className="zk-chat-tool" disabled={mediaBusy}
+                onClick={() => imageInputRef.current?.click()} aria-label="Joindre une image">
+                <ImageIcon size={17} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+              <button type="button" className="zk-chat-tool" disabled={mediaBusy}
+                onClick={doStartVoice} aria-label="Enregistrer un vocal">
+                <Mic size={17} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+              <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
+                placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
+              <button type="button" className="zk-chat-send" onClick={doSendMessage}
+                disabled={chatBusy || mediaBusy || !chatText.trim()} aria-label="Envoyer">
+                <Send size={16} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -955,8 +1109,52 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             <button className="zk-btn main" onClick={doSubmitWish} disabled={wishBusy || !wishText.trim()}>
               {wishBusy ? 'Envoi…' : g.myWish ? 'Mettre à jour mon vœu' : 'Envoyer mon vœu'}
             </button>
+            {/* Partage OPT-IN vers le mur commun (sharedWishes, plus bas) —
+                demandé explicitement (« les gens du groupe peuvent interagir
+                avec ces publications pour dire Amine »), sans revenir sur la
+                confidentialité par défaut (le vœu reste privé tant qu'il
+                n'est pas explicitement partagé par SON auteur). N'a de sens
+                qu'une fois le vœu envoyé. */}
+            {g.myWish && (
+              <label className="zk-wish-share-toggle">
+                <input
+                  type="checkbox"
+                  checked={!!g.myWishShared}
+                  disabled={shareBusy}
+                  onChange={(e) => doShareWish(e.target.checked)}
+                />
+                Partager avec le groupe (les autres pourront dire Amine)
+              </label>
+            )}
           </div>
         ) : null
+      )}
+
+      {/* Mur des vœux PARTAGÉS (opt-in, handleShareWish) — visible de TOUT
+          membre réel, créateur inclus, contrairement à la liste privée
+          ci-dessus. Chacun peut y dire Amine (handleAmineWish). */}
+      {isMember && g.sharedWishes && g.sharedWishes.length > 0 && (
+        <div className="zk-owner-panel">
+          <h3>🤲 Vœux partagés <span className="zk-pill">{g.sharedWishes.length}</span></h3>
+          <div className="zk-wish-list">
+            {g.sharedWishes.map((w) => (
+              <div key={w.uid} className="zk-wish-item zk-wish-shared">
+                <span className="zk-wish-email">{w.email}</span>
+                <p className="zk-wish-text">{w.text}</p>
+                <button
+                  type="button"
+                  className={'zk-amine-btn' + (w.aminedByMe ? ' amined' : '')}
+                  disabled={amineBusy === w.uid}
+                  onClick={() => doAmineWish(w.uid)}
+                  aria-pressed={w.aminedByMe}
+                >
+                  <Heart size={13} strokeWidth={2.5} aria-hidden="true" /> Amine
+                  {w.amineCount > 0 && <span className="zk-pill">{w.amineCount}</span>}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="zk-footer-actions">
