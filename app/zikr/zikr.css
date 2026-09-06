@@ -292,52 +292,136 @@
 .zk-wish-email { font-size: 0.78rem; color: var(--text-dim); }
 .zk-wish-text { margin: 6px 0 0; font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; }
 
-/* ── Discussion du groupe façon WhatsApp — réservée aux membres ──── */
+/* ── Discussion du groupe façon WhatsApp — réservée aux membres ────
+   Revue design (« aspect de prototype plutôt que de messagerie premium ») :
+   bulles compactes, une seule fois l'identité/l'heure par GROUPE de messages
+   consécutifs (voir groupChatMessages, lib/zikrLogic.js), bordures très
+   discrètes (le fond fait le contraste, pas un contour épais partout),
+   --card-bg (déjà utilisé ailleurs dans l'app pour ce même ton violet
+   profond) plutôt que --bg-deep (quasi noir, tranchait trop). */
 .zk-chat-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
 .zk-chat-list {
-  display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto;
   padding: 4px 2px; margin-bottom: 10px;
+  scrollbar-width: none; /* Firefox — scrollbar visible jugée peu "mobile premium" */
 }
-.zk-chat-msg { align-self: flex-start; max-width: 85%; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px 12px; }
-.zk-chat-msg.me { align-self: flex-end; background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.4); }
-.zk-chat-author { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
-.zk-chat-author svg { color: #d9a441; }
-.zk-chat-text { margin: 0; font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; word-break: break-word; }
-.zk-chat-input-row { display: flex; align-items: flex-end; gap: 8px; }
-.zk-chat-input-row textarea {
-  flex: 1; resize: none; background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 10px;
-  padding: 10px 12px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.9rem; outline: none;
-  max-height: 100px;
+.zk-chat-list::-webkit-scrollbar { display: none; }
+
+/* align-items: flex-START, pas flex-end — un groupe de plusieurs bulles (ou
+   une seule bulle haute, ex. une image) est plus grand que l'avatar (28px) :
+   flex-end l'aurait aligné sur le bas du DERNIER élément, l'éloignant
+   visuellement de la ligne auteur/heure tout en haut (bug constaté). */
+.zk-chat-group { display: flex; align-items: flex-start; gap: 8px; max-width: 88%; }
+.zk-chat-group.me { align-self: flex-end; flex-direction: row-reverse; }
+
+.zk-chat-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+  object-fit: cover; display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700; color: #fff;
 }
-.zk-chat-input-row textarea:focus { border-color: var(--accent); }
+
+.zk-chat-bubbles { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.zk-chat-group.me .zk-chat-bubbles { align-items: flex-end; }
+
+/* Auteur + heure : UNE FOIS par groupe, jamais sur chaque bulle (revue
+   design : « la couronne apparaît sur chaque message »). Texte plus petit
+   que le message (hiérarchie) — 11px plutôt que la taille du texte courant. */
+.zk-chat-author {
+  display: flex; align-items: center; gap: 5px; margin: 0 2px 1px;
+  font-size: 0.7rem; font-weight: 700; color: var(--accent);
+}
+.zk-chat-author svg { color: #d9a441; flex-shrink: 0; }
+.zk-chat-time { font-weight: 500; color: var(--text-dim); font-size: 0.68rem; }
+/* Heure d'une bulle envoyée (pas d'en-tête auteur pour "moi") : sous chaque
+   bulle plutôt qu'un en-tête, comme demandé (« 20:37, 20:38 en petit sous la
+   bulle ») — DANS la bulle, alignée à droite. */
+.zk-chat-time.me { display: block; text-align: right; margin-top: 2px; }
+
+/* Bulles COMPACTES (revue design : « beaucoup d'espace vertical autour des
+   messages ») — padding réduit, bordure quasi invisible (le fond suffit à
+   distinguer une bulle de la suivante). */
+.zk-chat-msg {
+  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 6px 10px; max-width: 100%;
+}
+.zk-chat-group.me .zk-chat-msg {
+  background: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+/* Texte du message plus grand que l'auteur (hiérarchie) — 15px. */
+.zk-chat-text { margin: 0; font-size: 0.94rem; line-height: 1.35; color: var(--text-main); white-space: pre-wrap; word-break: break-word; }
+
+/* Pièce jointe image — demandé explicitement. */
+.zk-chat-media-img {
+  display: block; max-width: 100%; max-height: 220px; border-radius: 10px;
+  object-fit: cover; cursor: pointer;
+}
+
+/* ── Lecteur audio personnalisé (components/AudioMessage.js) ──────────────
+   Remplace le widget <audio controls> natif (revue design : « très Android
+   natif, casse complètement le design violet ») — intégré à la bulle,
+   couleurs de l'app. */
+.zk-audio-player { display: flex; align-items: center; gap: 8px; min-width: 180px; padding: 2px 0; }
+.zk-audio-play {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 85%, transparent); color: #fff;
+}
+.zk-audio-bar { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.15); cursor: pointer; }
+.zk-audio-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+.zk-audio-time { flex-shrink: 0; font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+
+/* ── Ligne de composition ──────────────────────────────────────────────
+   Simplifiée à UNE ligne (revue design : « quatre énormes cercles ») : ＋
+   (photo/caméra, components/AttachMenu.js) — champ (emoji intégré + texte)
+   — micro — envoyer. */
+.zk-chat-input-row { display: flex; align-items: flex-end; gap: 6px; }
+
+/* Champ de saisie : emoji ET texte dans la MÊME boîte visuelle (revue
+   design : « l'emoji peut être intégré dans le champ de saisie ») — chacun
+   des deux enfants reste transparent/sans bordure propre, c'est cette boîte
+   qui porte le fond et le contour. --card-bg plutôt que --bg-deep (quasi
+   noir, tranchait trop avec le reste — revue design). */
+.zk-chat-field {
+  flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 4px;
+  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+  padding: 6px 8px 6px 6px;
+}
+.zk-chat-field:focus-within { border-color: var(--accent); }
+.zk-chat-field textarea {
+  flex: 1; min-width: 0; resize: none; background: transparent; border: none;
+  padding: 6px 4px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.92rem;
+  outline: none; max-height: 100px;
+}
+.zk-chat-field .zk-emoji-wrap { margin-bottom: 1px; }
+.zk-chat-field .zk-chat-tool {
+  width: 30px; height: 30px; background: transparent; border: none; font-size: 1rem;
+}
+
 .zk-chat-send {
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
-.zk-chat-send:disabled { opacity: 0.5; cursor: default; }
+.zk-chat-send:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
 
-/* Boutons outil de la ligne de saisie (emoji, image, micro) — même gabarit
-   que .zk-chat-send (cercle 40px) mais neutres (pas l'action principale). */
+/* Boutons outil hors champ (micro, ＋ d'AttachMenu, annuler un vocal) — même
+   gabarit que .zk-chat-send (cercle 40px) mais neutres (pas l'action
+   principale). Bordure très discrète (revue design : « bordures
+   omniprésentes »). */
 .zk-chat-tool {
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
-  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
+  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim);
   cursor: pointer; font-size: 1.1rem; transition: color 0.2s, border-color 0.2s;
 }
 .zk-chat-tool:hover { color: var(--accent); border-color: var(--accent); }
 .zk-chat-tool:disabled { opacity: 0.5; cursor: default; }
 
-/* Pièce jointe d'un message (image/vocal) — demandé explicitement. */
-.zk-chat-media-img {
-  display: block; max-width: 100%; max-height: 220px; border-radius: 8px;
-  margin: 4px 0; object-fit: cover; cursor: pointer;
-}
-.zk-chat-media-audio { display: block; width: 100%; max-width: 260px; margin: 4px 0; height: 36px; }
-
 /* Barre d'enregistrement d'un vocal — remplace la ligne de saisie tant que
    `voice.recording` est vrai (components/useVoiceRecorder.js). */
-.zk-voice-recording { background: rgba(217,90,90,0.08); border: 1px solid rgba(217,90,90,0.3); border-radius: 12px; padding: 6px 10px; }
+.zk-voice-recording { background: rgba(217,90,90,0.08); border: 1px solid rgba(217,90,90,0.3); border-radius: 20px; padding: 6px 10px; }
 .zk-voice-dot {
   width: 10px; height: 10px; border-radius: 50%; background: #e05050; flex-shrink: 0;
   animation: zk-voice-pulse 1.1s ease-in-out infinite;
@@ -350,7 +434,7 @@
 .zk-emoji-pop {
   position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 20;
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
-  background: var(--bg-deep); border: 1px solid var(--glass-border); border-radius: 12px;
+  background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px;
   padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); width: 216px;
 }
 .zk-emoji-btn {
@@ -358,6 +442,18 @@
   padding: 4px; border-radius: 8px; line-height: 1;
 }
 .zk-emoji-btn:hover { background: var(--surface-2); }
+
+/* Menu « ＋ » (components/AttachMenu.js) — Photo / Caméra, remplace les gros
+   cercles séparés d'avant. */
+.zk-attach-wrap { position: relative; flex-shrink: 0; }
+.zk-attach-pop { grid-template-columns: 1fr; width: 160px; gap: 2px; }
+.zk-attach-item {
+  display: flex; align-items: center; gap: 10px; background: transparent; border: none;
+  color: var(--text-main); font-family: var(--font-ui); font-size: 0.85rem; cursor: pointer;
+  padding: 9px 10px; border-radius: 8px; text-align: left;
+}
+.zk-attach-item:hover { background: var(--surface-2); }
+.zk-attach-item svg { color: var(--accent); flex-shrink: 0; }
 
 /* ── Partage d'un vœu (opt-in) + mur des vœux partagés + Amine ──────────
    Demandé explicitement (« les gens du groupe peuvent interagir avec ces

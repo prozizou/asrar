@@ -24,9 +24,13 @@ function httpError(status, message) {
 
 /**
  * Vérifie le jeton d'identité Firebase envoyé par le client (auth.currentUser.getIdToken()).
- * `picture` (photo de profil Google, si connu du jeton) est optionnel — les
- * appelants qui n'en ont pas besoin le laissent simplement de côté.
- * @returns {Promise<{uid:string, email:string, picture?:string}>}
+ * `picture` (photo de profil Google) et `name` (nom Google, si connu du
+ * jeton) sont optionnels — les appelants qui n'en ont pas besoin les
+ * laissent simplement de côté. `name` sert par exemple à afficher un pseudo
+ * plutôt que l'email brut dans la discussion d'un zikr collectif
+ * (app/zikr/page.tsx) — absent pour un compte email/mot de passe (pas de
+ * claim Google), le client retombe alors sur la partie locale de l'email.
+ * @returns {Promise<{uid:string, email:string, picture?:string, name?:string}>}
  */
 async function verifyUser(idToken) {
   if (!idToken) throw httpError(401, "Authentification requise.");
@@ -37,7 +41,7 @@ async function verifyUser(idToken) {
     throw httpError(401, "Session invalide ou expirée. Reconnecte-toi.");
   }
   if (!decoded.email) throw httpError(401, "Compte sans adresse e-mail.");
-  return { uid: decoded.uid, email: decoded.email, picture: decoded.picture || "" };
+  return { uid: decoded.uid, email: decoded.email, picture: decoded.picture || "", name: decoded.name || "" };
 }
 
 /**

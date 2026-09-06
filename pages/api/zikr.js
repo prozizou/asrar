@@ -152,9 +152,15 @@
 //                                 où n'importe quel membre peut dire Amine
 //   zikr_wish_amines/{gid}/{wishUid}/{uid} = true — qui a dit Amine sur QUEL
 //                                 vœu partagé (action="amineWish", toggle)
-//   zikr_chat/{gid}/{msgId}  = { uid, email, text, at, mediaType?, mediaUrl?,
-//                                 mediaDuration? } — discussion de groupe
-//                                 (façon WhatsApp), réservée aux membres ;
+//   zikr_chat/{gid}/{msgId}  = { uid, email, name?, picture?, text, at,
+//                                 mediaType?, mediaUrl?, mediaDuration? } —
+//                                 discussion de groupe (façon WhatsApp),
+//                                 réservée aux membres ; name/picture (nom et
+//                                 photo Google, voir server/access.js
+//                                 verifyUser) absents pour un compte email/
+//                                 mot de passe — le client retombe alors sur
+//                                 la partie locale de l'email (affichage
+//                                 seulement, jamais utilisé pour l'autorité) ;
 //                                 mediaType ∈ {"image","audio"} si une pièce
 //                                 jointe accompagne (ou remplace) le texte
 
@@ -1034,6 +1040,12 @@ async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawM
   }
 
   const msg = { uid: user.uid, email: user.email, text, at: Date.now() };
+  // Nom/photo Google (déjà vérifiés par verifyUser — jamais fournis par le
+  // client) : demandé explicitement (« nom/pseudo + avatar » plutôt que
+  // l'email brut). Absents pour un compte email/mot de passe — le client
+  // retombe alors sur la partie locale de l'email (voir displayNameOf).
+  if (user.name) msg.name = user.name;
+  if (user.picture) msg.picture = user.picture;
   if (mediaUrl) {
     msg.mediaType = mediaType;
     msg.mediaUrl = mediaUrl;
@@ -1064,6 +1076,8 @@ async function handleMessages(db, res, user, gid) {
   snap.forEach((m) => {
     const v = m.val() || {};
     const msg = { id: m.key, uid: v.uid || "", email: v.email || "", text: v.text || "", at: v.at || 0 };
+    if (v.name) msg.name = v.name;
+    if (v.picture) msg.picture = v.picture;
     if (CHAT_MEDIA_TYPES.includes(v.mediaType) && v.mediaUrl) {
       msg.mediaType = v.mediaType;
       msg.mediaUrl = v.mediaUrl;

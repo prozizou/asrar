@@ -26,7 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   ShieldCheck, Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Image as ImageIcon, Mic, Square, Heart,
+  Mic, Heart,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -36,11 +36,13 @@ import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import { useVoiceRecorder } from '@/components/useVoiceRecorder';
 import EmojiPickerUntyped from '@/components/EmojiPicker';
+import AttachMenuUntyped from '@/components/AttachMenu';
+import AudioMessageUntyped from '@/components/AudioMessage';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import {
   progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
-  RYTHME_SUSPECT, CHAT_AUDIO_MAX_S,
+  RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
 } from '@/lib/zikrLogic';
 import { uploadZikrChatMedia } from '@/lib/cloudinary';
 import { playNotificationBeep } from '@/lib/notifSound';
@@ -55,6 +57,8 @@ import {
 const Spinner = SpinnerUntyped as any;
 const WirdReminderToggle = WirdReminderToggleUntyped as any;
 const EmojiPicker = EmojiPickerUntyped as any;
+const AttachMenu = AttachMenuUntyped as any;
+const AudioMessage = AudioMessageUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 
@@ -113,6 +117,8 @@ interface ChatMessage {
   id: string;
   uid: string;
   email: string;
+  name?: string; // nom Google (server/access.js verifyUser) — absent pour un compte email/mot de passe
+  picture?: string; // photo de profil Google — idem
   text: string;
   at: number;
   mediaType?: ChatMediaType;
@@ -156,6 +162,11 @@ const toLocalInputValue = (ms: number) => {
 };
 const fmtSessionAt = (ms: number) =>
   new Date(ms).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+// Heure d'un message de discussion (revue design : « impossible de comprendre
+// précisément la chronologie ») — un seul repère par GROUPE de messages
+// consécutifs (voir groupChatMessages, lib/zikrLogic.js), pas la date
+// complète : dans une conversation en direct, seule l'heure compte.
+const fmtHm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 const LIST_POLL_MS = 6000;  // sondage de la liste (moins fréquent : pas de compteur en direct dessus)
@@ -525,6 +536,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
   const chatListRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   // Dernier message vu (par SON id, pas juste son nombre — un message
   // supprimé ferait sinon rebaisser artificiellement le compte) : sert à
   // détecter un NOUVEAU message d'un AUTRE membre entre deux sondages pour
@@ -679,6 +691,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     } finally {
       setMediaBusy(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
   // Vocal enregistré (components/useVoiceRecorder.js) — même flux que
@@ -990,7 +1003,10 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
       {/* Discussion du groupe façon WhatsApp — réservée aux membres (voir
           handleSendMessage/handleMessages, pages/api/zikr.js). Texte ET/OU
-          pièce jointe (image, vocal, emoji) — demandé explicitement. */}
+          pièce jointe (image, vocal, emoji) — demandé explicitement. Les
+          messages consécutifs d'un même auteur sont regroupés (revue design :
+          « l'identité est répétée inutilement ») — un seul en-tête (avatar/
+          nom/heure) par groupe, voir groupChatMessages (lib/zikrLogic.js). */}
       {isMember && showChat && (
         <div className="zk-chat-panel">
           <h3><MessageCircle size={15} strokeWidth={2.5} aria-hidden="true" /> Discussion</h3>
@@ -998,22 +1014,47 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             {messages.length === 0 ? (
               <p className="zk-muted">Aucun message pour l’instant — lancez la discussion !</p>
             ) : (
-              messages.map((m) => (
-                <div key={m.id} className={'zk-chat-msg' + (m.uid === uid ? ' me' : '')}>
-                  <span className="zk-chat-author">
-                    {m.email || 'Membre'}
-                    {m.uid === g.ownerUid && <Crown size={10} strokeWidth={2.5} aria-label="Créateur" />}
-                  </span>
-                  {m.mediaType === 'image' && m.mediaUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary dynamique, next/image inutile ici (déjà optimisée à l'upload)
-                    <img className="zk-chat-media-img" src={m.mediaUrl} alt="" loading="lazy" />
-                  )}
-                  {m.mediaType === 'audio' && m.mediaUrl && (
-                    <audio className="zk-chat-media-audio" src={m.mediaUrl} controls preload="none" />
-                  )}
-                  {m.text && <p className="zk-chat-text">{m.text}</p>}
-                </div>
-              ))
+              groupChatMessages(messages).map((grp: { uid: string; items: ChatMessage[] }) => {
+                const first = grp.items[0];
+                const name = chatDisplayName(first.email, first.name);
+                const mine = grp.uid === uid;
+                return (
+                  <div key={first.id} className={'zk-chat-group' + (mine ? ' me' : '')}>
+                    {!mine && (
+                      first.picture ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- avatar Google, URL dynamique
+                        <img className="zk-chat-avatar" src={first.picture} alt="" loading="lazy" />
+                      ) : (
+                        <span className="zk-chat-avatar zk-chat-avatar-fallback" style={{ background: avatarColorFor(grp.uid) }}>
+                          {name.charAt(0).toUpperCase()}
+                        </span>
+                      )
+                    )}
+                    <div className="zk-chat-bubbles">
+                      {!mine && (
+                        <span className="zk-chat-author">
+                          {name}
+                          {grp.uid === g.ownerUid && <Crown size={10} strokeWidth={2.5} aria-label="Créateur" />}
+                          <span className="zk-chat-time">{fmtHm(first.at)}</span>
+                        </span>
+                      )}
+                      {grp.items.map((m) => (
+                        <div key={m.id} className="zk-chat-msg">
+                          {m.mediaType === 'image' && m.mediaUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary dynamique, next/image inutile ici (déjà optimisée à l'upload)
+                            <img className="zk-chat-media-img" src={m.mediaUrl} alt="" loading="lazy" />
+                          )}
+                          {m.mediaType === 'audio' && m.mediaUrl && (
+                            <AudioMessage src={m.mediaUrl} duration={m.mediaDuration} />
+                          )}
+                          {m.text && <p className="zk-chat-text">{m.text}</p>}
+                          {mine && <span className="zk-chat-time me">{fmtHm(m.at)}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
 
@@ -1035,7 +1076,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             </div>
           ) : (
             <div className="zk-chat-input-row">
-              <EmojiPicker onPick={(e: string) => setChatText((t: string) => (t + e).slice(0, CHAT_MESSAGE_MAX))} />
               <input
                 ref={imageInputRef}
                 type="file"
@@ -1043,17 +1083,29 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 hidden
                 onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doSendImage(f); }}
               />
-              <button type="button" className="zk-chat-tool" disabled={mediaBusy}
-                onClick={() => imageInputRef.current?.click()} aria-label="Joindre une image">
-                <ImageIcon size={17} strokeWidth={2.5} aria-hidden="true" />
-              </button>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                hidden
+                onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doSendImage(f); }}
+              />
+              <AttachMenu
+                disabled={mediaBusy}
+                onPickPhoto={() => imageInputRef.current?.click()}
+                onPickCamera={() => cameraInputRef.current?.click()}
+              />
+              <div className="zk-chat-field">
+                <EmojiPicker onPick={(e: string) => setChatText((t: string) => (t + e).slice(0, CHAT_MESSAGE_MAX))} />
+                <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
+                  placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
+              </div>
               <button type="button" className="zk-chat-tool" disabled={mediaBusy}
                 onClick={doStartVoice} aria-label="Enregistrer un vocal">
                 <Mic size={17} strokeWidth={2.5} aria-hidden="true" />
               </button>
-              <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
-                placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
               <button type="button" className="zk-chat-send" onClick={doSendMessage}
                 disabled={chatBusy || mediaBusy || !chatText.trim()} aria-label="Envoyer">
                 <Send size={16} strokeWidth={2.5} aria-hidden="true" />
