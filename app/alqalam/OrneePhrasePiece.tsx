@@ -126,9 +126,6 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                 return (
                   <g key={i} transform={`translate(${item.cx} ${item.cy})`}>
                     <path d={item.bowl} fill="none" stroke="#000" strokeWidth={item.stroke} strokeLinejoin="round" />
-                    {item.tail && (
-                      <path d={item.tail} fill="none" stroke="#000" strokeWidth={item.stroke} strokeLinecap="round" />
-                    )}
                     {inner && (
                       <g style={{ direction: 'rtl' }} fontFamily={FONT} fontWeight="700" fill="#000">
                         {inner.lines.map((line, li) => (
