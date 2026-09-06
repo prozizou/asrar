@@ -66,6 +66,13 @@ const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 1
  */
 export default function TasbihChapelet({ id, t, collectifRestant }) {
   const isCollectif = collectifRestant !== undefined;
+  // Objectif du GROUPE atteint (collectifRestant retombé à 0) : le compteur
+  // devient inactif — demandé explicitement. Continuer à taper au-delà de la
+  // cible partagée n'a plus de sens (chaque grain compte pour le groupe
+  // entier, pas une part personnelle) et laissait croire à tort qu'il restait
+  // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : le
+  // chapelet personnel (Noms d'Allah) reste `uncapped`, jamais concerné.
+  const collectifDone = isCollectif && collectifRestant <= 0;
   // Réglages (objectif/séries/suggestions/réinitialiser) repliés par défaut
   // (revue design, module Noms d'Allah) : affichés en permanence, ils
   // ajoutaient un rang de « pilules » avant même d'arriver au compteur, et
@@ -147,6 +154,8 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
   }, [layout]);
 
   const handleTap = () => {
+    if (collectifDone) return; // objectif du groupe atteint — plus rien à compter
+
     t.tap();
 
     const samples = ensureSamples();
@@ -189,8 +198,8 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
     <div
       id={`tasbih-${id}`}
       role="region"
-      aria-label="Compteur de dhikr"
-      className="tc"
+      aria-label={collectifDone ? 'Compteur de dhikr — objectif du groupe atteint' : 'Compteur de dhikr'}
+      className={'tc' + (collectifDone ? ' tc-inactive' : '')}
       onClick={handleTap}
     >
       {/* Réglages. stopPropagation empêche ces interactions de compter comme
@@ -199,10 +208,17 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
           personnelle, qui effacerait à tort sa contribution. */}
       <div className="tc-settings" onClick={(e) => e.stopPropagation()}>
         {isCollectif ? (
-          <div className="tc-group" title="Objectif du Zikr collectif — ce qu'il reste au groupe entier">
-            <span aria-hidden>🎯</span>
-            <span className="tc-group-value">{collectifRestant.toLocaleString('fr-FR')}</span>
-          </div>
+          collectifDone ? (
+            <div className="tc-group tc-group-done" title="Objectif du Zikr collectif atteint">
+              <span aria-hidden>🎉</span>
+              <span className="tc-group-value">Objectif atteint</span>
+            </div>
+          ) : (
+            <div className="tc-group" title="Objectif du Zikr collectif — ce qu'il reste au groupe entier">
+              <span aria-hidden>🎯</span>
+              <span className="tc-group-value">{collectifRestant.toLocaleString('fr-FR')}</span>
+            </div>
+          )
         ) : (
           <>
             {/* Replié par défaut : objectif/séries/suggestions/réinitialiser

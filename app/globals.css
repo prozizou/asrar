@@ -818,6 +818,18 @@ img, svg, video { max-width: 100%; height: auto; }
 .tc:hover { border-color: var(--accent); }
 .tc:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
 
+/* Objectif du Zikr collectif atteint (components/TasbihChapelet.js,
+   `collectifDone`) : le compteur devient inactif — demandé explicitement.
+   cursor + léger assombrissement suffisent à le signaler ; le clic est de
+   toute façon ignoré par handleTap (pas seulement une question de style). */
+.tc.tc-inactive { cursor: default; opacity: .75; }
+.tc.tc-inactive:hover { border-color: var(--glass-border); }
+.tc-group-done {
+  border-color: var(--success);
+  color: var(--success);
+}
+.tc-group-done .tc-group-value { color: var(--success); font-weight: 600; }
+
 .tc-settings {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
   width: 100%; padding-bottom: 14px; border-bottom: 1px dashed var(--glass-border);

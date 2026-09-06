@@ -5,13 +5,9 @@
 // ici on ne fait que lire/écrire l'attribut data-theme déjà en place.
 import { useEffect, useState } from 'react';
 import pkg from '@/package.json';
-import LatestCommitModal from './LatestCommitModal';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
 
 const APP_VERSION = pkg.version;
-// SHA court du commit déployé (voir next.config.mjs) — change à chaque
-// déploiement, contrairement à APP_VERSION (package.json), rarement bumpé.
-const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || '';
 
 // Interroge le service worker ACTIF (celui qui contrôle réellement la page)
 // pour sa version — plus fidèle que package.json/APP_VERSION, qui n'est
@@ -38,7 +34,6 @@ export default function AppDrawer() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [swVersion, setSwVersion] = useState(null);
-  const [commitModalOpen, setCommitModalOpen] = useState(false);
   const [standalone, setStandalone] = useState(true); // optimiste → pas de flash de la ligne pour les installés
   const [installState, setInstallState] = useState(getInstallState); // { canInstall, installed }
   const [ios, setIos] = useState(false);
@@ -128,18 +123,6 @@ export default function AppDrawer() {
                 <span className="drawer-row-hint">Bientôt disponible</span>
               </div>
 
-              <button
-                type="button"
-                className="drawer-row drawer-row-link"
-                onClick={() => setCommitModalOpen(true)}
-              >
-                <span className="drawer-row-label">
-                  <span className="drawer-row-icon">📝</span>
-                  Releases
-                </span>
-                <span className="drawer-row-hint">Dernier commit</span>
-              </button>
-
               {!standalone &&
                 (installState.canInstall ? (
                   <button type="button" className="drawer-row drawer-row-link" onClick={promptInstall}>
@@ -167,18 +150,15 @@ export default function AppDrawer() {
                 </span>
                 {/* Version du service worker réellement actif sur l'appareil
                     (voir getSwVersion) — repli sur package.json tant qu'elle
-                    n'est pas encore résolue ou hors contexte PWA/SW. */}
-                <span className="drawer-row-hint">
-                  {swVersion || `v${APP_VERSION}`}
-                  {BUILD_SHA ? ` · ${BUILD_SHA}` : ''}
-                </span>
+                    n'est pas encore résolue ou hors contexte PWA/SW. Plus de
+                    SHA de commit accolé ici (retiré à la demande) : ce
+                    numéro seul suffit, voir public/sw.js. */}
+                <span className="drawer-row-hint">{swVersion || `v${APP_VERSION}`}</span>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {commitModalOpen && <LatestCommitModal onClose={() => setCommitModalOpen(false)} />}
     </>
   );
 }
