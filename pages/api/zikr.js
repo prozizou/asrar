@@ -130,6 +130,9 @@
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
 //   zikr_groups/{gid}        = { name, presetId, transliteration, arabic,
 //                                 target, total, ownerUid, ownerEmail,
+//                                 ownerName? (nom Google, affichage seulement
+//                                 — "Créé par {ownerName || partie locale de
+//                                 ownerEmail}", voir chatDisplayName),
 //                                 createdAt, membersCount, wishesOpen?,
 //                                 private?, approved? }
 //   zikr_members/{gid}/{uid} = { email, fait, rythme, avertissement?,
@@ -326,6 +329,7 @@ async function handleCreate(db, res, user, body) {
     approved: false, // voir l'en-tête du fichier — l'administrateur doit valider
     ownerUid: user.uid,
     ownerEmail: user.email,
+    ownerName: user.name || "", // nom Google (server/access.js verifyUser) — affichage seulement, voir handleGet
     createdAt: now,
     membersCount: 1, // le créateur est le premier participant
     sessionAt: norm.sessionAt, // horaire optionnel de la prochaine session (rappel push, lib/reminders.js)
@@ -539,6 +543,7 @@ async function handleGet(db, res, user, gid) {
     remaining,
     ownerUid: g.ownerUid || "",
     ownerEmail: g.ownerEmail || "",
+    ownerName: g.ownerName || "",
     createdAt: g.createdAt || 0,
     membersCount: Number(g.membersCount) || 0,
     onlineCount: members.filter((m) => m.online).length,

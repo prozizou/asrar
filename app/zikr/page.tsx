@@ -25,8 +25,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
-  ShieldCheck, Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart,
+  Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
+  Mic, Heart, Trophy,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -38,6 +38,7 @@ import { useVoiceRecorder } from '@/components/useVoiceRecorder';
 import EmojiPickerUntyped from '@/components/EmojiPicker';
 import AttachMenuUntyped from '@/components/AttachMenu';
 import AudioMessageUntyped from '@/components/AudioMessage';
+import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import {
@@ -59,6 +60,7 @@ const WirdReminderToggle = WirdReminderToggleUntyped as any;
 const EmojiPicker = EmojiPickerUntyped as any;
 const AttachMenu = AttachMenuUntyped as any;
 const AudioMessage = AudioMessageUntyped as any;
+const MoreMenu = MoreMenuUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 
@@ -72,6 +74,7 @@ interface Group {
   remaining: number;
   membersCount: number;
   ownerEmail: string;
+  ownerName?: string; // nom Google (server/access.js verifyUser) — absent pour un compte email/mot de passe
   status: GroupStatus;
   private?: boolean;
   approved?: boolean;
@@ -818,35 +821,65 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
   return (
     <div className="glass-panel">
+      {/* Barre de nav resserrée (revue design : « quatre actions textuelles
+          sur la même ligne, Discussion ressemble presque à un onglet
+          sélectionné ») — seulement le retour, Partager (icône) et un menu
+          ⋮ pour les actions secondaires (Modifier, Administration). Discussion
+          devient un vrai bouton plus bas (zone Participation), plus une
+          simple ligne de texte ici. */}
       <div className="zk-detail-topbar">
-        <button className="zk-link" onClick={onBack}>← Liste des zikr</button>
+        <button className="zk-link" onClick={onBack}>← Zikr</button>
         <span className="zk-topbar-actions">
-          {g.status === 'owner' && (
-            <button type="button" className="zk-share-btn" onClick={() => setEditing((v) => !v)}
-              title="Modifier ce zikr collectif" aria-label="Modifier ce zikr collectif">
-              <Pencil size={14} strokeWidth={2.5} aria-hidden="true" /> {editing ? 'Fermer' : 'Modifier'}
-            </button>
-          )}
-          {isMember && (
-            <button type="button" className="zk-share-btn" onClick={() => setShowChat((v) => !v)}
-              title="Discussion du groupe" aria-label="Discussion du groupe">
-              <MessageCircle size={14} strokeWidth={2.5} aria-hidden="true" /> {showChat ? 'Fermer' : 'Discussion'}
-            </button>
-          )}
-          <button type="button" className="zk-share-btn" onClick={doShare}
+          <button type="button" className="zk-icon-btn" onClick={doShare}
             title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
-            <Share2 size={14} strokeWidth={2.5} aria-hidden="true" /> Partager
+            <Share2 size={17} strokeWidth={2.5} aria-hidden="true" />
           </button>
+          {(g.status === 'owner' || g.isAdmin) && (
+            <MoreMenu label="Plus d’actions sur ce zikr collectif">
+              {g.status === 'owner' && (
+                <button type="button" className="zk-attach-item" onClick={() => setEditing((v) => !v)}>
+                  <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> {editing ? 'Fermer la modification' : 'Modifier'}
+                </button>
+              )}
+              {/* Administration (prozizou298@gmail.com ou tout compte
+                  admins/{clé}) : approuver pour la liste publique, ou
+                  supprimer n'importe quel zikr collectif — voir
+                  handleApproveZikr/handleDelete, pages/api/zikr.js. Repliée
+                  ici plutôt qu'un grand bloc violet permanent (revue design,
+                  point 4 : « donne à une action dangereuse une place
+                  centrale »). */}
+              {g.isAdmin && g.approved === false && (
+                <button type="button" className="zk-attach-item" onClick={doApproveZikr}>
+                  <Check size={16} strokeWidth={2.5} aria-hidden="true" /> Approuver (admin)
+                </button>
+              )}
+              {g.isAdmin && (
+                <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doDelete}>
+                  <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer (admin)
+                </button>
+              )}
+              {g.status === 'owner' && g.membersCount <= 1 && (
+                <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doDelete}>
+                  <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer le zikr
+                </button>
+              )}
+            </MoreMenu>
+          )}
         </span>
       </div>
 
+      {/* Identité du zikr — titre réduit (revue design, point 2 : « occupe
+          énormément d'espace ») puis arabe, puis la formule en BADGE (plutôt
+          qu'un simple texte coloré) et une seule ligne d'informations
+          compacte (créateur + participants + en ligne) — jamais l'email
+          complet du créateur (revue design, point 3). */}
       <div className="zk-detail-head">
         <h1>{g.name}</h1>
         {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
-        <div className="zk-phrase-translit">{g.transliteration}</div>
+        {g.transliteration && <span className="zk-preset-badge">{g.transliteration}</span>}
         <div className="zk-owner">
-          Créé par {g.ownerEmail} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-          {g.onlineCount > 0 && <> · <span className="zk-online-text">{g.onlineCount} en ligne</span></>}
+          Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
+          {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
         </div>
         {!!g.sessionAt && (
           <div className="zk-private-note">
@@ -877,27 +910,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         />
       )}
 
-      {/* Panneau admin (prozizou298@gmail.com ou tout compte admins/{clé}) :
-          approuver pour la liste publique, ou supprimer n'importe quel zikr
-          collectif — voir handleApproveZikr/handleDelete, pages/api/zikr.js. */}
-      {g.isAdmin && (
-        <div className="zk-admin-panel">
-          <span className="zk-admin-badge"><ShieldCheck size={13} strokeWidth={2.5} aria-hidden="true" /> Administration</span>
-          {g.approved === false && (
-            <button type="button" className="zk-mini ok" onClick={doApproveZikr}>
-              <Check size={13} strokeWidth={2.5} aria-hidden="true" /> Approuver
-            </button>
-          )}
-          <button type="button" className="zk-mini no" onClick={doDelete}>
-            <Trash2 size={13} strokeWidth={2.5} aria-hidden="true" /> Supprimer
-          </button>
-        </div>
-      )}
-
       {isMember ? (
         <>
           {g.full && (
-            <p className="zk-reached-banner">🎉 Objectif atteint par le groupe — merci à tous les participants !</p>
+            /* Carte discrète (revue design, point 6 : « ressemble à une
+               alerte ») — plus le grand encadré jaune dominant : une
+               information positive, pas un avertissement. */
+            <div className="zk-reached-card">
+              <Trophy size={22} strokeWidth={2} aria-hidden="true" />
+              <div>
+                <strong>Objectif atteint</strong>
+                <p>{fmt(g.total)} zikr réalisés par le groupe</p>
+                <span className="zk-muted">Merci à tous les participants !</span>
+              </div>
+            </div>
           )}
           <MemberCounter groupId={groupId} uid={uid} g={g} onDismissWarning={doDismissWarning} />
         </>
@@ -914,6 +940,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             </button>
           )}
         </>
+      )}
+
+      {/* Participation — Discussion devient un vrai bouton (revue design,
+          point 1), pas une simple ligne de texte dans la barre du haut. */}
+      {isMember && (
+        <button type="button" className="zk-btn zk-discussion-toggle" onClick={() => setShowChat((v) => !v)}
+          aria-expanded={showChat}>
+          <MessageCircle size={16} strokeWidth={2.5} aria-hidden="true" />
+          {showChat ? 'Fermer la discussion' : 'Ouvrir la discussion du groupe'}
+        </button>
       )}
 
       {/* File d'approbation : seul le créateur la voit. */}
@@ -1209,27 +1245,39 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         </div>
       )}
 
-      <div className="zk-footer-actions">
-        {isMember && <button className="zk-btn ghost" onClick={doLeave}>Quitter le groupe</button>}
-        {g.status === 'owner' && g.membersCount <= 1 && (
-          <button className="zk-btn danger" onClick={doDelete}>Supprimer le zikr collectif</button>
-        )}
+      {/* Supprimer (créateur seul participant) est désormais dans le menu ⋮
+          ci-dessus (revue design, point 4) — pas ici, à côté de « Quitter »,
+          qui reste une action anodine et doit rester la seule visible en
+          pied de page. */}
+      {isMember && (
+        <div className="zk-footer-actions">
+          <button className="zk-btn ghost" onClick={doLeave}>Quitter le groupe</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Bloc de progression collective partagé (StaticProgress ET MemberCounter) —
+// revue design, point 7 : le pourcentage à CÔTÉ du titre (pas seulement en
+// fin de ligne, noyé dans "X / Y (Z %)") se lit avant même les chiffres.
+function CollectiveProgress({ total, target, label = 'Progression collective' }: { total: number; target: number; label?: string }) {
+  const pct = progressPct(total, target);
+  const reached = target > 0 && total >= target;
+  return (
+    <div className="zk-progress-block">
+      <div className="zk-progress-head">
+        <span>{label}</span>
+        <strong className={reached ? 'zk-progress-pct done' : 'zk-progress-pct'}>{fmtPct(pct)}</strong>
       </div>
+      <div className="zk-bar big"><span style={{ width: pct + '%' }} className={reached ? 'done' : ''} /></div>
+      <div className="zk-progress-meta">{fmt(total)} accomplis sur {fmt(target)}</div>
     </div>
   );
 }
 
 function StaticProgress({ total, target }: { total: number; target: number }) {
-  const pct = progressPct(total, target);
-  const reached = target > 0 && total >= target;
-  return (
-    <div className="zk-progress-block">
-      <div className="zk-bar big"><span style={{ width: pct + '%' }} className={reached ? 'done' : ''} /></div>
-      <div className="zk-progress-meta">
-        <strong>{fmt(total)}</strong> / {fmt(target)} ({fmtPct(pct)})
-      </div>
-    </div>
-  );
+  return <CollectiveProgress total={total} target={target} />;
 }
 
 // Compteur d'un participant — il égrène SANS PLAFOND (pas de part
@@ -1323,7 +1371,6 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
 
   const pending = Math.max(0, t.total - syncedFait.current);
   const groupTotal = Math.min(target || Infinity, (Number(g.total) || 0) + pending);
-  const groupPct = progressPct(groupTotal, target);
   const restant = Math.max(0, target - groupTotal);
   // L'avancement enregistré fait foi s'il dépasse le compteur local (stockage
   // vidé, ou récitation faite depuis un autre appareil) — cohérent avec le
@@ -1341,13 +1388,9 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
         </div>
       )}
 
-      <div className="zk-progress-block">
-        <div className="zk-progress-meta"><span>Progression du groupe</span></div>
-        <div className="zk-bar big">
-          <span style={{ width: groupPct + '%' }} className={target > 0 && groupTotal >= target ? 'done' : ''} />
-        </div>
-        <div className="zk-progress-meta"><strong>{fmt(groupTotal)}</strong> / {fmt(target)} ({fmtPct(groupPct)})</div>
+      <CollectiveProgress total={groupTotal} target={target} />
 
+      <div className="zk-progress-block">
         {/* Deux compteurs personnels côte à côte : le total (jamais remis à
             zéro) et le total DU JOUR — fenêtre UTC commune à tout le groupe,
             pas un minuit par membre (lib/zikrLogic.js utcDateKey). Ce second

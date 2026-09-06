@@ -177,46 +177,102 @@
 .zk-bar > span.done { background: linear-gradient(90deg, #2dd4a0, #22c55e); }
 .zk-bar > span.gold { background: linear-gradient(90deg, #d9a441, #f2c14e); }
 
-/* ── Détail ──────────────────────────────────────────────── */
-.zk-detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.zk-topbar-actions { display: flex; align-items: center; gap: 14px; }
-.zk-share-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: none; border: none; cursor: pointer; color: var(--accent);
-  font-size: 0.85rem; font-weight: 600; font-family: var(--font-ui); padding: 4px 0; white-space: nowrap;
-}
-.zk-share-btn:hover { text-decoration: underline; }
+/* ── Détail ──────────────────────────────────────────────────────────────
+   Revue design (« presque tous les éléments cherchent à attirer l'attention
+   en même temps ») : navigation réduite à 2 icônes + un menu ⋮ (Modifier et
+   Administration y sont repliés — plus de grand bloc violet permanent, plus
+   de 4 actions textuelles sur une ligne), titre resserré, badge de formule,
+   une seule ligne d'infos, carte « objectif atteint » discrète, en-tête de
+   progression avec le pourcentage en évidence. Grille d'espacement
+   approximative 8/12/16/24/32px entre ces sections (revue design, point 8). */
+.zk-detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.zk-topbar-actions { display: flex; align-items: center; gap: 6px; }
 
-/* ── Panneau admin (approuver / supprimer n'importe quel zikr) ──── */
-.zk-admin-panel {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 12px; padding: 10px 12px; border-radius: 10px;
-  background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.35);
+/* Bouton icône seul (Partager, ⋮) — cercle discret, même famille visuelle
+   que .zk-chat-tool (discussion) mais plus petit : une action de navigation,
+   pas un contrôle de composition. */
+.zk-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; margin-top: 0; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
+  cursor: pointer; transition: color 0.2s, border-color 0.2s;
 }
-.zk-admin-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-right: 4px; }
+.zk-icon-btn:hover { color: var(--accent); border-color: var(--accent); }
 
-.zk-detail-head { text-align: center; margin: 8px 0 16px; }
-.zk-detail-head h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 6px 0; }
-.zk-phrase-big { font-size: 1.5rem; color: var(--text-main); margin: 6px 0; line-height: 1.5; }
-.zk-phrase-translit { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-.zk-owner { font-size: 0.78rem; color: var(--text-dim); }
-.zk-private-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 8px; font-size: 0.78rem; color: #d9a441; text-align: left; }
+/* Menu ⋮ (components/MoreMenu.js) — Modifier / Administration / Supprimer,
+   avant éparpillés en actions textuelles ou en un bloc permanent (revue
+   design, point 1 et 4). Réutilise .zk-emoji-pop (popover) en liste simple,
+   comme .zk-attach-pop (AttachMenu). */
+.zk-more-wrap { position: relative; flex-shrink: 0; }
+/* .zk-emoji-pop.zk-more-pop (classes combinées), PAS .zk-more-pop seul :
+   même spécificité qu'une classe simple, l'ordre dans le fichier trancherait
+   sinon (bug constaté — .zk-emoji-pop, définie PLUS LOIN dans ce fichier,
+   l'emportait sur `left`, faisant déborder le menu hors de l'écran à
+   droite). Une sélection à deux classes gagne quel que soit l'ordre. */
+.zk-emoji-pop.zk-more-pop { grid-template-columns: 1fr; width: 200px; gap: 2px; bottom: auto; top: calc(100% + 8px); left: auto; right: 0; }
+.zk-attach-item-danger { color: #e0607a; }
+.zk-attach-item-danger svg { color: #e0607a; }
+.zk-attach-item-danger:hover { background: rgba(224,96,122,0.12); }
+
+/* Titre réduit d'environ 20-25 % (revue design, point 2 : « occupe
+   énormément d'espace ») — 1.6rem → 1.25rem, interligne resserré, largeur
+   maîtrisée pour éviter une coupure sur deux lignes trop brutale. */
+.zk-detail-head { text-align: center; margin: 16px 0 24px; }
+.zk-detail-head h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.25rem;
+  line-height: 1.25; margin: 0 auto 8px; max-width: 30ch;
+}
+.zk-phrase-big { font-size: 1.4rem; color: var(--text-main); margin: 0 0 10px; line-height: 1.4; }
+/* Badge plutôt qu'un simple texte coloré (revue design, point 3 : « badge
+   Zikr libre ») — même traitement visuel que .prod-chain (marché) ou
+   .zk-cta-muted : une étiquette identifiable, pas juste une couleur d'accent
+   au milieu du reste du texte. */
+.zk-preset-badge {
+  display: inline-block; font-size: 0.76rem; font-weight: 600; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px; padding: 3px 12px; margin-bottom: 10px;
+}
+/* Une seule ligne d'informations compacte (revue design, point 3) — jamais
+   l'email complet du créateur (voir chatDisplayName, lib/zikrLogic.js). */
+.zk-owner { font-size: 0.8rem; color: var(--text-dim); }
+.zk-private-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 10px; font-size: 0.78rem; color: #d9a441; text-align: left; }
 .zk-private-note svg { flex-shrink: 0; margin-top: 2px; }
 .zk-online-text { color: #2dd4a0; font-weight: 600; }
 
-.zk-progress-block { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
+.zk-progress-block { margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px; }
+/* En-tête de progression : le pourcentage à CÔTÉ du titre (revue design,
+   point 7) — se lit avant même les chiffres, plutôt que noyé en fin de
+   ligne dans "X / Y (Z %)". */
+.zk-progress-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); }
+.zk-progress-pct { font-size: 1.05rem; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.zk-progress-pct.done { color: #2dd4a0; }
 .zk-progress-meta { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
 .zk-progress-meta strong { color: var(--text-main); }
-.zk-my-fait { display: block; text-align: center; font-size: 1.4rem; font-weight: 700; color: #d9a441; }
+/* Nombre personnel neutre (--accent) plutôt que doré — la palette limite
+   l'or aux réussites exceptionnelles (revue design, point 5), pas à un
+   simple repère de grains récités. */
+.zk-my-fait { display: block; text-align: center; font-size: 1.4rem; font-weight: 700; color: var(--accent); }
 /* Total (jamais remis à zéro) + total du jour côte à côte — voir MemberCounter. */
 .zk-my-stats { display: flex; gap: 10px; margin-top: 10px; }
 .zk-my-stats > div { flex: 1; min-width: 0; }
 .zk-my-stats .zk-my-fait { font-size: 1.15rem; }
-.zk-reached-banner {
-  text-align: center; font-size: 0.9rem; font-weight: 700; color: #d9a441;
-  background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
-  border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
+
+/* Carte « objectif atteint » (revue design, point 6 : « ressemble à une
+   alerte ») — une information POSITIVE, pas un encadré jaune dominant :
+   petite carte sobre, accent vert (réussite), le trophée reste discret. */
+.zk-reached-card {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--surface-2); border: 1px solid rgba(45,212,160,0.35);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 24px;
 }
+.zk-reached-card svg { flex-shrink: 0; color: #2dd4a0; }
+.zk-reached-card strong { display: block; font-size: 0.92rem; color: #2dd4a0; }
+.zk-reached-card p { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-main); }
+.zk-reached-card .zk-muted { font-size: 0.76rem; }
+
+/* Bouton Discussion — une vraie action visible (revue design, point 1),
+   plus une ligne de texte dans la barre du haut. */
+.zk-discussion-toggle { margin: 8px 0 24px; }
 
 /* ── Adhésion ────────────────────────────────────────────
    Le compteur lui-même est le chapelet partagé (.tc-*, app/globals.css). */
@@ -229,7 +285,7 @@
 .zk-warning .zk-link { color: #e0607a; text-decoration: underline; }
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
-.zk-owner-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.zk-owner-panel { margin: 24px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
 .zk-owner-panel h3, .zk-board h3, .zk-chat-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
@@ -276,7 +332,7 @@
 .zk-pace.suspect { background: rgba(224,96,122,0.15); color: #e0607a; }
 .zk-mod-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-.zk-footer-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.zk-footer-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
 
 /* ── Vœux (dua) — ouverts par le créateur une fois l'objectif atteint ────
    Chaque vœu reste PRIVÉ (auteur + créateur seulement, jamais les autres
@@ -490,7 +546,10 @@
 /* Menu « ＋ » (components/AttachMenu.js) — Photo / Caméra, remplace les gros
    cercles séparés d'avant. */
 .zk-attach-wrap { position: relative; flex-shrink: 0; }
-.zk-attach-pop { grid-template-columns: 1fr; width: 160px; gap: 2px; }
+/* .zk-emoji-pop.zk-attach-pop — classes combinées, même raison que
+   .zk-emoji-pop.zk-more-pop ci-dessus (dépendre de l'ORDRE dans le fichier
+   pour gagner le même degré de spécificité est fragile). */
+.zk-emoji-pop.zk-attach-pop { grid-template-columns: 1fr; width: 160px; gap: 2px; }
 .zk-attach-item {
   display: flex; align-items: center; gap: 10px; background: transparent; border: none;
   color: var(--text-main); font-family: var(--font-ui); font-size: 0.85rem; cursor: pointer;
