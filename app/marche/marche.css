@@ -226,7 +226,20 @@ h2 {
 .market-categories::-webkit-scrollbar { display: none; }
 
 .market-cat-pill {
+  /* width:auto + margin-top:0 : ANNULENT explicitement le bouton générique
+     (app/globals.css, `button { width:100%; margin-top:15px; ... }`, pensé
+     pour les gros CTA pleine largeur). Sans ça, chaque pastille — surtout
+     « Tous », la première — hérite de `width:100%` : combiné à
+     `flex:0 0 auto` (flex-shrink:0, aucun rétrécissement autorisé) ci-
+     dessus, la pastille revendique TOUTE la largeur du rang à elle seule.
+     Un très gros bouton plein écran à la place d'une pastille discrète, et
+     les catégories suivantes (Rituels, Livres...) poussées hors champ, à
+     scroller un plein écran à la fois pour les atteindre — signalé.
+     `.vendor-like`/`.market-bottom-nav-item` y échappaient déjà (flex:1 ou
+     flex-shrink par défaut absorbent ce width hérité), mais pas ici. */
   flex: 0 0 auto;
+  width: auto;
+  margin-top: 0;
   background: var(--mk-surface);
   border: 1px solid var(--mk-border);
   color: var(--mk-text);
