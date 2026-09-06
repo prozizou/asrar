@@ -334,20 +334,35 @@
 .zk-chat-time { font-weight: 500; color: var(--text-dim); font-size: 0.68rem; }
 /* Heure d'une bulle envoyée (pas d'en-tête auteur pour "moi") : sous chaque
    bulle plutôt qu'un en-tête, comme demandé (« 20:37, 20:38 en petit sous la
-   bulle ») — DANS la bulle, alignée à droite. */
-.zk-chat-time.me { display: block; text-align: right; margin-top: 2px; }
+   bulle ») — DANS la bulle, alignée à droite. Couleur propre (pas
+   var(--text-dim), pensée pour un fond neutre) : la bulle envoyée est
+   maintenant un aplat --accent plein, --text-on-accent atténué y reste lisible. */
+.zk-chat-time.me { display: block; text-align: right; margin-top: 2px; color: var(--text-on-accent); opacity: 0.75; }
 
 /* Bulles COMPACTES (revue design : « beaucoup d'espace vertical autour des
-   messages ») — padding réduit, bordure quasi invisible (le fond suffit à
-   distinguer une bulle de la suivante). */
+   messages ») — padding réduit, bordure quasi invisible. `color-mix(...
+   var(--text-main) ...)` plutôt qu'un blanc à faible opacité codé en dur :
+   un liseré BLANC à 6 % est bien subtil sur le fond sombre visé au départ,
+   mais devient invisible sur le fond CLAIR quasi blanc de ce thème (bordure
+   qui "disparaît", bulles qui semblent flotter sans limite — signalé comme
+   « cacophonie » en thème clair) — --text-main s'inverse déjà correctement
+   entre les deux thèmes (blanc en sombre, presque noir en clair), donc son
+   mélange à faible dose reste visible dans les deux. */
 .zk-chat-msg {
-  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.06);
+  background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
   border-radius: 14px; padding: 6px 10px; max-width: 100%;
 }
+/* Bulle envoyée : fond ACCENT PLEIN (pas une simple teinte de --card-bg) —
+   une teinte à 22 % d'un accent qui est LUI-MÊME un ton menthe/turquoise en
+   thème clair (voir --accent) se distinguait à peine de --card-bg (quasi
+   blanc), donnant à toutes les bulles le même ton verdâtre fade, sans
+   contraste envoyé/reçu (signalé comme « cacophonie »). Un aplat franc est
+   sans ambiguïté dans les deux thèmes. */
 .zk-chat-group.me .zk-chat-msg {
-  background: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent);
+  border-color: transparent;
 }
+.zk-chat-group.me .zk-chat-text { color: var(--text-on-accent); }
 /* Texte du message plus grand que l'auteur (hiérarchie) — 15px. */
 .zk-chat-text { margin: 0; font-size: 0.94rem; line-height: 1.35; color: var(--text-main); white-space: pre-wrap; word-break: break-word; }
 
@@ -363,13 +378,31 @@
    couleurs de l'app. */
 .zk-audio-player { display: flex; align-items: center; gap: 8px; min-width: 180px; padding: 2px 0; }
 .zk-audio-play {
-  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+  /* padding/margin-top à ZÉRO — sinon hérités du bouton générique
+     (app/globals.css, `button { padding:12px 24px; margin-top:15px; }`,
+     pensé pour les gros CTA) : sur un cercle de 30px, 24px de padding
+     HORIZONTAL à eux seuls dépassent la largeur totale, écrasant l'icône
+     centrée à quasi rien — bug constaté (▶/⏸ réduits à un point), même
+     cause que .zk-chat-tool/.zk-chat-send ci-dessous. */
+  flex-shrink: 0; width: 30px; height: 30px; padding: 0; margin-top: 0;
+  border-radius: 50%; border: none; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--accent) 85%, transparent); color: #fff;
 }
-.zk-audio-bar { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.15); cursor: pointer; }
+/* color-mix(...text-main...) plutôt qu'un blanc à faible opacité codé en
+   dur : invisible sur le fond CLAIR d'une bulle reçue (--card-bg quasi
+   blanc) — même correctif que .zk-chat-msg ci-dessus. */
+.zk-audio-bar { flex: 1; height: 4px; border-radius: 4px; background: color-mix(in srgb, var(--text-main) 15%, transparent); cursor: pointer; }
 .zk-audio-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
 .zk-audio-time { flex-shrink: 0; font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+/* Dans une bulle ENVOYÉE (fond --accent plein, voir .zk-chat-group.me
+   .zk-chat-msg) : la piste doit contraster avec l'accent, pas avec le texte
+   (qui EST --text-on-accent ici) — et le remplissage --accent lui-même
+   deviendrait invisible sur son propre fond. */
+.zk-chat-group.me .zk-audio-bar { background: color-mix(in srgb, var(--text-on-accent) 35%, transparent); }
+.zk-chat-group.me .zk-audio-bar-fill { background: var(--text-on-accent); }
+.zk-chat-group.me .zk-audio-play { background: color-mix(in srgb, var(--text-on-accent) 25%, transparent); }
+.zk-chat-group.me .zk-audio-time { color: var(--text-on-accent); opacity: 0.8; }
 
 /* ── Ligne de composition ──────────────────────────────────────────────
    Simplifiée à UNE ligne (revue design : « quatre énormes cercles ») : ＋
@@ -384,7 +417,7 @@
    noir, tranchait trop avec le reste — revue design). */
 .zk-chat-field {
   flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 4px;
-  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+  background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--text-main) 10%, transparent); border-radius: 20px;
   padding: 6px 8px 6px 6px;
 }
 .zk-chat-field:focus-within { border-color: var(--accent); }
@@ -398,9 +431,19 @@
   width: 30px; height: 30px; background: transparent; border: none; font-size: 1rem;
 }
 
+/* padding/margin-top à ZÉRO sur .zk-chat-send ET .zk-chat-tool ci-dessous —
+   NÉCESSAIRE, pas cosmétique : sans ça, les deux héritent du bouton
+   générique (app/globals.css, `button { padding:12px 24px; margin-top:15px;
+   }`, pensé pour les gros CTA pleine largeur) — sur un cercle de 40px,
+   24px de padding HORIZONTAL de CHAQUE côté dépassent à eux seuls la
+   largeur totale du bouton : la boîte de contenu devient négative, et
+   l'icône centrée (flex) s'écrase à quasi rien. Bug constaté (＋ et 🎙
+   réduits à un point) — même cause, mêmes correctifs, que le bouton
+   « Tous » du Marché (app/marche/marche.css .market-cat-pill). */
 .zk-chat-send {
   display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin-top: 0;
+  border-radius: 50%; border: none; cursor: pointer;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover)); color: #fff;
   box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
@@ -412,8 +455,9 @@
    omniprésentes »). */
 .zk-chat-tool {
   display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
-  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim);
+  flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin-top: 0;
+  border-radius: 50%;
+  background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--text-main) 10%, transparent); color: var(--text-dim);
   cursor: pointer; font-size: 1.1rem; transition: color 0.2s, border-color 0.2s;
 }
 .zk-chat-tool:hover { color: var(--accent); border-color: var(--accent); }

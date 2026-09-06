@@ -526,7 +526,19 @@ input:focus {
 
 /* Évite tout débordement horizontal quel que soit le contenu. */
 html, body { max-width: 100%; overflow-x: hidden; }
-img, svg, video { max-width: 100%; height: auto; }
+/* :not(.lucide) — SANS cette exclusion, `height: auto` écrase la hauteur
+   explicite (attribut HTML, posée par le prop `size`) de CHAQUE icône
+   lucide-react de l'app : sur un viewBox carré, un navigateur qui ne
+   recalcule pas l'aspect-ratio pour un SVG sans attribut CSS `width` propre
+   à ce niveau peut retomber sur une hauteur quasi nulle — l'icône s'écrase
+   en un simple point au lieu de sa forme réelle (constaté : ＋ et 🎙 de la
+   discussion du Zikr collectif réduits à un point, alors que Send s'en
+   sortait à peu près grâce à sa forme diagonale, moins sensible à
+   l'écrasement). lucide-react tague TOUJOURS ses <svg> de la classe
+   "lucide" (voir node_modules/lucide-react) : un hook fiable pour exempter
+   les icônes de cette règle pensée pour de vraies images/vidéos de contenu,
+   pas des pictogrammes à taille fixe. */
+img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 
 /* ───── Grandes tablettes / petits portables (≤ 900px) ───── */
 @media (max-width: 900px) {
