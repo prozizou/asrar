@@ -35,7 +35,7 @@ import {
   loadQuranUthmani,
   matchUthmaniSourate,
 } from '@/lib/alqalam';
-import { detectRoundLetters, printPiece } from '@/lib/alqalamOrne';
+import { detectRoundLetters, printPieces } from '@/lib/alqalamOrne';
 import OrneePhrasePiece from './OrneePhrasePiece';
 
 const Spinner = SpinnerUntyped as any;
@@ -174,7 +174,10 @@ export default function AlQalamPage() {
   // texte, jamais réinjecter les autres à sa place.
   const [ornementLettersTouched, setOrnementLettersTouched] = useState(false);
   const [ornementVoeu, setOrnementVoeu] = useState('');
-  const ornementSvgRef = useRef<SVGSVGElement | null>(null);
+  // Conteneur de l'ornement (et non plus un unique <svg>) : composePhrasePages
+  // peut produire PLUSIEURS pages — printPieces retrouve tous les
+  // svg.orne-svg qu'il contient, dans l'ordre du DOM, au moment d'imprimer.
+  const ornementSvgRef = useRef<HTMLDivElement | null>(null);
 
   // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé — c'est
   // ce texte que l'ornement analyse pour y détecter les lettres choisies :
@@ -192,11 +195,17 @@ export default function AlQalamPage() {
       const raw = htmlToPlainText(b.texte).trim();
       if (!raw) return;
       const t = b.isRasmMode ? convertirEnRasm(raw) : raw;
-      parts.push(t.repeat(Math.max(1, Number(b.totalMultiplier) || 1)));
+      // « + ' ' » AVANT .repeat() — même convention que lib/alqalam.js
+      // (buildPreview, generateDocx) : sans cet espace, deux répétitions
+      // collées bout à bout forment un seul FAUX mot aux yeux du moteur de
+      // rendu arabe, qui shape alors les lettres de la frontière comme si
+      // elles étaient au milieu d'un mot (médiane/finale erronées) — ce
+      // n'est pas un bug de liaison, mais un mot qui n'existe pas.
+      parts.push((t + ' ').repeat(Math.max(1, Number(b.totalMultiplier) || 1)));
     });
     if (baseText.trim() && totalMultiplier > 0) {
       const t = isRasmMode ? convertirEnRasm(baseText) : baseText;
-      parts.push(t.repeat(totalMultiplier));
+      parts.push((t + ' ').repeat(totalMultiplier));
     }
     return parts.join(' ').trim();
   }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
@@ -322,7 +331,7 @@ export default function AlQalamPage() {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     try {
-      await printPiece(ornementSvgRef.current, docName.trim() || 'ornement');
+      await printPieces(ornementSvgRef.current, docName.trim() || 'ornement');
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
     }
