@@ -1,8 +1,12 @@
 'use client';
-// Module « Abajad » — port de abajad/abajad.html.
-// Calcul en temps réel (Mashreqi/Maghrébi), réduction théosophique, analyse
-// ésotérique (faces, adad, zodiaque) et décomposition en facteurs a×b.
-// La saisie est protégée par le paywall (ensureAccess) comme dans l'original.
+// Module « Abajad » — port de abajad/abajad.html, puis étendu (revue design
+// v2) en véritable moteur d'analyse numérique ésotérique plutôt qu'un simple
+// calculateur de valeurs : les deux faces (Mashreqi/Maghrébi) ne sont plus
+// seulement affichées côte à côte, elles sont reliées entre elles (union,
+// polarité, produit, PGCD/PPCM…) dans une « signature mystique » — voir
+// lib/abjad.js, computeMysticSignature(). Le détail (propriétés, zodiaque,
+// décomposition) reste disponible mais replié en accordéons, pour ne pas
+// alourdir l'écran par défaut.
 //
 // TypeScript (batch 2/7, cf. tsconfig.json) : lib/abjad.js et lib/api.js
 // restent en .js (imports non typés, cf. app/menu/page.tsx pour le même choix) —
@@ -17,6 +21,8 @@ import {
   reduceNumber,
   getFactorPairs,
   computeEso,
+  computeMysticSignature,
+  letterBreakdown,
 } from '@/lib/abjad';
 
 interface EsoRow {
@@ -29,6 +35,8 @@ interface EsoRow {
   nature: string;
   intervalle: string;
 }
+
+const fmt = (n: number) => Number(n).toLocaleString('fr-FR');
 
 export default function AbajadPage() {
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
@@ -68,6 +76,7 @@ export default function AbajadPage() {
     () => (granted ? computeAbajadSums(input) : { mash: 0, magh: 0 }),
     [input, granted]
   );
+  const hasResult = mash > 0 || magh > 0;
 
   return (
     <div className="container">
@@ -76,14 +85,15 @@ export default function AbajadPage() {
       </Link>
 
       <div className="glass-panel">
-        <h2>🔢 Calculateur Abjad Ésotérique</h2>
-        <p style={{ marginBottom: 18, color: 'var(--text-muted)' }}>
-          Saisie en temps réel · Faces &amp; Adad · Zodiaque · Facteurs mystiques
-          <br />
-          <span style={{ fontSize: '.85rem' }}>
-            💡 Astuce : vous pouvez aussi saisir directement un nombre (ex. 711).
-          </span>
-        </p>
+        {/* Titre simplifié (revue design v2) : « Calculateur Abjad » porte le
+            nom, « Calcul Abjad », « Poids mystique »… ailleurs dans l'app
+            (parrainage, combinaisons, noms d'Allah) restent la SEULE
+            terminologie utilisée pour cette même notion — cf. leurs propres
+            revues design, point « terminologie ». */}
+        <div className="ab-header">
+          <h2>Calculateur Abjad</h2>
+          <p className="ab-subtitle">Analyse ésotérique et numérique</p>
+        </div>
 
         <input
           type="text"
@@ -96,79 +106,148 @@ export default function AbajadPage() {
           onChange={onChange}
           autoFocus
         />
+        <p className="ab-hint">💡 Vous pouvez aussi saisir directement un nombre (ex. 711).</p>
         <datalist id="versetList">
           {versets.map((v, i) => (
             <option key={i} value={v} />
           ))}
         </datalist>
 
-        {/* Résultats principaux */}
-        <div className="result-grid">
-          <div className="result-card">
-            <h3>☀️ Mashreqi (Oriental)</h3>
-            <div className="result-big">{mash}</div>
-            <div className="result-reduced">{mash > 0 ? `Réduit : ${reduceNumber(mash)}` : ''}</div>
-          </div>
-          <div className="result-card">
-            <h3>🌙 Maghrébi (Occidental)</h3>
-            <div className="result-big">{magh}</div>
-            <div className="result-reduced">{magh > 0 ? `Réduit : ${reduceNumber(magh)}` : ''}</div>
-          </div>
-        </div>
+        {hasResult && (
+          <>
+            {/* Mashreqi/Maghrébi réunis dans une seule vue comparative
+                (revue design v2) — deux colonnes légères plutôt que deux
+                grandes cartes séparées. */}
+            <CompareHeader mash={mash} magh={magh} />
 
-        {/* Analyse ésotérique (faces, adad, zodiaque) */}
-        <EsoInfo mash={mash} magh={magh} />
+            {/* Signature mystique : le cœur de l'enrichissement (revue
+                design v2, « analyse mystique complète ») — relie les deux
+                faces entre elles au lieu de les traiter isolément. */}
+            <MysticSignature mash={mash} magh={magh} />
 
-        {/* Décomposition (paires a×b) */}
-        <div style={{ marginTop: 15 }}>
-          <h4 style={{ margin: '0 0 8px', color: 'var(--accent)' }}>🔮 Décomposition (a × b)</h4>
-          <Factors mash={mash} magh={magh} />
-        </div>
+            <LetterDetail input={input} />
+            <PropertiesAccordion mash={mash} magh={magh} />
+            <ZodiacAccordion mash={mash} magh={magh} />
+            <DecompositionAccordion mash={mash} magh={magh} />
+
+            <ThalsamLink mash={mash} magh={magh} />
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function FactorPairs({ v }: { v: number }) {
-  const pairs = getFactorPairs(v);
-  if (!(pairs.length > 0 && v > 0)) {
-    return <span style={{ color: 'var(--text-muted)' }}>Nombre premier — pas de décomposition.</span>;
-  }
+// Vue comparative compacte (remplace les deux .result-card côte à côte,
+// chacune avec son propre cadre/titre/padding — revue design v2 : « fusionner
+// Mashreqi/Maghrébi dans une seule vue »).
+function CompareHeader({ mash, magh }: { mash: number; magh: number }) {
   return (
-    <>
-      {pairs.map(([a, b]: [number, number], i: number) => (
-        <div className="factor-row" key={i}>
-          <strong>{a}</strong> × <strong>{b}</strong>
-        </div>
-      ))}
-    </>
-  );
-}
-
-function Factors({ mash, magh }: { mash: number; magh: number }) {
-  if (mash === magh) {
-    return (
-      <div className="factor-list">
-        <FactorPairs v={mash} />
+    <div className="ab-compare">
+      <div className="ab-compare-col">
+        <div className="ab-compare-label">☀️ Mashreqi</div>
+        <div className="ab-compare-value">{fmt(mash)}</div>
+        <div className="ab-compare-reduced">→ {reduceNumber(mash)}</div>
       </div>
-    );
-  }
-  return (
-    <div className="factor-cols">
-      <div className="factor-col">
-        <div className="factor-col-head">☀️ Mashreqi</div>
-        <FactorPairs v={mash} />
-      </div>
-      <div className="factor-col">
-        <div className="factor-col-head">🌙 Maghrébi</div>
-        <FactorPairs v={magh} />
+      <div className="ab-compare-col">
+        <div className="ab-compare-label">🌙 Maghrébi</div>
+        <div className="ab-compare-value">{fmt(magh)}</div>
+        <div className="ab-compare-reduced">→ {reduceNumber(magh)}</div>
       </div>
     </div>
   );
 }
 
-function EsoInfo({ mash, magh }: { mash: number; magh: number }) {
-  if ((!mash || mash <= 0) && (!magh || magh <= 0)) return null;
+// Signature mystique (revue design v2) : union/polarité/produit des deux
+// faces, racine (PGCD) et cycle (PPCM) communs, union et écart des deux
+// réductions, structure en facteurs premiers — voir
+// lib/abjad.js#computeMysticSignature pour le détail des calculs (testés
+// indépendamment dans lib/abjad.test.js sur l'exemple 200/170).
+function MysticSignature({ mash, magh }: { mash: number; magh: number }) {
+  const s = useMemo(() => computeMysticSignature(mash, magh), [mash, magh]);
+  if (!s) return null;
+  const sameFace = s.mash === s.magh;
+  return (
+    <div className="ab-signature">
+      <div className="ab-signature-title">🔮 Signature mystique</div>
+      <div className="ab-sig-row">
+        <span>Union des faces</span>
+        <strong>
+          {fmt(s.union)} → {s.rUnion}
+        </strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Polarité</span>
+        <strong>
+          {fmt(s.polarite)} → {s.rPolarite}
+        </strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Produit des faces</span>
+        <strong>{fmt(s.produit)}</strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Racine commune (PGCD)</span>
+        <strong>
+          {fmt(s.racine)} → {s.rRacine}
+        </strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Cycle commun (PPCM)</span>
+        <strong>
+          {fmt(s.cycle)} → {s.rCycle}
+        </strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Union des réductions</span>
+        <strong>
+          {s.rMash} + {s.rMagh} → {s.rUnionReduite}
+        </strong>
+      </div>
+      <div className="ab-sig-row">
+        <span>Écart des réductions</span>
+        <strong>{s.ecartReductions}</strong>
+      </div>
+      <div className="ab-sig-row ab-sig-structure">
+        <span>Structure</span>
+        <strong dir="ltr">
+          {fmt(s.mash)} = {s.factoMash}
+          {!sameFace && <> · {fmt(s.magh)} = {s.factoMagh}</>}
+        </strong>
+      </div>
+    </div>
+  );
+}
+
+// Détail lettre par lettre (revue design v2 : « correspondances Abjad
+// lettres ↔ nombres ») — absent pour une entrée purement numérique (rien à
+// détailler lettre par lettre). Une seule valeur par lettre quand les deux
+// systèmes s'accordent (immense majorité des lettres), les deux sinon (ص/س/ش
+// notamment) — évite de répéter deux fois la même valeur.
+function LetterDetail({ input }: { input: string }) {
+  const rows = useMemo(() => letterBreakdown(input), [input]);
+  if (!rows.length) return null;
+  return (
+    <details className="ab-accordion">
+      <summary>Détail lettre par lettre</summary>
+      <div className="ab-letters">
+        {rows.map((r: { letter: string; mash: number; magh: number }, i: number) => (
+          <div className="ab-letter-chip" key={i}>
+            <span className="ab-letter-ar" dir="rtl">
+              {r.letter}
+            </span>
+            <span className="ab-letter-vals">{r.mash === r.magh ? r.mash : `${r.mash} / ${r.magh}`}</span>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+// Propriétés mystiques (revue design v2) : face apparente/cachée, Adad
+// rouhâni/lumineux — 4 des 7 colonnes demandées, le zodiaque/élément/période
+// vivant dans leur propre accordéon ci-dessous (ZodiacAccordion).
+function PropertiesAccordion({ mash, magh }: { mash: number; magh: number }) {
   const A: EsoRow = computeEso(mash);
   const B: EsoRow = computeEso(magh);
   const rows: [string, string, string][] = [
@@ -176,11 +255,35 @@ function EsoInfo({ mash, magh }: { mash: number; magh: number }) {
     ['Face cachée', A.cachee, B.cachee],
     ['Adad rouhâni', A.rouhani, B.rouhani],
     ['Adad lumineux', A.lumineux, B.lumineux],
-    ['Ordre zodiaque', A.ordre, B.ordre],
-    ['Signe zodiaque', A.signe, B.signe],
-    ['Nature zodiaque', A.nature, B.nature],
-    ['Intervalle zodiaque', A.intervalle, B.intervalle],
   ];
+  return (
+    <details className="ab-accordion">
+      <summary>Propriétés mystiques</summary>
+      <EsoTable rows={rows} />
+    </details>
+  );
+}
+
+// Zodiaque (revue design v2) : signe, élément (nature du signe) et période —
+// « ordre » (index 1-12 servant à dériver le signe) n'est plus affiché
+// séparément, il n'apporte rien à qui n'a pas besoin du calcul lui-même.
+function ZodiacAccordion({ mash, magh }: { mash: number; magh: number }) {
+  const A: EsoRow = computeEso(mash);
+  const B: EsoRow = computeEso(magh);
+  const rows: [string, string, string][] = [
+    ['Signe', A.signe, B.signe],
+    ['Élément', A.nature, B.nature],
+    ['Période', A.intervalle, B.intervalle],
+  ];
+  return (
+    <details className="ab-accordion">
+      <summary>Zodiaque</summary>
+      <EsoTable rows={rows} />
+    </details>
+  );
+}
+
+function EsoTable({ rows }: { rows: [string, string, string][] }) {
   return (
     <div className="eso-info">
       <div className="eso-row eso-head">
@@ -195,6 +298,78 @@ function EsoInfo({ mash, magh }: { mash: number; magh: number }) {
           <span className="eso-v">{b}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// Décomposition numérique (revue design v2) : structure en facteurs premiers
+// (déjà calculée dans la signature mystique, reprise ici) puis les paires
+// a×b classiques — une seule colonne si les deux faces sont identiques
+// (entrée numérique), sinon deux colonnes côte à côte.
+function DecompositionAccordion({ mash, magh }: { mash: number; magh: number }) {
+  const s = useMemo(() => computeMysticSignature(mash, magh), [mash, magh]);
+  if (!s) return null;
+  const sameFace = s.mash === s.magh;
+  return (
+    <details className="ab-accordion">
+      <summary>Décomposition numérique</summary>
+      <div className="ab-structure">
+        {fmt(s.mash)} = {s.factoMash}
+        {!sameFace && <> · {fmt(s.magh)} = {s.factoMagh}</>}
+      </div>
+      {sameFace ? (
+        <div className="factor-list">
+          <FactorPairs v={mash} />
+        </div>
+      ) : (
+        <div className="factor-cols">
+          <div className="factor-col">
+            <div className="factor-col-head">☀️ Mashreqi</div>
+            <FactorPairs v={mash} />
+          </div>
+          <div className="factor-col">
+            <div className="factor-col-head">🌙 Maghrébi</div>
+            <FactorPairs v={magh} />
+          </div>
+        </div>
+      )}
+    </details>
+  );
+}
+
+function FactorPairs({ v }: { v: number }) {
+  const pairs = getFactorPairs(v);
+  if (!(pairs.length > 0 && v > 0)) {
+    return <span className="ab-no-factor">Nombre premier — pas de décomposition a×b.</span>;
+  }
+  return (
+    <>
+      {pairs.map(([a, b]: [number, number], i: number) => (
+        <div className="factor-row" key={i}>
+          <strong>{a}</strong> × <strong>{b}</strong>
+        </div>
+      ))}
+    </>
+  );
+}
+
+// Relie le résultat aux autres fonctions d'ASRAR PRO (revue design v2) :
+// Texte arabe → Calcul Abjad → … → Génération Thalsam. Un lien par face
+// distincte (une seule si l'entrée était numérique) ; ?target= est repris
+// par app/thalsams/page.tsx pour préremplir le poids cible.
+function ThalsamLink({ mash, magh }: { mash: number; magh: number }) {
+  const targets = [...new Set([mash, magh].filter((v) => v > 0))];
+  if (!targets.length) return null;
+  return (
+    <div className="ab-thalsam-link">
+      <span>Générer un Thalsam avec ce poids :</span>
+      <div className="ab-thalsam-btns">
+        {targets.map((v) => (
+          <Link key={v} href={`/thalsams?target=${v}`} className="ab-thalsam-btn">
+            🧿 {fmt(v)}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

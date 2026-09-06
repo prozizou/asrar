@@ -9,8 +9,9 @@
 // Réservé au forfait 1 An (même palier que Al-Qalam/Géomancie/Wafq — cf.
 // menu) : générée seulement après ensureAccess(), jamais « en silence ».
 import './thalsams.css';
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import { generateThalsams, ENDINGS, TARGET_WEIGHT_MAX } from '@/lib/thalsam';
@@ -43,6 +44,25 @@ function ResultCard({ r }: { r: any }) {
       )}
     </div>
   );
+}
+
+// Lit ?target= dans l'URL pour préremplir le poids cible (revue design v2 du
+// calculateur Abjad, module Abajad : « relier le résultat aux autres
+// fonctions d'ASRAR PRO » — un lien "Générer un Thalsam avec ce poids"
+// pointe ici avec ce paramètre). useSearchParams() doit être isolé dans un
+// composant enveloppé par <Suspense> (voir ThalsamsPage plus bas) : sans
+// cela, Next.js refuse de pré-rendre statiquement cette page au build.
+function TargetFromQuery({ onValue }: { onValue: (v: string) => void }) {
+  const params = useSearchParams();
+  const target = params?.get('target') ?? null;
+  useEffect(() => {
+    if (target && /^\d+$/.test(target)) onValue(target);
+    // Ne dépend QUE de la valeur lue, pas de `onValue` (setState, stable mais
+    // on ne veut de toute façon rejouer ce préremplissage qu'une fois par
+    // changement réel de ?target=).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+  return null;
 }
 
 export default function ThalsamsPage() {
@@ -110,6 +130,9 @@ export default function ThalsamsPage() {
   return (
     <div className="container" style={{ maxWidth: 640 }}>
       <Link href="/menu" className="back-btn">← Retour</Link>
+      <Suspense fallback={null}>
+        <TargetFromQuery onValue={setTargetWeight} />
+      </Suspense>
       <div className="glass-panel">
         <div className="header">
           <h1>🧿 Thalsams</h1>
