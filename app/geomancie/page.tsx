@@ -6,16 +6,6 @@
 // React et les données premium (via /api/get-theme, réservées au forfait 1 An —
 // PREMIUM_LEVEL — vérifié côté client (ensureAccess) ET côté serveur (get-theme)).
 //
-// Revue design v2 : la page ressemblait à un prototype de calcul (16 petites
-// cartes toutes de même poids visuel, couleur d'accent utilisée PARTOUT —
-// titres, points, contours, badges —, halos et ombres marqués, 3 boutons
-// concurrents, case de géolocalisation en pleine largeur au milieu du flux).
-// Reprise en : résultat (Juge/Sentence/Vœu) affiché EN PREMIER après le
-// calcul, écu complet replié dans un diagramme par paliers (Mères → Filles →
-// Nièces → Témoins → Verdict, tailles progressives), hiérarchie de boutons à
-// 3 niveaux, confidentialité repliée derrière une icône, et un seul jeu
-// d'icônes vectorielles (lucide) à la place des emoji.
-//
 // TypeScript (batch 5/7, cf. tsconfig.json) : lib/geomancie.js reste en .js
 // (hors scope de ce batch) — ses valeurs de retour (mères, maisons, figures)
 // restent typées `any`/`number[][]` en local plutôt que reproduites en
@@ -38,33 +28,15 @@ import {
   getCleanName,
   figToKey,
   getBZDHValue,
-  figureData,
-  houseNames,
   houseModalData,
   randomMothers,
   neutralMothers,
 } from '@/lib/geomancie';
-import {
-  Shield,
-  Moon,
-  Sparkles,
-  Dices,
-  RotateCcw,
-  Lock,
-  MapPin,
-  Scale,
-  ScrollText,
-  Star,
-  Eye,
-  ChevronDown,
-  ArrowDown,
-} from 'lucide-react';
 
 const Spinner = SpinnerUntyped as any;
 
 type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
 type Mothers = Figure[]; // les 4 Mères
-type Size = 'sm' | 'md' | 'lg';
 
 // Clé de consentement distinct (localStorage, par appareil) — voir shareLocation
 // ci-dessous. Choix explicite du terme "share" plutôt que "geo" seul : couvre
@@ -109,25 +81,16 @@ function logGeomancie(shareLocation: boolean) {
   }
 }
 
-// Paliers de l'écu, dans l'ordre naturel de lecture française (revue design,
-// point 3 : « M8 → M1 est contre-intuitif ») — M1 → M16, plutôt que l'ordre
-// M8 → M1 hérité de la mise en page d'origine. Rien dans ce module ni dans
-// lib/geomancie.js ne documente cet ordre inversé comme une convention
-// traditionnelle à préserver : c'est un pur choix d'affichage (l'index des
-// maisons dans `houses[]`, lui, ne change pas). Tailles progressives (sm →
-// lg) : les figures gagnent en importance visuelle à mesure qu'on approche
-// du verdict (revue design, point 1).
-const TIERS: { key: string; label: string; indices: number[]; size: Size }[] = [
-  { key: 'meres', label: 'Mères', indices: [0, 1, 2, 3], size: 'sm' },
-  { key: 'filles', label: 'Filles', indices: [4, 5, 6, 7], size: 'sm' },
-  { key: 'nieces', label: 'Nièces', indices: [8, 9, 10, 11], size: 'md' },
-  { key: 'temoins', label: 'Témoins', indices: [12, 13], size: 'md' },
-  { key: 'verdict', label: 'Verdict', indices: [14, 15], size: 'lg' },
+const SHIELD_ROWS = [
+  { indices: [7, 6, 5, 4, 3, 2, 1, 0], cls: 'shield-row w-100' },
+  { indices: [11, 10, 9, 8], cls: 'shield-row w-80' },
+  { indices: [13, 12], cls: 'shield-row w-40' },
+  { indices: [14, 15], cls: 'row-last' },
 ];
 
-function MiniFigure({ fig, size = 'sm', tone }: { fig: Figure; size?: Size; tone?: 'brand' }) {
+function MiniFigure({ fig }: { fig: Figure }) {
   return (
-    <div className={'mini-figure size-' + size + (tone ? ' tone-' + tone : '')}>
+    <div className="mini-figure">
       {fig.map((count, r) => (
         <div className="mini-row" key={r}>
           {Array.from({ length: count }).map((_, d) => (
@@ -154,11 +117,6 @@ export default function GeomanciePage() {
   const [fbData, setFbData] = useState<any[]>([]);
   const [activeFig, setActiveFig] = useState<string | null>(null);
   const [modalIndex, setModalIndex] = useState<number | null>(null);
-  // Écu complet replié par défaut après un calcul (revue design, point 4 :
-  // le résultat doit apparaître AVANT les détails) — rouvert automatiquement
-  // quand on touche le Vœu/la Figure de repérage, pour que la maison mise en
-  // évidence (voir highlightFigure) reste visible sans manipulation en plus.
-  const [shieldOpen, setShieldOpen] = useState(false);
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -184,15 +142,6 @@ export default function GeomanciePage() {
   const houses = useMemo<any[]>(() => generateAllHouses(mothers), [mothers]);
   const synth = calculated ? synthesis(houses) : null;
   const parity = calculated ? checkJudgeParity(houses) : null;
-
-  // Juge (M15) et Sentence (M16) — les deux figures qui portent le verdict
-  // (revue design, point 4 : « le résultat manque de dominance »). La
-  // Sentence combine déjà le Juge et l'Âme (M1, voir lib/geomancie.js) : elle
-  // reste la réponse la plus aboutie de l'écu, affichée juste après le Juge
-  // plutôt que noyée au milieu des 16 maisons.
-  const judgeKey = calculated ? figToKey(houses[14]) : null;
-  const judgeData = judgeKey ? figureData(judgeKey, fbData) : null;
-  const sentenceKey = calculated ? figToKey(houses[15]) : null;
 
   const showToast = useCallback((msg: string) => {
     setToast({ id: Date.now(), msg });
@@ -222,14 +171,14 @@ export default function GeomanciePage() {
     try {
       const res = await apiPost('get-theme');
       setFbData(res.data || []);
-      showToast('Données chargées.');
+      showToast('✨ Données chargées avec succès !');
       return res.data || [];
     } catch (error: any) {
       if (error && error.status === 403) {
-        showToast('Géomancie réservée au forfait 1 An (45 000 FCFA).');
+        showToast('🔒 Géomancie réservée au forfait 1 An (45 000 FCFA).');
         openGate('level');
       } else {
-        showToast('Échec du chargement (' + (error.message || 'erreur') + ').');
+        showToast('❌ Échec du chargement (' + (error.message || 'erreur') + ')');
       }
       return null;
     }
@@ -243,7 +192,6 @@ export default function GeomanciePage() {
       if (!fbData || fbData.length === 0) await fetchFirebaseData();
       setCalculated(true);
       setActiveFig(null);
-      setShieldOpen(false);
       logGeomancie(shareLocation);
     } finally {
       setCalculating(false);
@@ -254,15 +202,13 @@ export default function GeomanciePage() {
     setMothers(randomMothers());
     setCalculated(false);
     setActiveFig(null);
-    setShieldOpen(false);
   };
 
   const onReset = () => {
     setMothers(neutralMothers());
     setCalculated(false);
     setActiveFig(null);
-    setShieldOpen(false);
-    showToast('Thème réinitialisé.');
+    showToast('🔄 Thème réinitialisé');
   };
 
   const openHouseModal = (idx: number) => {
@@ -281,35 +227,28 @@ export default function GeomanciePage() {
     const name = getCleanName(figKey, fbData);
     if (count > 0) {
       setActiveFig(figKey);
-      setShieldOpen(true); // la maison mise en évidence doit rester visible
-      showToast(`${name} présente dans ${count} maison(s).`);
+      showToast(`🔍 ${name} présente dans ${count} maison(s)`);
     } else {
       setActiveFig(null);
-      showToast(`${name} absente de l'écu.`);
+      showToast(`❌ ${name} absente de l'écu`);
     }
   };
 
   return (
     <div className="geo-page">
       <div className="app-container">
-        {/* Barre compacte (revue design, point « repenser le bandeau
-            supérieur ») — remplace le grand bandeau « ✦ Asrar Pro ✦ » qui
-            consommait tout un écran avant même les 4 Mères. */}
-        <div className="geo-topbar">
-          <Link href="/" className="btn geo-back">
-            ← Retour
-          </Link>
-          <div className="geo-topbar-title">
-            <Shield size={18} strokeWidth={2} aria-hidden="true" />
-            Géomancie
-          </div>
+        <Link href="/" className="btn geo-back">
+          ← Retour
+        </Link>
+
+        <div className="header">
+          <h1>✦ Asrar Pro ✦</h1>
+          <p className="subtitle">Géomancie · L'art divinatoire</p>
         </div>
 
         {/* Les Quatre Mères */}
         <div className="panel">
-          <h2>
-            <Moon size={16} strokeWidth={2} aria-hidden="true" /> Les Quatre Mères
-          </h2>
+          <h2>🌙 Les Quatre Mères Sacrées</h2>
           <div className="mothers-grid">
             {mothers.map((fig, mi) => (
               <div className="mother-card" key={mi}>
@@ -330,167 +269,89 @@ export default function GeomanciePage() {
               </div>
             ))}
           </div>
-
-          {/* Hiérarchie à 3 niveaux (revue design, point « boutons sans
-              hiérarchie ») : Calculer (plein, dominant) → Générer
-              aléatoirement (contour) → Réinitialiser (texte seul). */}
-          <div className="btn-stack">
-            <button className="btn btn-primary" onClick={onCalculate} disabled={calculating}>
+          <div className="btn-row" style={{ marginTop: 14 }}>
+            <button className="btn primary" onClick={onCalculate} disabled={calculating}>
               {calculating ? (
                 <>
                   <Spinner /> Calcul…
                 </>
               ) : (
-                <>
-                  <Sparkles size={17} strokeWidth={2} aria-hidden="true" /> Calculer l'Écu
-                </>
+                "🔮 Calculer l'Écu"
               )}
             </button>
-            <button className="btn btn-secondary" onClick={onRandom}>
-              <Dices size={16} strokeWidth={2} aria-hidden="true" /> Générer aléatoirement
+            <button className="btn" onClick={onRandom}>
+              🎲 Aléatoire
             </button>
-            <button className="btn btn-text" onClick={onReset}>
-              <RotateCcw size={14} strokeWidth={2} aria-hidden="true" /> Réinitialiser
+            <button className="btn" onClick={onReset}>
+              🔄 Réinitialiser
             </button>
           </div>
 
-          {/* Confidentialité repliée (revue design, point « la case de
-              localisation casse l'univers graphique ») — une simple
-              divulgation derrière une icône, plus une ligne pleine largeur
-              au milieu du parcours géomantique. */}
-          <details className="privacy-disclosure">
-            <summary>
-              <Lock size={13} strokeWidth={2} aria-hidden="true" /> Confidentialité
-            </summary>
-            <label className="geo-consent-row">
-              <input type="checkbox" checked={shareLocation} onChange={toggleShareLocation} />
-              <span>
-                <MapPin size={13} strokeWidth={2} aria-hidden="true" /> Partager ma position approximative
-                (statistiques anonymisées, jamais précise)
-              </span>
-            </label>
-          </details>
+          {/* Consentement distinct de la géolocalisation (revue de sécurité) —
+              décoché par défaut ; voir logGeomancie/shareLocation ci-dessus. */}
+          <label className="geo-consent-row">
+            <input type="checkbox" checked={shareLocation} onChange={toggleShareLocation} />
+            <span>
+              📍 Partager ma position approximative (statistiques anonymisées, jamais précise)
+            </span>
+          </label>
         </div>
 
-        {calculating && (
-          <div className="panel">
-            <p className="placeholder-text">
-              <Spinner /> Calcul de l'écu en cours…
-            </p>
-          </div>
-        )}
-
-        {calculated && !calculating && (
-          <>
-            {/* RÉSULTAT DE L'ÉCU — zone dominante (revue design, point 4) :
-                Juge, parité et Sentence AVANT les 16 maisons, pas après. */}
-            <div className="panel result-panel">
-              <h2 className="result-title">
-                <Scale size={16} strokeWidth={2} aria-hidden="true" /> Résultat de l'écu
-              </h2>
-
-              <div className="result-judge" onClick={() => openHouseModal(14)}>
-                <MiniFigure fig={houses[14]} size="lg" tone="brand" />
-                <div className="result-judge-info">
-                  <div className="result-judge-label">{houseNames[14]}</div>
-                  <div className="result-judge-name">{getCleanName(judgeKey as string, fbData)}</div>
-                  {parity && (
-                    <span className={'parity-badge' + (parity.even ? ' ok' : ' warn')}>
-                      {parity.even ? `Parité : ${parity.total} points (paire)` : 'Anomalie de parité'}
-                    </span>
-                  )}
-                  {judgeData?.domaine && <p className="result-judge-domaine">{judgeData.domaine}</p>}
-                  <p className="result-hint">Toucher pour l'interprétation complète ›</p>
+        {/* L'Écu */}
+        <div className="panel">
+          <h2>🛡️ L'Écu Géomantique</h2>
+          <div className="shield-container">
+            {calculating ? (
+              <p className="placeholder-text">
+                <Spinner /> Calcul de l'écu en cours…
+              </p>
+            ) : !calculated ? (
+              <p className="placeholder-text">
+                Saisissez les Mères et cliquez sur <strong>Calculer l'Écu</strong>.
+              </p>
+            ) : (
+              SHIELD_ROWS.map((rowDef, ri) => (
+                <div className={rowDef.cls} key={ri}>
+                  {rowDef.indices.map((idx) => (
+                    <HouseCell
+                      key={idx}
+                      idx={idx}
+                      fig={houses[idx]}
+                      fbData={fbData}
+                      active={activeFig != null && figToKey(houses[idx]) === activeFig}
+                      onOpen={openHouseModal}
+                    />
+                  ))}
                 </div>
-              </div>
+              ))
+            )}
+          </div>
 
-              <div className="result-sentence" onClick={() => openHouseModal(15)}>
-                <ScrollText size={15} strokeWidth={2} aria-hidden="true" />
-                <span>
-                  {houseNames[15]} — <strong>{getCleanName(sentenceKey as string, fbData)}</strong>
-                </span>
-                <MiniFigure fig={houses[15]} size="sm" />
+          {parity && (
+            <div style={{ textAlign: 'center' }}>
+              {parity.even ? (
+                <span className="parity-badge ok">✓ Parité du Juge : {parity.total} points (paire)</span>
+              ) : (
+                <span className="parity-badge warn">⚠ Anomalie de Parité détectée</span>
+              )}
+            </div>
+          )}
+
+          {synth && (
+            <div className="synthesis-container">
+              <div className="synthesis-card" onClick={() => highlightFigure(synth.voeuKey)}>
+                <h4>🌟 Le vœu</h4>
+                <MiniFigure fig={synth.voeuFig} />
+                <p>{getCleanName(synth.voeuKey, fbData)}</p>
+              </div>
+              <div className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
+                <h4>👁️ Figure de Repérage</h4>
+                <MiniFigure fig={synth.repFig} />
+                <p>{getCleanName(synth.repKey, fbData)}</p>
               </div>
             </div>
-
-            {/* Vœu + Figure de repérage — l'or reste réservé au Vœu (revue
-                design, point « couleur verte partout ») : c'est le seul
-                élément explicitement qualifié de spirituel dans la revue. */}
-            {synth && (
-              <div className="synthesis-container">
-                <div className="synthesis-card voeu" onClick={() => highlightFigure(synth.voeuKey)}>
-                  <h4>
-                    <Star size={15} strokeWidth={2} aria-hidden="true" /> Le vœu
-                  </h4>
-                  <MiniFigure fig={synth.voeuFig} />
-                  <p>{getCleanName(synth.voeuKey, fbData)}</p>
-                </div>
-                <div className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
-                  <h4>
-                    <Eye size={15} strokeWidth={2} aria-hidden="true" /> Figure de repérage
-                  </h4>
-                  <MiniFigure fig={synth.repFig} />
-                  <p>{getCleanName(synth.repKey, fbData)}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Écu complet — replié par défaut, pour l'utilisateur qui veut
-                examiner M1 à M16 (revue design, point 4). Diagramme par
-                paliers plutôt qu'une grille plate (point 1) : Mères → Filles
-                → Nièces → Témoins → Verdict, connectés par de simples flèches,
-                tailles progressives. Ordre naturel M1 → M16 (point 3). */}
-            <details
-              className="panel shield-accordion"
-              open={shieldOpen}
-              onToggle={(e) => setShieldOpen(e.currentTarget.open)}
-            >
-              <summary>
-                <Shield size={15} strokeWidth={2} aria-hidden="true" />
-                Voir l'écu complet (M1 → M16)
-                <ChevronDown size={14} strokeWidth={2} className="shield-chevron" aria-hidden="true" />
-              </summary>
-
-              <p className="order-note">
-                Ordre M1 → M16 : Mères, Filles, Nièces, Témoins, puis le Verdict (Juge et Sentence).
-              </p>
-
-              {TIERS.map((tier, ti) => (
-                <div key={tier.key}>
-                  <div className={'tier' + (tier.key === 'verdict' ? ' tier-verdict' : '')}>
-                    <div className="tier-label">{tier.label}</div>
-                    <div className={'tier-row size-' + tier.size}>
-                      {tier.indices.map((idx) => (
-                        <HouseCell
-                          key={idx}
-                          idx={idx}
-                          fig={houses[idx]}
-                          fbData={fbData}
-                          size={tier.size}
-                          active={activeFig != null && figToKey(houses[idx]) === activeFig}
-                          onOpen={openHouseModal}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  {ti < TIERS.length - 1 && (
-                    <div className="tier-connector" aria-hidden="true">
-                      <ArrowDown size={16} strokeWidth={2} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </details>
-          </>
-        )}
-
-        {!calculated && !calculating && (
-          <div className="panel">
-            <p className="placeholder-text">
-              Saisissez les Mères et touchez <strong>Calculer l'Écu</strong>.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {modalIndex != null && (
@@ -502,36 +363,18 @@ export default function GeomanciePage() {
   );
 }
 
-function HouseCell({
-  idx,
-  fig,
-  fbData,
-  active,
-  onOpen,
-  size,
-}: {
-  idx: number;
-  fig: Figure;
-  fbData: any[];
-  active: boolean;
-  onOpen: (idx: number) => void;
-  size: Size;
-}) {
+function HouseCell({ idx, fig, fbData, active, onOpen }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void }) {
   const cls =
-    'house-cell size-' +
-    size +
+    'house-cell' +
     (idx === 14 ? ' judge-cell' : '') +
     (idx === 15 ? ' sentence-cell' : '') +
     (active ? ' voie-active' : '');
   return (
     <div className={cls} onClick={() => onOpen(idx)}>
-      {/* Repère discret (revue design, point 2) : le numéro de maison passe
-          avant la figure mais reste un simple repère, jamais un badge
-          voyant — la figure et le nom restent l'essentiel de la carte. */}
       <div className="house-num">M{idx + 1}</div>
-      <MiniFigure fig={fig} size={size} />
+      <MiniFigure fig={fig} />
       <div className="fig-name">{getCleanName(figToKey(fig), fbData)}</div>
-      <div className="bzdh-value">Ordre {getBZDHValue(fig)}</div>
+      <div className="bzdh-badge">ord: {getBZDHValue(fig)}</div>
     </div>
   );
 }
@@ -559,7 +402,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           ×
         </button>
         <h3>
-          Maison {data.houseIndex + 1} – {data.houseName}
+          🏠 Maison {data.houseIndex + 1} – {data.houseName}
         </h3>
         <p style={{ color: 'var(--text2)', fontSize: '0.85rem', marginBottom: 6 }}>
           <strong>Occupante :</strong> {data.title} | <span style={{ color: '#4facfe' }}>بزدح: {data.bzdh}</span>
@@ -577,7 +420,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
             </div>
             <ModalBlock
               tone="gold"
-              title="Interprétation du Juge"
+              title="⚖️ Interprétation du Juge"
               domaine={data.data ? data.data.domaine : 'Le verdict final.'}
               interpretation={data.data ? data.data.interpretation : 'Données en cours de chargement...'}
               prefix="👉"
@@ -610,7 +453,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
             </div>
             <ModalBlock
               tone="gold"
-              title="Interprétation de la Sentence"
+              title="📜 Interprétation de la Sentence"
               domaine={data.data ? data.data.domaine : 'Le point de chute final.'}
               interpretation={data.data ? data.data.interpretation : 'Données en cours de chargement...'}
               prefix="👉"
@@ -622,14 +465,14 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           <>
             <ModalBlock
               tone="blue"
-              title={`Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
+              title={`1️⃣ Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
               domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
               interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
               prefix="👉 Interprétation :"
             />
             <ModalBlock
               tone="gold"
-              title={`Secret Final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
+              title={`2️⃣ Secret Final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
               domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
               interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
               prefix="✨ Interprétation :"
