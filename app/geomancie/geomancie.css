@@ -1,7 +1,19 @@
 /* Module Géomancie (Tourab) — styles portés de geomancie/tourab.html.
    Scopé sous .geo-page : le module redéfinit de nombreux tokens partagés
    (--surface, --accent, --danger, --glass-border…) et emploie des classes
-   génériques — le scoping évite toute fuite dans la SPA. */
+   génériques — le scoping évite toute fuite dans la SPA.
+
+   Revue design v2 — quatre niveaux de couleur (au lieu d'une seule teinte
+   d'accent réutilisée partout : titres, points, contours, boutons, badges) :
+     1. fond (--surface/--surface2/--surface3) ;
+     2. texte presque noir/blanc (--text/--text2) — porte la lecture, PAS
+        l'accent ;
+     3. --brand — une seule couleur pour les actions/états importants
+        (bouton principal, maison active, Juge) ;
+     4. --brand-soft — teinte très légère pour les informations techniques
+        (badges, fonds secondaires) ;
+   --spirit (or) reste à part, réservé au Vœu — seul élément explicitement
+   qualifié de « spirituel » dans la revue. */
 
 .geo-page {
   --bg: #09050f;
@@ -10,16 +22,26 @@
   --surface3: rgba(255, 255, 255, 0.14);
   --text: #e0dcd0;
   --text2: #b8b4a8;
-  --gold: #a78bfa;
-  --gold2: #f472b6;
-  --accent: #f472b6;
+  --brand: #a78bfa;
+  --brand-strong: #f472b6;
+  --brand-soft: rgba(167, 139, 250, 0.14);
+  --spirit: #d9a441;
+  --spirit-soft: rgba(217, 164, 65, 0.12);
   --danger: #c0392b;
   --radius: 16px;
   --radius-sm: 10px;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  /* Ombres légères (revue design : « halos et ombres trop prononcés ») — la
+     hiérarchie vient des surfaces/bordures, pas du flou lumineux. */
+  --shadow: 0 2px 14px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
   --font: var(--font-ui);
-  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.2s ease;
   --glass-border: rgba(255, 255, 255, 0.15);
+
+  /* Compat : anciennes variables --gold/--gold2 encore lues par la modale
+     (rendue hors de .geo-page, cf. .geo-modal plus bas) et par ModalBlock. */
+  --gold: var(--brand);
+  --gold2: var(--brand-strong);
 
   position: relative;
   color: var(--text);
@@ -41,11 +63,12 @@ html[data-theme='light'] .geo-page {
   --surface3: rgba(0, 0, 0, 0.06);
   --text: #16302c;
   --text2: #4a635e;
-  --gold: #0f766e;
-  --gold2: #14b8a6;
-  --accent: #0f766e;
+  --brand: #0f766e;
+  --brand-strong: #14b8a6;
+  --brand-soft: rgba(15, 118, 110, 0.08);
   --danger: #b53a37;
-  --shadow: 0 8px 32px rgba(20, 100, 90, 0.18);
+  --shadow: 0 2px 14px rgba(20, 60, 55, 0.12);
+  --shadow-sm: 0 2px 8px rgba(20, 60, 55, 0.1);
   --glass-border: rgba(20, 60, 55, 0.18);
   background: radial-gradient(ellipse at 50% 20%, #f0faf7 0%, #dcf0ea 70%);
 }
@@ -56,11 +79,11 @@ html[data-theme='light'] .geo-page {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(1px 1px at 10% 20%, color-mix(in srgb, var(--gold) 35%, transparent), transparent),
-    radial-gradient(1px 1px at 30% 60%, color-mix(in srgb, var(--gold) 25%, transparent), transparent),
-    radial-gradient(1px 1px at 55% 15%, color-mix(in srgb, var(--gold) 30%, transparent), transparent),
-    radial-gradient(1px 1px at 70% 75%, color-mix(in srgb, var(--gold) 20%, transparent), transparent),
-    radial-gradient(1px 1px at 85% 40%, color-mix(in srgb, var(--gold) 30%, transparent), transparent),
+  background: radial-gradient(1px 1px at 10% 20%, color-mix(in srgb, var(--brand) 35%, transparent), transparent),
+    radial-gradient(1px 1px at 30% 60%, color-mix(in srgb, var(--brand) 25%, transparent), transparent),
+    radial-gradient(1px 1px at 55% 15%, color-mix(in srgb, var(--brand) 30%, transparent), transparent),
+    radial-gradient(1px 1px at 70% 75%, color-mix(in srgb, var(--brand) 20%, transparent), transparent),
+    radial-gradient(1px 1px at 85% 40%, color-mix(in srgb, var(--brand) 30%, transparent), transparent),
     radial-gradient(1.5px 1.5px at 20% 80%, rgba(255, 255, 255, 0.25), transparent),
     radial-gradient(1px 1px at 60% 50%, rgba(255, 255, 255, 0.2), transparent),
     radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.2), transparent);
@@ -85,59 +108,62 @@ html[data-theme='light'] .geo-page::before {
   max-width: 1100px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
-.geo-page .geo-back { align-self: flex-start; z-index: 1; }
-
-.geo-page .header {
-  text-align: center;
-  padding: 18px 20px 10px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+/* Barre compacte (revue design : « bandeau supérieur trop haut ») — un
+   simple en-tête inline, plus un grand panneau à part entière. */
+.geo-page .geo-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.geo-page .geo-back { margin: 0; }
+.geo-page .geo-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
 }
-.geo-page .header h1,
-.geo-page .panel h2,
-.geo-page .modal h3,
-.geo-page .synthesis-card h4 { font-family: var(--font-display); }
-.geo-page .header h1 { font-size: 2rem; letter-spacing: 0.04em; color: var(--gold); font-weight: 700; margin-bottom: 2px; }
-.geo-page .header .subtitle { font-size: 0.9rem; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; }
+.geo-page .geo-topbar-title svg { color: var(--brand); flex-shrink: 0; }
 
 .geo-page .panel {
   background: var(--surface);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  padding: 20px 22px;
+  padding: 18px 20px;
   box-shadow: var(--shadow);
-  transition: var(--transition);
 }
+/* Titres neutres (revue design : « la couleur d'accent est utilisée
+   partout ») — seule l'icône porte la couleur de marque, le texte reste dans
+   l'échelle de gris/texte comme le reste de la page. */
 .geo-page .panel h2 {
-  font-size: 1.15rem;
-  color: var(--gold);
-  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
   margin-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: 8px;
-  font-weight: 600;
+  border-bottom: 1px solid var(--glass-border);
+  font-weight: 700;
 }
+.geo-page .panel h2 svg { color: var(--brand); flex-shrink: 0; }
 
-.geo-page .mothers-grid { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+.geo-page .mothers-grid { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .geo-page .mother-card {
   background: var(--surface2);
   border-radius: var(--radius-sm);
-  padding: 14px 12px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 10px 8px;
+  border: 1px solid var(--glass-border);
   text-align: center;
-  min-width: 90px;
+  min-width: 84px;
   user-select: none;
 }
-.geo-page .mother-label { font-size: 0.8rem; color: var(--text2); letter-spacing: 0.04em; margin-bottom: 8px; font-weight: 600; }
+.geo-page .mother-label { font-size: 0.78rem; color: var(--text2); letter-spacing: 0.03em; margin-bottom: 8px; font-weight: 600; }
 .geo-page .figure-display { display: flex; flex-direction: column; align-items: center; gap: 7px; }
 .geo-page .dot-row {
   display: flex;
@@ -150,59 +176,204 @@ html[data-theme='light'] .geo-page::before {
   align-items: center;
   justify-content: center;
 }
-.geo-page .dot-row:hover { background: rgba(255, 255, 255, 0.08); }
-.geo-page .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 50%, transparent); transition: all 0.2s; }
-.geo-page .dot-row.double-row .dot { width: 11px; height: 11px; }
+.geo-page .dot-row:hover { background: var(--brand-soft); }
+/* Points nets, sans halo (revue design : « halo relativement prononcé ») —
+   couleur neutre (texte), pas la couleur de marque : ce sont des données,
+   pas une action. */
+.geo-page .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--text); }
+.geo-page .dot-row.double-row .dot { width: 10px; height: 10px; }
 
-.geo-page .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.geo-page .btn-row .btn { width: auto; margin-top: 0; }
-
-/* Consentement géolocalisation (revue de sécurité) — sobre, sous les boutons,
-   jamais coché par défaut. */
-.geo-consent-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surface2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.82rem;
-  color: var(--text-dim, var(--text));
-  cursor: pointer;
-  line-height: 1.4;
-}
-.geo-consent-row input { margin-top: 2px; flex-shrink: 0; }
+/* Hiérarchie de boutons à 3 niveaux (revue design, point « 3 boutons sans
+   hiérarchie ») : plein/dominant → contour → texte seul. Reset width/margin
+   d'abord (app/globals.css pose un `button { width:100%; margin-top:15px }`
+   global pour les formulaires courts) : sans lui, .btn-text hériterait une
+   pleine largeur et un espacement qui ne conviennent qu'aux deux boutons
+   au-dessus — .btn-primary/.btn-secondary retrouvent leur pleine largeur via
+   `align-items: stretch` sur le conteneur, pas ce reset global.  */
+.geo-page .btn-stack { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 16px; }
+.geo-page .btn-stack .btn { width: auto; margin-top: 0; }
 .geo-page .btn {
   padding: 10px 20px;
   border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--glass-border);
   background: var(--surface2);
   color: var(--text);
   cursor: pointer;
   font-family: var(--font);
   font-size: 0.9rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   transition: var(--transition);
-  backdrop-filter: blur(10px);
   font-weight: 500;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-.geo-page .btn:hover { background: var(--surface3); border-color: var(--gold2); box-shadow: 0 0 20px color-mix(in srgb, var(--gold) 20%, transparent); transform: translateY(-1px); }
-.geo-page .btn.primary { background: color-mix(in srgb, var(--gold) 20%, transparent); border-color: var(--gold); color: var(--gold); font-weight: 700; }
-.geo-page .btn.primary:hover { background: color-mix(in srgb, var(--gold) 35%, transparent); box-shadow: 0 0 28px color-mix(in srgb, var(--gold) 35%, transparent); }
+.geo-page .btn:hover { background: var(--surface3); }
 
-/* padding horizontal : la rangée à 8 cases (w-100) déborde souvent de la
-   largeur visible sur mobile (défilement horizontal nécessaire) — sans
-   marge, la case en bout de défilement touchait directement le bord du
-   panneau/de l'écran (retour : « très coincé sur les bords »). */
-.geo-page .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-x: auto; padding: 8px 14px; }
-.geo-page .shield-row { display: flex; gap: 7px; justify-content: space-around; width: 100%; margin-bottom: 12px; }
-.geo-page .w-100 { width: 100%; }
-.geo-page .w-80 { width: 80%; }
-.geo-page .w-40 { width: 45%; }
-.geo-page .row-last { display: flex; justify-content: center; width: 100%; position: relative; min-height: 95px; margin-top: 5px; }
+.geo-page .btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  /* #fff en dur (pas une variable de thème) : le bouton principal reste sur
+     fond --brand plein dans les deux thèmes (violet sombre / turquoise
+     clair), qui contrastent tous deux suffisamment avec du blanc. */
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.98rem;
+  padding: 13px 20px;
+}
+.geo-page .btn-primary:hover:not(:disabled) { background: var(--brand-strong); border-color: var(--brand-strong); transform: translateY(-1px); }
+.geo-page .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.geo-page .btn-secondary { background: transparent; border-color: var(--brand); color: var(--brand); }
+.geo-page .btn-secondary:hover { background: var(--brand-soft); }
+
+.geo-page .btn-text {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  align-self: center;
+}
+.geo-page .btn-text:hover { color: var(--text); background: none; text-decoration: underline; }
+
+/* Confidentialité repliée (revue design : « la case de localisation casse
+   l'univers graphique ») — une divulgation discrète plutôt qu'une ligne
+   pleine largeur en plein milieu du parcours. */
+.geo-page .privacy-disclosure { margin-top: 12px; }
+.geo-page .privacy-disclosure summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--text2);
+  user-select: none;
+}
+.geo-page .privacy-disclosure summary::-webkit-details-marker { display: none; }
+.geo-page .privacy-disclosure summary:hover { color: var(--text); }
+.geo-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--glass-border);
+  font-size: 0.8rem;
+  color: var(--text2);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.geo-consent-row span { display: inline-flex; align-items: flex-start; gap: 5px; }
+.geo-consent-row svg { flex-shrink: 0; margin-top: 2px; }
+.geo-consent-row input { margin-top: 2px; flex-shrink: 0; }
+
+.geo-page .placeholder-text { color: var(--text2); font-style: italic; text-align: center; padding: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* RÉSULTAT DE L'ÉCU — zone dominante (revue design, point 4) : Juge, parité
+   et Sentence en premier, avant les 16 maisons. Seule carte qui reprend la
+   couleur de marque pleinement (bordure + fond teinté) : c'est le verdict,
+   il doit se voir en premier. */
+.geo-page .result-panel {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--glass-border));
+  background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+}
+.geo-page .result-title { color: var(--text); }
+.geo-page .result-judge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  padding-bottom: 12px;
+}
+.geo-page .result-judge-info { flex: 1; min-width: 0; }
+.geo-page .result-judge-label { font-size: 0.75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+.geo-page .result-judge-name { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 2px 0 6px; }
+.geo-page .result-judge-domaine { font-size: 0.85rem; color: var(--text2); margin-top: 6px; line-height: 1.4; }
+.geo-page .result-hint { font-size: 0.76rem; color: var(--brand); margin-top: 8px; }
+
+.geo-page .result-sentence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text2);
+}
+.geo-page .result-sentence svg { color: var(--brand); flex-shrink: 0; }
+.geo-page .result-sentence strong { color: var(--text); }
+.geo-page .result-sentence .mini-figure { margin-left: auto; }
+
+.geo-page .parity-badge { display: inline-block; font-size: 0.72rem; padding: 3px 9px; border-radius: 12px; font-weight: 600; letter-spacing: 0.03em; background: var(--surface3); color: var(--text2); }
+.geo-page .parity-badge.ok { color: var(--brand); }
+.geo-page .parity-badge.warn { color: var(--danger); }
+
+/* Vœu / Figure de repérage — l'or (--spirit) reste réservé au Vœu (revue
+   design, point « couleur verte utilisée presque partout ») : seul élément
+   explicitement qualifié de spirituel/particulièrement important. */
+.geo-page .synthesis-container { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.geo-page .synthesis-card {
+  background: var(--surface2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  text-align: center;
+  min-width: 200px;
+  flex: 1;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.geo-page .synthesis-card:hover { background: var(--surface3); }
+.geo-page .synthesis-card h4 { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; color: var(--text2); margin-bottom: 10px; font-weight: 600; }
+.geo-page .synthesis-card p { font-size: 0.92rem; color: var(--text); margin-top: 8px; font-weight: 700; }
+.geo-page .synthesis-card.voeu { border-color: color-mix(in srgb, var(--spirit) 45%, var(--glass-border)); background: var(--spirit-soft); }
+.geo-page .synthesis-card.voeu h4 { color: var(--spirit); }
+.geo-page .synthesis-card.voeu .mini-dot { background: var(--spirit); }
+
+/* ÉCU COMPLET — diagramme par paliers (revue design, point 1), replié par
+   défaut (point 4). */
+.geo-page .shield-accordion summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 14px;
+}
+.geo-page .shield-accordion summary::-webkit-details-marker { display: none; }
+.geo-page .shield-accordion summary svg:first-child { color: var(--brand); flex-shrink: 0; }
+.geo-page .shield-chevron { margin-left: auto; transition: transform 0.2s; color: var(--text2) !important; }
+.geo-page .shield-accordion[open] .shield-chevron { transform: rotate(180deg); }
+
+.geo-page .order-note { font-size: 0.78rem; color: var(--text2); text-align: center; margin-bottom: 16px; font-style: italic; }
+
+.geo-page .tier { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.geo-page .tier-label { font-size: 0.7rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.geo-page .tier-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; width: 100%; }
+.geo-page .tier-connector { display: flex; justify-content: center; color: var(--text2); opacity: 0.6; padding: 2px 0; }
+
+/* Palier Verdict (M15/M16) nettement distingué (revue design, point 1 : « M15
+   et M16 devraient être beaucoup plus clairement distinguées »). */
+.geo-page .tier-verdict {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--glass-border));
+}
 
 .geo-page .house-cell {
   background: var(--surface2);
@@ -210,57 +381,49 @@ html[data-theme='light'] .geo-page::before {
   padding: 8px 7px 6px;
   text-align: center;
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-  min-width: 62px;
-}
-.geo-page .house-cell:hover { border-color: var(--gold2); background: var(--surface3); box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 25%, transparent); transform: translateY(-2px); z-index: 2; }
-.geo-page .house-cell.voie-active {
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 55%, transparent) !important;
-  background: color-mix(in srgb, var(--gold) 18%, transparent) !important;
-  animation: geo-pulse-gold 1.2s ease-in-out infinite;
-}
-@keyframes geo-pulse-gold {
-  0%, 100% { box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 40%, transparent); }
-  50% { box-shadow: 0 0 35px color-mix(in srgb, var(--gold) 70%, transparent); }
-}
-.geo-page .house-num { font-size: 0.65rem; color: var(--text2); letter-spacing: 0.03em; font-weight: 600; margin-bottom: 2px; }
-.geo-page .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.geo-page .mini-row { display: flex; gap: 3px; justify-content: center; }
-.geo-page .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
-.geo-page .fig-name { font-size: 0.6rem; color: var(--text2); margin-top: 3px; font-style: italic; }
-.geo-page .bzdh-badge { font-size: 0.55rem; color: var(--gold); font-weight: bold; margin-top: 4px; padding: 2px 4px; background: color-mix(in srgb, var(--gold) 10%, transparent); border-radius: 8px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); }
-.geo-page .house-cell.judge-cell { border: 2px solid color-mix(in srgb, var(--gold) 50%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); }
-.geo-page .house-cell.sentence-cell { border: 2px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 5%, transparent); position: absolute; right: 5%; top: 0; }
-
-.geo-page .parity-badge { display: inline-block; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; margin-top: 6px; font-weight: 600; letter-spacing: 0.04em; }
-.geo-page .parity-badge.ok { background: rgba(122, 158, 107, 0.3); color: #a0d89b; }
-.geo-page .parity-badge.warn { background: rgba(192, 57, 43, 0.3); color: #e8847b; }
-
-.geo-page .synthesis-container { display: flex; gap: 15px; justify-content: center; margin-top: 25px; flex-wrap: wrap; animation: geo-fadeIn 0.5s ease-in-out; }
-.geo-page .synthesis-card {
-  background: color-mix(in srgb, var(--gold) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
-  border-radius: var(--radius-sm);
-  padding: 15px 20px;
-  text-align: center;
-  min-width: 220px;
-  box-shadow: var(--shadow);
-  cursor: pointer;
+  border: 1px solid transparent;
   transition: var(--transition);
+  min-width: 58px;
 }
-.geo-page .synthesis-card:hover { background: color-mix(in srgb, var(--gold) 10%, transparent); border-color: var(--gold); box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 40%, transparent); transform: translateY(-3px); }
-.geo-page .synthesis-card h4 { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; }
-.geo-page .synthesis-card p { font-size: 0.9rem; color: var(--text); margin-top: 8px; font-weight: bold; }
+.geo-page .house-cell:hover { border-color: var(--brand); box-shadow: var(--shadow-sm); }
+/* État actif : surface + bordure pleines, sans glow animé (revue design,
+   point « effets lumineux et ombres »). */
+.geo-page .house-cell.voie-active {
+  border-color: var(--brand) !important;
+  background: var(--brand-soft) !important;
+}
+.geo-page .house-num { font-size: 0.62rem; color: var(--text2); letter-spacing: 0.02em; font-weight: 600; margin-bottom: 2px; }
+/* Le nom (2e niveau, revue design point 2) est plus affirmé que l'ordre
+   (3e niveau, tertiaire) : la figure reste le 1er niveau au-dessus. */
+.geo-page .fig-name { font-size: 0.68rem; color: var(--text); margin-top: 4px; font-weight: 600; }
+.geo-page .bzdh-value { font-size: 0.58rem; color: var(--text2); margin-top: 2px; }
 
-.geo-page .placeholder-text { color: var(--text2); font-style: italic; text-align: center; padding: 20px; }
+/* Tailles progressives (revue design, point 1) : les cartes grandissent à
+   mesure qu'on approche du verdict. */
+.geo-page .house-cell.size-sm { min-width: 54px; padding: 7px 6px 5px; }
+.geo-page .house-cell.size-md { min-width: 66px; padding: 9px 8px 6px; }
+.geo-page .house-cell.size-lg { min-width: 86px; padding: 12px 10px 8px; }
+.geo-page .house-cell.size-lg .fig-name { font-size: 0.78rem; }
+
+.geo-page .house-cell.judge-cell { border-color: color-mix(in srgb, var(--brand) 45%, transparent); background: var(--brand-soft); }
+.geo-page .house-cell.sentence-cell { border-color: color-mix(in srgb, var(--spirit) 40%, transparent); background: var(--spirit-soft); }
+
+/* Figures (points géomantiques) — nets, pas de halo. */
+.geo-page .mini-figure, .geo-modal .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.geo-page .mini-row, .geo-modal .mini-row { display: flex; gap: 3px; justify-content: center; }
+.geo-page .mini-dot, .geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text2); }
+.geo-page .mini-figure.size-md .mini-dot { width: 8px; height: 8px; }
+.geo-page .mini-figure.size-lg .mini-dot { width: 11px; height: 11px; }
+.geo-page .mini-figure.size-lg .mini-row { gap: 4px; }
+/* Seule la figure du Juge, dans le résultat dominant, reprend la couleur de
+   marque (revue design : la couleur ne doit marquer QUE l'important). */
+.geo-page .mini-figure.tone-brand .mini-dot { background: var(--brand); }
 
 /* Modale (rendue hors de .geo-page dans le flux React → styles globaux préfixés) */
 .geo-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: flex;
@@ -279,7 +442,7 @@ html[data-theme='light'] .geo-page::before {
   width: 100%;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
   position: relative;
   color: #e0dcd0;
   font-family: var(--font-ui);
@@ -288,17 +451,18 @@ html[data-theme='light'] .geo-page::before {
   --glass-border: rgba(255, 255, 255, 0.15);
 }
 .geo-modal p { color: #e0dcd0; }
-.geo-modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; font-family: var(--font-display); }
-.geo-modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: 0.25s; }
+.geo-modal h3 { color: var(--gold); font-size: 1.15rem; margin-bottom: 6px; font-family: var(--font-display); font-weight: 700; }
+/* width/margin-top explicites : app/globals.css pose un `button { width:100%;
+   margin-top:15px }` global — sans ce reset, ce bouton absolument positionné
+   hériterait une largeur de 100% du modal (le "×" se retrouvant collé à son
+   bord gauche plutôt que dans son cercle en haut à droite). */
+.geo-modal .close-btn { position: absolute; top: 10px; right: 14px; width: auto; margin-top: 0; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: 0.2s; }
 .geo-modal .close-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .geo-modal .copulation-steps { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin: 12px 0; font-size: 0.9rem; }
 .geo-modal .step-fig { background: rgba(255, 255, 255, 0.09); border-radius: 10px; padding: 10px; text-align: center; min-width: 55px; }
-.geo-modal .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.geo-modal .mini-row { display: flex; gap: 3px; justify-content: center; }
-.geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
 .geo-modal .modal-block { border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
 .geo-modal .modal-block.blue { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); }
-.geo-modal .modal-block.gold { background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); }
+.geo-modal .modal-block.gold { background: rgba(217, 164, 65, 0.08); border: 1px solid rgba(217, 164, 65, 0.3); }
 .geo-modal .modal-block h4 { margin: 0 0 8px 0; font-size: 0.95rem; }
 
 .geo-toast {
@@ -315,6 +479,8 @@ html[data-theme='light'] .geo-page::before {
   z-index: 200;
   animation: geo-slideUp 0.35s ease-out;
   pointer-events: none;
+  max-width: min(88vw, 420px);
+  text-align: center;
 }
 @keyframes geo-slideUp {
   from { opacity: 0; transform: translateX(-50%) translateY(30px); }
@@ -323,21 +489,19 @@ html[data-theme='light'] .geo-page::before {
 
 @media (max-width: 700px) {
   .geo-page .mothers-grid { gap: 8px; }
-  .geo-page .mother-card { min-width: 65px; padding: 8px 6px; }
+  .geo-page .mother-card { min-width: 62px; padding: 8px 6px; }
   .geo-page .dot { width: 10px; height: 10px; }
   .geo-page .house-cell { min-width: 44px; padding: 5px 4px; }
-  .geo-page .mini-dot { width: 5px; height: 5px; }
-  .geo-page .fig-name { font-size: 0.5rem; }
-  .geo-page .shield-row { gap: 3px; }
-  .geo-page .house-cell.sentence-cell { right: 0%; }
+  .geo-page .house-cell.size-md { min-width: 54px; }
+  .geo-page .house-cell.size-lg { min-width: 70px; }
+  .geo-page .fig-name { font-size: 0.58rem; }
+  .geo-page .result-judge { gap: 12px; }
+  .geo-page .result-judge-name { font-size: 1.15rem; }
 }
 
-/* Sous 400px, la rangée à 8 cases (w-100) dépasse encore largement — cases
-   resserrées davantage pour réduire la part qui reste hors écran. */
 @media (max-width: 400px) {
-  .geo-page .app-container { gap: 14px; }
-  .geo-page .panel { padding: 16px 12px; }
-  .geo-page .house-cell { min-width: 38px; padding: 4px 3px; }
-  .geo-page .fig-name { font-size: 0.46rem; }
-  .geo-page .bzdh-badge { font-size: 0.5rem; }
+  .geo-page .app-container { gap: 10px; }
+  .geo-page .panel { padding: 14px 12px; }
+  .geo-page .house-cell { min-width: 40px; padding: 4px 3px; }
+  .geo-page .fig-name { font-size: 0.54rem; }
 }
