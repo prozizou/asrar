@@ -1,10 +1,12 @@
 // api/_lib/grant.js — Initialisation partagée de Firebase Admin.
 //
 // Fournit app() : l'instance Firebase Admin (réutilisée par access.js, sellers.js,
-// admin.js, shop.js). L'activation d'accès n'est plus faite par paiement en ligne :
-// elle est réalisée manuellement par l'administration (voir api/admin.js →
-// grant-access / revoke-access, ou la console Firebase), en écrivant dans
-// allowedUsers/{cléEmail} ou purchased_user/{cléEmail}.
+// admin.js, shop.js — RTDB via app().database(), Firestore via app().firestore(),
+// les deux sur ce même compte de service). L'activation d'accès n'est plus faite
+// par paiement en ligne : elle est réalisée manuellement par l'administration
+// (voir api/admin.js → grant-access / revoke-access, ou la console Firebase), en
+// écrivant dans Firestore access_allowed/{cléEmail} ou access_purchases/{cléEmail}
+// (Phase 1 de la migration RTDB → Firestore — voir docs/FIRESTORE_SCHEMA.md).
 //
 // Variables d'environnement :
 //   FIREBASE_SERVICE_ACCOUNT   JSON brut OU base64 du compte de service

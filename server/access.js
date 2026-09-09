@@ -2,6 +2,16 @@
 //
 // C'est LA barrière réelle du paywall : aucun contenu protégé ne sort sans passer ici.
 // Réutilise l'app Firebase Admin initialisée dans grant.js (même compte de service).
+//
+// MIGRATION FIRESTORE (Phase 1, voir docs/FIRESTORE_SCHEMA.md) : ce fichier lit
+// désormais Firestore (collections access_purchases/access_allowed/access_admins/
+// access_vip) au lieu de la RTDB (purchased_user/allowedUsers/admins/vip_users).
+// C'est la SEULE barrière d'accès de toute l'app — la migrer ici, en un seul
+// endroit, bascule tout le paywall d'un coup. pages/api/admin.js (grant-access/
+// revoke-access/list-access) et pages/api/referral.js (redeem, même donnée
+// purchased_user) migrent avec ce fichier, pour ne jamais lire d'un côté ce
+// qu'on vient d'écrire de l'autre. Le reste de l'app (sellers, produits, zikr…)
+// reste sur la RTDB jusqu'aux phases suivantes.
 
 const { app } = require("./grant");
 // Source unique (partagée avec lib/access.js côté client) : SUPER_ADMIN_EMAIL,
@@ -13,7 +23,23 @@ const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL, parseAllowed } = require
 const SUPER_ADMIN = (process.env.SUPER_ADMIN_EMAIL || SUPER_ADMIN_EMAIL).toLowerCase();
 
 // DOIT correspondre à emailToKey() du client et emailKey() de grant.js ('.' → ',').
+// Conservé tel quel après la migration Firestore (Phase 1) : changer cet
+// encodage toucherait aussi le client (lib/plans.js) — reporté à plus tard,
+// voir docs/FIRESTORE_SCHEMA.md.
 const emailKey = (email) => (email || "").replace(/\./g, ",");
+
+// Le script de migration (scripts/migrate-to-firestore.js, toDocData()) enveloppe
+// les valeurs RTDB brutes (booléen/nombre — anciens grants sans palier précisé)
+// dans { value } pour respecter le modèle documentaire de Firestore ; { until,
+// level } n'est PAS enveloppé (déjà un objet). On déballe ici pour garder
+// parseAllowed() inchangé — partagée avec le client (lib/plans.js), testée
+// indépendamment (lib/plans.test.js) sur le contrat RTDB d'origine.
+function unwrapAllowed(data) {
+  if (data && typeof data === "object" && Object.keys(data).length === 1 && "value" in data) {
+    return data.value;
+  }
+  return data;
+}
 
 // Crée une erreur portant un code HTTP, pour des réponses propres.
 function httpError(status, message) {
@@ -47,7 +73,7 @@ async function verifyUser(idToken) {
 /**
  * Détermine si l'utilisateur a un accès actif :
  *   super-admin OU admin OU vip OU achat/activation valide (token + non expiré)
- *   OU grant manuel (allowedUsers : true / timestamp futur).
+ *   OU grant manuel (access_allowed : true / timestamp futur).
  * Contrairement à l'ancien code client, l'EXPIRATION est ici appliquée.
  * @param {{uid:string, email:string}} user
  * @returns {Promise<boolean>}
@@ -55,26 +81,26 @@ async function verifyUser(idToken) {
 async function hasActiveAccess({ uid, email }) {
   if (email && email.toLowerCase() === SUPER_ADMIN) return true;
   // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
-  // court-circuite les lectures RTDB ci-dessous sans y toucher.
+  // court-circuite les lectures Firestore ci-dessous sans y toucher.
   if (FREE_FOR_ALL) return true;
 
-  const db  = app().database();
+  const db  = app().firestore();
   const key = emailKey(email);
   const now = Date.now();
 
   const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
-    db.ref("purchased_user/" + key).once("value"),
-    db.ref("allowedUsers/"  + key).once("value"),
-    db.ref("admins/"        + key).once("value"),
-    uid ? db.ref("vip_users/" + uid).once("value")
-        : Promise.resolve({ exists: () => false })
+    db.collection("access_purchases").doc(key).get(),
+    db.collection("access_allowed").doc(key).get(),
+    db.collection("access_admins").doc(key).get(),
+    uid ? db.collection("access_vip").doc(uid).get()
+        : Promise.resolve({ exists: false })
   ]);
 
-  if (adminSnap.val() === true) return true;
-  if (vipSnap.exists())         return true;
+  if (adminSnap.exists) return true;
+  if (vipSnap.exists)   return true;
 
   // — Achat/activation : token présent ET non expiré —
-  const pur = purSnap.val();
+  const pur = purSnap.exists ? purSnap.data() : null;
   if (pur && pur.token) {
     const exp = pur.expiresAt;
     // exp absent (anciennes entrées) → considéré actif pour ne pas bloquer les acheteurs existants.
@@ -84,7 +110,7 @@ async function hasActiveAccess({ uid, email }) {
   }
 
   // — Grant manuel admin (legacy raw OU objet { until, level }) —
-  if (parseAllowed(allowedSnap.val(), now).active) return true;
+  if (parseAllowed(unwrapAllowed(allowedSnap.exists ? allowedSnap.data() : null), now).active) return true;
 
   return false;
 }
@@ -102,48 +128,48 @@ async function getAccessLevel({ uid, email }) {
   if (email && email.toLowerCase() === SUPER_ADMIN) return Infinity;
   // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
   // débloque aussi les modules premium (Al Qalam, Géomancie), sans toucher
-  // aux lectures RTDB ci-dessous.
+  // aux lectures Firestore ci-dessous.
   if (FREE_FOR_ALL) return Infinity;
 
-  const db  = app().database();
+  const db  = app().firestore();
   const key = emailKey(email);
   const now = Date.now();
 
   const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
-    db.ref("purchased_user/" + key).once("value"),
-    db.ref("allowedUsers/"  + key).once("value"),
-    db.ref("admins/"        + key).once("value"),
-    uid ? db.ref("vip_users/" + uid).once("value")
-        : Promise.resolve({ exists: () => false })
+    db.collection("access_purchases").doc(key).get(),
+    db.collection("access_allowed").doc(key).get(),
+    db.collection("access_admins").doc(key).get(),
+    uid ? db.collection("access_vip").doc(uid).get()
+        : Promise.resolve({ exists: false })
   ]);
 
-  if (adminSnap.val() === true) return Infinity;
-  if (vipSnap.exists())         return Infinity;
+  if (adminSnap.exists) return Infinity;
+  if (vipSnap.exists)   return Infinity;
 
   let level = 0;
 
-  const pur = purSnap.val();
+  const pur = purSnap.exists ? purSnap.data() : null;
   if (pur && pur.token) {
     const exp = pur.expiresAt;
     const active = exp === "lifetime" || exp == null || (typeof exp === "number" && exp > now);
     if (active) level = Math.max(level, Number(pur.level) || 0);
   }
 
-  const allowedInfo = parseAllowed(allowedSnap.val(), now);
+  const allowedInfo = parseAllowed(unwrapAllowed(allowedSnap.exists ? allowedSnap.data() : null), now);
   if (allowedInfo.active) level = Math.max(level, allowedInfo.level);
 
   return level;
 }
 
 /**
- * Vrai si l'utilisateur est administrateur : super-admin (e-mail) OU admins/{clé}===true.
+ * Vrai si l'utilisateur est administrateur : super-admin (e-mail) OU document access_admins/{clé} existant.
  * @param {{uid:string, email:string}} user
  * @returns {Promise<boolean>}
  */
 async function isAdmin({ email }) {
   if (email && email.toLowerCase() === SUPER_ADMIN) return true;
-  const snap = await app().database().ref("admins/" + emailKey(email)).once("value");
-  return snap.val() === true;
+  const snap = await app().firestore().collection("access_admins").doc(emailKey(email)).get();
+  return snap.exists;
 }
 
 /**
@@ -163,27 +189,27 @@ async function getAccessStatus({ uid, email }) {
   }
   // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
   // admin/vip restent `false` (pas de mensonge sur le vrai statut du compte),
-  // seul l'accès l'est. Les lectures RTDB ci-dessous restent inchangées.
+  // seul l'accès l'est. Les lectures Firestore ci-dessous restent inchangées.
   if (FREE_FOR_ALL) {
     return { allowed: true, admin: false, vip: false, level: Infinity, purchase: null, expiresAt: null };
   }
 
-  const db  = app().database();
+  const db  = app().firestore();
   const key = emailKey(email);
   const now = Date.now();
 
   const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
-    db.ref("purchased_user/" + key).once("value"),
-    db.ref("allowedUsers/"  + key).once("value"),
-    db.ref("admins/"        + key).once("value"),
-    uid ? db.ref("vip_users/" + uid).once("value")
-        : Promise.resolve({ exists: () => false })
+    db.collection("access_purchases").doc(key).get(),
+    db.collection("access_allowed").doc(key).get(),
+    db.collection("access_admins").doc(key).get(),
+    uid ? db.collection("access_vip").doc(uid).get()
+        : Promise.resolve({ exists: false })
   ]);
 
-  const isAdminUser = adminSnap.val() === true;
-  const isVip = vipSnap.exists();
+  const isAdminUser = adminSnap.exists;
+  const isVip = vipSnap.exists;
 
-  const pur = purSnap.val();
+  const pur = purSnap.exists ? purSnap.data() : null;
   const notExpired =
     !pur ||
     pur.expiresAt === "lifetime" ||
@@ -191,7 +217,8 @@ async function getAccessStatus({ uid, email }) {
     (typeof pur.expiresAt === "number" && pur.expiresAt > now);
   const hasToken = !!(pur && pur.token) && notExpired;
 
-  const allowedInfo = parseAllowed(allowedSnap.val(), now);
+  const allowedVal = unwrapAllowed(allowedSnap.exists ? allowedSnap.data() : null);
+  const allowedInfo = parseAllowed(allowedVal, now);
 
   const allowed = isAdminUser || isVip || hasToken || allowedInfo.active;
   const level = isAdminUser || isVip
@@ -200,7 +227,6 @@ async function getAccessStatus({ uid, email }) {
 
   // Même calcul d'expiration unifiée que lib/access.js (rappel J-3) — la plus
   // proche des deux sources d'accès actives.
-  const allowedVal = allowedSnap.val();
   const allowedNumericUntil =
     allowedVal && typeof allowedVal === "object" ? allowedVal.until
     : typeof allowedVal === "number" ? allowedVal
@@ -222,5 +248,6 @@ module.exports = {
   PREMIUM_LEVEL,
   isAdmin,
   emailKey,
+  unwrapAllowed,
   httpError,
 };
