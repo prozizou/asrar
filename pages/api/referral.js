@@ -13,11 +13,13 @@
 //     • compte déjà ancien refusé         (créé il y a > MAX_ACCOUNT_AGE_MS)
 //   Les clics bruts sont comptés par /api/share, pour information seulement.
 //
-// Nœuds écrits (Admin SDK, écriture client interdite par les règles) :
+// Nœuds RTDB écrits (Admin SDK, écriture client interdite par les règles) :
 //   referrals/{uid}       = { code, email, points, clicks, invited, rewards, ... }
 //   referral_codes/{code} = uid                      (index inverse)
 //   referred/{uidFilleul} = { by, at, credited }     (dédoublonnage)
-//   purchased_user/{cléEmail}                        (récompense = accès 3 mois)
+// Collection Firestore écrite (Phase 1 de la migration — voir
+// docs/FIRESTORE_SCHEMA.md, même donnée que server/access.js) :
+//   access_purchases/{cléEmail}                      (récompense = accès 3 mois)
 
 const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -57,6 +59,13 @@ export default async function handler(req, res) {
   }
 
   const db = app().database();
+  // purchased_user → access_purchases (Firestore) depuis la Phase 1 de la
+  // migration (voir docs/FIRESTORE_SCHEMA.md) : c'est la même donnée que lit
+  // server/access.js pour le paywall — écrire encore en RTDB ici rendrait la
+  // récompense invisible pour hasActiveAccess()/getAccessLevel(). Le reste de
+  // ce fichier (referrals/, referral_codes/, purchases/, referred/) reste sur
+  // la RTDB (`db` ci-dessus) jusqu'à la Phase 2 (parrainage).
+  const firestore = app().firestore();
 
   try {
     switch (body.action) {
@@ -129,7 +138,9 @@ export default async function handler(req, res) {
 
         try {
           const key = emailKey(user.email);
-          const cur = (await db.ref("purchased_user/" + key).once("value")).val() || {};
+          const purchaseRef = firestore.collection("access_purchases").doc(key);
+          const purSnap = await purchaseRef.get();
+          const cur = purSnap.exists ? purSnap.data() : {};
 
           if (cur.expiresAt === "lifetime") {
             await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
@@ -141,7 +152,7 @@ export default async function handler(req, res) {
             ? cur.expiresAt : Date.now();
           const expiresAt = base + REWARD_DAYS * DAY_MS;
 
-          await db.ref("purchased_user/" + key).update({
+          await purchaseRef.set({
             token:     "REF-" + Date.now().toString(36).toUpperCase(),
             plan:      REWARD_PLAN,
             level:     Math.max(REWARD_LEVEL, Number(cur.level) || 0),
@@ -149,7 +160,7 @@ export default async function handler(req, res) {
             uid:       user.uid,
             at:        Date.now(),
             expiresAt: expiresAt
-          });
+          }, { merge: true });
           await db.ref("purchases/" + user.uid).push({
             plan: REWARD_PLAN, source: "referral", points: POINTS_FOR_REWARD,
             at: Date.now(), expiresAt: expiresAt

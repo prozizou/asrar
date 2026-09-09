@@ -1,0 +1,36 @@
+// Règles Firestore — ASRAR PRO (migration RTDB → Firestore, Phase 0).
+//
+// MÊME PRINCIPE que rules/database.rules.json (RTDB) : tout est fermé par
+// défaut. Quasiment toute la logique de l'app passe par le SDK Admin
+// côté serveur (pages/api/*.js), qui CONTOURNE totalement ces règles —
+// elles ne s'appliquent qu'aux 3 lectures directes restantes côté client
+// (lib/alqalam.js, lib/benefits.js, lib/rouwhania.js : lectures de secours
+// à froid, jamais de listener temps réel, jamais d'écriture).
+//
+// Voir rules/README.md pour l'historique de resserrement de la version
+// RTDB — même statut ici : reconstitution PAS déployée automatiquement,
+// à comparer avec la console Firebase avant tout `firebase deploy`.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fermé par défaut — toute collection non listée explicitement
+    // ci-dessous n'est accessible que via le SDK Admin (serveur).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Les 3 seules lectures directes client (voir database.rules.json :
+    // sourate, versetRef, data/appData → ici sourate, verset_refs,
+    // asma_ul_husna) — authentification requise, jamais d'écriture.
+    match /sourate/{id} {
+      allow read: if request.auth != null;
+    }
+    match /verset_refs/{id} {
+      allow read: if request.auth != null;
+    }
+    match /asma_ul_husna/{id} {
+      allow read: if request.auth != null;
+    }
+  }
+}

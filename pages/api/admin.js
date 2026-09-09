@@ -13,7 +13,7 @@
 //   grant-access {email, days?, level?} · revoke-access {email} · list-access
 //   list-orders · list-activity · list-geomancie
 
-const { verifyUser, isAdmin, emailKey } = require("../../server/access");
+const { verifyUser, isAdmin, emailKey, unwrapAllowed } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
@@ -38,6 +38,12 @@ export default async function handler(req, res) {
   }
 
   const db = app().database();
+  // Accès/paywall (grant-access/revoke-access/list-access) : Firestore depuis
+  // la Phase 1 de la migration, comme server/access.js — voir
+  // docs/FIRESTORE_SCHEMA.md. Toutes les AUTRES actions de ce fichier
+  // (secrets, livres, formations, produits, vendeurs, commandes, stats…)
+  // restent sur la RTDB (`db` ci-dessus) jusqu'à leurs phases respectives.
+  const firestore = app().firestore();
 
   try {
     switch (action) {
@@ -177,7 +183,7 @@ export default async function handler(req, res) {
         const days = parseInt(body.days, 10);
         const until = Number.isFinite(days) && days > 0 ? Date.now() + days * DAY_MS : true;
         const level = parseInt(body.level, 10);
-        await db.ref("allowedUsers/" + emailKey(email)).set({
+        await firestore.collection("access_allowed").doc(emailKey(email)).set({
           until,
           level: Number.isFinite(level) && level > 0 ? level : 0
         });
@@ -188,21 +194,21 @@ export default async function handler(req, res) {
         const email = normEmail(body.email);
         if (!email) return res.status(400).json({ error: "E-mail invalide." });
         const key = emailKey(email);
-        await db.ref("allowedUsers/" + key).remove();
-        const pSnap = await db.ref("purchased_user/" + key).once("value");
-        if (pSnap.exists()) await db.ref("purchased_user/" + key + "/expiresAt").set(Date.now() - 1);
+        await firestore.collection("access_allowed").doc(key).delete();
+        const pSnap = await firestore.collection("access_purchases").doc(key).get();
+        if (pSnap.exists) await firestore.collection("access_purchases").doc(key).update({ expiresAt: Date.now() - 1 });
         return res.json({ ok: true, email });
       }
-      // list-access → liste des accès accordés manuellement (allowedUsers).
+      // list-access → liste des accès accordés manuellement (access_allowed).
       case "list-access": {
-        const snap = await db.ref("allowedUsers").once("value");
+        const snap = await firestore.collection("access_allowed").get();
         const items = [];
-        snap.forEach((c) => {
-          const v = c.val();
+        snap.forEach((doc) => {
+          const v = unwrapAllowed(doc.data());
           const isObj = v && typeof v === "object";
           const until = isObj ? v.until : v;
           items.push({
-            email: String(c.key).replace(/,/g, "."),
+            email: String(doc.id).replace(/,/g, "."),
             active: until === true || (typeof until === "number" && until > Date.now()),
             expiresAt: until === true ? "lifetime" : until,
             // level 0 = palier non précisé (accès legacy) → modules premium verrouillés.
