@@ -49,11 +49,15 @@ export default async function handler(req, res) {
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
   const db = app().database();
+  // zikr_groups/zikr_members : Firestore depuis la Phase 5 de la migration
+  // (voir docs/FIRESTORE_SCHEMA.md) — reminder_settings/push_subscriptions/
+  // cron_health restent sur la RTDB (`db`), Phase 6 à venir.
+  const firestore = app().firestore();
   const now = new Date();
   const stats = { wirdSent: 0, wirdSkipped: 0, sessionSent: 0, sessionSkipped: 0, removed: 0, errors: 0 };
 
   try {
-    await Promise.all([sendWirdReminders(db, now, stats), sendSessionReminders(db, now, stats)]);
+    await Promise.all([sendWirdReminders(db, now, stats), sendSessionReminders(firestore, db, now, stats)]);
     // Dernière exécution + statistiques — consultable côté admin (console
     // Firebase, même principe que les autres nœuds admin-only du projet) pour
     // repérer un planificateur externe qui se serait arrêté (surveillance,
@@ -124,14 +128,17 @@ async function sendWirdReminders(db, now, stats) {
 }
 
 // ── Session Zikr collectif à venir ──────────────────────────────
-// Prévient le créateur ET tous les membres déjà acceptés (zikr_members) — pas
-// les demandes en attente, qui n'ont pas encore accès au groupe.
-async function sendSessionReminders(db, now, stats) {
-  const snap = await db.ref("zikr_groups").once("value");
+// Prévient le créateur ET tous les membres déjà acceptés (sous-collection
+// members) — pas les demandes en attente, qui n'ont pas encore accès au
+// groupe. zikr_groups/members : Firestore depuis la Phase 5 de la migration
+// (voir docs/FIRESTORE_SCHEMA.md) ; push_subscriptions (pushToUser) reste
+// sur la RTDB (`db`), Phase 6 à venir.
+async function sendSessionReminders(firestore, db, now, stats) {
+  const snap = await firestore.collection("zikr_groups").get();
   const tasks = [];
   snap.forEach((g) => {
-    const gid = g.key;
-    const v = g.val() || {};
+    const gid = g.id;
+    const v = g.data() || {};
     if (!shouldSendSessionReminder(v.sessionAt, v.sessionReminderSent === true, now)) {
       stats.sessionSkipped++;
       return;
@@ -144,12 +151,12 @@ async function sendSessionReminders(db, now, stats) {
           url: '/s?k=zikr&i=' + gid,
           tag: 'zikr-session-' + gid,
         });
-        const membersSnap = await db.ref("zikr_members/" + gid).once("value");
+        const membersSnap = await g.ref.collection("members").get();
         const uids = new Set();
-        membersSnap.forEach((m) => uids.add(m.key));
+        membersSnap.forEach((m) => uids.add(m.id));
         if (v.ownerUid) uids.add(v.ownerUid);
         await Promise.all([...uids].map((uid) => pushToUser(db, uid, payload, stats)));
-        await db.ref("zikr_groups/" + gid).update({ sessionReminderSent: true });
+        await g.ref.update({ sessionReminderSent: true });
         stats.sessionSent++;
       })()
     );

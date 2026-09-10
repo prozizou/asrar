@@ -25,8 +25,9 @@ const { rateLimit } = require("../../lib/rateLimit");
 const RATE_LIMIT = { max: 20, windowMs: 60_000 };
 
 // Même sanitisation de clé que pages/api/zikr.js (safeKey) — un groupId sert
-// ici à composer un chemin RTDB (vérification de membre) puis un dossier
-// Cloudinary, jamais affiché ni interprété autrement.
+// ici à composer un chemin Firestore (vérification de membre, Phase 5 de la
+// migration — voir docs/FIRESTORE_SCHEMA.md) puis un dossier Cloudinary,
+// jamais affiché ni interprété autrement.
 function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
 
 export default async function handler(req, res) {
@@ -50,8 +51,9 @@ export default async function handler(req, res) {
     // reste tracé jusqu'à sa discussion de groupe d'origine.
     const gid = safeKey(groupId);
     if (!gid) return res.status(400).json({ error: "Groupe manquant." });
-    const memSnap = await app().database().ref("zikr_members/" + gid + "/" + user.uid).once("value");
-    if (!memSnap.exists()) {
+    const memSnap = await app().firestore().collection("zikr_groups").doc(gid)
+      .collection("members").doc(user.uid).get();
+    if (!memSnap.exists) {
       return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
     }
     safeFolder = `zikr_chat/${gid}/${user.uid}`;
