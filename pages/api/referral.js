@@ -8,18 +8,25 @@
 // Règle du crédit (anti-triche — voir PARTAGE_ET_PARRAINAGE.md) :
 //   Les points ne sont PAS crédités au clic (un clic se répète à l'infini), mais
 //   quand le lien amène un NOUVEAU compte Google :
-//     • 1 seul crédit par compte filleul  (nœud `referred/{uid}`, transaction)
+//     • 1 seul crédit par compte filleul  (doc `referred/{uid}`, transaction)
 //     • auto-parrainage refusé            (parrain ≠ filleul)
 //     • compte déjà ancien refusé         (créé il y a > MAX_ACCOUNT_AGE_MS)
 //   Les clics bruts sont comptés par /api/share, pour information seulement.
 //
-// Nœuds RTDB écrits (Admin SDK, écriture client interdite par les règles) :
-//   referrals/{uid}       = { code, email, points, clicks, invited, rewards, ... }
-//   referral_codes/{code} = uid                      (index inverse)
-//   referred/{uidFilleul} = { by, at, credited }     (dédoublonnage)
-// Collection Firestore écrite (Phase 1 de la migration — voir
-// docs/FIRESTORE_SCHEMA.md, même donnée que server/access.js) :
-//   access_purchases/{cléEmail}                      (récompense = accès 3 mois)
+// MIGRATION FIRESTORE (Phase 2, voir docs/FIRESTORE_SCHEMA.md) : tout le
+// parrainage (`referrals`, `referral_codes`, `referred`, sous-collection
+// `referrals/{uid}/redemptions`) est désormais sur Firestore — plus aucun
+// accès RTDB dans ce fichier. Amélioration notable : le crédit du filleul
+// (`claim`), qui écrivait 4 chemins RTDB séparés (dont un seul dans une
+// transaction), est maintenant UNE seule transaction Firestore multi-documents
+// (parrain + filleul) — Firestore le permet nativement, la RTDB non (ses
+// transactions sont limitées à un seul chemin).
+// Collections Firestore écrites :
+//   access_purchases/{cléEmail}          (récompense = accès 3 mois, Phase 1)
+//   referrals/{uid}       = { code, email, points, invited, rewards, ... }
+//   referral_codes/{code} = { uid }                     (index inverse)
+//   referred/{uidFilleul} = { by, at, credited }        (dédoublonnage)
+//   referrals/{uid}/redemptions/{id} (sous-collection)  (historique des échanges)
 
 const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -52,28 +59,23 @@ export default async function handler(req, res) {
   // "me" est un simple rafraîchissement de tableau de bord (fréquent, sans
   // effet de bord) : limite large. "claim"/"redeem" ont un effet réel (crédit
   // de points, activation d'abonnement) déjà protégé par des transactions
-  // atomiques côté RTDB — la limite ici borne juste le débit d'essais.
+  // atomiques Firestore — la limite ici borne juste le débit d'essais.
   const limit = body.action === "me" ? { max: 30, windowMs: 60_000 } : { max: 10, windowMs: 60_000 };
   if (!rateLimit("referral:" + body.action + ":" + user.uid, limit.max, limit.windowMs)) {
     return res.status(429).json({ error: "Trop de requêtes, réessayez dans une minute." });
   }
 
-  const db = app().database();
-  // purchased_user → access_purchases (Firestore) depuis la Phase 1 de la
-  // migration (voir docs/FIRESTORE_SCHEMA.md) : c'est la même donnée que lit
-  // server/access.js pour le paywall — écrire encore en RTDB ici rendrait la
-  // récompense invisible pour hasActiveAccess()/getAccessLevel(). Le reste de
-  // ce fichier (referrals/, referral_codes/, purchases/, referred/) reste sur
-  // la RTDB (`db` ci-dessus) jusqu'à la Phase 2 (parrainage).
   const firestore = app().firestore();
+  const FieldValue = app().firestore.FieldValue;
 
   try {
     switch (body.action) {
 
       // ── Mon tableau de bord ──────────────────────────────────
       case "me": {
-        const code = await getOrCreateCode(db, user.uid, user.email);
-        const v = (await db.ref("referrals/" + user.uid).once("value")).val() || {};
+        const code = await getOrCreateCode(firestore, user.uid, user.email);
+        const snap = await firestore.collection("referrals").doc(user.uid).get();
+        const v = snap.exists ? snap.data() : {};
         const points = v.points || 0;
         return res.status(200).json({
           code,
@@ -94,15 +96,22 @@ export default async function handler(req, res) {
         const code = normCode(body.code);
         if (!code) return res.status(400).json({ error: "Code de parrainage manquant." });
 
-        const sponsor = (await db.ref("referral_codes/" + code).once("value")).val();
-        if (!sponsor)            return ok(res, false, "code_inconnu");
+        const codeSnap = await firestore.collection("referral_codes").doc(code).get();
+        if (!codeSnap.exists) return ok(res, false, "code_inconnu");
+        const sponsor = codeSnap.data().uid;
         if (sponsor === user.uid) return ok(res, false, "auto_parrainage");
 
-        // Un seul crédit par compte filleul — garanti par la transaction.
-        const rRef = db.ref("referred/" + user.uid);
-        const tx = await rRef.transaction((cur) =>
-          cur === null ? { by: sponsor, at: Date.now(), credited: false } : undefined);
-        if (!tx.committed) return ok(res, false, "deja_parraine");
+        // Un seul crédit par compte filleul — garanti par la transaction
+        // (réservation "set-if-absent", même principe que la transaction RTDB
+        // d'origine).
+        const referredRef = firestore.collection("referred").doc(user.uid);
+        let alreadyReferred = false;
+        await firestore.runTransaction(async (tx) => {
+          const snap = await tx.get(referredRef);
+          if (snap.exists) { alreadyReferred = true; return; }
+          tx.set(referredRef, { by: sponsor, at: Date.now(), credited: false });
+        });
+        if (alreadyReferred) return ok(res, false, "deja_parraine");
 
         // Le compte doit être NOUVEAU (sinon : un ancien membre cliquerait pour un ami).
         let fresh = false;
@@ -113,26 +122,42 @@ export default async function handler(req, res) {
         } catch (e) { fresh = false; }
 
         if (!fresh) {
-          await rRef.update({ credited: false, reason: "compte_existant" });
+          await referredRef.update({ credited: false, reason: "compte_existant" });
           return ok(res, false, "compte_existant");
         }
 
-        await db.ref("referrals/" + sponsor + "/points").transaction((p) => (p || 0) + POINTS_PER_INVITE);
-        await db.ref("referrals/" + sponsor + "/invited").transaction((n) => (n || 0) + 1);
-        await db.ref("referrals/" + sponsor + "/lastAt").set(Date.now());
-        await rRef.update({ credited: true, points: POINTS_PER_INVITE });
+        // Crédit du parrain + finalisation du filleul : UNE seule transaction
+        // Firestore multi-documents (amélioration vs. les 4 écritures RTDB
+        // séparées d'origine, dont une seule transactionnelle — voir en-tête).
+        const sponsorRef = firestore.collection("referrals").doc(sponsor);
+        await firestore.runTransaction(async (tx) => {
+          const sponsorSnap = await tx.get(sponsorRef);
+          const cur = sponsorSnap.exists ? sponsorSnap.data() : {};
+          tx.set(sponsorRef, {
+            points:  (Number(cur.points)  || 0) + POINTS_PER_INVITE,
+            invited: (Number(cur.invited) || 0) + 1,
+            lastAt:  Date.now()
+          }, { merge: true });
+          tx.update(referredRef, { credited: true, points: POINTS_PER_INVITE });
+        });
 
         return res.status(200).json({ ok: true, credited: true, points: POINTS_PER_INVITE });
       }
 
       // ── Convertir les points en abonnement 3 mois ────────────
       case "redeem": {
-        const pRef = db.ref("referrals/" + user.uid + "/points");
+        const referralRef = firestore.collection("referrals").doc(user.uid);
 
         // Débit atomique : impossible de dépenser deux fois les mêmes points.
-        const tx = await pRef.transaction((p) =>
-          (p || 0) >= POINTS_FOR_REWARD ? p - POINTS_FOR_REWARD : undefined);
-        if (!tx.committed) {
+        let debited = false;
+        await firestore.runTransaction(async (tx) => {
+          const snap = await tx.get(referralRef);
+          const points = snap.exists ? (Number(snap.data().points) || 0) : 0;
+          if (points < POINTS_FOR_REWARD) return;
+          tx.update(referralRef, { points: points - POINTS_FOR_REWARD });
+          debited = true;
+        });
+        if (!debited) {
           return res.status(400).json({ error: "Points insuffisants (" + POINTS_FOR_REWARD + " requis)." });
         }
 
@@ -143,7 +168,7 @@ export default async function handler(req, res) {
           const cur = purSnap.exists ? purSnap.data() : {};
 
           if (cur.expiresAt === "lifetime") {
-            await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
+            await referralRef.update({ points: FieldValue.increment(POINTS_FOR_REWARD) }); // restitution
             return res.status(400).json({ error: "Vous disposez déjà d'un accès à vie." });
           }
 
@@ -161,15 +186,15 @@ export default async function handler(req, res) {
             at:        Date.now(),
             expiresAt: expiresAt
           }, { merge: true });
-          await db.ref("purchases/" + user.uid).push({
+          await referralRef.collection("redemptions").add({
             plan: REWARD_PLAN, source: "referral", points: POINTS_FOR_REWARD,
             at: Date.now(), expiresAt: expiresAt
           });
-          await db.ref("referrals/" + user.uid + "/rewards").transaction((n) => (n || 0) + 1);
+          await referralRef.update({ rewards: FieldValue.increment(1) });
 
           return res.status(200).json({ ok: true, expiresAt, days: REWARD_DAYS });
         } catch (e) {
-          await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
+          await referralRef.update({ points: FieldValue.increment(POINTS_FOR_REWARD) }); // restitution
           await reportError("referral:redeem", e, { uid: user.uid });
           return res.status(500).json({ error: "Activation impossible. Vos points ont été restitués." });
         }
@@ -185,17 +210,27 @@ export default async function handler(req, res) {
 };
 
 // ── Code de parrainage : créé une fois, unique, mémorisé ──────
-async function getOrCreateCode(db, uid, email) {
-  const existing = (await db.ref("referrals/" + uid + "/code").once("value")).val();
-  if (existing) return existing;
+async function getOrCreateCode(firestore, uid, email) {
+  const referralRef = firestore.collection("referrals").doc(uid);
+  const existingSnap = await referralRef.get();
+  const existing = existingSnap.exists ? existingSnap.data() : null;
+  if (existing && existing.code) return existing.code;
 
   for (let i = 0; i < 10; i++) {
     const code = randomCode(6);
-    // set-if-absent : la transaction abandonne (undefined) si le code est pris.
-    const tx = await db.ref("referral_codes/" + code).transaction((cur) => (cur === null ? uid : undefined));
-    if (tx.committed) {
-      await db.ref("referrals/" + uid).update({ code, email, createdAt: Date.now() });
-      await db.ref("referrals/" + uid + "/points").transaction((p) => p || 0);
+    const codeRef = firestore.collection("referral_codes").doc(code);
+    // set-if-absent : la transaction n'écrit rien si le code est déjà pris.
+    let committed = false;
+    await firestore.runTransaction(async (tx) => {
+      const snap = await tx.get(codeRef);
+      if (snap.exists) return;
+      tx.set(codeRef, { uid });
+      committed = true;
+    });
+    if (committed) {
+      const upd = { code, email, createdAt: Date.now() };
+      if (!(existing && typeof existing.points === "number")) upd.points = 0;
+      await referralRef.set(upd, { merge: true });
       return code;
     }
   }

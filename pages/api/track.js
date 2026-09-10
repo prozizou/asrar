@@ -3,16 +3,18 @@
 // Body (JSON) : { idToken, type, page?, lat?, lng?, city?, order? }
 //   type="visit"     → comptage de visite (page) + fil d'activité
 //   type="geomancie" → log géomancie AVEC localisation (lat/lng) + activité
-//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (orders/{uid}) —
-//                       voir api/orders.js pour la relecture (« Mes commandes »)
+//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (collection
+//                       Firestore `orders`, Phase 2 de la migration — voir
+//                       docs/FIRESTORE_SCHEMA.md) — voir api/orders.js pour la
+//                       relecture (« Mes commandes »)
 //   (autre)          → événement générique dans le fil d'activité
 //
 // Écrit (Admin SDK, nœuds serveur-only) :
-//   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email }
-//   activity_feed/{pushId}             = { uid, email, type, page, at }
-//   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city }
-//   orders/{uid}/{pushId}              = { productKey, produit, prix, devise,
-//                                           vendeur, image, at }
+//   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email }        (RTDB)
+//   activity_feed/{pushId}             = { uid, email, type, page, at } (RTDB)
+//   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city } (RTDB)
+//   orders/{id}                        = { uid, productKey, produit, prix,
+//                                           devise, vendeur, image, at } (Firestore)
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -81,7 +83,8 @@ export default async function handler(req, res) {
     if (kind === "order" && order && typeof order === "object") {
       const key = safeKey(order.productKey);
       if (key) {
-        await db.ref("orders/" + user.uid).push({
+        await app().firestore().collection("orders").add({
+          uid: user.uid,
           productKey: key,
           produit: clean(order.produit, 120),
           prix: num(order.prix),

@@ -31,6 +31,10 @@
 // Nœuds partagés (inchangés) : ratings/{cat}/{key}/{uid} (LIKES — malgré le
 // nom, pas une note en étoiles), comments/{cat}/{key}/{id} (+ `stars`? 1-5
 // pour un avis boutique/formation — voir lib/reviews.js).
+//
+// "market-popularity" lit aussi order_counts (collection Firestore, Phase 2
+// de la migration — voir docs/FIRESTORE_SCHEMA.md) : orders_count (RTDB) ne
+// reçoit plus d'écritures depuis pages/api/wa.js.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -74,15 +78,17 @@ export default async function handler(req, res) {
     // — Lectures agrégées (page Marché : cartes produit + boutiques, avant
     // même l'ouverture d'un produit précis) — aucun cat/key requis. —
     if (action === "market-popularity") {
-      const [likesSnap, comsSnap, ordersSnap] = await Promise.all([
+      const [likesSnap, comsSnap, orderCountsSnap] = await Promise.all([
         db.ref("ratings/product").once("value"),
         db.ref("comments/product").once("value"),
-        db.ref("orders_count").once("value"),
+        app().firestore().collection("order_counts").get(),
       ]);
+      const orders = {};
+      orderCountsSnap.forEach((d) => { orders[d.id] = Number((d.data() || {}).count) || 0; });
       return res.status(200).json({
         likes: likesSnap.val() || {},
         comments: comsSnap.val() || {},
-        orders: ordersSnap.val() || {},
+        orders,
       });
     }
 

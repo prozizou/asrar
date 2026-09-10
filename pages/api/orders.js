@@ -3,10 +3,12 @@
 // Body (JSON) : { idToken } → { items: [{ _key, productKey, produit, prix,
 //   devise, vendeur, image, at }] }, plus récent d'abord.
 //
-// Lit orders/{uid} (écrit par api/track.js, type="order", au clic
-// « Commander via WhatsApp ») — un utilisateur ne voit QUE ses propres
-// commandes : la portée `{uid}` est appliquée par le chemin lui-même, pas
-// par un filtre après coup.
+// Lit la collection Firestore `orders` (écrite par api/track.js, type="order",
+// au clic « Commander via WhatsApp ») filtrée par `uid` — un utilisateur ne
+// voit QUE ses propres commandes, via une requête indexée (voir
+// firestore.indexes.json, index composite uid+at) plutôt que le chemin
+// orders/{uid} de la RTDB (Phase 2 de la migration — voir
+// docs/FIRESTORE_SCHEMA.md).
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -25,9 +27,13 @@ export default async function handler(req, res) {
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
   try {
-    const snap = await app().database().ref("orders/" + user.uid).orderByChild("at").once("value");
+    const snap = await app().firestore()
+      .collection("orders")
+      .where("uid", "==", user.uid)
+      .orderBy("at")
+      .get();
     const items = [];
-    snap.forEach((c) => items.push({ _key: c.key, ...(c.val() || {}) }));
+    snap.forEach((d) => items.push({ _key: d.id, ...d.data() }));
     items.reverse(); // plus récent d'abord
     return res.status(200).json({ items });
   } catch (e) {

@@ -2,6 +2,13 @@
 // si l'utilisateur a un accès actif. C'est la vraie barrière du paywall.
 //
 // Body (JSON) : { idToken, kind: "secret"|"book", cat?, key }
+//
+// kind="product" (Marché) lit la collection Firestore `products` : depuis la
+// Phase 2 de la migration (voir docs/FIRESTORE_SCHEMA.md), c'est là que
+// pages/api/shop.js et pages/api/admin.js écrivent — lire encore
+// det_produits (RTDB) ici renverrait des fiches produit périmées ou
+// introuvables pour tout ce qui a été créé/modifié depuis. Les autres types
+// (secret/book/verset/asma/formation) restent sur la RTDB (Phase 3 à venir).
 
 const { verifyUser, hasActiveAccess } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -30,8 +37,14 @@ export default async function handler(req, res) {
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 
-    const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
-    const item = snap.val();
+    let item;
+    if (kind === "product") {
+      const snap = await app().firestore().collection("products").doc(key).get();
+      item = snap.exists ? snap.data() : null;
+    } else {
+      const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
+      item = snap.val();
+    }
     if (!item) return res.status(404).json({ error: "Élément introuvable." });
 
     // Champs privés (coordonnées vendeur) : jamais exposés au navigateur.

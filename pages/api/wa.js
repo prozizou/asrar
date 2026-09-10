@@ -7,9 +7,10 @@
 //       → lit la variable d'environnement WHATSAPP_NUMBER et redirige (302).
 //
 //   • Vendeur du Marché :  /api/wa?product=<cléProduit>&text=<message>
-//       → lit det_produits/<clé>.number via l'Admin SDK (ce champ n'est jamais
-//         renvoyé au client par /api/get-content) et redirige vers le WhatsApp
-//         du vendeur. Les coordonnées des vendeurs ne sont donc plus exposées.
+//       → lit products/<clé>.number (Firestore, Phase 2 de la migration — voir
+//         docs/FIRESTORE_SCHEMA.md ; ce champ n'est jamais renvoyé au client
+//         par /api/get-content) et redirige vers le WhatsApp du vendeur. Les
+//         coordonnées des vendeurs ne sont donc jamais exposées.
 
 const { app } = require("../../server/grant");
 
@@ -33,13 +34,15 @@ export default async function handler(req, res) {
   if (productKey) {
     // — Contact d'un VENDEUR : numéro lu côté serveur, jamais exposé au client —
     try {
-      const db = app().database();
-      const snap = await db.ref("det_produits/" + productKey + "/number").once("value");
-      number = String(snap.val() || "").replace(/\D/g, "");
+      const firestore = app().firestore();
+      const snap = await firestore.collection("products").doc(productKey).get();
+      number = String((snap.exists && snap.data().number) || "").replace(/\D/g, "");
       if (number) {
         // Compteur de commandes (statistiques boutique) : incrémenté ici,
-        // pas côté client, pour ne dépendre d'aucune règle RTDB d'écriture.
-        db.ref("orders_count/" + productKey).transaction((c) => (c || 0) + 1).catch(() => {});
+        // pas côté client, sans dépendre d'aucune règle d'écriture Firestore.
+        firestore.collection("order_counts").doc(productKey)
+          .set({ count: app().firestore.FieldValue.increment(1) }, { merge: true })
+          .catch(() => {});
       }
     } catch (e) {
       return htmlMessage(res, 500, "Service indisponible, réessayez plus tard.");
