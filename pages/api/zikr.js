@@ -48,9 +48,9 @@
 // seulement par convention de nommage). zikr_wish_amines/{gid}/{wishUid}
 // (RTDB) est fusionné dans le champ `amines` du vœu correspondant — un seul
 // document à lire/écrire au lieu de deux nœuds toujours consultés ensemble.
-// push_subscriptions (notifications, Phase 6 à venir) reste sur la RTDB —
-// d'où `db` (RTDB), toujours utilisé par sendPushToUid/pushInactivityWarning/
-// notifyReciting/notifyNewMessage, en parallèle de `firestore`.
+// push_subscriptions (notifications) a suivi en Phase 6 : sendPushToUid/
+// pushInactivityWarning/notifyReciting/notifyNewMessage lisent désormais
+// aussi Firestore — plus aucun accès RTDB dans ce fichier.
 //
 // Amélioration notable (transactions Firestore multi-documents, impossibles
 // sur la RTDB — voir docs/FIRESTORE_SCHEMA.md) : handleProgress combine en
@@ -230,11 +230,10 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de requêtes, réessaie dans un instant." });
   }
 
+  // Firestore pour tout, y compris push_subscriptions (notifications) depuis
+  // la Phase 6 de la migration (voir docs/FIRESTORE_SCHEMA.md) — plus aucun
+  // accès RTDB dans ce fichier.
   const firestore = app().firestore();
-  // RTDB : sert UNIQUEMENT push_subscriptions (notifications), Phase 6 à
-  // venir — jamais zikr_groups/members/requests/wishes/messages, sur
-  // Firestore depuis cette phase.
-  const db = app().database();
   const gid = safeKey(body.groupId);
 
   try {
@@ -247,9 +246,9 @@ export default async function handler(req, res) {
       case "requests":       return await handleRequests(firestore, res, user, gid);
       case "approve":        return await handleApprove(firestore, res, user, gid, safeKey(body.uid));
       case "reject":         return await handleReject(firestore, res, user, gid, safeKey(body.uid));
-      case "progress":       return await handleProgress(firestore, db, res, user, gid, body.fait, body.rythme);
+      case "progress":       return await handleProgress(firestore, res, user, gid, body.fait, body.rythme);
       case "warn":           return await handleWarn(firestore, res, user, gid, safeKey(body.uid));
-      case "notifyInactive": return await handleNotifyInactive(firestore, db, res, user, gid);
+      case "notifyInactive": return await handleNotifyInactive(firestore, res, user, gid);
       case "dismissWarning": return await handleDismissWarning(firestore, res, user, gid);
       case "exclude":        return await handleExclude(firestore, res, user, gid, safeKey(body.uid));
       case "leave":           return await handleLeave(firestore, res, user, gid);
@@ -259,7 +258,7 @@ export default async function handler(req, res) {
       case "submitWish":     return await handleSubmitWish(firestore, res, user, gid, body.text);
       case "shareWish":      return await handleShareWish(firestore, res, user, gid, body.shared);
       case "amineWish":      return await handleAmineWish(firestore, res, user, gid, safeKey(body.wishUid));
-      case "sendMessage":    return await handleSendMessage(firestore, db, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
+      case "sendMessage":    return await handleSendMessage(firestore, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
       case "messages":       return await handleMessages(firestore, res, user, gid);
       case "approveZikr":    return await handleApproveZikr(firestore, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
@@ -663,7 +662,7 @@ async function handleReject(firestore, res, user, gid, uid) {
 // total du groupe, transaction sur le total du jour du membre) : la RTDB ne
 // permet pas de transaction portant sur plusieurs chemins à la fois,
 // Firestore si (voir docs/FIRESTORE_SCHEMA.md).
-async function handleProgress(firestore, db, res, user, gid, rawFait, rawRythme) {
+async function handleProgress(firestore, res, user, gid, rawFait, rawRythme) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
 
   const gRef = firestore.collection("zikr_groups").doc(gid);
@@ -724,7 +723,7 @@ async function handleProgress(firestore, db, res, user, gid, rawFait, rawRythme)
     // entre deux requêtes ici). Sans incidence notable sur la latence de
     // "progress" : ne se déclenche qu'à la reprise d'activité, jamais à
     // chaque grain (voir notifyReciting).
-    await notifyReciting(firestore, db, gid, user.uid, user.email, result.newFait).catch(() => {});
+    await notifyReciting(firestore, gid, user.uid, user.email, result.newFait).catch(() => {});
   }
 
   return res.status(200).json({ ok: true, fait: result.newFait, total: result.total });
@@ -750,7 +749,7 @@ async function handleWarn(firestore, res, user, gid, uid) {
 // ouverture de l'app) + notification push best-effort (si le compte est
 // abonné, cf. pages/api/push-subscribe.js) : sans le push, un compte qui
 // n'ouvre déjà plus l'app ne verrait jamais l'avertissement.
-async function handleNotifyInactive(firestore, db, res, user, gid) {
+async function handleNotifyInactive(firestore, res, user, gid) {
   const { ref } = await assertOwner(firestore, gid, user);
   const membersSnap = await ref.collection("members").get();
   const targets = [];
@@ -766,7 +765,7 @@ async function handleNotifyInactive(firestore, db, res, user, gid) {
   );
   // Best-effort : l'avertissement en application ci-dessus reste enregistré
   // même si VAPID est mal configuré ou qu'un envoi échoue.
-  await pushInactivityWarning(db, targets, gid).catch(() => {});
+  await pushInactivityWarning(firestore, targets, gid).catch(() => {});
 
   return res.status(200).json({ ok: true, notified: targets.length });
 }
@@ -791,21 +790,20 @@ function configureVapid() {
 // factorisée avec eux : ce fichier est déclenché par un UTILISATEUR déjà
 // authentifié, ces deux-là par un secret de planificateur — server/cronAuth
 // n'a pas de sens ici). VAPID doit déjà avoir été configuré par l'appelant
-// (configureVapid()). push_subscriptions reste sur la RTDB (Phase 6 à
-// venir) — d'où `db` (RTDB), distinct de `firestore` partout ailleurs dans
-// ce fichier.
-async function sendPushToUid(db, uid, payload, logTag) {
-  const subsSnap = await db.ref("push_subscriptions/" + uid).once("value");
-  if (!subsSnap.exists()) return;
+// (configureVapid()). push_subscriptions est sur Firestore depuis la Phase 6
+// de la migration (voir docs/FIRESTORE_SCHEMA.md) — même `firestore` que
+// partout ailleurs dans ce fichier.
+async function sendPushToUid(firestore, uid, payload, logTag) {
+  const subsSnap = await firestore.collection("push_subscriptions").where("uid", "==", uid).get();
+  if (subsSnap.empty) return;
   const tasks = [];
-  subsSnap.forEach((subSnap) => {
-    const key = subSnap.key;
-    const sub = subSnap.val() || {};
+  subsSnap.forEach((doc) => {
+    const sub = doc.data() || {};
     if (!sub.endpoint || !sub.keys) return;
     tasks.push(
       webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) {
-          await db.ref("push_subscriptions/" + uid + "/" + key).remove();
+          await doc.ref.delete();
         } else {
           await reportError(logTag, e, { uid });
         }
@@ -817,7 +815,7 @@ async function sendPushToUid(db, uid, payload, logTag) {
 
 // Notification push déclenchée ici à la demande du créateur — voir
 // configureVapid/sendPushToUid ci-dessus.
-async function pushInactivityWarning(db, uids, gid) {
+async function pushInactivityWarning(firestore, uids, gid) {
   if (!configureVapid()) return; // pas configuré : l'avertissement en app suffit
   const payload = JSON.stringify({
     title: '⏳ Zikr collectif',
@@ -825,7 +823,7 @@ async function pushInactivityWarning(db, uids, gid) {
     url: '/s?k=zikr&i=' + gid,
     tag: 'zikr-inactivite-' + gid,
   });
-  await Promise.all(uids.map((uid) => sendPushToUid(db, uid, payload, "zikr:notifyInactive")));
+  await Promise.all(uids.map((uid) => sendPushToUid(firestore, uid, payload, "zikr:notifyInactive")));
 }
 
 // ── Prévient les AUTRES membres qu'un compte REPREND son activité ──
@@ -838,7 +836,7 @@ async function pushInactivityWarning(db, uids, gid) {
 // même choix de state persisté), plafonne encore l'envoi à au plus 1x/heure
 // PAR MEMBRE (RECITING_PUSH_WINDOW_MS, lib/zikrLogic.js) — même si plusieurs
 // comptes reprennent leur récitation entre-temps, personne n'est inondé.
-async function notifyReciting(firestore, db, gid, senderUid, senderEmail, fait) {
+async function notifyReciting(firestore, gid, senderUid, senderEmail, fait) {
   if (!configureVapid()) return;
   const gRef = firestore.collection("zikr_groups").doc(gid);
   const [gSnap, membersSnap] = await Promise.all([
@@ -862,7 +860,7 @@ async function notifyReciting(firestore, db, gid, senderUid, senderEmail, fait) 
     if (now - (Number(v.lastRecitingPushAt) || 0) < RECITING_PUSH_WINDOW_MS) return; // déjà notifié récemment
     tasks.push(
       m.ref.update({ lastRecitingPushAt: now })
-        .then(() => sendPushToUid(db, uid, payload, "zikr:notifyReciting"))
+        .then(() => sendPushToUid(firestore, uid, payload, "zikr:notifyReciting"))
     );
   });
   await Promise.all(tasks);
@@ -1127,7 +1125,7 @@ async function handleAmineWish(firestore, res, user, gid, wishUid) {
 // déjà été envoyé DIRECTEMENT à Cloudinary par le client (voir
 // pages/api/cloudinary-sign.js, folder="zikr_chat") ; seule l'URL déjà
 // hébergée transite par cet appel, comme pour les images produit (marché).
-async function handleSendMessage(firestore, db, res, user, gid, rawText, rawMediaType, rawMediaUrl, rawMediaDuration) {
+async function handleSendMessage(firestore, res, user, gid, rawText, rawMediaType, rawMediaUrl, rawMediaDuration) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const gRef = firestore.collection("zikr_groups").doc(gid);
   const memSnap = await gRef.collection("members").doc(user.uid).get();
@@ -1163,7 +1161,7 @@ async function handleSendMessage(firestore, db, res, user, gid, rawText, rawMedi
   const ref = await gRef.collection("messages").add(msg);
   // Best-effort : le message reste enregistré ci-dessus même si VAPID est
   // mal configuré ou qu'un envoi push échoue — jamais bloquant pour l'auteur.
-  await notifyNewMessage(firestore, db, gid, user.uid, user.email, text, !!mediaUrl).catch(() => {});
+  await notifyNewMessage(firestore, gid, user.uid, user.email, text, !!mediaUrl).catch(() => {});
   return res.status(200).json({ ok: true, id: ref.id });
 }
 
@@ -1205,7 +1203,7 @@ async function handleMessages(firestore, res, user, gid) {
 // pushInactivityWarning ci-dessus). Aucun plafond par destinataire (contraste
 // avec notifyReciting) : un message reste un événement ponctuel et voulu par
 // son auteur, pas un signal répété automatiquement comme la reprise d'activité.
-async function notifyNewMessage(firestore, db, gid, senderUid, senderEmail, text, hasMedia) {
+async function notifyNewMessage(firestore, gid, senderUid, senderEmail, text, hasMedia) {
   if (!configureVapid()) return;
   const gRef = firestore.collection("zikr_groups").doc(gid);
   const [gSnap, membersSnap] = await Promise.all([
@@ -1225,7 +1223,7 @@ async function notifyNewMessage(firestore, db, gid, senderUid, senderEmail, text
 
   const targets = [];
   membersSnap.forEach((m) => { if (m.id !== senderUid) targets.push(m.id); });
-  await Promise.all(targets.map((uid) => sendPushToUid(db, uid, payload, "zikr:notifyNewMessage")));
+  await Promise.all(targets.map((uid) => sendPushToUid(firestore, uid, payload, "zikr:notifyNewMessage")));
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur

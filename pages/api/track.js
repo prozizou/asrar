@@ -9,15 +9,14 @@
 //                       relecture (« Mes commandes »)
 //   (autre)          → événement générique dans le fil d'activité
 //
-// Écrit (Admin SDK, nœuds serveur-only) :
-//   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email }        (RTDB)
-//   activity_feed/{pushId}             = { uid, email, type, page, at } (RTDB)
-//   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city } (RTDB)
+// Écrit (Admin SDK, collections Firestore serveur-only — plus aucun accès
+// RTDB dans ce fichier depuis la Phase 6, voir docs/FIRESTORE_SCHEMA.md) :
+//   analytics_visits/{date}_{uid}      = { date, uid, n, last, email }
+//   activity_feed/{id}                 = { uid, email, type, page, at }
+//   geomancie_logs/{id}                = { uid, email, at, lat, lng, city }
 //   orders/{id}                        = { uid, productKey, produit, prix,
-//                                           devise, vendeur, image, at } (Firestore)
-//   product_views/{productKey}_{uid}   = { productKey, uid, viewedAt } (Firestore,
-//                                          Phase 4 de la migration — voir
-//                                          docs/FIRESTORE_SCHEMA.md)
+//                                           devise, vendeur, image, at } (Phase 2)
+//   product_views/{productKey}_{uid}   = { productKey, uid, viewedAt } (Phase 4)
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false, reason: "rate_limited" });
   }
 
-  const db = app().database();
+  const firestore = app().firestore();
   const now = Date.now();
   const date = new Date(now).toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   const safePage = clean(page, 80);
@@ -54,16 +53,21 @@ export default async function handler(req, res) {
 
   try {
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
-    const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
-    await vref.child("n").transaction((c) => (c || 0) + 1);
-    await vref.update({ last: now, email: user.email });
+    // FieldValue.increment fonctionne même si le champ n'existe pas encore
+    // (part de 0) : une seule écriture atomique au lieu d'une transaction
+    // RTDB sur `n` suivie d'un update séparé sur last/email.
+    await firestore.collection("analytics_visits").doc(date + "_" + user.uid).set({
+      date, uid: user.uid,
+      n: app().firestore.FieldValue.increment(1),
+      last: now, email: user.email,
+    }, { merge: true });
 
     // 2) Fil d'activité global (les N dernières actions visibles côté admin).
-    await db.ref("activity_feed").push({ uid: user.uid, email: user.email, type: kind, page: safePage, at: now });
+    await firestore.collection("activity_feed").add({ uid: user.uid, email: user.email, type: kind, page: safePage, at: now });
 
     // 3) Géomancie : log avec localisation si fournie.
     if (kind === "geomancie") {
-      await db.ref("geomancie_logs").push({
+      await firestore.collection("geomancie_logs").add({
         uid: user.uid, email: user.email, at: now,
         lat: coord(lat, -90, 90), lng: coord(lng, -180, 180), city: clean(city, 80)
       });
@@ -77,7 +81,7 @@ export default async function handler(req, res) {
     if (kind === "product_view") {
       const key = safeKey(productKey);
       if (key) {
-        await app().firestore().collection("product_views").doc(key + "_" + user.uid).set({
+        await firestore.collection("product_views").doc(key + "_" + user.uid).set({
           productKey: key, uid: user.uid, viewedAt: now
         }, { merge: true });
       }
@@ -91,7 +95,7 @@ export default async function handler(req, res) {
     if (kind === "order" && order && typeof order === "object") {
       const key = safeKey(order.productKey);
       if (key) {
-        await app().firestore().collection("orders").add({
+        await firestore.collection("orders").add({
           uid: user.uid,
           productKey: key,
           produit: clean(order.produit, 120),

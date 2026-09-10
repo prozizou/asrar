@@ -27,9 +27,14 @@
 // voir le fichier de workflow. Le cron Vercel ci-dessus reste un filet de
 // secours si jamais le workflow GitHub est désactivé.
 //
-// Réutilise push_subscriptions/{uid}/{subId} (pages/api/push-subscribe.js) —
-// le MÊME abonnement navigateur que l'heure planétaire, sans exiger de
-// position (lat/lng optionnels pour ce endpoint).
+// Réutilise la collection Firestore push_subscriptions (pages/api/
+// push-subscribe.js) — le MÊME abonnement navigateur que l'heure planétaire,
+// sans exiger de position (lat/lng optionnels pour ce endpoint).
+//
+// MIGRATION FIRESTORE (Phase 6, voir docs/FIRESTORE_SCHEMA.md) : plus aucun
+// accès RTDB dans ce fichier — reminder_settings, push_subscriptions,
+// zikr_groups/members (Phase 5) et cron_health sont désormais tous sur
+// Firestore.
 
 const webpush = require("web-push");
 const { app } = require("../../../server/grant");
@@ -48,22 +53,18 @@ export default async function handler(req, res) {
   }
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
-  const db = app().database();
-  // zikr_groups/zikr_members : Firestore depuis la Phase 5 de la migration
-  // (voir docs/FIRESTORE_SCHEMA.md) — reminder_settings/push_subscriptions/
-  // cron_health restent sur la RTDB (`db`), Phase 6 à venir.
   const firestore = app().firestore();
   const now = new Date();
   const stats = { wirdSent: 0, wirdSkipped: 0, sessionSent: 0, sessionSkipped: 0, removed: 0, errors: 0 };
 
   try {
-    await Promise.all([sendWirdReminders(db, now, stats), sendSessionReminders(firestore, db, now, stats)]);
+    await Promise.all([sendWirdReminders(firestore, now, stats), sendSessionReminders(firestore, now, stats)]);
     // Dernière exécution + statistiques — consultable côté admin (console
     // Firebase, même principe que les autres nœuds admin-only du projet) pour
     // repérer un planificateur externe qui se serait arrêté (surveillance,
     // revue de sécurité). Best-effort : ne doit jamais faire échouer la
     // réponse si l'écriture rate.
-    db.ref("cron_health/reminders").set({ at: now.getTime(), ...stats }).catch(() => {});
+    firestore.collection("cron_health").doc("reminders").set({ at: now.getTime(), ...stats }).catch(() => {});
     return res.status(200).json({ ok: true, ...stats });
   } catch (e) {
     await reportError("cron:reminders", e);
@@ -74,18 +75,17 @@ export default async function handler(req, res) {
 // Envoie `payload` à TOUS les abonnements push de `uid`, en nettoyant ceux
 // devenus invalides (même politique que pages/api/cron/planet-push.js) —
 // jamais bloquant : une erreur d'envoi n'empêche pas les autres.
-async function pushToUser(db, uid, payload, stats) {
-  const subsSnap = await db.ref("push_subscriptions/" + uid).once("value");
-  if (!subsSnap.exists()) return;
+async function pushToUser(firestore, uid, payload, stats) {
+  const subsSnap = await firestore.collection("push_subscriptions").where("uid", "==", uid).get();
+  if (subsSnap.empty) return;
   const tasks = [];
-  subsSnap.forEach((subSnap) => {
-    const key = subSnap.key;
-    const sub = subSnap.val() || {};
+  subsSnap.forEach((doc) => {
+    const sub = doc.data() || {};
     if (!sub.endpoint || !sub.keys) return;
     tasks.push(
       webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) {
-          await db.ref("push_subscriptions/" + uid + "/" + key).remove();
+          await doc.ref.delete();
           stats.removed++;
         } else {
           await reportError("cron:reminders", e, { uid });
@@ -98,12 +98,12 @@ async function pushToUser(db, uid, payload, stats) {
 }
 
 // ── Wird quotidien ───────────────────────────────────────────────
-async function sendWirdReminders(db, now, stats) {
-  const snap = await db.ref("reminder_settings").once("value");
+async function sendWirdReminders(firestore, now, stats) {
+  const snap = await firestore.collection("reminder_settings").get();
   const tasks = [];
-  snap.forEach((userSnap) => {
-    const uid = userSnap.key;
-    const settings = userSnap.val() || {};
+  snap.forEach((doc) => {
+    const uid = doc.id;
+    const settings = doc.data() || {};
     if (!shouldSendWird(settings, now)) { stats.wirdSkipped++; return; }
     const payload = JSON.stringify({
       title: '🤲 Rappel de wird',
@@ -116,8 +116,8 @@ async function sendWirdReminders(db, now, stats) {
       tag: 'wird-reminder',
     });
     tasks.push(
-      pushToUser(db, uid, payload, stats).then(() =>
-        db.ref("reminder_settings/" + uid).update({
+      pushToUser(firestore, uid, payload, stats).then(() =>
+        doc.ref.update({
           lastSentDate: localDateKey(now, settings.tz || "UTC"),
           lastSentAt: now.getTime(),
         })
@@ -130,10 +130,8 @@ async function sendWirdReminders(db, now, stats) {
 // ── Session Zikr collectif à venir ──────────────────────────────
 // Prévient le créateur ET tous les membres déjà acceptés (sous-collection
 // members) — pas les demandes en attente, qui n'ont pas encore accès au
-// groupe. zikr_groups/members : Firestore depuis la Phase 5 de la migration
-// (voir docs/FIRESTORE_SCHEMA.md) ; push_subscriptions (pushToUser) reste
-// sur la RTDB (`db`), Phase 6 à venir.
-async function sendSessionReminders(firestore, db, now, stats) {
+// groupe.
+async function sendSessionReminders(firestore, now, stats) {
   const snap = await firestore.collection("zikr_groups").get();
   const tasks = [];
   snap.forEach((g) => {
@@ -155,7 +153,7 @@ async function sendSessionReminders(firestore, db, now, stats) {
         const uids = new Set();
         membersSnap.forEach((m) => uids.add(m.id));
         if (v.ownerUid) uids.add(v.ownerUid);
-        await Promise.all([...uids].map((uid) => pushToUser(db, uid, payload, stats)));
+        await Promise.all([...uids].map((uid) => pushToUser(firestore, uid, payload, stats)));
         await g.ref.update({ sessionReminderSent: true });
         stats.sessionSent++;
       })()
