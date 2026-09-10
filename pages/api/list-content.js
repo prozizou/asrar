@@ -5,9 +5,9 @@
 //   - kind="secret" exige "cat" parmi les configurations.
 //   - kind="book"   ignore "cat".
 //
-// kind="product" (Marché) lit la collection Firestore `products`, comme
-// get-content.js — voir son commentaire d'en-tête (Phase 2 de la migration,
-// docs/FIRESTORE_SCHEMA.md). Les autres types restent sur la RTDB.
+// Lit Firestore (voir docs/FIRESTORE_SCHEMA.md) : "product" depuis la Phase 2
+// de la migration, "secret"/"book"/"formation"/"verset"/"asma" depuis la
+// Phase 3 — plus aucune lecture RTDB dans ce fichier.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -29,28 +29,16 @@ export default async function handler(req, res) {
   try {
     await verifyUser(idToken); // identité requise (page réservée aux connectés)
 
+    const snap = await app().firestore().collection(src.collection(cat)).get();
     const items = [];
-    if (kind === "product") {
-      const snap = await app().firestore().collection("products").get();
-      snap.forEach((doc) => {
-        const v = doc.data() || {};
-        const meta = { _key: doc.id };
-        for (const k of Object.keys(v)) {
-          if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
-        }
-        items.push(meta);
-      });
-    } else {
-      const snap = await app().database().ref(src.ref(cat)).once("value");
-      snap.forEach(child => {
-        const v = child.val() || {};
-        const meta = { _key: child.key };
-        for (const k of Object.keys(v)) {
-          if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
-        }
-        items.push(meta);
-      });
-    }
+    snap.forEach((doc) => {
+      const v = doc.data() || {};
+      const meta = { _key: doc.id };
+      for (const k of Object.keys(v)) {
+        if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
+      }
+      items.push(meta);
+    });
 
     return res.status(200).json({ items });
   } catch (e) {

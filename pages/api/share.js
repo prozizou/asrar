@@ -83,17 +83,15 @@ export default async function handler(req, res) {
 
     if (SHARE_SHOW_TITLES) {
       try {
-        // Marché (kind="product") : Firestore depuis la Phase 2 de la
-        // migration (voir docs/FIRESTORE_SCHEMA.md) — det_produits (RTDB) ne
-        // reçoit plus les créations/modifications depuis pages/api/shop.js.
+        // secret/book/product : tous sur Firestore (Phase 2 pour product,
+        // Phase 3 pour secret/book — voir docs/FIRESTORE_SCHEMA.md). Le Zikr
+        // collectif (zikr_groups) reste sur la RTDB (Phase 5 à venir).
         let item;
         if (isZikr) {
           item = (await app().database().ref("zikr_groups/" + key).once("value")).val();
-        } else if (kind === "product") {
-          const snap = await app().firestore().collection("products").doc(key).get();
-          item = snap.exists ? snap.data() : null;
         } else {
-          item = (await app().database().ref(src.ref(cat) + "/" + key).once("value")).val();
+          const snap = await app().firestore().collection(src.collection(cat)).doc(key).get();
+          item = snap.exists ? snap.data() : null;
         }
         if (item) {
           const t = pick(item, TITLE_FIELDS);

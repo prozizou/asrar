@@ -6,6 +6,13 @@
 // admin-asrar-pro (formation_access/{formationKey}/{emailKey}, mêmes
 // conventions que purchased_user — voir admin-asrar-pro/api/formation-access.js).
 //
+// MIGRATION FIRESTORE (Phase 3, voir docs/FIRESTORE_SCHEMA.md) : le lien
+// Google Meet (meetLink) est lu depuis la collection Firestore `formations`.
+// formation_access/{formationKey}/{emailKey} (le crédit de minutes lui-même)
+// RESTE sur la RTDB : ce nœud est géré par une application d'administration
+// externe (admin-asrar-pro, hors de ce dépôt) qui n'a pas été migrée — aucun
+// couplage avec le reste de cette migration.
+//
 // Body (JSON) : { idToken, action: "check"|"join", key }
 //   • "check" : lecture seule — minutes créditées pour CET utilisateur sur
 //     CETTE formation (0 si aucune) — décide si on affiche "Rejoindre" ou le
@@ -61,8 +68,8 @@ export default async function handler(req, res) {
 
     // action === "join" : le lien est vérifié D'ABORD (voir le commentaire
     // d'en-tête) — un lien absent ne débite jamais de crédit.
-    const linkSnap = await db.ref(SOURCES.formation.ref() + "/" + key + "/meetLink").once("value");
-    const meetLink = linkSnap.val();
+    const formationSnap = await app().firestore().collection(SOURCES.formation.collection()).doc(key).get();
+    const meetLink = formationSnap.exists ? formationSnap.data().meetLink : null;
     if (!meetLink) {
       return res.status(503).json({
         error: "Aucun lien de visioconférence configuré pour cette formation. Contactez l'administration.",

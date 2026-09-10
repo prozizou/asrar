@@ -38,12 +38,10 @@ export default async function handler(req, res) {
   }
 
   const db = app().database();
-  // Accès/paywall (grant-access/revoke-access/list-access, Phase 1) ET
-  // produits/vendeurs/commandes (list-products/save-product/delete-product,
-  // list-sellers/seller-action, list-orders, Phase 2 — voir
-  // docs/FIRESTORE_SCHEMA.md) sont sur Firestore. Toutes les AUTRES actions de
-  // ce fichier (secrets, livres, formations, visites/activité/géomancie)
-  // restent sur la RTDB (`db` ci-dessus) jusqu'à leurs phases respectives.
+  // Accès/paywall (Phase 1), produits/vendeurs/commandes (Phase 2) ET
+  // secrets/livres/formations (Phase 3 — voir docs/FIRESTORE_SCHEMA.md) sont
+  // sur Firestore. Seules les actions restantes (visites/activité/géomancie)
+  // restent sur la RTDB (`db` ci-dessus), jusqu'à leur phase.
   const firestore = app().firestore();
 
   try {
@@ -53,7 +51,7 @@ export default async function handler(req, res) {
       case "list-secrets": {
         const cat = body.cat;
         if (!SECRET_CATS.includes(cat)) return res.status(400).json({ error: "Catégorie inconnue." });
-        return res.json({ items: await readAll(db, "db_sirr_" + cat) });
+        return res.json({ items: await readAllFs(firestore, "secrets_" + cat) });
       }
       case "save-secret": {
         const cat = body.cat;
@@ -61,18 +59,19 @@ export default async function handler(req, res) {
         const faida = str(body.faida, 200);
         if (!faida) return res.status(400).json({ error: "Titre (faida) requis." });
         const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
-        const key = body.key || db.ref("db_sirr_" + cat).push().key;
-        await db.ref("db_sirr_" + cat + "/" + key).update(rec);
+        const col = firestore.collection("secrets_" + cat);
+        const key = body.key || col.doc().id;
+        await col.doc(key).set(rec, { merge: true });
         return res.json({ ok: true, key });
       }
       case "delete-secret": {
         const cat = body.cat;
         if (!SECRET_CATS.includes(cat) || !body.key) return res.status(400).json({ error: "Paramètres manquants." });
-        await db.ref("db_sirr_" + cat + "/" + body.key).remove();
+        await firestore.collection("secrets_" + cat).doc(body.key).delete();
         return res.json({ ok: true });
       }
 
-      case "list-books": return res.json({ items: await readAll(db, "almaqtab") });
+      case "list-books": return res.json({ items: await readAllFs(firestore, "books") });
       case "save-book": {
         const titre = str(body.titre, 200);
         if (!titre) return res.status(400).json({ error: "Titre requis." });
@@ -80,17 +79,18 @@ export default async function handler(req, res) {
           titre, auteur: str(body.auteur, 120), description: str(body.description, 2000),
           img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
-        const key = body.key || db.ref("almaqtab").push().key;
-        await db.ref("almaqtab/" + key).update(rec);
+        const col = firestore.collection("books");
+        const key = body.key || col.doc().id;
+        await col.doc(key).set(rec, { merge: true });
         return res.json({ ok: true, key });
       }
       case "delete-book": {
         if (!body.key) return res.status(400).json({ error: "Clé requise." });
-        await db.ref("almaqtab/" + body.key).remove();
+        await firestore.collection("books").doc(body.key).delete();
         return res.json({ ok: true });
       }
 
-      case "list-formations": return res.json({ items: await readAll(db, "formations") });
+      case "list-formations": return res.json({ items: await readAllFs(firestore, "formations") });
       case "save-formation": {
         const titre = str(body.titre, 150);
         if (!titre) return res.status(400).json({ error: "Titre requis." });
@@ -104,13 +104,14 @@ export default async function handler(req, res) {
           meetLink: safeUrl(body.meetLink, 500),
           updatedAt: Date.now()
         };
-        const key = body.key || db.ref("formations").push().key;
-        await db.ref("formations/" + key).update(rec);
+        const col = firestore.collection("formations");
+        const key = body.key || col.doc().id;
+        await col.doc(key).set(rec, { merge: true });
         return res.json({ ok: true, key });
       }
       case "delete-formation": {
         if (!body.key) return res.status(400).json({ error: "Clé requise." });
-        await db.ref("formations/" + body.key).remove();
+        await firestore.collection("formations").doc(body.key).delete();
         return res.json({ ok: true });
       }
 
@@ -254,14 +255,17 @@ async function getStats(db, firestore) {
     series: perDay.slice(0, 14).reverse() // 14 derniers jours, ordre chronologique
   };
 
-  // products/sellers : Firestore depuis la Phase 2 (voir docs/FIRESTORE_SCHEMA.md).
-  const [productsCountSnap, sellersSnap, books, formations] = await Promise.all([
+  // products/sellers : Firestore depuis la Phase 2 ; books/formations/secrets
+  // depuis la Phase 3 (voir docs/FIRESTORE_SCHEMA.md).
+  const [productsCountSnap, sellersSnap, booksCountSnap, formationsCountSnap] = await Promise.all([
     firestore.collection("products").count().get(),
     firestore.collection("sellers").get(),
-    countChildren(db, "almaqtab"),
-    countChildren(db, "formations")
+    firestore.collection("books").count().get(),
+    firestore.collection("formations").count().get()
   ]);
   const products = productsCountSnap.data().count;
+  const books = booksCountSnap.data().count;
+  const formations = formationsCountSnap.data().count;
   let activeSellers = 0;
   sellersSnap.forEach((d) => {
     const v = d.data() || {};
@@ -269,7 +273,10 @@ async function getStats(db, firestore) {
   });
 
   const secretCounts = {};
-  await Promise.all(SECRET_CATS.map(async (c) => { secretCounts[c] = await countChildren(db, "db_sirr_" + c); }));
+  await Promise.all(SECRET_CATS.map(async (c) => {
+    const snap = await firestore.collection("secrets_" + c).count().get();
+    secretCounts[c] = snap.data().count;
+  }));
 
   return {
     visits,
@@ -283,15 +290,6 @@ function uniqUsers(snaps) {
   const set = new Set();
   snaps.forEach((s) => s.forEach((c) => set.add(c.key)));
   return set.size;
-}
-async function countChildren(db, path) {
-  return (await db.ref(path).once("value")).numChildren();
-}
-async function readAll(db, path) {
-  const snap = await db.ref(path).once("value");
-  const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
-  return out;
 }
 async function readAllFs(firestore, collection) {
   const snap = await firestore.collection(collection).get();
