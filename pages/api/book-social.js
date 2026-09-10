@@ -1,8 +1,11 @@
 // api/book-social.js — Likes & commentaires des livres Almaqtab (utilisateurs connectés).
 //
-// Stockage :
-//   book_likes/{bookKey}/{uid}      = true
-//   book_comments/{bookKey}/{push}  = { uid, name, text, at }
+// MIGRATION FIRESTORE (Phase 4, voir docs/FIRESTORE_SCHEMA.md) :
+//   book_likes/{bookKey}      = { bookKey, uids: {uid: true}, count }
+//   book_comments/{id}        = { bookKey, uid, name, text, at }
+//   book_social_meta/{uid}    = { lastComment }
+// remplacent book_likes/{bookKey}/{uid}, book_comments/{bookKey}/{push} et
+// book_social_meta/{uid}/lastComment (RTDB).
 //
 // Body (JSON) : { idToken, action, bookKey?, keys?, text? }
 //   action="counts"  { keys:[...] } → { stats: { key:{likes,liked,comments} } }
@@ -15,8 +18,21 @@ const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
 
-const BAD_KEY = /[.#$\[\]\/\u0000-\u001F\u007F]/;
-const validKey = (k) => { const s = String(k ?? ""); return s.length > 0 && s.length <= 768 && !BAD_KEY.test(s); };
+const BAD_KEY = /[.#$\[\]\/]/;
+// Écarte aussi les caractères de contrôle non imprimables (retour chariot,
+// tabulation…), vérifiés un par un plutôt que via une plage dans le regex
+// ci-dessus.
+function hasControlChars(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c <= 0x1F || c === 0x7F) return true;
+  }
+  return false;
+}
+const validKey = (k) => {
+  const s = String(k ?? "");
+  return s.length > 0 && s.length <= 768 && !BAD_KEY.test(s) && !hasControlChars(s);
+};
 const nameFromEmail = (e) => {
   const local = String(e || "").split("@")[0] || "Utilisateur";
   return local.slice(0, 40);
@@ -33,66 +49,76 @@ export default async function handler(req, res) {
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
-  const db = app().database();
+  const firestore = app().firestore();
   try {
-    // Compteurs pour une liste de livres (2 lectures max).
+    // Compteurs pour une liste de livres : lecture directe par clé (les
+    // documents book_likes/book_comments sont indexés par bookKey, jamais un
+    // scan intégral) — voir docs/FIRESTORE_SCHEMA.md.
     if (action === "counts") {
       const list = Array.isArray(keys) ? keys.filter(validKey).slice(0, 400) : [];
-      const [likesSnap, commSnap] = await Promise.all([
-        db.ref("book_likes").once("value"),
-        db.ref("book_comments").once("value")
-      ]);
-      const likes = likesSnap.val() || {}, comm = commSnap.val() || {};
       const stats = {};
-      for (const k of list) {
-        const lk = likes[k] || {};
+      await Promise.all(list.map(async (k) => {
+        const [likeSnap, countSnap] = await Promise.all([
+          firestore.collection("book_likes").doc(k).get(),
+          firestore.collection("book_comments").where("bookKey", "==", k).count().get()
+        ]);
+        const uids = likeSnap.exists ? (likeSnap.data().uids || {}) : {};
         stats[k] = {
-          likes: Object.keys(lk).length,
-          liked: !!lk[user.uid],
-          comments: comm[k] ? Object.keys(comm[k]).length : 0
+          likes: likeSnap.exists ? Number(likeSnap.data().count) || 0 : 0,
+          liked: !!uids[user.uid],
+          comments: countSnap.data().count
         };
-      }
+      }));
       return res.status(200).json({ stats });
     }
 
     if (!validKey(bookKey)) return res.status(400).json({ error: "Livre invalide." });
+    const likeRef = firestore.collection("book_likes").doc(bookKey);
 
     if (action === "like") {
-      const ref = db.ref("book_likes/" + bookKey + "/" + user.uid);
-      const cur = (await ref.once("value")).val();
-      if (cur) await ref.remove(); else await ref.set(true);
-      const all = (await db.ref("book_likes/" + bookKey).once("value")).val() || {};
-      return res.status(200).json({ likes: Object.keys(all).length, liked: !cur });
+      let liked, likeCount;
+      await firestore.runTransaction(async (tx) => {
+        const snap = await tx.get(likeRef);
+        const uids = { ...((snap.exists && snap.data().uids) || {}) };
+        const already = !!uids[user.uid];
+        if (already) delete uids[user.uid]; else uids[user.uid] = true;
+        const count = Object.keys(uids).length;
+        tx.set(likeRef, { bookKey, uids, count });
+        liked = !already;
+        likeCount = count;
+      });
+      return res.status(200).json({ likes: likeCount, liked });
     }
 
     if (action === "list") {
-      const [likesSnap, commSnap] = await Promise.all([
-        db.ref("book_likes/" + bookKey).once("value"),
-        db.ref("book_comments/" + bookKey).orderByChild("at").once("value")
+      const [likeSnap, commentsSnap] = await Promise.all([
+        likeRef.get(),
+        firestore.collection("book_comments").where("bookKey", "==", bookKey).orderBy("at").get()
       ]);
-      const lk = likesSnap.val() || {};
+      const uids = likeSnap.exists ? (likeSnap.data().uids || {}) : {};
       const comments = [];
-      commSnap.forEach((c) => {
-        const v = c.val() || {};
+      commentsSnap.forEach((doc) => {
+        const v = doc.data() || {};
         comments.push({ name: v.name || "Utilisateur", text: v.text || "", at: v.at || 0 });
       });
       comments.reverse(); // plus récents en premier
-      return res.status(200).json({ likes: Object.keys(lk).length, liked: !!lk[user.uid], comments });
+      return res.status(200).json({ likes: Object.keys(uids).length, liked: !!uids[user.uid], comments });
     }
 
     if (action === "comment") {
       const t = String(text || "").trim().slice(0, 500);
       if (!t) return res.status(400).json({ error: "Commentaire vide." });
       // Anti-spam : cooldown de 15 s par utilisateur entre deux commentaires.
-      const metaRef = db.ref("book_social_meta/" + user.uid + "/lastComment");
-      const last = (await metaRef.once("value")).val() || 0;
+      const metaRef = firestore.collection("book_social_meta").doc(user.uid);
+      const metaSnap = await metaRef.get();
+      const last = metaSnap.exists ? (metaSnap.data().lastComment || 0) : 0;
       const now = Date.now();
       if (now - last < 15000) {
         return res.status(429).json({ error: "Patientez quelques secondes avant de commenter à nouveau." });
       }
-      const rec = { uid: user.uid, name: nameFromEmail(user.email), text: t, at: now };
-      await db.ref("book_comments/" + bookKey).push(rec);
-      await metaRef.set(now);
+      const rec = { bookKey, uid: user.uid, name: nameFromEmail(user.email), text: t, at: now };
+      await firestore.collection("book_comments").add(rec);
+      await metaRef.set({ lastComment: now }, { merge: true });
       return res.status(200).json({ ok: true, comment: { name: rec.name, text: rec.text, at: rec.at } });
     }
 
