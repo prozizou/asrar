@@ -37,16 +37,13 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "Accès administrateur requis." });
   }
 
-  const db = app().database();
-  // Accès/paywall (Phase 1), produits/vendeurs/commandes (Phase 2) ET
-  // secrets/livres/formations (Phase 3 — voir docs/FIRESTORE_SCHEMA.md) sont
-  // sur Firestore. Seules les actions restantes (visites/activité/géomancie)
-  // restent sur la RTDB (`db` ci-dessus), jusqu'à leur phase.
+  // Toutes les actions de ce fichier sont sur Firestore depuis la Phase 6
+  // (voir docs/FIRESTORE_SCHEMA.md) — plus aucun accès RTDB ici.
   const firestore = app().firestore();
 
   try {
     switch (action) {
-      case "stats":          return res.json(await getStats(db, firestore));
+      case "stats":          return res.json(await getStats(firestore));
 
       case "list-secrets": {
         const cat = body.cat;
@@ -172,9 +169,9 @@ export default async function handler(req, res) {
       }
 
       case "list-activity":
-        return res.json({ items: await readFeed(db, "activity_feed", 150) });
+        return res.json({ items: await readFeed(firestore, "activity_feed", 150) });
       case "list-geomancie":
-        return res.json({ items: await readFeed(db, "geomancie_logs", 150) });
+        return res.json({ items: await readFeed(firestore, "geomancie_logs", 150) });
 
       // ── Accès abonnés : activation MANUELLE par l'administration (par e-mail) ──
       // grant-access {email, days?, level?}
@@ -234,17 +231,20 @@ export default async function handler(req, res) {
 };
 
 // ---------- Statistiques ----------
-async function getStats(db, firestore) {
+async function getStats(firestore) {
   const today = new Date();
   const dates = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(today.getTime() - i * DAY_MS);
     dates.push(d.toISOString().slice(0, 10));
   }
-  const snaps = await Promise.all(dates.map((d) => db.ref("analytics/visits/" + d).once("value")));
+  // analytics_visits : une requête par jour (égalité simple sur `date`, pas
+  // d'index composite nécessaire) — même structure que le scan RTDB
+  // d'origine (un nœud par jour), voir docs/FIRESTORE_SCHEMA.md.
+  const snaps = await Promise.all(dates.map((d) => firestore.collection("analytics_visits").where("date", "==", d).get()));
   const perDay = snaps.map((s, i) => {
     let unique = 0, total = 0;
-    s.forEach((c) => { unique += 1; total += (c.val() && c.val().n) || 0; });
+    s.forEach((c) => { unique += 1; total += Number(c.data().n) || 0; });
     return { date: dates[i], unique, total };
   });
   const sum = (arr, k) => arr.reduce((a, x) => a + x[k], 0);
@@ -281,14 +281,14 @@ async function getStats(db, firestore) {
   return {
     visits,
     totals: { products, sellers: sellersSnap.size, activeSellers, books, formations, secrets: secretCounts },
-    recentActivity: await readFeed(db, "activity_feed", 30),
-    recentGeomancie: await readFeed(db, "geomancie_logs", 30)
+    recentActivity: await readFeed(firestore, "activity_feed", 30),
+    recentGeomancie: await readFeed(firestore, "geomancie_logs", 30)
   };
 }
 
 function uniqUsers(snaps) {
   const set = new Set();
-  snaps.forEach((s) => s.forEach((c) => set.add(c.key)));
+  snaps.forEach((s) => s.forEach((c) => set.add(c.data().uid)));
   return set.size;
 }
 async function readAllFs(firestore, collection) {
@@ -297,11 +297,13 @@ async function readAllFs(firestore, collection) {
   snap.forEach((d) => out.push({ _key: d.id, ...d.data() }));
   return out;
 }
-async function readFeed(db, path, n) {
-  const snap = await db.ref(path).orderByChild("at").limitToLast(n).once("value");
+// orderBy sur un seul champ (`at`, DESC) : renvoie directement les N plus
+// récents en premier — pas besoin de limitToLast+reverse comme sur la RTDB.
+async function readFeed(firestore, path, n) {
+  const snap = await firestore.collection(path).orderBy("at", "desc").limit(n).get();
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
-  return out.reverse(); // plus récent d'abord
+  snap.forEach((d) => out.push({ _key: d.id, ...d.data() }));
+  return out;
 }
 
 function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max || 200); }

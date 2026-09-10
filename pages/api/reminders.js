@@ -8,9 +8,10 @@
 //   action="get" → préférences actuelles (valeurs par défaut si jamais réglées)
 //   action="set" { wirdEnabled, wirdHour, wirdMinute, tz } → les enregistre
 //
-// Écrit reminder_settings/{uid} = { wirdEnabled, wirdHour, wirdMinute, tz,
-//   lastSentDate?, updatedAt } — lastSentDate (clé anti-doublon, "YYYY-MM-DD"
-//   dans `tz`) n'est écrit QUE par le cron, jamais ici.
+// MIGRATION FIRESTORE (Phase 6, voir docs/FIRESTORE_SCHEMA.md) : document
+// Firestore reminder_settings/{uid} = { wirdEnabled, wirdHour, wirdMinute,
+//   tz, lastSentDate?, updatedAt } — lastSentDate (clé anti-doublon,
+//   "YYYY-MM-DD" dans `tz`) n'est écrit QUE par le cron, jamais ici.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -38,13 +39,12 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de requêtes, réessayez dans une minute." });
   }
 
-  const db = app().database();
-  const ref = db.ref("reminder_settings/" + user.uid);
+  const ref = app().firestore().collection("reminder_settings").doc(user.uid);
 
   try {
     if (action === "get") {
-      const snap = await ref.once("value");
-      const v = snap.val() || {};
+      const snap = await ref.get();
+      const v = snap.exists ? snap.data() : {};
       return res.status(200).json({
         wirdEnabled: v.wirdEnabled === true,
         wirdHour: cleanHour(v.wirdHour) ?? DEFAULT_HOUR,
@@ -59,13 +59,13 @@ export default async function handler(req, res) {
       if (hour == null || minute == null) {
         return res.status(400).json({ error: "Heure de rappel invalide." });
       }
-      await ref.update({
+      await ref.set({
         wirdEnabled: !!wirdEnabled,
         wirdHour: hour,
         wirdMinute: minute,
         tz: cleanTimeZone(tz),
         updatedAt: Date.now(),
-      });
+      }, { merge: true });
       return res.status(200).json({ ok: true });
     }
 
