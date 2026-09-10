@@ -1,13 +1,16 @@
 # Schéma Firestore — migration depuis Realtime Database
 
-> **Statut : Phases 0 à 2 de la migration RTDB → Firestore.** Ce document
+> **Statut : Phases 0 à 3 de la migration RTDB → Firestore.** Ce document
 > décrit la collection Firestore cible pour chaque nœud RTDB actuel — voir
 > `scripts/migrate-to-firestore.js` pour l'import des données et
 > `firestore.rules`/`firestore.indexes.json` pour les règles/index. Le
-> paywall (`server/access.js`, Phase 1) et les commandes/parrainage/boutique
+> paywall (`server/access.js`, Phase 1), les commandes/parrainage/boutique
 > (`orders.js`, `referral.js`, `shop.js`, `sellers.js`, `track.js`, `wa.js`,
-> Phase 2) lisent et écrivent désormais Firestore. Les autres modules
-> (contenu, social, Zikr collectif, reste) sont décrits en bas de ce document
+> Phase 2) et le contenu (`get-content.js`, `list-content.js`, `get-theme.js`,
+> `formation-access.js`, `sources.js`, `admin.js`, Phase 3) lisent et écrivent
+> désormais Firestore — y compris les 3 lectures de secours côté client
+> (`lib/alqalam.js`, `lib/benefits.js`, `lib/rouwhania.js`). Les autres
+> modules (social, Zikr collectif, reste) sont décrits en bas de ce document
 > et migrent phase par phase.
 
 ## Principe
@@ -141,16 +144,22 @@ polices Al-Qalam personnalisées). Importés pour ne rien perdre, mais
 | `legacy_data` | `planner` | `planner` (doc unique, structure d'origine conservée) |
 | `legacy_data` | `alqalam_fonts` | `alqalam_fonts` (doc unique) |
 
-## Suite (phases 3 à 6, hors périmètre des livraisons précédentes)
+## Suite (phases 4 à 6, hors périmètre des livraisons précédentes)
 
 Déjà migrées : Phase 1 (`server/access.js`, `pages/api/admin.js` grant/
-revoke/list-access → paywall) et Phase 2 (`orders.js`, `referral.js`,
+revoke/list-access → paywall), Phase 2 (`orders.js`, `referral.js`,
 `shop.js`, `server/sellers.js`, `track.js`, `wa.js`, et les sections
-produits/vendeurs/commandes de `admin.js` → commandes/parrainage/boutique).
+produits/vendeurs/commandes de `admin.js` → commandes/parrainage/boutique) et
+Phase 3 (`sources.js`, `get-content.js`, `list-content.js`, `get-theme.js`,
+`formation-access.js`, les sections secrets/livres/formations de `admin.js`,
+et les 3 lectures de secours côté client `lib/alqalam.js`/`benefits.js`/
+`rouwhania.js` → contenu). `formation_access/{clé}/{emailKey}` (le crédit de
+minutes de visioconférence, géré par une app d'administration externe hors
+de ce dépôt) reste sur la RTDB — aucun couplage avec le reste de la
+migration, donc pas de raison de le migrer ici.
 
 Voir le plan de migration validé pour le détail des phases restantes — en
-résumé : `sources.js`/`get-content.js` → contenu (Phase 3) ; `social.js`/
-`book-social.js` → social (Phase 4) ; `zikr.js` → Zikr collectif (Phase 5) ;
-le reste — crons, push, admin (Phase 6). Chacune est une PR séparée, testée
-avant la suivante. La RTDB reste en place comme filet de secours jusqu'à la
-fin de la phase 6.
+résumé : `social.js`/`book-social.js` → social (Phase 4) ; `zikr.js` → Zikr
+collectif (Phase 5) ; le reste — crons, push, admin (Phase 6). Chacune est
+une PR séparée, testée avant la suivante. La RTDB reste en place comme filet
+de secours jusqu'à la fin de la phase 6.

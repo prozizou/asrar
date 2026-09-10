@@ -3,12 +3,9 @@
 //
 // Body (JSON) : { idToken, kind: "secret"|"book", cat?, key }
 //
-// kind="product" (Marché) lit la collection Firestore `products` : depuis la
-// Phase 2 de la migration (voir docs/FIRESTORE_SCHEMA.md), c'est là que
-// pages/api/shop.js et pages/api/admin.js écrivent — lire encore
-// det_produits (RTDB) ici renverrait des fiches produit périmées ou
-// introuvables pour tout ce qui a été créé/modifié depuis. Les autres types
-// (secret/book/verset/asma/formation) restent sur la RTDB (Phase 3 à venir).
+// Lit Firestore (voir docs/FIRESTORE_SCHEMA.md) : "product" depuis la Phase 2
+// de la migration, "secret"/"book" depuis la Phase 3 — plus aucune lecture
+// RTDB dans ce fichier.
 
 const { verifyUser, hasActiveAccess } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -37,14 +34,8 @@ export default async function handler(req, res) {
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 
-    let item;
-    if (kind === "product") {
-      const snap = await app().firestore().collection("products").doc(key).get();
-      item = snap.exists ? snap.data() : null;
-    } else {
-      const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
-      item = snap.val();
-    }
+    const snap = await app().firestore().collection(src.collection(cat)).doc(key).get();
+    const item = snap.exists ? snap.data() : null;
     if (!item) return res.status(404).json({ error: "Élément introuvable." });
 
     // Champs privés (coordonnées vendeur) : jamais exposés au navigateur.

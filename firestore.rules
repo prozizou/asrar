@@ -7,9 +7,16 @@
 // (lib/alqalam.js, lib/benefits.js, lib/rouwhania.js : lectures de secours
 // à froid, jamais de listener temps réel, jamais d'écriture).
 //
-// Voir rules/README.md pour l'historique de resserrement de la version
-// RTDB — même statut ici : reconstitution PAS déployée automatiquement,
-// à comparer avec la console Firebase avant tout `firebase deploy`.
+// DÉPLOIEMENT : pas de `firebase` CLI dans cet environnement — poussées
+// directement via l'API REST Firebase Rules (firebaserules.googleapis.com,
+// create ruleset + update release cloud.firestore) avec le compte de
+// service. Ce fichier DOIT rester synchronisé avec la version réellement
+// déployée : toute modification ici doit être repoussée par le même moyen
+// (ou `firebase deploy --only firestore:rules` si la CLI devient
+// disponible), sinon la version en ligne diverge silencieusement de ce
+// fichier — comme ça a été le cas jusqu'à la Phase 3 (règles par défaut
+// "tout refusé" restées en place depuis la création de la base, malgré ce
+// fichier déjà présent depuis la Phase 0).
 rules_version = '2';
 
 service cloud.firestore {
