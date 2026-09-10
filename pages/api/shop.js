@@ -6,15 +6,15 @@
 //   action="save-product"  → { product:{ key?, produit, Prix, devise, Image, description, number, chain } }
 //   action="delete-product"→ { key }                                  (propriétaire)
 //
-// MIGRATION FIRESTORE (Phase 2, voir docs/FIRESTORE_SCHEMA.md) : les produits
-// vivent dans la collection `products` (ex-det_produits/{key} RTDB, mêmes clés
-// préservées — voir lib/share.js, liens de partage déjà diffusés), les
-// vendeurs dans `sellers` et les boutiques "profil" dans `shop_profiles`
+// MIGRATION FIRESTORE (Phases 2 et 4, voir docs/FIRESTORE_SCHEMA.md) : les
+// produits vivent dans la collection `products` (ex-det_produits/{key} RTDB,
+// mêmes clés préservées — voir lib/share.js, liens de partage déjà diffusés),
+// les vendeurs dans `sellers` et les boutiques "profil" dans `shop_profiles`
 // (ex-profile_clients). La recherche des produits d'un vendeur (myProducts)
 // est désormais une requête indexée (where uid/email) au lieu d'un scan
-// intégral du nœud RTDB. `views`/`ratings`/`comments` (action="stats") restent
-// sur la RTDB jusqu'à la Phase 4 (social) ; seul `orders_count` (Phase 2,
-// collection `order_counts`) bascule ici, car il vit avec les commandes.
+// intégral du nœud RTDB. `action="stats"` lit `product_views`/`likes`/
+// `comments`/`order_counts`, tous par requête bornée aux SEULS produits de ce
+// vendeur — plus aucun accès RTDB dans ce fichier depuis la Phase 4.
 // Écriture réservée au serveur (Admin SDK) : on impose uid + vendeur + email
 // côté serveur, jamais depuis le client. Seul un vendeur ACTIF (abonnement
 // boutique en cours) peut écrire/supprimer, et uniquement SES propres produits.
@@ -36,9 +36,6 @@ export default async function handler(req, res) {
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
-  // `db` (RTDB) ne sert plus qu'aux stats sociales (views/ratings/comments,
-  // Phase 4 à venir) ; toute la boutique/produits est sur Firestore (`firestore`).
-  const db = app().database();
   const firestore = app().firestore();
 
   // Deux voies d'autorisation :
@@ -87,23 +84,30 @@ export default async function handler(req, res) {
     if (action === "stats") {
       const products = await myProducts(firestore, user.uid, user.email);
       const keys = products.map((p) => p._key);
-      const [viewsSnap, likesSnap, comsSnap, orderCountsSnap] = await Promise.all([
-        db.ref("views/product").once("value"),
-        db.ref("ratings/product").once("value"),
-        db.ref("comments/product").once("value"),
-        firestore.collection("order_counts").get()
+      // Requêtes bornées aux SEULS produits de ce vendeur (jamais un scan
+      // intégral des collections views/likes/comments) — voir docs/
+      // FIRESTORE_SCHEMA.md.
+      const [orderCountsSnap, perKeyStats] = await Promise.all([
+        firestore.collection("order_counts").get(),
+        Promise.all(keys.map(async (k) => {
+          const [viewsCountSnap, likeSnap, commentsCountSnap] = await Promise.all([
+            firestore.collection("product_views").where("productKey", "==", k).count().get(),
+            firestore.collection("likes").doc("product:" + k).get(),
+            firestore.collection("comments").where("cat", "==", "product").where("itemKey", "==", k).count().get()
+          ]);
+          return {
+            key: k,
+            views: viewsCountSnap.data().count,
+            likes: likeSnap.exists ? Number(likeSnap.data().count) || 0 : 0,
+            comments: commentsCountSnap.data().count
+          };
+        }))
       ]);
-      const views = viewsSnap.val() || {};
-      const likes = likesSnap.val() || {};
-      const coms = comsSnap.val() || {};
       const orders = {};
       orderCountsSnap.forEach((d) => { orders[d.id] = Number((d.data() || {}).count) || 0; });
       const perProduct = {};
       let totalViews = 0, totalLikes = 0, totalComments = 0, totalOrders = 0;
-      keys.forEach((k) => {
-        const v = views[k] ? Object.keys(views[k]).length : 0;
-        const l = likes[k] ? Object.keys(likes[k]).length : 0;
-        const c = coms[k] ? Object.keys(coms[k]).length : 0;
+      perKeyStats.forEach(({ key: k, views: v, likes: l, comments: c }) => {
         const o = Number(orders[k] || 0);
         perProduct[k] = { views: v, likes: l, comments: c, orders: o };
         totalViews += v; totalLikes += l; totalComments += c; totalOrders += o;

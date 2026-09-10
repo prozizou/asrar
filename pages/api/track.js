@@ -15,6 +15,9 @@
 //   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city } (RTDB)
 //   orders/{id}                        = { uid, productKey, produit, prix,
 //                                           devise, vendeur, image, at } (Firestore)
+//   product_views/{productKey}_{uid}   = { productKey, uid, viewedAt } (Firestore,
+//                                          Phase 4 de la migration — voir
+//                                          docs/FIRESTORE_SCHEMA.md)
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -67,12 +70,17 @@ export default async function handler(req, res) {
     }
 
     // 4) Vue produit (Marché) : un enregistrement par visiteur, pour les
-    // statistiques boutique (api/shop.js action="stats"). Écrit ici (Admin
-    // SDK) car un nœud client direct dépendrait de règles RTDB non gérées
+    // statistiques boutique (api/shop.js action="stats"). Firestore depuis la
+    // Phase 4 de la migration (voir docs/FIRESTORE_SCHEMA.md) — écrit ici
+    // (Admin SDK) car un accès client direct dépendrait de règles non gérées
     // dans ce dépôt.
     if (kind === "product_view") {
       const key = safeKey(productKey);
-      if (key) await db.ref("views/product/" + key + "/" + user.uid).set(now);
+      if (key) {
+        await app().firestore().collection("product_views").doc(key + "_" + user.uid).set({
+          productKey: key, uid: user.uid, viewedAt: now
+        }, { merge: true });
+      }
     }
 
     // 5) Commande (Marché) : snapshot au moment du clic « Commander via

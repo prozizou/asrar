@@ -28,13 +28,15 @@
 //            remplace get(ref(db,'ratings/vendor'))) | "formation-popularity"
 //            (bulk, toutes formations — avis uniquement, pas de likes)
 //
-// Nœuds partagés (inchangés) : ratings/{cat}/{key}/{uid} (LIKES — malgré le
-// nom, pas une note en étoiles), comments/{cat}/{key}/{id} (+ `stars`? 1-5
-// pour un avis boutique/formation — voir lib/reviews.js).
-//
-// "market-popularity" lit aussi order_counts (collection Firestore, Phase 2
-// de la migration — voir docs/FIRESTORE_SCHEMA.md) : orders_count (RTDB) ne
-// reçoit plus d'écritures depuis pages/api/wa.js.
+// MIGRATION FIRESTORE (Phase 4, voir docs/FIRESTORE_SCHEMA.md) :
+//   likes/{cat}:{itemKey}    = { cat, itemKey, uids: {uid: valeur}, count }
+//   comments/{id}            = { cat, itemKey, uid, email?, photo?, text,
+//                                 timestamp, stars? }
+// remplacent ratings/{cat}/{key}/{uid} et comments/{cat}/{key}/{id} (RTDB).
+// "market-popularity"/"vendor-likes"/"formation-popularity" reconstituent la
+// forme imbriquée `{itemKey: {...}}` attendue par les appelants existants
+// (app/page.tsx) à partir des requêtes plates ci-dessus — aucun changement
+// côté client.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -50,8 +52,7 @@ const RATE_LIMIT = { max: 60, windowMs: 60_000 };
 
 // Clé Firebase valide (les clés secret/produit/catégorie ne contiennent jamais . # $ / [ ]).
 function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
-// Même bornage que la règle RTDB comments/*/*/*.validate (longueur 1-500) —
-// répliqué ici car l'Admin SDK contourne les règles de sécurité.
+// Même bornage que l'ancienne règle RTDB comments/*/*/*.validate (longueur 1-500).
 function cleanComment(v) { return (v == null ? "" : String(v)).trim().slice(0, 500); }
 
 export default async function handler(req, res) {
@@ -72,60 +73,54 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de requêtes, réessaie dans un instant." });
   }
 
-  const db = app().database();
+  const firestore = app().firestore();
 
   try {
     // — Lectures agrégées (page Marché : cartes produit + boutiques, avant
     // même l'ouverture d'un produit précis) — aucun cat/key requis. —
     if (action === "market-popularity") {
-      const [likesSnap, comsSnap, orderCountsSnap] = await Promise.all([
-        db.ref("ratings/product").once("value"),
-        db.ref("comments/product").once("value"),
-        app().firestore().collection("order_counts").get(),
+      const [likes, coms, orderCountsSnap] = await Promise.all([
+        likesByCat(firestore, "product"),
+        commentsByCat(firestore, "product"),
+        firestore.collection("order_counts").get(),
       ]);
       const orders = {};
       orderCountsSnap.forEach((d) => { orders[d.id] = Number((d.data() || {}).count) || 0; });
-      return res.status(200).json({
-        likes: likesSnap.val() || {},
-        comments: comsSnap.val() || {},
-        orders,
-      });
+      return res.status(200).json({ likes, comments: coms, orders });
     }
 
     if (action === "vendor-likes") {
-      const [likesSnap, comsSnap] = await Promise.all([
-        db.ref("ratings/vendor").once("value"),
-        db.ref("comments/vendor").once("value"),
+      const [vendorLikes, vendorComments] = await Promise.all([
+        likesByCat(firestore, "vendor"),
+        commentsByCat(firestore, "vendor"),
       ]);
       // vendorComments (avis, avec `stars`? — voir lib/reviews.js avgStars) :
       // champ AJOUTÉ, jamais retiré — compat ascendante avec les appelants
       // qui ne lisaient jusqu'ici que vendorLikes.
-      return res.status(200).json({ vendorLikes: likesSnap.val() || {}, vendorComments: comsSnap.val() || {} });
+      return res.status(200).json({ vendorLikes, vendorComments });
     }
 
     if (action === "formation-popularity") {
       // Pas de likes pour les formations, seulement des avis (étoiles) —
       // voir lib/reviews.js avgStars.
-      const snap = await db.ref("comments/formation").once("value");
-      return res.status(200).json({ comments: snap.val() || {} });
+      const comments = await commentsByCat(firestore, "formation");
+      return res.status(200).json({ comments });
     }
 
     // — Actions ciblées sur un secret/produit/vendeur précis —
     if (!cat || !key) return res.status(400).json({ error: "Catégorie/clé manquante." });
-    const likesRef = db.ref(`ratings/${cat}/${key}`);
-    const commentsRef = db.ref(`comments/${cat}/${key}`);
+    const likeRef = firestore.collection("likes").doc(cat + ":" + key);
+    const commentsQuery = firestore.collection("comments")
+      .where("cat", "==", cat).where("itemKey", "==", key).orderBy("timestamp");
 
     if (action === "get") {
-      const [likesSnap, commentsSnap] = await Promise.all([
-        likesRef.once("value"),
-        commentsRef.once("value"),
-      ]);
-      const likes = likesSnap.val() || {};
+      const [likeSnap, commentsSnap] = await Promise.all([likeRef.get(), commentsQuery.get()]);
+      const uids = likeSnap.exists ? (likeSnap.data().uids || {}) : {};
       const comments = [];
-      commentsSnap.forEach((child) => {
-        const c = child.val() || {};
+      commentsSnap.forEach((doc) => {
+        const c = doc.data() || {};
         comments.push({
-          id: child.key,
+          id: doc.id,
           email: c.email || c.pseudo || "Utilisateur",
           photo: c.photo || "",
           text: c.text || "",
@@ -133,22 +128,28 @@ export default async function handler(req, res) {
         });
       });
       return res.status(200).json({
-        liked: !!likes[user.uid],
-        likeCount: Object.keys(likes).length,
+        liked: !!uids[user.uid],
+        likeCount: Object.keys(uids).length,
         comments,
       });
     }
 
     if (action === "toggle-like") {
-      const uidRef = likesRef.child(user.uid);
-      const snap = await uidRef.once("value");
-      if (snap.exists()) await uidRef.remove();
-      // Valeur numérique arbitraire (1) : seule la PRÉSENCE de la clé compte
-      // (existence testée partout ailleurs — jamais la valeur elle-même).
-      else await uidRef.set(1);
-      const likesSnap = await likesRef.once("value");
-      const likes = likesSnap.val() || {};
-      return res.status(200).json({ liked: !!likes[user.uid], likeCount: Object.keys(likes).length });
+      let liked, likeCount;
+      await firestore.runTransaction(async (tx) => {
+        const snap = await tx.get(likeRef);
+        const uids = { ...((snap.exists && snap.data().uids) || {}) };
+        const already = !!uids[user.uid];
+        if (already) delete uids[user.uid];
+        // Valeur numérique arbitraire (1) : seule la PRÉSENCE de la clé compte
+        // (existence testée partout ailleurs — jamais la valeur elle-même).
+        else uids[user.uid] = 1;
+        const count = Object.keys(uids).length;
+        tx.set(likeRef, { cat, itemKey: key, uids, count });
+        liked = !already;
+        likeCount = count;
+      });
+      return res.status(200).json({ liked, likeCount });
     }
 
     if (action === "comment") {
@@ -159,10 +160,10 @@ export default async function handler(req, res) {
       // ordinaire, comme avant (Secrets, Marché produit).
       const stars = cleanStars(body.stars);
       const photo = user.picture || "";
-      const record = { uid: user.uid, email: user.email || "", photo, text, timestamp: Date.now() };
+      const record = { cat, itemKey: key, uid: user.uid, email: user.email || "", photo, text, timestamp: Date.now() };
       if (stars != null) record.stars = stars;
-      const ref = await commentsRef.push(record);
-      return res.status(200).json({ comment: { id: ref.key, email: user.email || "", photo, text, stars } });
+      const ref = await firestore.collection("comments").add(record);
+      return res.status(200).json({ comment: { id: ref.id, email: user.email || "", photo, text, stars } });
     }
 
     return res.status(400).json({ error: "Action inconnue." });
@@ -171,3 +172,26 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 };
+
+// Reconstitue { itemKey: { uid: valeur } } (forme RTDB attendue par les
+// appelants existants) à partir de la collection plate `likes` — un seul doc
+// par item, filtré par catégorie.
+async function likesByCat(firestore, cat) {
+  const snap = await firestore.collection("likes").where("cat", "==", cat).get();
+  const out = {};
+  snap.forEach((doc) => { out[doc.data().itemKey] = doc.data().uids || {}; });
+  return out;
+}
+
+// Reconstitue { itemKey: { commentId: {...} } } à partir de la collection
+// plate `comments` — plusieurs docs par item, regroupés ici par itemKey.
+async function commentsByCat(firestore, cat) {
+  const snap = await firestore.collection("comments").where("cat", "==", cat).get();
+  const out = {};
+  snap.forEach((doc) => {
+    const k = doc.data().itemKey;
+    if (!out[k]) out[k] = {};
+    out[k][doc.id] = doc.data();
+  });
+  return out;
+}
