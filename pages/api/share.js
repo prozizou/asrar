@@ -83,16 +83,13 @@ export default async function handler(req, res) {
 
     if (SHARE_SHOW_TITLES) {
       try {
-        // secret/book/product : tous sur Firestore (Phase 2 pour product,
-        // Phase 3 pour secret/book — voir docs/FIRESTORE_SCHEMA.md). Le Zikr
-        // collectif (zikr_groups) reste sur la RTDB (Phase 5 à venir).
-        let item;
-        if (isZikr) {
-          item = (await app().database().ref("zikr_groups/" + key).once("value")).val();
-        } else {
-          const snap = await app().firestore().collection(src.collection(cat)).doc(key).get();
-          item = snap.exists ? snap.data() : null;
-        }
+        // secret/book/product : Firestore (Phase 2 pour product, Phase 3
+        // pour secret/book). Zikr collectif (zikr_groups) : Firestore aussi
+        // depuis la Phase 5 — voir docs/FIRESTORE_SCHEMA.md.
+        const snap = isZikr
+          ? await app().firestore().collection("zikr_groups").doc(key).get()
+          : await app().firestore().collection(src.collection(cat)).doc(key).get();
+        const item = snap.exists ? snap.data() : null;
         if (item) {
           const t = pick(item, TITLE_FIELDS);
           const i = pick(item, IMG_FIELDS);
