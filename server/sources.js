@@ -24,8 +24,12 @@ const SOURCES = {
     ref: () => "almaqtab",
     secretFields: ["pdf", "pdfUrl"]
   },
-  // Marché : un seul nœud. Description + coordonnées vendeur cachées de l'APERÇU,
-  // mais visibles dans la fiche (get-content) à tout utilisateur CONNECTÉ (authOnly).
+  // Marché : Description + coordonnées vendeur cachées de l'APERÇU, mais
+  // visibles dans la fiche (get-content) à tout utilisateur CONNECTÉ (authOnly).
+  // `ref` n'est plus utilisé pour ce type depuis la Phase 2 de la migration
+  // (voir docs/FIRESTORE_SCHEMA.md) : get-content.js/list-content.js/share.js
+  // lisent directement la collection Firestore `products` (ex-det_produits) —
+  // conservé ici pour mémoire, secretFields/privateFields/authOnly restent utilisés.
   product: {
     ref: () => "det_produits",
     secretFields: ["description", "number", "email"],

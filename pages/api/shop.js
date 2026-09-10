@@ -6,10 +6,18 @@
 //   action="save-product"  → { product:{ key?, produit, Prix, devise, Image, description, number, chain } }
 //   action="delete-product"→ { key }                                  (propriétaire)
 //
-// Les produits vivent dans det_produits/{key} (le nœud du Marché). Écriture
-// réservée au serveur (Admin SDK) : on impose uid + vendeur + email côté serveur,
-// jamais depuis le client. Seul un vendeur ACTIF (abonnement boutique en cours)
-// peut écrire/supprimer, et uniquement SES propres produits.
+// MIGRATION FIRESTORE (Phase 2, voir docs/FIRESTORE_SCHEMA.md) : les produits
+// vivent dans la collection `products` (ex-det_produits/{key} RTDB, mêmes clés
+// préservées — voir lib/share.js, liens de partage déjà diffusés), les
+// vendeurs dans `sellers` et les boutiques "profil" dans `shop_profiles`
+// (ex-profile_clients). La recherche des produits d'un vendeur (myProducts)
+// est désormais une requête indexée (where uid/email) au lieu d'un scan
+// intégral du nœud RTDB. `views`/`ratings`/`comments` (action="stats") restent
+// sur la RTDB jusqu'à la Phase 4 (social) ; seul `orders_count` (Phase 2,
+// collection `order_counts`) bascule ici, car il vit avec les commandes.
+// Écriture réservée au serveur (Admin SDK) : on impose uid + vendeur + email
+// côté serveur, jamais depuis le client. Seul un vendeur ACTIF (abonnement
+// boutique en cours) peut écrire/supprimer, et uniquement SES propres produits.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -28,11 +36,14 @@ export default async function handler(req, res) {
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
+  // `db` (RTDB) ne sert plus qu'aux stats sociales (views/ratings/comments,
+  // Phase 4 à venir) ; toute la boutique/produits est sur Firestore (`firestore`).
   const db = app().database();
+  const firestore = app().firestore();
 
   // Deux voies d'autorisation :
   //  (1) vendeur classique  → sellers/{uid} actif
-  //  (2) propriétaire de boutique "profil" → profile_clients avec email == user.email
+  //  (2) propriétaire de boutique "profil" → shop_profiles avec email == user.email
   const seller = await getSeller(user.uid);
   const activeSeller = !!(seller && seller.shopActive &&
     (seller.expiresAt === "lifetime" || (typeof seller.expiresAt === "number" && seller.expiresAt > Date.now())));
@@ -41,7 +52,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === "me") {
-      const products = await myProducts(db, user.uid, user.email);
+      const products = await myProducts(firestore, user.uid, user.email);
       if (activeSeller) {
         return res.status(200).json({ active: true, seller, products, mode: "seller" });
       }
@@ -50,7 +61,7 @@ export default async function handler(req, res) {
         // connecté (identifié par email). Un uid périmé (compte recréé) laissait
         // la boutique visible mais empêchait de retrouver ses produits.
         if (boutique.uid !== user.uid) {
-          try { await db.ref("profile_clients/" + boutique._id + "/uid").set(user.uid); } catch (_) {}
+          try { await firestore.collection("shop_profiles").doc(boutique._id).update({ uid: user.uid }); } catch (_) {}
         }
         const synth = {
           shop: {
@@ -74,18 +85,19 @@ export default async function handler(req, res) {
     }
 
     if (action === "stats") {
-      const products = await myProducts(db, user.uid, user.email);
+      const products = await myProducts(firestore, user.uid, user.email);
       const keys = products.map((p) => p._key);
-      const [viewsSnap, likesSnap, comsSnap, ordersSnap] = await Promise.all([
+      const [viewsSnap, likesSnap, comsSnap, orderCountsSnap] = await Promise.all([
         db.ref("views/product").once("value"),
         db.ref("ratings/product").once("value"),
         db.ref("comments/product").once("value"),
-        db.ref("orders_count").once("value")
+        firestore.collection("order_counts").get()
       ]);
       const views = viewsSnap.val() || {};
       const likes = likesSnap.val() || {};
       const coms = comsSnap.val() || {};
-      const orders = ordersSnap.val() || {};
+      const orders = {};
+      orderCountsSnap.forEach((d) => { orders[d.id] = Number((d.data() || {}).count) || 0; });
       const perProduct = {};
       let totalViews = 0, totalLikes = 0, totalComments = 0, totalOrders = 0;
       keys.forEach((k) => {
@@ -109,14 +121,18 @@ export default async function handler(req, res) {
       if (!clean.name) return res.status(400).json({ error: "Nom de boutique requis." });
       const logo = logoUrl ? safeUrl(logoUrl, 500) : "";
       if (activeSeller) {
-        const upd = { ...clean };
-        if (logo) upd.logo = logo;
-        await db.ref("sellers/" + user.uid + "/shop").update(upd);
+        const upd = {
+          "shop.name": clean.name,
+          "shop.description": clean.description,
+          "shop.phone": clean.phone
+        };
+        if (logo) upd["shop.logo"] = logo;
+        await firestore.collection("sellers").doc(user.uid).update(upd);
       } else {
-        // Propriétaire de boutique profil : on met à jour profile_clients.
+        // Propriétaire de boutique profil : on met à jour shop_profiles.
         const upd = { profile_name: clean.name, number: clean.phone, description: clean.description, uid: user.uid };
         if (logo) upd.img = logo;
-        await db.ref("profile_clients/" + boutique._id).update(upd);
+        await firestore.collection("shop_profiles").doc(boutique._id).update(upd);
       }
       return res.status(200).json({ ok: true, shop: { ...clean, logo } });
     }
@@ -158,18 +174,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "La catégorie est requise." });
       }
 
+      const productsCol = firestore.collection("products");
+
       // Clé existante (édition) si elle nous appartient, sinon nouvelle.
       let key = str(product.key, 64);
       if (key) {
-        const cur = (await db.ref("det_produits/" + key).once("value")).val();
-        if (!cur) return res.status(404).json({ error: "Produit introuvable." });
+        const cur = await productsCol.doc(key).get();
+        if (!cur.exists) return res.status(404).json({ error: "Produit introuvable." });
         // Accepte aussi les produits hérités (vendeurId) : sinon leur édition
         // était systématiquement refusée.
-        if (!estProprietaire(cur, user.uid, user.email)) {
+        if (!estProprietaire(cur.data(), user.uid, user.email)) {
           return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
         }
       } else {
-        key = db.ref("det_produits").push().key;
+        // Nouvel identifiant Firestore : seules les clés PRÉEXISTANTES (import
+        // RTDB) doivent rester des push-keys — voir docs/FIRESTORE_SCHEMA.md.
+        key = productsCol.doc().id;
       }
 
       const record = {
@@ -187,19 +207,20 @@ export default async function handler(req, res) {
         vendeurAvatar: shopLogo,     // logo de la boutique (pour le Marché)
         updatedAt: Date.now()
       };
-      await db.ref("det_produits/" + key).update(record);
+      await productsCol.doc(key).set(record, { merge: true });
       return res.status(200).json({ ok: true, key, product: { _key: key, ...record } });
     }
 
     if (action === "delete-product") {
       const { key } = parseBody(req);
       if (!key) return res.status(400).json({ error: "Clé produit requise." });
-      const cur = (await db.ref("det_produits/" + key).once("value")).val();
-      if (!cur) return res.status(404).json({ error: "Produit introuvable." });
-      if (!estProprietaire(cur, user.uid, user.email)) {
+      const productsCol = firestore.collection("products");
+      const cur = await productsCol.doc(key).get();
+      if (!cur.exists) return res.status(404).json({ error: "Produit introuvable." });
+      if (!estProprietaire(cur.data(), user.uid, user.email)) {
         return res.status(403).json({ error: "Ce produit ne vous appartient pas." });
       }
-      await db.ref("det_produits/" + key).remove();
+      await productsCol.doc(key).delete();
       return res.status(200).json({ ok: true });
     }
 
@@ -210,19 +231,23 @@ export default async function handler(req, res) {
   }
 };
 
-// Récupère les produits du vendeur.
-// On ne peut pas se fier au seul `uid` : le `uid` enregistré dans la fiche
-// boutique (profile_clients) peut différer de celui porté par les produits
-// (comptes recréés, migrations). L'email, lui, est stable et provient du jeton
-// Firebase vérifié côté serveur — c'est donc le critère principal.
-async function myProducts(db, uid, email) {
-  const snap = await db.ref("det_produits").once("value");
-  const out = [];
-  snap.forEach((c) => {
-    const v = c.val() || {};
-    if (estProprietaire(v, uid, email)) out.push({ _key: c.key, ...v });
-  });
-  return out;
+// Récupère les produits du vendeur, par requêtes indexées plutôt qu'un scan
+// intégral de la collection (gain identifié dans l'audit précédant la
+// migration Firestore). On ne peut pas se fier au seul `uid` : le `uid`
+// enregistré dans la fiche boutique peut différer de celui porté par les
+// produits (comptes recréés, migrations) — d'où les 3 requêtes en parallèle
+// (uid courant, email vérifié, ancien champ vendeurId), fusionnées et
+// dédupliquées par clé de document.
+async function myProducts(firestore, uid, email) {
+  const col = firestore.collection("products");
+  const queries = [];
+  if (uid)   queries.push(col.where("uid", "==", uid).get());
+  if (email) queries.push(col.where("email", "==", email).get());
+  if (uid)   queries.push(col.where("vendeurId", "==", uid).get()); // ancien format
+  const snaps = await Promise.all(queries);
+  const byKey = new Map();
+  snaps.forEach((snap) => snap.forEach((doc) => byKey.set(doc.id, { _key: doc.id, ...doc.data() })));
+  return Array.from(byKey.values());
 }
 
 // Vrai si le produit appartient à l'utilisateur : correspondance sur l'uid

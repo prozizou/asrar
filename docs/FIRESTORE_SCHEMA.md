@@ -1,12 +1,14 @@
 # Schéma Firestore — migration depuis Realtime Database
 
-> **Statut : Phase 0 de la migration RTDB → Firestore.** Ce document décrit
-> la collection Firestore cible pour chaque nœud RTDB actuel. Aucun fichier
-> applicatif (`pages/`, `lib/`, `components/`, `app/`) ne lit ou n'écrit
-> encore Firestore à ce stade — voir `scripts/migrate-to-firestore.js` pour
-> l'import des données et `firestore.rules`/`firestore.indexes.json` pour
-> les règles/index. Les phases suivantes (bascule du code, module par
-> module) sont décrites en bas de ce document.
+> **Statut : Phases 0 à 2 de la migration RTDB → Firestore.** Ce document
+> décrit la collection Firestore cible pour chaque nœud RTDB actuel — voir
+> `scripts/migrate-to-firestore.js` pour l'import des données et
+> `firestore.rules`/`firestore.indexes.json` pour les règles/index. Le
+> paywall (`server/access.js`, Phase 1) et les commandes/parrainage/boutique
+> (`orders.js`, `referral.js`, `shop.js`, `sellers.js`, `track.js`, `wa.js`,
+> Phase 2) lisent et écrivent désormais Firestore. Les autres modules
+> (contenu, social, Zikr collectif, reste) sont décrits en bas de ce document
+> et migrent phase par phase.
 
 ## Principe
 
@@ -47,7 +49,7 @@ si l'export en contient, sans erreur si absents.
 |---|---|---|---|
 | `sellers` | uid | `{shopActive, expiresAt, shop:{name,description,phone,logo}}` | `sellers/{uid}` |
 | `shop_profiles` | id (ex. `30527731273ca222`) | `{ID, createdAt, description, email, follow, imageId, profile_name?, number?, uid?}` | `profile_clients/{id}` |
-| `products` | clé préservée | `{Image, Prix, chain, description, number, email, uid?, vendeurId?, createdAt}` (voir `server/sources.js` pour les champs privés `number`/`email`) | `det_produits/{key}` |
+| `products` | clé préservée | `{Image, Prix, chain, description, number, email, uid?, vendeurId?, updatedAt}` (voir `server/sources.js` pour les champs privés `number`/`email`) | `det_produits/{key}` |
 | `orders` | id push-key préservé + champ `uid` ajouté | `{uid, productKey, produit, prix, devise, vendeur, image, at}` | `orders/{uid}/{id}` (nœud imbriqué aplati) |
 | `order_counts` | productId | `{count: number}` | `orders_count/{productId}` (valeur brute → objet) |
 | `product_views` | `${productKey}_${uid}` | `{productKey, uid, viewedAt}` | `views/product/{key}/{uid}` |
@@ -139,12 +141,16 @@ polices Al-Qalam personnalisées). Importés pour ne rien perdre, mais
 | `legacy_data` | `planner` | `planner` (doc unique, structure d'origine conservée) |
 | `legacy_data` | `alqalam_fonts` | `alqalam_fonts` (doc unique) |
 
-## Suite (phases 1 à 6, hors périmètre de cette livraison)
+## Suite (phases 3 à 6, hors périmètre des livraisons précédentes)
 
-Voir le plan de migration validé pour le détail — en résumé : bascule du
-code module par module (`server/access.js` → paywall ; `orders.js`/
-`referral.js`/`shop.js` → commandes/parrainage ; `sources.js`/
-`get-content.js` → contenu ; `social.js`/`book-social.js` → social ;
-`zikr.js` → Zikr collectif ; le reste — crons, push, admin) dans des PR
-séparées, chacune testée avant la suivante. La RTDB reste en place comme
-filet de secours jusqu'à la fin de la phase 6.
+Déjà migrées : Phase 1 (`server/access.js`, `pages/api/admin.js` grant/
+revoke/list-access → paywall) et Phase 2 (`orders.js`, `referral.js`,
+`shop.js`, `server/sellers.js`, `track.js`, `wa.js`, et les sections
+produits/vendeurs/commandes de `admin.js` → commandes/parrainage/boutique).
+
+Voir le plan de migration validé pour le détail des phases restantes — en
+résumé : `sources.js`/`get-content.js` → contenu (Phase 3) ; `social.js`/
+`book-social.js` → social (Phase 4) ; `zikr.js` → Zikr collectif (Phase 5) ;
+le reste — crons, push, admin (Phase 6). Chacune est une PR séparée, testée
+avant la suivante. La RTDB reste en place comme filet de secours jusqu'à la
+fin de la phase 6.

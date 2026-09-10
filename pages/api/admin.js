@@ -38,16 +38,17 @@ export default async function handler(req, res) {
   }
 
   const db = app().database();
-  // Accès/paywall (grant-access/revoke-access/list-access) : Firestore depuis
-  // la Phase 1 de la migration, comme server/access.js — voir
-  // docs/FIRESTORE_SCHEMA.md. Toutes les AUTRES actions de ce fichier
-  // (secrets, livres, formations, produits, vendeurs, commandes, stats…)
+  // Accès/paywall (grant-access/revoke-access/list-access, Phase 1) ET
+  // produits/vendeurs/commandes (list-products/save-product/delete-product,
+  // list-sellers/seller-action, list-orders, Phase 2 — voir
+  // docs/FIRESTORE_SCHEMA.md) sont sur Firestore. Toutes les AUTRES actions de
+  // ce fichier (secrets, livres, formations, visites/activité/géomancie)
   // restent sur la RTDB (`db` ci-dessus) jusqu'à leurs phases respectives.
   const firestore = app().firestore();
 
   try {
     switch (action) {
-      case "stats":          return res.json(await getStats(db));
+      case "stats":          return res.json(await getStats(db, firestore));
 
       case "list-secrets": {
         const cat = body.cat;
@@ -113,7 +114,7 @@ export default async function handler(req, res) {
         return res.json({ ok: true });
       }
 
-      case "list-products": return res.json({ items: await readAll(db, "det_produits") });
+      case "list-products": return res.json({ items: await readAllFs(firestore, "products") });
       case "save-product": {
         const produit = str(body.produit, 120);
         const prix = parseInt(body.Prix, 10);
@@ -127,26 +128,30 @@ export default async function handler(req, res) {
           email: str(body.email, 120), updatedAt: Date.now()
         };
         if (body.uid) rec.uid = str(body.uid, 64);
-        const key = body.key || db.ref("det_produits").push().key;
-        await db.ref("det_produits/" + key).update(rec);
+        const productsCol = firestore.collection("products");
+        // Nouvel identifiant Firestore (les clés PRÉEXISTANTES, importées de la
+        // RTDB, restent des push-keys préservées — voir docs/FIRESTORE_SCHEMA.md).
+        const key = body.key || productsCol.doc().id;
+        await productsCol.doc(key).set(rec, { merge: true });
         return res.json({ ok: true, key });
       }
       case "delete-product": {
         if (!body.key) return res.status(400).json({ error: "Clé requise." });
-        await db.ref("det_produits/" + body.key).remove();
+        await firestore.collection("products").doc(body.key).delete();
         return res.json({ ok: true });
       }
 
       case "list-sellers": {
-        const items = await readAll(db, "sellers");
+        const items = await readAllFs(firestore, "sellers");
         return res.json({ items });
       }
       case "seller-action": {
         const { uid, op } = body;
         if (!uid) return res.status(400).json({ error: "uid requis." });
-        const ref = db.ref("sellers/" + uid);
-        const cur = (await ref.once("value")).val();
-        if (!cur) return res.status(404).json({ error: "Vendeur introuvable." });
+        const ref = firestore.collection("sellers").doc(uid);
+        const snap = await ref.get();
+        if (!snap.exists) return res.status(404).json({ error: "Vendeur introuvable." });
+        const cur = snap.data();
         if (op === "suspend")  await ref.update({ shopActive: false });
         else if (op === "activate") await ref.update({ shopActive: true });
         else if (op === "extend") {
@@ -158,11 +163,11 @@ export default async function handler(req, res) {
       }
 
       case "list-orders": {
-        const snap = await db.ref("orders").once("value");
+        // orderBy sur un seul champ : pas d'index composite nécessaire.
+        const snap = await firestore.collection("orders").orderBy("at", "desc").limit(200).get();
         const out = [];
-        snap.forEach((u) => u.forEach((o) => out.push({ _uid: u.key, _key: o.key, ...(o.val() || {}) })));
-        out.sort((a, b) => (b.at || 0) - (a.at || 0));
-        return res.json({ items: out.slice(0, 200) });
+        snap.forEach((d) => out.push({ _uid: d.data().uid, _key: d.id, ...d.data() }));
+        return res.json({ items: out });
       }
 
       case "list-activity":
@@ -228,7 +233,7 @@ export default async function handler(req, res) {
 };
 
 // ---------- Statistiques ----------
-async function getStats(db) {
+async function getStats(db, firestore) {
   const today = new Date();
   const dates = [];
   for (let i = 0; i < 30; i++) {
@@ -249,15 +254,17 @@ async function getStats(db) {
     series: perDay.slice(0, 14).reverse() // 14 derniers jours, ordre chronologique
   };
 
-  const [products, sellers, books, formations] = await Promise.all([
-    countChildren(db, "det_produits"),
-    db.ref("sellers").once("value"),
+  // products/sellers : Firestore depuis la Phase 2 (voir docs/FIRESTORE_SCHEMA.md).
+  const [productsCountSnap, sellersSnap, books, formations] = await Promise.all([
+    firestore.collection("products").count().get(),
+    firestore.collection("sellers").get(),
     countChildren(db, "almaqtab"),
     countChildren(db, "formations")
   ]);
+  const products = productsCountSnap.data().count;
   let activeSellers = 0;
-  sellers.forEach((s) => {
-    const v = s.val() || {};
+  sellersSnap.forEach((d) => {
+    const v = d.data() || {};
     if (v.shopActive && (v.expiresAt === "lifetime" || (typeof v.expiresAt === "number" && v.expiresAt > Date.now()))) activeSellers++;
   });
 
@@ -266,7 +273,7 @@ async function getStats(db) {
 
   return {
     visits,
-    totals: { products, sellers: sellers.numChildren(), activeSellers, books, formations, secrets: secretCounts },
+    totals: { products, sellers: sellersSnap.size, activeSellers, books, formations, secrets: secretCounts },
     recentActivity: await readFeed(db, "activity_feed", 30),
     recentGeomancie: await readFeed(db, "geomancie_logs", 30)
   };
@@ -284,6 +291,12 @@ async function readAll(db, path) {
   const snap = await db.ref(path).once("value");
   const out = [];
   snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  return out;
+}
+async function readAllFs(firestore, collection) {
+  const snap = await firestore.collection(collection).get();
+  const out = [];
+  snap.forEach((d) => out.push({ _key: d.id, ...d.data() }));
   return out;
 }
 async function readFeed(db, path, n) {
