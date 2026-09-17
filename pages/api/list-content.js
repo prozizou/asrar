@@ -14,6 +14,7 @@ const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { vendorKey } = require("../../lib/market");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -37,6 +38,13 @@ export default async function handler(req, res) {
       for (const k of Object.keys(v)) {
         if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
       }
+      // Marché : identifiant de boutique STABLE calculé ici, où l'email brut
+      // du document est encore disponible (il est retiré ci-dessus par
+      // secretFields) — voir emailVendorKey()/vendorKey() dans lib/market.js.
+      // Sans ça, le client retombe sur `uid`, qui peut changer d'un produit à
+      // l'autre pour le même vendeur (compte recréé) et fait apparaître deux
+      // cartes boutique pour la même boutique.
+      if (kind === "product") meta.vendorKey = vendorKey(v);
       items.push(meta);
     });
 
