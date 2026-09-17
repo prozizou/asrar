@@ -1,7 +1,12 @@
 // api/track.js (Vercel) — Journalisation légère pour le tableau de bord admin.
 //
 // Body (JSON) : { idToken, type, page?, lat?, lng?, city?, order? }
-//   type="visit"     → comptage de visite (page) + fil d'activité
+//   type="visit"     → comptage de visite (page) + fil d'activité + connexion
+//                       (uid/e-mail/pays/heure enregistrés dans user_sessions,
+//                       cf. plus bas) — trackVisit() (components/AuthProvider.js)
+//                       n'appelle ce endpoint qu'une fois par session app (juste
+//                       après la résolution onAuthStateChanged, donc à l'inscription
+//                       ET à la connexion), pas à chaque navigation.
 //   type="geomancie" → log géomancie AVEC localisation (lat/lng) + activité
 //   type="order"     → enregistre la commande CÔTÉ ACHETEUR (collection
 //                       Firestore `orders`, Phase 2 de la migration — voir
@@ -11,18 +16,35 @@
 //
 // Écrit (Admin SDK, collections Firestore serveur-only — plus aucun accès
 // RTDB dans ce fichier depuis la Phase 6, voir docs/FIRESTORE_SCHEMA.md) :
-//   analytics_visits/{date}_{uid}      = { date, uid, n, last, email }
-//   activity_feed/{id}                 = { uid, email, type, page, at }
+//   analytics_visits/{date}_{uid}      = { date, uid, n, last, email, country?, countryCode? }
+//   activity_feed/{id}                 = { uid, email, type, page, at, country?, countryCode? }
 //   geomancie_logs/{id}                = { uid, email, at, lat, lng, city }
 //   orders/{id}                        = { uid, productKey, produit, prix,
 //                                           devise, vendeur, image, at } (Phase 2)
 //   product_views/{productKey}_{uid}   = { productKey, uid, viewedAt } (Phase 4)
+//   user_sessions/{uid}                = { uid, email, country, countryCode,
+//                                           lastLoginAt, lastActivityAt } — un
+//                                           seul doc par utilisateur (upsert),
+//                                           lu par le panneau d'administration
+//                                           (répartition par pays, flux de
+//                                           connexions récentes)
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const { resolveCountry } = require("../../lib/countries");
+
+// Géolocalisation IP : Vercel ajoute ces en-têtes à toute requête passée par
+// son réseau edge (aucune clé/API tierce, aucun coût, aucune permission
+// navigateur) — absents en local (`next dev`) ou hors Vercel, d'où le repli
+// silencieux sur un pays inconnu plutôt qu'une erreur.
+// Doc : https://vercel.com/docs/edge-network/headers#request-headers
+function geoFromRequest(req) {
+  const code = req.headers["x-vercel-ip-country"];
+  return resolveCountry(code);
+}
 
 // Le tracking suit la navigation normale (une entrée par page/action) : une
 // limite large, juste assez pour couper un compte compromis qui boucle en
@@ -46,10 +68,12 @@ export default async function handler(req, res) {
   }
 
   const firestore = app().firestore();
+  const FieldValue = app().firestore.FieldValue;
   const now = Date.now();
   const date = new Date(now).toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   const safePage = clean(page, 80);
   const kind = clean(type, 24) || "visit";
+  const { country, countryCode } = geoFromRequest(req);
 
   try {
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
@@ -58,12 +82,30 @@ export default async function handler(req, res) {
     // RTDB sur `n` suivie d'un update séparé sur last/email.
     await firestore.collection("analytics_visits").doc(date + "_" + user.uid).set({
       date, uid: user.uid,
-      n: app().firestore.FieldValue.increment(1),
+      n: FieldValue.increment(1),
       last: now, email: user.email,
+      ...(countryCode ? { country, countryCode } : {}),
     }, { merge: true });
 
     // 2) Fil d'activité global (les N dernières actions visibles côté admin).
-    await firestore.collection("activity_feed").add({ uid: user.uid, email: user.email, type: kind, page: safePage, at: now });
+    await firestore.collection("activity_feed").add({
+      uid: user.uid, email: user.email, type: kind, page: safePage, at: now,
+      ...(countryCode ? { country, countryCode } : {}),
+    });
+
+    // 2bis) Session utilisateur (inscription/connexion + dernière activité) —
+    // un seul document par utilisateur (upsert), source de la répartition par
+    // pays et du flux de connexions récentes côté panneau d'administration.
+    // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
+    // envoyé une fois par session app par trackVisit()) ; les autres types
+    // d'événements (geomancie, product_view, order…) ne rafraîchissent que
+    // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
+    // moins significative.
+    const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
+    if (kind === "visit") {
+      Object.assign(sessionUpdate, { lastLoginAt: now }, countryCode ? { country, countryCode } : {});
+    }
+    await firestore.collection("user_sessions").doc(user.uid).set(sessionUpdate, { merge: true });
 
     // 3) Géomancie : log avec localisation si fournie.
     if (kind === "geomancie") {

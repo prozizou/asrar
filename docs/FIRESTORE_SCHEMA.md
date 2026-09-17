@@ -121,8 +121,9 @@ notamment `collectionGroup("members").where("uid","==",me)` pour retrouver
 |---|---|---|---|
 | `push_subscriptions` | `${uid}_${subId}` | `{...subscription, uid}` | `push_subscriptions/{uid}/{subId}` |
 | `reminder_settings` | uid | `{wirdEnabled, wirdHour, wirdMinute, tz, updatedAt, lastSentDate?, lastSentAt?}` | `reminder_settings/{uid}` |
-| `analytics_visits` | `${date}_${uid}` | `{date, uid, n, last, email}` | `analytics/visits/{date}/{uid}` |
-| `activity_feed` | id push-key | `{uid, email, type, page, at}` | `activity_feed/{id}` |
+| `analytics_visits` | `${date}_${uid}` | `{date, uid, n, last, email, country?, countryCode?}` | `analytics/visits/{date}/{uid}` |
+| `activity_feed` | id push-key | `{uid, email, type, page, at, country?, countryCode?}` | `activity_feed/{id}` |
+| `user_sessions` | uid | `{uid, email, country?, countryCode?, lastLoginAt, lastActivityAt}` | *(nouveau, pas de source RTDB)* — un doc par utilisateur, écrit par `pages/api/track.js` à chaque appel ; `country`/`countryCode` résolus depuis l'en-tête `x-vercel-ip-country` (voir `lib/countries.js`). Lu par le panneau d'administration (répartition par pays, connexions récentes). |
 | `audit_log` | id push-key | `{action, at, by, target}` | `audit_log/{id}` |
 | `trash` | id push-key | `{at, by, key, node, value}` | `trash/{id}` |
 | `geomancie_logs` | id push-key | `{uid, email, at, lat, lng, city}` | `geomancie_logs/{id}` |
