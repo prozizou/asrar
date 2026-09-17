@@ -29,7 +29,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
-import { vendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
+import { vendorKey, emailVendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
@@ -208,12 +208,13 @@ export default function Home() {
   };
 
   // Reconnaît automatiquement « sa » boutique dans la liste des vendeurs :
-  // vendorKey() (lib/market.js) vaut l'email du vendeur (repli sur l'uid).
+  // vendorKey() (lib/market.js) vaut le vendorKey calculé côté serveur à
+  // partir de l'email (jamais l'email en clair, retiré par /api/list-content) —
+  // repli sur l'uid pour les produits sans email (anciens formats).
   const isOwnVendor = useCallback((v: Vendor) => {
     const me = auth.currentUser;
     if (!me) return false;
-    const email = me.email ? me.email.toLowerCase() : null;
-    return v.id === email || v.id === me.uid;
+    return (!!me.email && v.id === emailVendorKey(me.email)) || v.id === me.uid;
   }, []);
 
   // Filtrés par recherche + catégorie, puis triés par popularité (achats >
