@@ -6,9 +6,8 @@
 // utilisateur : aucun jeton Firebase ici, protection par secret partagé
 // uniquement. Même mécanisme d'autorisation que pages/api/cron/reminders.js.
 //
-// Pour CHAQUE abonnement (collection Firestore push_subscriptions, écrite
-// par pages/api/push-subscribe.js — Phase 6 de la migration, voir
-// docs/FIRESTORE_SCHEMA.md), calcule l'heure planétaire actuelle à SA
+// Pour CHAQUE abonnement (push_subscriptions/{uid}/{subId}, écrit par
+// pages/api/push-subscribe.js), calcule l'heure planétaire actuelle à SA
 // position (lib/planete.js — même logique que la page /planete) et envoie
 // une notification SEULEMENT si la planète a changé depuis le dernier envoi
 // (lastPlanet) — sinon rien à annoncer, pas de doublon au prochain passage
@@ -31,17 +30,21 @@ export default async function handler(req, res) {
   }
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
-  const firestore = app().firestore();
+  const db = app().database();
   const now = new Date();
   let sent = 0, skipped = 0, removed = 0, errors = 0;
 
   try {
-    const snap = await firestore.collection("push_subscriptions").get();
+    const snap = await db.ref("push_subscriptions").once("value");
     const tasks = [];
 
-    snap.forEach((doc) => {
-      const sub = doc.data() || {};
-      tasks.push(processSubscription(doc.ref, sub.uid, sub, now));
+    snap.forEach((userSnap) => {
+      const uid = userSnap.key;
+      userSnap.forEach((subSnap) => {
+        const key = subSnap.key;
+        const sub = subSnap.val() || {};
+        tasks.push(processSubscription(db, uid, key, sub, now));
+      });
     });
 
     const results = await Promise.allSettled(tasks);
@@ -59,7 +62,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function processSubscription(ref, uid, sub, now) {
+async function processSubscription(db, uid, key, sub, now) {
   if (sub.lat == null || sub.lng == null || !sub.endpoint || !sub.keys) return "skipped";
 
   const pday = computePday(now, sub.lat, sub.lng, {});
@@ -74,6 +77,7 @@ async function processSubscription(ref, uid, sub, now) {
     tag: "planet-hour",
   });
 
+  const ref = db.ref(`push_subscriptions/${uid}/${key}`);
   try {
     await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
     await ref.update({ lastPlanet: cur.planet, lastSentAt: Date.now() });
@@ -82,7 +86,7 @@ async function processSubscription(ref, uid, sub, now) {
     if (e && (e.statusCode === 404 || e.statusCode === 410)) {
       // Abonnement expiré/révoqué côté navigateur (désinstallation, permission
       // retirée…) : le service de push le signale ainsi, on nettoie.
-      await ref.delete();
+      await ref.remove();
       return "removed";
     }
     await reportError("cron:planet-push", e, { uid });

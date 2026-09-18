@@ -83,13 +83,10 @@ export default async function handler(req, res) {
 
     if (SHARE_SHOW_TITLES) {
       try {
-        // secret/book/product : Firestore (Phase 2 pour product, Phase 3
-        // pour secret/book). Zikr collectif (zikr_groups) : Firestore aussi
-        // depuis la Phase 5 — voir docs/FIRESTORE_SCHEMA.md.
         const snap = isZikr
-          ? await app().firestore().collection("zikr_groups").doc(key).get()
-          : await app().firestore().collection(src.collection(cat)).doc(key).get();
-        const item = snap.exists ? snap.data() : null;
+          ? await app().database().ref("zikr_groups/" + key).once("value")
+          : await app().database().ref(src.ref(cat) + "/" + key).once("value");
+        const item = snap.val();
         if (item) {
           const t = pick(item, TITLE_FIELDS);
           const i = pick(item, IMG_FIELDS);
@@ -313,17 +310,12 @@ export default async function handler(req, res) {
 };
 
 // ── Compteur de clics pour le tableau de bord parrainage ──────
-// Firestore depuis la Phase 2 de la migration (voir docs/FIRESTORE_SCHEMA.md) —
-// referral_codes/referrals ne vivent plus sur la RTDB depuis pages/api/referral.js.
 async function countClick(code) {
-  const firestore = app().firestore();
-  const codeSnap = await firestore.collection("referral_codes").doc(code).get();
-  if (!codeSnap.exists) return;
-  const uid = codeSnap.data().uid;
-  await firestore.collection("referrals").doc(uid).set({
-    clicks: app().firestore.FieldValue.increment(1),
-    lastClickAt: Date.now()
-  }, { merge: true });
+  const db = app().database();
+  const uid = (await db.ref("referral_codes/" + code).once("value")).val();
+  if (!uid) return;
+  await db.ref("referrals/" + uid + "/clicks").transaction((c) => (c || 0) + 1);
+  await db.ref("referrals/" + uid + "/lastClickAt").set(Date.now());
 }
 
 // ── Utilitaires ───────────────────────────────────────────────

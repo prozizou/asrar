@@ -1,6 +1,18 @@
-# Schéma Firestore — migration depuis Realtime Database
+# Schéma Firestore — migration depuis Realtime Database (ARCHIVÉ, migration annulée)
 
-> **Statut : Phases 0 à 6 de la migration RTDB → Firestore — TERMINÉE.** Ce
+> ⚠️ **Ce document est un historique — la migration décrite ici a été
+> ANNULÉE le 18/09.** Le quota Firestore (plan gratuit Spark, 50 000
+> lectures/jour) s'est révélé trop limitant en usage réel ; l'app est
+> revenue à la Realtime Database sur tous les modules. `firebase.json`,
+> `firestore.rules` et `firestore.indexes.json` ont été supprimés. Les
+> données Firestore accumulées entre le 10/09 (fin de la migration) et le
+> 18/09 (retour arrière) ont été recopiées vers la RTDB par
+> `scripts/sync-firestore-to-rtdb.js` avant le déploiement du code ci-dessous
+> annulé — voir ce script pour le mapping inverse exact. Conservé pour
+> mémoire (comprendre le mapping RTDB ↔ Firestore si une remigration est un
+> jour retentée, cette fois sur le plan Blaze).
+>
+> **Statut (historique) : Phases 0 à 6 de la migration RTDB → Firestore — TERMINÉE.** Ce
 > document décrit la collection Firestore cible pour chaque nœud RTDB
 > d'origine — voir `scripts/migrate-to-firestore.js` pour l'import des
 > données et `firestore.rules`/`firestore.indexes.json` pour les règles/

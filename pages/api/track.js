@@ -8,23 +8,19 @@
 //                       après la résolution onAuthStateChanged, donc à l'inscription
 //                       ET à la connexion), pas à chaque navigation.
 //   type="geomancie" → log géomancie AVEC localisation (lat/lng) + activité
-//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (collection
-//                       Firestore `orders`, Phase 2 de la migration — voir
-//                       docs/FIRESTORE_SCHEMA.md) — voir api/orders.js pour la
-//                       relecture (« Mes commandes »)
+//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (orders/{uid}) —
+//                       voir api/orders.js pour la relecture (« Mes commandes »)
 //   (autre)          → événement générique dans le fil d'activité
 //
-// Écrit (Admin SDK, collections Firestore serveur-only — plus aucun accès
-// RTDB dans ce fichier depuis la Phase 6, voir docs/FIRESTORE_SCHEMA.md) :
-//   analytics_visits/{date}_{uid}      = { date, uid, n, last, email, country?, countryCode? }
-//   activity_feed/{id}                 = { uid, email, type, page, at, country?, countryCode? }
-//   geomancie_logs/{id}                = { uid, email, at, lat, lng, city }
-//   orders/{id}                        = { uid, productKey, produit, prix,
-//                                           devise, vendeur, image, at } (Phase 2)
-//   product_views/{productKey}_{uid}   = { productKey, uid, viewedAt } (Phase 4)
+// Écrit (Admin SDK, nœuds serveur-only) :
+//   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email, country?, countryCode? }
+//   activity_feed/{pushId}             = { uid, email, type, page, at, country?, countryCode? }
+//   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city }
+//   orders/{uid}/{pushId}              = { productKey, produit, prix, devise,
+//                                           vendeur, image, at }
 //   user_sessions/{uid}                = { uid, email, country, countryCode,
 //                                           lastLoginAt, lastActivityAt } — un
-//                                           seul doc par utilisateur (upsert),
+//                                           seul nœud par utilisateur (merge),
 //                                           lu par le panneau d'administration
 //                                           (répartition par pays, flux de
 //                                           connexions récentes)
@@ -67,8 +63,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false, reason: "rate_limited" });
   }
 
-  const firestore = app().firestore();
-  const FieldValue = app().firestore.FieldValue;
+  const db = app().database();
   const now = Date.now();
   const date = new Date(now).toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   const safePage = clean(page, 80);
@@ -77,24 +72,18 @@ export default async function handler(req, res) {
 
   try {
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
-    // FieldValue.increment fonctionne même si le champ n'existe pas encore
-    // (part de 0) : une seule écriture atomique au lieu d'une transaction
-    // RTDB sur `n` suivie d'un update séparé sur last/email.
-    await firestore.collection("analytics_visits").doc(date + "_" + user.uid).set({
-      date, uid: user.uid,
-      n: FieldValue.increment(1),
-      last: now, email: user.email,
-      ...(countryCode ? { country, countryCode } : {}),
-    }, { merge: true });
+    const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
+    await vref.child("n").transaction((c) => (c || 0) + 1);
+    await vref.update({ last: now, email: user.email, ...(countryCode ? { country, countryCode } : {}) });
 
     // 2) Fil d'activité global (les N dernières actions visibles côté admin).
-    await firestore.collection("activity_feed").add({
+    await db.ref("activity_feed").push({
       uid: user.uid, email: user.email, type: kind, page: safePage, at: now,
       ...(countryCode ? { country, countryCode } : {}),
     });
 
     // 2bis) Session utilisateur (inscription/connexion + dernière activité) —
-    // un seul document par utilisateur (upsert), source de la répartition par
+    // un seul nœud par utilisateur (merge), source de la répartition par
     // pays et du flux de connexions récentes côté panneau d'administration.
     // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
     // envoyé une fois par session app par trackVisit()) ; les autres types
@@ -105,28 +94,23 @@ export default async function handler(req, res) {
     if (kind === "visit") {
       Object.assign(sessionUpdate, { lastLoginAt: now }, countryCode ? { country, countryCode } : {});
     }
-    await firestore.collection("user_sessions").doc(user.uid).set(sessionUpdate, { merge: true });
+    await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
 
     // 3) Géomancie : log avec localisation si fournie.
     if (kind === "geomancie") {
-      await firestore.collection("geomancie_logs").add({
+      await db.ref("geomancie_logs").push({
         uid: user.uid, email: user.email, at: now,
         lat: coord(lat, -90, 90), lng: coord(lng, -180, 180), city: clean(city, 80)
       });
     }
 
     // 4) Vue produit (Marché) : un enregistrement par visiteur, pour les
-    // statistiques boutique (api/shop.js action="stats"). Firestore depuis la
-    // Phase 4 de la migration (voir docs/FIRESTORE_SCHEMA.md) — écrit ici
-    // (Admin SDK) car un accès client direct dépendrait de règles non gérées
+    // statistiques boutique (api/shop.js action="stats"). Écrit ici (Admin
+    // SDK) car un nœud client direct dépendrait de règles RTDB non gérées
     // dans ce dépôt.
     if (kind === "product_view") {
       const key = safeKey(productKey);
-      if (key) {
-        await firestore.collection("product_views").doc(key + "_" + user.uid).set({
-          productKey: key, uid: user.uid, viewedAt: now
-        }, { merge: true });
-      }
+      if (key) await db.ref("views/product/" + key + "/" + user.uid).set(now);
     }
 
     // 5) Commande (Marché) : snapshot au moment du clic « Commander via
@@ -137,8 +121,7 @@ export default async function handler(req, res) {
     if (kind === "order" && order && typeof order === "object") {
       const key = safeKey(order.productKey);
       if (key) {
-        await firestore.collection("orders").add({
-          uid: user.uid,
+        await db.ref("orders/" + user.uid).push({
           productKey: key,
           produit: clean(order.produit, 120),
           prix: num(order.prix),

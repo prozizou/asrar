@@ -2,10 +2,6 @@
 // si l'utilisateur a un accès actif. C'est la vraie barrière du paywall.
 //
 // Body (JSON) : { idToken, kind: "secret"|"book", cat?, key }
-//
-// Lit Firestore (voir docs/FIRESTORE_SCHEMA.md) : "product" depuis la Phase 2
-// de la migration, "secret"/"book" depuis la Phase 3 — plus aucune lecture
-// RTDB dans ce fichier.
 
 const { verifyUser, hasActiveAccess } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -34,8 +30,8 @@ export default async function handler(req, res) {
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 
-    const snap = await app().firestore().collection(src.collection(cat)).doc(key).get();
-    const item = snap.exists ? snap.data() : null;
+    const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
+    const item = snap.val();
     if (!item) return res.status(404).json({ error: "Élément introuvable." });
 
     // Champs privés (coordonnées vendeur) : jamais exposés au navigateur.

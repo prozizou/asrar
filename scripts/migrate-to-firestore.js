@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // scripts/migrate-to-firestore.js — Phase 0 de la migration RTDB → Firestore.
 //
+// ⚠️ ARCHIVÉ — la migration a été annulée le 18/09 (quota Firestore Spark
+// trop limitant en usage réel), voir docs/FIRESTORE_SCHEMA.md et
+// scripts/sync-firestore-to-rtdb.js (mapping inverse, utilisé pour le retour
+// arrière). Conservé pour mémoire, plus appelé par rien.
+//
 // Lit un export JSON complet de la Realtime Database (Firebase Console →
 // Realtime Database → ⋮ → Exporter les données JSON) et écrit les documents
 // équivalents dans Firestore, selon le schéma documenté dans
