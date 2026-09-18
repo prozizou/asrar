@@ -28,8 +28,31 @@ export default function PwaGate({ children }) {
     // met RIEN en cache (l'app n'a pas de mode hors-ligne : tout dépend de
     // Firebase/des API) — il ne sert qu'à satisfaire les critères
     // d'installabilité PWA.
+    let updateInterval;
+    let onVisibleCheckUpdate;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        // Le navigateur vérifie déjà une mise à jour à l'enregistrement, mais
+        // PAS en continu ensuite — une PWA reste ouverte/en arrière-plan des
+        // jours sans jamais recharger la page, donc sans jamais redéclencher
+        // ce check. Résultat observé : un appareil resté ouvert longtemps
+        // continue de servir un ancien SW_VERSION bien après un déploiement.
+        // On revérifie explicitement à chaque retour au premier plan
+        // (le cas courant : l'app était juste en arrière-plan) + toutes les
+        // 30 min tant qu'elle reste active au premier plan sans interruption
+        // (filet de secours pour une session ininterrompue). registration
+        // .update() télécharge sw.js et le compare octet à octet — un
+        // SW_VERSION modifié change forcément ces octets, donc est toujours
+        // détecté. Une fois une mise à jour trouvée, le reste de la mécanique
+        // (skipWaiting + clients.claim + reload ci-dessous) prend le relais
+        // sans intervention supplémentaire.
+        const checkForUpdate = () => registration.update().catch(() => {});
+        onVisibleCheckUpdate = () => {
+          if (document.visibilityState === 'visible') checkForUpdate();
+        };
+        document.addEventListener('visibilitychange', onVisibleCheckUpdate);
+        updateInterval = setInterval(checkForUpdate, 30 * 60 * 1000);
+      }).catch(() => {});
 
       // public/sw.js appelle self.skipWaiting() + clients.claim() : un
       // nouveau SW prend le contrôle de cet onglet dès qu'il est détecté, SANS
@@ -56,6 +79,8 @@ export default function PwaGate({ children }) {
     return () => {
       if (mql.removeEventListener) mql.removeEventListener('change', onDisplay);
       unsubscribe();
+      if (updateInterval) clearInterval(updateInterval);
+      if (onVisibleCheckUpdate) document.removeEventListener('visibilitychange', onVisibleCheckUpdate);
     };
   }, []);
 
