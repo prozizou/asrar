@@ -155,17 +155,19 @@
 //                                 ownerEmail}", voir chatDisplayName),
 //                                 createdAt, membersCount, wishesOpen?,
 //                                 private?, approved? }
-//   zikr_groups/{gid}/members/{uid}  = { email, fait, rythme, avertissement?,
-//                                 joinedAt, updatedAt, lastSeenAt,
-//                                 daily?: { date, total } — total DU JOUR
-//                                 (fenêtre UTC commune à tout le groupe,
-//                                 lib/zikrLogic.js utcDateKey) : bascule
-//                                 paresseuse à la LECTURE (handleGet compare
-//                                 juste `date` au jour courant), jamais de job
-//                                 de remise à zéro à programmer,
+//   zikr_groups/{gid}/members/{uid}  = { email, name?, picture? (nom/photo
+//                                 Google au moment de rejoindre, affichage
+//                                 seulement — voir chatDisplayName), fait,
+//                                 rythme, avertissement?, joinedAt, updatedAt,
+//                                 lastSeenAt, daily?: { date, total } — total
+//                                 DU JOUR (fenêtre UTC commune à tout le
+//                                 groupe, lib/zikrLogic.js utcDateKey) :
+//                                 bascule paresseuse à la LECTURE (handleGet
+//                                 compare juste `date` au jour courant),
+//                                 jamais de job de remise à zéro à programmer,
 //                                 lastRecitingPushAt? — throttle du push
 //                                 « reprise d'activité » (voir notifyReciting) }
-//   zikr_groups/{gid}/requests/{uid} = { email, at }
+//   zikr_groups/{gid}/requests/{uid} = { email, name?, picture?, at }
 //   zikr_groups/{gid}/wishes/{uid}   = { email, text, at, shared?,
 //                                 amines?: {uid: true} } — vœu PRIVÉ par
 //                                 défaut : visible seulement du créateur
@@ -361,7 +363,8 @@ async function handleCreate(firestore, res, user, body) {
     sessionReminderSent: false,
   });
   await ref.collection("members").doc(user.uid).set({
-    email: user.email, fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
+    email: user.email, name: user.name || "", picture: user.picture || "",
+    fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
   });
 
   return res.status(200).json({ ok: true, id: gid });
@@ -447,6 +450,8 @@ async function handleGet(firestore, res, user, gid) {
     mine = {
       uid: user.uid,
       email: v.email || "",
+      name: v.name || "",
+      picture: v.picture || "",
       fait: Number(v.fait) || 0,
       rythme: Number(v.rythme) || 0,
       online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
@@ -465,6 +470,8 @@ async function handleGet(firestore, res, user, gid) {
       members.push({
         uid: m.id,
         email: v.email || "",
+        name: v.name || "",
+        picture: v.picture || "",
         fait: Number(v.fait) || 0,
         rythme: Number(v.rythme) || 0,
         online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
@@ -503,7 +510,7 @@ async function handleGet(firestore, res, user, gid) {
     const requests = [];
     rSnap.forEach((r) => {
       const v = r.data() || {};
-      requests.push({ uid: r.id, email: v.email || "", at: v.at || 0 });
+      requests.push({ uid: r.id, email: v.email || "", name: v.name || "", picture: v.picture || "", at: v.at || 0 });
     });
     owner.requests = requests;
     owner.pending = requests.length;
@@ -603,7 +610,9 @@ async function handleJoin(firestore, res, user, gid) {
   const mSnap = await gRef.collection("members").doc(user.uid).get();
   if (mSnap.exists) return res.status(200).json({ ok: true, status: "member" });
 
-  await gRef.collection("requests").doc(user.uid).set({ email: user.email, at: Date.now() });
+  await gRef.collection("requests").doc(user.uid).set({
+    email: user.email, name: user.name || "", picture: user.picture || "", at: Date.now(),
+  });
   return res.status(200).json({ ok: true, status: "pending" });
 }
 
@@ -614,7 +623,7 @@ async function handleRequests(firestore, res, user, gid) {
   const requests = [];
   rSnap.forEach((r) => {
     const v = r.data() || {};
-    requests.push({ uid: r.id, email: v.email || "", at: v.at || 0 });
+    requests.push({ uid: r.id, email: v.email || "", name: v.name || "", picture: v.picture || "", at: v.at || 0 });
   });
   return res.status(200).json({ requests });
 }
@@ -641,7 +650,10 @@ async function handleApprove(firestore, res, user, gid, uid) {
     tx.delete(requestRef);
     if (memSnap.exists) return; // déjà membre (course concurrente) : nettoie juste la demande
     const info = reqSnap.data() || {};
-    tx.set(memberRef, { email: info.email || "", fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now });
+    tx.set(memberRef, {
+      email: info.email || "", name: info.name || "", picture: info.picture || "",
+      fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
+    });
     tx.update(gRef, { membersCount: app().firestore.FieldValue.increment(1) });
   });
   if (!found) return res.status(404).json({ error: "Demande introuvable (déjà traitée ?)." });

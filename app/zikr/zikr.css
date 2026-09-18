@@ -270,10 +270,6 @@
 .zk-reached-card p { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-main); }
 .zk-reached-card .zk-muted { font-size: 0.76rem; }
 
-/* Bouton Discussion — une vraie action visible (revue design, point 1),
-   plus une ligne de texte dans la barre du haut. */
-.zk-discussion-toggle { margin: 8px 0 24px; }
-
 /* ── Adhésion ────────────────────────────────────────────
    Le compteur lui-même est le chapelet partagé (.tc-*, app/globals.css). */
 .zk-join-state { display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--glass-border); }
@@ -286,26 +282,38 @@
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
 .zk-owner-panel { margin: 24px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-.zk-owner-panel h3, .zk-board h3, .zk-chat-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.zk-owner-panel h3, .zk-board h3, .zk-chat-panel h3, .zk-admin-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
-.zk-req { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
-.zk-req-email { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-req { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
+.zk-req-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
+  display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #fff;
+}
+.zk-req-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.zk-req-name { font-size: 0.88rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-req-email { font-size: 0.76rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zk-req-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .zk-mini { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
 .zk-mini.ok { background: rgba(45,212,160,0.2); color: #2dd4a0; }
 .zk-mini.no { background: rgba(224,96,122,0.18); color: #e0607a; }
-.zk-mini.warn { background: rgba(217,164,65,0.18); color: #d9a441; }
+
+/* ── Gestion du groupe (panneau admin — créateur/admin only) ──────────────
+   Regroupe modifier/demandes/modération/administration, hors de l'écran de
+   récitation (revue design : « les demandes d'adhésion et outils de
+   modération ne devraient pas encombrer en permanence l'expérience de
+   récitation »). Sections nettement séparées mais sobres — un seul système
+   de carte, pas un bloc violet dominant. */
+.zk-admin-panel { display: flex; flex-direction: column; gap: 20px; margin: 4px 0 28px; }
+.zk-admin-section { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.zk-admin-panel > h3:first-child { padding-top: 0; border-top: none; }
+.zk-admin-section h4 { margin: 0; font-size: 0.82rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .03em; display: flex; align-items: center; gap: 8px; }
+.zk-admin-section-danger .zk-btn.danger { border-color: rgba(224,96,122,0.4); }
 
 /* ── Participants (présence, rythme, modération) ─────────── */
-.zk-board { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-/* En-tête + bouton « Notifier les inactifs » (créateur only) sur la même
-   ligne — le h3 garde son gap interne (pastille de compte) mais perd sa
-   propre marge basse, reportée ici sur toute la ligne. */
-.zk-board-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 12px; }
-.zk-board-head h3 { margin: 0; }
+.zk-board { margin: 4px 0 28px; }
 .zk-notify-inactive {
-  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
   background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
   color: #d9a441; border-radius: 20px; padding: 5px 12px;
   font-size: 0.74rem; font-weight: 700; font-family: var(--font-ui);
@@ -313,15 +321,33 @@
 }
 .zk-notify-inactive:hover:not(:disabled) { background: rgba(217,164,65,0.2); }
 .zk-notify-inactive:disabled { opacity: 0.4; cursor: default; }
-.zk-board-list { display: flex; flex-direction: column; gap: 6px; }
+.zk-board-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .zk-board-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
 .zk-board-row.me { border: 1px solid var(--accent); }
-.zk-online-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--glass-border); }
-.zk-online-dot.on { background: #2dd4a0; box-shadow: 0 0 0 3px rgba(45,212,160,0.18); }
-.zk-board-email { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Identité moderne : avatar (photo Google ou initiale colorée) + nom en
+   premier, e-mail en information SECONDAIRE (revue design, point 9) — plus
+   la longue adresse e-mail comme seul élément d'identification. */
+.zk-board-avatar-wrap { position: relative; flex-shrink: 0; }
+.zk-board-avatar {
+  width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+  display: flex; align-items: center; justify-content: center; font-size: 0.88rem; font-weight: 700; color: #fff;
+}
+.zk-online-dot {
+  position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--glass-border); border: 2px solid var(--surface-2);
+}
+.zk-online-dot.on { background: #2dd4a0; }
+.zk-board-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.zk-board-name { font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-board-email-sub { font-size: 0.74rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-role-tag {
+  display: inline-flex; align-items: center; gap: 3px; align-self: flex-end;
+  font-size: 0.68rem; font-weight: 700; color: #d9a441;
+}
 /* Total (jamais remis à zéro) + total du jour, empilés — voir la boucle des
    participants, app/zikr/page.tsx. */
-.zk-board-stats { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.zk-board-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
 .zk-board-count { font-weight: 700; font-size: 0.85rem; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .zk-board-today { font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .zk-pace {
@@ -330,9 +356,13 @@
   background: color-mix(in srgb, var(--text-dim) 22%, var(--glass-border)); color: var(--text-dim); white-space: nowrap;
 }
 .zk-pace.suspect { background: rgba(224,96,122,0.15); color: #e0607a; }
-.zk-mod-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-.zk-footer-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+/* Quitter le groupe — délibérément à l'écart des actions courantes (bas de
+   l'onglet Participants, après une séparation), discret, avec confirmation
+   (window.confirm, voir doLeave) — revue design, point 15. */
+.zk-leave-zone { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--glass-border); text-align: center; }
+.zk-leave-link { background: none; border: none; color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-ui); cursor: pointer; padding: 6px; }
+.zk-leave-link:hover { color: #e0607a; }
 
 /* ── Vœux (dua) — ouverts par le créateur une fois l'objectif atteint ────
    Chaque vœu reste PRIVÉ (auteur + créateur seulement, jamais les autres
@@ -579,3 +609,56 @@
 .zk-amine-btn.amined { color: #e0245e; border-color: rgba(224,36,94,0.4); background: rgba(224,36,94,0.08); }
 .zk-amine-btn.amined svg { fill: #e0245e; }
 .zk-amine-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* ── Icône active (bouclier « Gestion du groupe » dans la barre du haut) ── */
+.zk-icon-btn.active { color: var(--accent); border-color: var(--accent); }
+
+/* ── Progression collective — cœur de l'écran ─────────────────────────────
+   .zk-progress-hero : légère mise en avant (fond propre) du bloc affiché en
+   tête de l'écran Zikr — la hiérarchie demandée (« progression collective →
+   compteur/chapelet → bouton d'égrainage ») se lit d'un coup d'œil plutôt
+   que de se fondre dans le reste. */
+.zk-progress-hero {
+  background: var(--surface-2); border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+}
+.zk-progress-remaining { color: var(--text-dim); font-weight: 500; }
+
+/* Repère « Aujourd'hui » — un seul chiffre personnel visible EN DEHORS du
+   chapelet (qui porte désormais le total principal, « Vos grains récités »)
+   pour ne pas recréer la confusion signalée (deux nombres personnels
+   affichés en parallèle sans hiérarchie claire). */
+.zk-today-chip {
+  display: inline-flex; align-items: center; gap: 6px; align-self: center;
+  margin: 0 auto 14px; padding: 5px 12px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--glass-border);
+  color: var(--text-dim); font-size: 0.8rem;
+}
+.zk-today-chip strong { color: var(--text-main); font-variant-numeric: tabular-nums; }
+
+/* ── Navigation fixe en pied d'écran (Zikr / Participants / Discussion) ───
+   Demandé explicitement : garder les actions importantes accessibles sans
+   parcourir toute la page. Même convention que .interaction-bar
+   (app/asrar/asrar.css) : fixe, safe-area gérée, z-index 100. */
+.zk-has-bottom-nav { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+.zk-bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+  display: flex; justify-content: space-around; align-items: stretch;
+  background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--glass-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.zk-bottom-nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 8px 4px 7px; background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600;
+  transition: color 0.15s ease;
+}
+.zk-bottom-nav-item.active { color: var(--accent); }
+.zk-bottom-nav-icon { position: relative; display: inline-flex; }
+.zk-bottom-nav-badge {
+  position: absolute; top: -5px; right: -9px; min-width: 15px; height: 15px; padding: 0 3px;
+  border-radius: 999px; background: #e0607a; color: #fff;
+  font-size: 0.6rem; font-weight: 700; line-height: 15px; text-align: center;
+}

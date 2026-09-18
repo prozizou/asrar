@@ -816,16 +816,19 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    Ici, dans globals.css, et non dans le CSS d'une route : le composant est
    partagé par « Noms d'Allah » (/benefits) et le « Zikr collectif » (/zikr). */
 .tc {
-  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;
   cursor: pointer; user-select: none; touch-action: manipulation;
   -webkit-tap-highlight-color: transparent; text-align: center;
   /* Relief de « vrai bouton » (revue design, module Noms d'Allah — « le
      bouton principal (compter) n'est pas évident ») : sans ce cadre, le
      chapelet se fondait dans le reste de la carte, sans rien signaler
-     visuellement qu'il s'agit d'une grande zone tactile. */
-  padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border);
+     visuellement qu'il s'agit d'une grande zone tactile. min-height : toute
+     la carte (pas seulement le fil/les grains) est la zone tactile — plus
+     grande que le seul chapelet (revue design : « zone tactile beaucoup plus
+     large »). */
+  padding: 18px 14px; border-radius: 18px; border: 1px solid var(--glass-border);
   background: var(--surface-2);
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .12s ease, border-color .15s ease;
 }
 .tc:hover { border-color: var(--accent); }
 .tc:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
@@ -877,7 +880,10 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   max-width: 140px;
 }
 .tc-group select option { color: #1a1206; }
-.tc-group-value { color: var(--text-main); font-family: var(--font-ui); font-size: .88rem; }
+.tc-group-value { color: var(--text-main); font-family: var(--font-ui); font-size: .88rem; font-weight: 700; }
+/* Libellé explicite à côté de l'emoji (revue design, point 4) — sans lui, un
+   nombre nu à côté d'un 🎯 ne dit pas CE QU'IL représente. */
+.tc-group-label { color: var(--text-dim); font-family: var(--font-ui); font-size: .78rem; }
 .tc-loop {
   padding: 5px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600;
   color: #d9a441; background: rgba(217,164,65,.15); border: 1px solid rgba(217,164,65,.4);
@@ -895,11 +901,21 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .tc-reset:hover { background: rgba(255,80,80,.22); }
 /* .tc-subdiv (menu déroulant des suggestions de répartition) réutilise
    .tc-group pour son apparence (icône + contrôle) — rien à ajouter ici. */
+/* Libellé au-dessus du grand nombre (Zikr collectif uniquement, voir
+   TasbihChapelet.js) — rend le compteur UNIQUE explicite (« Vos grains
+   récités ») au lieu de le laisser deviner par sa seule position, maintenant
+   qu'il n'est plus répété juste en dessous. */
+.tc-counter-label { font-size: .78rem; font-weight: 600; color: var(--text-dim); margin-bottom: -4px; }
 .tc-counter {
-  font-size: 3.5rem; font-weight: 700; line-height: 1; letter-spacing: -.04em;
+  font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -.04em;
   font-variant-numeric: tabular-nums; color: var(--accent);
-  text-shadow: 0 0 24px var(--accent-glow);
+  text-shadow: 0 0 20px var(--accent-glow);
+  transition: transform .15s ease;
 }
+/* Pulse bref au tap (revue design : « animation subtile du grain ») — retour
+   visuel immédiat en plus de la vibration (useTasbih.js) et du défilement du
+   chapelet. */
+.tc-counter-pulse { transform: scale(1.12); }
 /* « sur {objectif} » — un seul repère textuel pour la cible, juste sous le
    compteur (qui affiche la progression cumulée, voir TasbihChapelet.js) au
    lieu d'une ligne « Progression N/cible » séparée et redondante. */
