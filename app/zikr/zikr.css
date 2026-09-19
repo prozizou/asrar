@@ -169,25 +169,31 @@
 
 /* ── Détail ──────────────────────────────────────────────────────────────
    Revue design (« presque tous les éléments cherchent à attirer l'attention
-   en même temps ») : navigation réduite à 2 icônes + un menu ⋮ (Modifier et
-   Administration y sont repliés — plus de grand bloc violet permanent, plus
-   de 4 actions textuelles sur une ligne), titre resserré, badge de formule,
-   une seule ligne d'infos, carte « objectif atteint » discrète, en-tête de
-   progression avec le pourcentage en évidence. Grille d'espacement
-   approximative 8/12/16/24/32px entre ces sections (revue design, point 8). */
+   en même temps », « une carte posée sur un fond plutôt qu'une vraie page
+   d'application ») : plus de carte flottante (fond/bordure/ombre propres)
+   — .zk-detail pose le contenu directement sur le fond de page, comme
+   .zk-list-page ci-dessus ; navigation réduite à 2 icônes + un menu ⋮
+   (Modifier et Administration y sont repliés), titre resserré, badge de
+   formule, une seule ligne d'infos, carte « objectif atteint » discrète,
+   en-tête de progression avec le pourcentage en évidence. Grille
+   d'espacement approximative 8/12/16/24px entre ces sections. */
+.zk-detail { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 0; }
 .zk-detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.zk-topbar-actions { display: flex; align-items: center; gap: 6px; }
+.zk-topbar-actions { display: flex; align-items: center; gap: 4px; }
 
-/* Bouton icône seul (Partager, ⋮) — cercle discret, même famille visuelle
-   que .zk-chat-tool (discussion) mais plus petit : une action de navigation,
-   pas un contrôle de composition. */
+/* Bouton icône seul (Partager, ⋮) — sobre par défaut (revue design : « les
+   boutons partage et menu pourraient être plus petits et mieux intégrés »,
+   « bordures omniprésentes ») : pas de contour ni de fond tant qu'il n'est
+   pas survolé/actif, seule l'icône marque sa présence. 40px : proche du
+   minimum recommandé (44px) tout en restant visuellement discret — une
+   action de navigation secondaire, pas une carte à part entière. */
 .zk-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px; padding: 0; margin-top: 0; border-radius: 50%;
-  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
-  cursor: pointer; transition: color 0.2s, border-color 0.2s;
+  width: 40px; height: 40px; padding: 0; margin-top: 0; border-radius: 50%;
+  background: transparent; border: 1px solid transparent; color: var(--text-dim);
+  cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
-.zk-icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+.zk-icon-btn:hover, .zk-icon-btn:focus-visible { color: var(--accent); background: var(--surface-2); border-color: var(--glass-border); }
 
 /* Menu ⋮ (components/MoreMenu.js) — Modifier / Administration / Supprimer,
    avant éparpillés en actions textuelles ou en un bloc permanent (revue
@@ -208,12 +214,12 @@
    occupe trop de hauteur avant même d'arriver au compteur ») — marges
    verticales divisées par ~2, phrase arabe et badge de formule rapprochés
    du titre plutôt qu'espacés comme des blocs séparés. */
-.zk-detail-head { text-align: center; margin: 8px 0 14px; }
+.zk-detail-head { text-align: center; margin: 4px 0 12px; }
 .zk-detail-head h1 {
-  font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;
-  line-height: 1.2; margin: 0 auto 4px; max-width: 30ch;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+  line-height: 1.2; margin: 0 auto 3px; max-width: 30ch;
 }
-.zk-phrase-big { font-size: 1.2rem; color: var(--text-main); margin: 0 0 6px; line-height: 1.3; }
+.zk-phrase-big { font-size: 1.1rem; color: var(--text-main); margin: 0 0 4px; line-height: 1.25; }
 /* Badge plutôt qu'un simple texte coloré (revue design, point 3 : « badge
    Zikr libre ») — même traitement visuel que .prod-chain (marché) ou
    .zk-cta-muted : une étiquette identifiable, pas juste une couleur d'accent
@@ -225,20 +231,24 @@
 }
 /* Une seule ligne d'informations compacte (revue design, point 3) — jamais
    l'email complet du créateur (voir chatDisplayName, lib/zikrLogic.js). */
-.zk-owner { font-size: 0.8rem; color: var(--text-dim); }
+.zk-owner { font-size: 0.78rem; color: var(--text-dim); }
 /* Alerte compacte (revue design : « le message "En attente de validation…"
-   prend une zone importante, devrait devenir une alerte compacte ») — fond
-   teinté + coins arrondis pour se lire d'un coup d'œil comme UNE petite
-   notice, texte aligné à GAUCHE (un paragraphe centré sur plusieurs lignes
-   est plus difficile à scanner et paraît plus volumineux qu'il ne l'est). */
+   prend une zone importante, devrait devenir une alerte compacte », « le
+   statut "1 en ligne" attire presque autant l'attention que le titre ») —
+   fond teinté + coins arrondis pour se lire d'un coup d'œil comme UNE
+   petite notice, texte aligné à GAUCHE (un paragraphe centré sur plusieurs
+   lignes est plus difficile à scanner et paraît plus volumineux qu'il ne
+   l'est), padding réduit pour ne plus rivaliser visuellement avec l'en-tête. */
 .zk-private-note {
-  display: flex; align-items: flex-start; gap: 6px; margin-top: 6px;
-  padding: 7px 10px; border-radius: 10px;
-  background: rgba(217,164,65,0.1); font-size: 0.76rem; line-height: 1.35;
+  display: flex; align-items: flex-start; gap: 6px; margin-top: 4px;
+  padding: 6px 10px; border-radius: 10px;
+  background: rgba(217,164,65,0.1); font-size: 0.74rem; line-height: 1.3;
   color: #d9a441; text-align: left;
 }
 .zk-private-note svg { flex-shrink: 0; margin-top: 2px; }
-.zk-online-text { color: #2dd4a0; font-weight: 600; }
+/* Poids normal (pas 600) : un simple repère de présence, pas une donnée
+   aussi importante que le titre ou la progression. */
+.zk-online-text { color: #2dd4a0; font-weight: 500; }
 
 .zk-progress-block { margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
 /* En-tête de progression : le pourcentage à CÔTÉ du titre (revue design,
@@ -274,7 +284,7 @@
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
 .zk-owner-panel { margin: 24px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-.zk-owner-panel h3, .zk-board h3, .zk-chat-panel h3, .zk-admin-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.zk-owner-panel h3, .zk-board h3, .zk-admin-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
 .zk-req { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
@@ -377,7 +387,7 @@
    discrètes (le fond fait le contraste, pas un contour épais partout),
    --card-bg (déjà utilisé ailleurs dans l'app pour ce même ton violet
    profond) plutôt que --bg-deep (quasi noir, tranchait trop). */
-.zk-chat-panel { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
+.zk-chat-panel { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--glass-border); }
 .zk-chat-list {
   display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto;
   padding: 4px 2px; margin-bottom: 10px;
@@ -403,10 +413,14 @@
 
 /* Auteur + heure : UNE FOIS par groupe, jamais sur chaque bulle (revue
    design : « la couronne apparaît sur chaque message »). Texte plus petit
-   que le message (hiérarchie) — 11px plutôt que la taille du texte courant. */
+   que le message (hiérarchie) — 11px plutôt que la taille du texte courant.
+   Couleur neutre plutôt que --accent (revue design : « le violet est
+   utilisé sur beaucoup d'éléments simultanément ») — le mauve reste réservé
+   à ce qui EST une action ou une donnée qui m'appartient (bulle envoyée,
+   bouton d'envoi), pas à un simple repère d'identité. */
 .zk-chat-author {
   display: flex; align-items: center; gap: 5px; margin: 0 2px 1px;
-  font-size: 0.7rem; font-weight: 700; color: var(--accent);
+  font-size: 0.7rem; font-weight: 700; color: var(--text-dim);
 }
 .zk-chat-author svg { color: #d9a441; flex-shrink: 0; }
 .zk-chat-time { font-weight: 500; color: var(--text-dim); font-size: 0.68rem; }
@@ -641,18 +655,29 @@
    Demandé explicitement : garder les actions importantes accessibles sans
    parcourir toute la page. Même convention que .interaction-bar
    (app/asrar/asrar.css) : fixe, safe-area gérée, z-index 100. */
-.zk-has-bottom-nav { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+/* Hauteur de référence partagée (revue design : « navigation inférieure
+   surdimensionnée ») — 68px tient dans la fourchette 64–72px demandée ; une
+   seule variable évite que .zk-has-bottom-nav et le padding de compensation
+   de .zk-chat-mode (plus bas) ne divergent. */
+:root { --zk-nav-h: 68px; }
+.zk-has-bottom-nav { padding-bottom: calc(var(--zk-nav-h) + env(safe-area-inset-bottom, 0px)); }
 .zk-bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
   display: flex; justify-content: space-around; align-items: stretch;
+  height: var(--zk-nav-h);
   background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--glass-border);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* 3 colonnes de largeur STRICTEMENT identique (flex:1 sur les trois),
+   aucune "capsule" propre à l'onglet actif — seule la couleur change (voir
+   .active plus bas). margin-top:0 annule le bouton générique global
+   (app/globals.css : `button{margin-top:15px}`) qui aurait sinon décalé
+   chaque item vers le bas et déséquilibré la barre. */
 .zk-bottom-nav-item {
   flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; padding: 8px 4px 7px; background: none; border: none; cursor: pointer;
+  gap: 3px; padding: 8px 4px 7px; margin-top: 0; background: none; border: none; cursor: pointer;
   color: var(--text-dim); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600;
   transition: color 0.15s ease;
 }
@@ -662,4 +687,48 @@
   position: absolute; top: -5px; right: -9px; min-width: 15px; height: 15px; padding: 0 3px;
   border-radius: 999px; background: #e0607a; color: #fff;
   font-size: 0.6rem; font-weight: 700; line-height: 15px; text-align: center;
+}
+
+/* ── Mode plein écran (Discussion, mobile) ─────────────────────────────────
+   Revue design : « transformer cette vue en plein écran mobile, sans grande
+   carte flottante extérieure ... la discussion occuperait automatiquement
+   tout l'espace restant avec flex:1 et overflow-y:auto ... la zone de
+   saisie fixée juste au-dessus d'une barre de navigation ». Recouvre tout
+   le viewport (indépendant du padding/de la largeur max de .container) —
+   uniquement sous 900px, même seuil que .back-btn (app/globals.css) : au
+   delà, l'écran Discussion reste une page normale dans la mise en page
+   desktop existante (chat borné à 360px, voir .zk-chat-list plus haut).
+   `chatMode` (page.tsx) n'est vrai que pour isMember && tab==='discussion' :
+   dans ce cas précis, GroupDetail ne restitue QUE .zk-detail-topbar,
+   .zk-detail-head, .zk-chat-panel et .zk-bottom-nav (tous les autres blocs
+   sont gardés par leur propre onglet) — les trois premiers gardent leur
+   taille naturelle (flex-shrink:0), le panneau de discussion s'étire pour
+   occuper tout le reste via flex:1. */
+@media (max-width: 900px) {
+  .zk-chat-mode {
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; flex-direction: column;
+    background: var(--bg-deep);
+    padding: 12px 16px 0;
+    overflow: hidden;
+  }
+  .zk-chat-mode .zk-detail-topbar,
+  .zk-chat-mode .zk-detail-head { flex-shrink: 0; }
+  .zk-chat-mode .zk-detail-head { margin-bottom: 8px; }
+  .zk-chat-mode .zk-chat-panel {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--glass-border);
+  }
+  /* flex:1 remplace le plafond fixe de 360px (desktop) — la discussion
+     devient la zone DOMINANTE de l'écran, comme demandé, au lieu d'un
+     encart de hauteur fixe au milieu d'espace vide. */
+  .zk-chat-mode .zk-chat-list { flex: 1; min-height: 0; max-height: none; }
+  /* Ligne de saisie ancrée juste au-dessus de la barre de navigation fixe
+     (même variable --zk-nav-h que .zk-has-bottom-nav) — le sélecteur à deux
+     classes l'emporte sur le padding raccourci de .zk-voice-recording,
+     quel que soit l'ordre des règles dans ce fichier. */
+  .zk-chat-mode .zk-chat-input-row {
+    flex-shrink: 0;
+    padding-bottom: calc(12px + var(--zk-nav-h) + env(safe-area-inset-bottom, 0px));
+  }
 }

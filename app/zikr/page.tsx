@@ -842,9 +842,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
   // sondage affiché côté client).
   const inactiveCount = g.members.filter((m) => m.uid !== uid && m.fait === 0).length;
+  // Écran Discussion : bascule en plein écran mobile (revue design — « une
+  // vraie page de messagerie, pas un composant posé sur un fond ») plutôt
+  // que la carte flottante des autres onglets, voir .zk-chat-mode (zikr.css).
+  const chatMode = isMember && tab === 'discussion';
 
   return (
-    <div className={'glass-panel' + (isMember ? ' zk-has-bottom-nav' : '')}>
+    <div className={'zk-detail' + (isMember ? ' zk-has-bottom-nav' : '') + (chatMode ? ' zk-chat-mode' : '')}>
       {/* Barre de nav resserrée : retour, Partager (icône) et un menu ⋮
           — visible de TOUT membre désormais (pas seulement créateur/admin) :
           « Quitter le groupe » (revue design : action secondaire rarement
@@ -887,13 +891,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
           {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
         </div>
+        {/* Les précisions ci-dessous (rappel push, invitation par lien…)
+            alourdissent l'en-tête sans rien apporter une fois qu'on discute
+            déjà dans le groupe — réservées à l'écran Zikr/Participants. */}
         {!!g.sessionAt && (
           <div className="zk-private-note">
             <Bell size={13} strokeWidth={2.5} aria-hidden="true" /> Prochaine session : {fmtSessionAt(g.sessionAt)}
-            {isMember && ' — un rappel push sera envoyé aux membres approuvés ayant activé les notifications.'}
+            {isMember && !chatMode && ' — un rappel push sera envoyé aux membres approuvés ayant activé les notifications.'}
           </div>
         )}
-        {g.private && (
+        {g.private && !chatMode && (
           <div className="zk-private-note">
             <Lock size={13} strokeWidth={2.5} aria-hidden="true" /> Zikr privé — invisible dans la liste publique, accessible uniquement via le lien partagé.
           </div>
@@ -901,7 +908,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         {g.approved === false && (
           <div className="zk-private-note">
             <Clock size={13} strokeWidth={2.5} aria-hidden="true" /> En attente de validation par l’administrateur avant d’apparaître dans la liste publique.
-            {isMember && ' Vous pouvez déjà inviter des participants via le lien de partage.'}
+            {isMember && !chatMode && ' Vous pouvez déjà inviter des participants via le lien de partage.'}
           </div>
         )}
       </div>
@@ -1130,7 +1137,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           nom/heure) par groupe, voir groupChatMessages (lib/zikrLogic.js). */}
       {isMember && tab === 'discussion' && (
         <div className="zk-chat-panel">
-          <h3><MessageCircle size={15} strokeWidth={2.5} aria-hidden="true" /> Discussion</h3>
+          {/* Pas de titre "Discussion" ici : déjà dit par l'onglet actif de
+              la BottomNav juste en dessous — un en-tête de plus ne ferait
+              que reprendre de la hauteur sur l'écran le plus dense de tous. */}
           <div className="zk-chat-list" ref={chatListRef}>
             {messages.length === 0 ? (
               <p className="zk-muted">Aucun message pour l’instant — lancez la discussion !</p>
