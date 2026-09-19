@@ -287,18 +287,38 @@
 .zk-owner-panel h3, .zk-board h3, .zk-admin-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
-.zk-req { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
+/* flex-wrap : avec 3 pastilles d'action désormais possibles (WhatsApp en
+   plus d'Accepter/Refuser), les garder alignées à tout prix sur la même
+   ligne que le nom écrasait celui-ci à un caractère sur mobile étroit —
+   .zk-req-actions (min-width 0 par défaut, poussé à droite via margin-left
+   auto) bascule proprement sur sa propre ligne quand la place manque,
+   plutôt que de rogner l'identité. */
+.zk-req { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px; }
 .zk-req-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
   display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #fff;
 }
-.zk-req-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.zk-req-id { flex: 1 1 140px; min-width: 140px; display: flex; flex-direction: column; gap: 1px; }
 .zk-req-name { font-size: 0.88rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zk-req-email { font-size: 0.76rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zk-req-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.zk-mini { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
+/* flex-wrap : 3 pastilles (WhatsApp/Accepter/Refuser) désormais possibles —
+   bascule proprement sur 2 lignes plutôt que déborder sur un petit écran. */
+.zk-req-actions { display: flex; flex-wrap: wrap; gap: 6px; row-gap: 4px; justify-content: flex-end; flex: 0 0 auto; margin-left: auto; }
+/* width:auto (PAS le défaut hérité) : le bouton générique global
+   (app/globals.css, `button{width:100%}`) donnait à .zk-mini une largeur de
+   flex-basis de 100 % — invisible tant que .zk-req-actions restait en
+   nowrap (le flex-shrink forcé masquait le symptôme), mais faisait
+   basculer chaque pastille sur SA PROPRE ligne pleine largeur dès que
+   .zk-req-actions passe en flex-wrap (bug constaté en ajoutant le bouton
+   WhatsApp ci-dessous). Correction à la racine plutôt qu'un nouveau
+   contournement. */
+.zk-mini { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: auto; border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); text-decoration: none; white-space: nowrap; }
 .zk-mini.ok { background: rgba(45,212,160,0.2); color: #2dd4a0; }
 .zk-mini.no { background: rgba(224,96,122,0.18); color: #e0607a; }
+/* Contact WhatsApp (revue : « pour que l'administration puisse le
+   contacter ») — vert WhatsApp, distinct des deux verdicts Accepter/Refuser
+   pour ne pas laisser croire à un troisième verdict sur la demande. */
+.zk-mini.wa { background: rgba(37,211,102,0.16); color: #25d366; }
 
 /* ── Gestion du groupe (panneau admin — créateur/admin only) ──────────────
    Regroupe modifier/demandes/modération/administration, hors de l'écran de
@@ -364,6 +384,18 @@
   background: color-mix(in srgb, var(--text-dim) 22%, var(--glass-border)); color: var(--text-dim); white-space: nowrap;
 }
 .zk-pace.suspect { background: rgba(224,96,122,0.15); color: #e0607a; }
+
+/* Contact WhatsApp d'un participant (créateur/admin only — le téléphone
+   n'arrive au client que pour eux, voir pages/api/zikr.js handleGet) —
+   même gabarit que .zk-icon-btn mais plus petit (32px) pour s'intégrer à
+   la ligne du participant sans dominer son avatar (34px). Vert WhatsApp
+   par défaut (pas neutre comme .zk-icon-btn) : ce bouton EST l'action, pas
+   une simple option de navigation secondaire. */
+.zk-board-wa {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: rgba(37,211,102,0.14); border-color: transparent; color: #25d366;
+}
+.zk-board-wa:hover, .zk-board-wa:focus-visible { background: rgba(37,211,102,0.22); color: #25d366; border-color: transparent; }
 
 
 /* ── Vœux (dua) — ouverts par le créateur une fois l'objectif atteint ────

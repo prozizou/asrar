@@ -26,7 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart, Trophy, Target, Shield, LogOut,
+  Mic, Heart, Trophy, Target, Shield, LogOut, Phone,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -44,6 +44,7 @@ import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import {
   progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
+  normalizePhone,
 } from '@/lib/zikrLogic';
 import { uploadZikrChatMedia } from '@/lib/cloudinary';
 import { playNotificationBeep } from '@/lib/notifSound';
@@ -86,6 +87,7 @@ interface JoinRequest {
   email: string;
   name?: string; // nom Google au moment de la demande — absent pour un compte email/mot de passe
   picture?: string;
+  phone?: string; // format international, obligatoire à la demande — voir handleJoin
 }
 
 interface Member {
@@ -93,6 +95,9 @@ interface Member {
   email: string;
   name?: string; // nom Google au moment de l'adhésion — absent pour un compte email/mot de passe
   picture?: string;
+  // Renvoyé par le serveur UNIQUEMENT au créateur/admin (handleGet) — absent
+  // pour un membre qui consulte la liste des participants sur lui-même.
+  phone?: string;
   fait: number;
   rythme: number;
   online: boolean;
@@ -174,6 +179,13 @@ const fmtSessionAt = (ms: number) =>
 // consécutifs (voir groupChatMessages, lib/zikrLogic.js), pas la date
 // complète : dans une conversation en direct, seule l'heure compte.
 const fmtHm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+// Lien de contact WhatsApp direct (créateur/admin → un participant précis) —
+// wa.me exige le numéro SANS le "+" (l'indicatif pays reste dans les
+// chiffres). `phone` est déjà au format international normalisé côté
+// serveur (lib/zikrLogic.js normalizePhone) avant d'arriver ici.
+const waContactUrl = (phone: string, groupName: string) =>
+  'https://wa.me/' + phone.replace(/\D/g, '') +
+  '?text=' + encodeURIComponent(`Assalamou aleykoum 🌙 — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 const LIST_POLL_MS = 6000;  // sondage de la liste (moins fréquent : pas de compteur en direct dessus)
@@ -513,6 +525,32 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
   );
 }
 
+// Numéro de téléphone (format international) — OBLIGATOIRE pour demander à
+// rejoindre un zikr collectif (revue : « pour que l'administration puisse
+// le contacter par WhatsApp afin de communiquer avec chaque membre »).
+// normalizePhone (lib/zikrLogic.js, partagée avec le serveur qui fait
+// autorité — handleJoin) donne ici un retour immédiat, avant l'envoi.
+function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boolean }) {
+  const [phone, setPhone] = useState('');
+  const normalized = normalizePhone(phone);
+
+  return (
+    <div className="zk-form">
+      <label className="zk-field">
+        <span>Numéro WhatsApp (format international) <em className="zk-required">obligatoire</em></span>
+        <input type="tel" inputMode="tel" placeholder="+221770000000" value={phone}
+          onChange={(e) => setPhone(e.target.value)} />
+      </label>
+      <p className="zk-preview">
+        Sert uniquement au créateur du groupe pour vous contacter par WhatsApp — jamais visible des autres participants.
+      </p>
+      <button className="zk-btn main" disabled={busy || !normalized} onClick={() => normalized && onJoin(normalized)}>
+        <Handshake size={16} strokeWidth={2.5} aria-hidden="true" /> {busy ? 'Envoi…' : 'Demander à rejoindre'}
+      </button>
+    </div>
+  );
+}
+
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
 function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string) => void; onBack: () => void }) {
   const [g, setG] = useState<GroupDetailData | null>(null);
@@ -667,12 +705,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     if (tab === 'discussion' && chatListRef.current) chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
   }, [messages, tab]);
 
-  const doJoin = async () => {
+  const [joinBusy, setJoinBusy] = useState(false);
+  const doJoin = async (phone: string) => {
+    if (joinBusy) return;
+    setJoinBusy(true);
     try {
-      const d = await joinGroup(groupId);
+      const d = await joinGroup(groupId, phone);
       notify(d.status === 'pending' ? '⏳ Demande envoyée au créateur.' : '✓ Vous avez rejoint le groupe.');
       load();
     } catch (e: any) { notify('❌ ' + (e.message || e)); }
+    finally { setJoinBusy(false); }
   };
   const doLeave = async () => {
     if (!window.confirm('Quitter ce zikr collectif ?')) return;
@@ -931,9 +973,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           ) : g.full ? (
             <div className="zk-join-state">Ce zikr collectif est complet — objectif entièrement récité.</div>
           ) : (
-            <button className="zk-btn main" onClick={doJoin}>
-              <Handshake size={16} strokeWidth={2.5} aria-hidden="true" /> Demander à rejoindre
-            </button>
+            <JoinForm onJoin={doJoin} busy={joinBusy} />
           )}
         </>
       )}
@@ -1009,6 +1049,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                           <span className="zk-req-email">{r.email}</span>
                         </span>
                         <span className="zk-req-actions">
+                          {r.phone && (
+                            <a className="zk-mini wa" href={waContactUrl(r.phone, g.name)} target="_blank" rel="noopener noreferrer"
+                              title={`Contacter ${reqName} par WhatsApp avant d’accepter sa demande`}>
+                              <Phone size={12} strokeWidth={2.5} aria-hidden="true" /> WhatsApp
+                            </a>
+                          )}
                           <button className="zk-mini ok" onClick={() => act(approveMember, r.uid)}>Accepter</button>
                           <button className="zk-mini no" onClick={() => act(rejectMember, r.uid)}>Refuser</button>
                         </span>
@@ -1112,6 +1158,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                       </span>
                     )}
                   </span>
+                  {/* Contact WhatsApp direct — le téléphone n'arrive ici (m.phone)
+                      que pour le créateur/l'admin, voir pages/api/zikr.js
+                      handleGet : rien à vérifier de plus côté client, son
+                      absence pour tout autre viewer masque déjà ce bouton. */}
+                  {m.phone && m.uid !== uid && (
+                    <a className="zk-icon-btn zk-board-wa" href={waContactUrl(m.phone, g.name)} target="_blank" rel="noopener noreferrer"
+                      title={`Contacter ${displayName} par WhatsApp`} aria-label={`Contacter ${displayName} par WhatsApp`}>
+                      <Phone size={15} strokeWidth={2.5} aria-hidden="true" />
+                    </a>
+                  )}
                   {g.status === 'owner' && m.uid !== uid && (
                     <MoreMenu label={`Actions de modération pour ${m.email}`}>
                       <button type="button" className="zk-attach-item" onClick={() => doWarn(m.uid, m.email)}>

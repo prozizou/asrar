@@ -177,7 +177,7 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const {
-  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey,
+  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey, normalizePhone,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
   WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount,
 } = require("../../lib/zikrLogic");
@@ -221,7 +221,7 @@ export default async function handler(req, res) {
       case "create":         return await handleCreate(db, res, user, body);
       case "update":         return await handleUpdate(db, res, user, gid, body);
       case "get":            return await handleGet(db, res, user, gid);
-      case "join":            return await handleJoin(db, res, user, gid);
+      case "join":            return await handleJoin(db, res, user, gid, body.phone);
       case "requests":       return await handleRequests(db, res, user, gid);
       case "approve":        return await handleApprove(db, res, user, gid, safeKey(body.uid));
       case "reject":         return await handleReject(db, res, user, gid, safeKey(body.uid));
@@ -427,6 +427,7 @@ async function handleGet(db, res, user, gid) {
       email: v.email || "",
       name: v.name || "",
       picture: v.picture || "",
+      phone: v.phone || "",
       fait: Number(v.fait) || 0,
       rythme: Number(v.rythme) || 0,
       online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
@@ -437,6 +438,12 @@ async function handleGet(db, res, user, gid) {
 
   // L'administrateur voit aussi le trousseau complet (modération — même
   // logique que handleList, qui lui montre tous les groupes sans filtre).
+  // Le TÉLÉPHONE, lui, ne sort du serveur QUE pour le créateur/l'admin
+  // (canModerate ci-dessous) — jamais pour un simple membre qui consulte la
+  // liste des participants : contrairement à l'email (déjà visible de tous,
+  // comportement inchangé), c'est une donnée personnelle recueillie dans un
+  // seul but précis (le créateur peut contacter chacun par WhatsApp).
+  const canModerate = isOwner || admin;
   let members = [];
   if (isOwner || mine || admin) {
     const membersSnap = await db.ref("zikr_members/" + gid).once("value");
@@ -447,6 +454,7 @@ async function handleGet(db, res, user, gid) {
         email: v.email || "",
         name: v.name || "",
         picture: v.picture || "",
+        ...(canModerate ? { phone: v.phone || "" } : {}),
         fait: Number(v.fait) || 0,
         rythme: Number(v.rythme) || 0,
         online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
@@ -480,7 +488,7 @@ async function handleGet(db, res, user, gid) {
     const requests = [];
     rSnap.forEach((r) => {
       const v = r.val() || {};
-      requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", at: v.at || 0 });
+      requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", phone: v.phone || "", at: v.at || 0 });
     });
     owner.requests = requests;
     owner.pending = requests.length;
@@ -574,8 +582,16 @@ async function handleGet(db, res, user, gid) {
 }
 
 // ── Demander à rejoindre ────────────────────────────────────────
-async function handleJoin(db, res, user, gid) {
+// Le téléphone (format international) est désormais OBLIGATOIRE : demandé
+// explicitement pour que le créateur puisse contacter chaque participant
+// par WhatsApp — refusé côté serveur (qui fait autorité) même si le
+// formulaire client laissait passer une saisie invalide.
+async function handleJoin(db, res, user, gid, rawPhone) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
+  const phone = normalizePhone(rawPhone);
+  if (!phone) {
+    return res.status(400).json({ error: "Numéro de téléphone invalide — merci d'indiquer le format international (ex. +221770000000)." });
+  }
   const gSnap = await db.ref("zikr_groups/" + gid).once("value");
   const g = gSnap.val();
   if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
@@ -585,7 +601,7 @@ async function handleJoin(db, res, user, gid) {
   if (mSnap.exists()) return res.status(200).json({ ok: true, status: "member" });
 
   await db.ref("zikr_requests/" + gid + "/" + user.uid).set({
-    email: user.email, name: user.name || "", picture: user.picture || "", at: Date.now(),
+    email: user.email, name: user.name || "", picture: user.picture || "", phone, at: Date.now(),
   });
   return res.status(200).json({ ok: true, status: "pending" });
 }
@@ -597,7 +613,7 @@ async function handleRequests(db, res, user, gid) {
   const requests = [];
   rSnap.forEach((r) => {
     const v = r.val() || {};
-    requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", at: v.at || 0 });
+    requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", phone: v.phone || "", at: v.at || 0 });
   });
   return res.status(200).json({ requests });
 }
@@ -619,7 +635,7 @@ async function handleApprove(db, res, user, gid, uid) {
     members = members || {};
     if (members[uid]) return members; // déjà approuvé
     members[uid] = {
-      email: info.email || "", name: info.name || "", picture: info.picture || "",
+      email: info.email || "", name: info.name || "", picture: info.picture || "", phone: info.phone || "",
       fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
     };
     return members;
