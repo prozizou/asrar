@@ -18,19 +18,24 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 // départ, au lieu de boucler au bout de quelques dizaines (ce qui donnait
 // l'impression que le compteur se réinitialisait).
 const BEAD_COUNT = 100;
-const BEAD_D = 22;
+const BEAD_D = 14;
 const BEAD_R = BEAD_D / 2;
 
-// Fenêtre visible. Le fil, lui, descend bien plus bas (BOT_L/BOT_R) et se
-// referme hors champ : c'est cette réserve de grains masquée qui alimente le
-// défilement sans jamais laisser de trou.
-const VIEW_W = 160;
-const VIEW_H = 250;
+// Fenêtre visible — réduite une seconde fois (revue design, écran Zikr
+// collectif : « le grand chapelet prend énormément d'espace ; sur mobile, le
+// compteur et le bouton d'égrainage doivent être prioritaires, pas
+// l'illustration ») — environ 45 % plus petit que l'original (250px de haut)
+// au lieu de ~30 % précédemment. Le fil, lui, descend toujours bien plus bas
+// (BOT_L/BOT_R) et se referme hors champ, seule la fenêtre AFFICHÉE rétrécit
+// — c'est cette réserve de grains masquée qui alimente le défilement sans
+// jamais laisser de trou.
+const VIEW_W = 108;
+const VIEW_H = 138;
 
 const CX = VIEW_W / 2;
-const RX = 46;    // demi-écart entre les deux brins
-const RY = 34;    // hauteur de l'arc
-const TOP_Y = 46; // hauteur à laquelle les brins rejoignent l'arc
+const RX = 30;    // demi-écart entre les deux brins
+const RY = 20;    // hauteur de l'arc
+const TOP_Y = 26; // hauteur à laquelle les brins rejoignent l'arc
 // Les brins descendent très bas hors champ : le fil est ainsi assez long pour
 // porter les 100 grains à un espacement naturel, en gardant la même géométrie
 // visible. Volontairement asymétriques (le brin droit descend plus bas).
@@ -48,6 +53,7 @@ const LOOP_PATH =
   `Q ${CX} ${BOT_R + 80} ${CX - RX} ${BOT_L} Z`;
 
 const TAP_DURATION = 280;
+const TAP_PULSE_MS = 180; // durée du pulse visuel sur le compteur au tap (voir handleTap)
 // Le bas s'estompe : le fil continue hors champ au lieu d'être tranché net.
 const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)';
 
@@ -63,8 +69,19 @@ const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 1
  *   partagé et non modifiable) par un simple badge en lecture seule, et
  *   masque la barre de progression personnelle (sans objectif propre, elle
  *   n'a rien de pertinent à montrer).
+ * @param {number} [props.myFait]  Zikr collectif : valeur CORRIGÉE de mes
+ *   grains (max du compteur local et du dernier total connu du serveur —
+ *   voir MemberCounter, app/zikr/page.tsx) à afficher à la place de `t.total`
+ *   brut, qui peut brièvement retarder sur un second appareil. Absent en
+ *   dehors du Zikr collectif (Noms d'Allah) : `t.total` fait alors foi.
+ * @param {boolean} [props.embedded]  Zikr collectif : true quand ce
+ *   composant est nesté dans une carte englobante qui porte déjà son propre
+ *   fond/bordure/padding (.zk-zikr-card, app/zikr/page.tsx) — retire le
+ *   cadre PROPRE au chapelet (`.tc`) pour éviter un double encadrement
+ *   (revue design : « boîte dans la boîte »). Le chapelet autonome des
+ *   Noms d'Allah (app/benefits) garde son cadre habituel.
  */
-export default function TasbihChapelet({ id, t, collectifRestant }) {
+export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedded }) {
   const isCollectif = collectifRestant !== undefined;
   // Objectif du GROUPE atteint (collectifRestant retombé à 0) : le compteur
   // devient inactif — demandé explicitement. Continuer à taper au-delà de la
@@ -80,6 +97,14 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
   // en Zikr collectif (branche isCollectif, aucun réglage personnel) — l'état
   // n'y est jamais lu.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Retour visuel immédiat au tap (revue design : « animation subtile du
+  // grain ») — en plus de la vibration déjà déclenchée par t.tap()
+  // (components/useTasbih.js) : un bref pulse sur le compteur, retiré après
+  // TAP_PULSE_MS. setTimeout (pas juste une classe CSS avec transition à
+  // l'aller uniquement) pour que deux taps rapprochés puissent chacun
+  // relancer l'animation depuis zéro.
+  const [pulse, setPulse] = useState(false);
+  const pulseTimer = useRef(null);
   const pathRef = useRef(null);
   const beadRefs = useRef([]);
   const stageRef = useRef(null);
@@ -158,6 +183,10 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
 
     t.tap();
 
+    setPulse(true);
+    clearTimeout(pulseTimer.current);
+    pulseTimer.current = setTimeout(() => setPulse(false), TAP_PULSE_MS);
+
     const samples = ensureSamples();
     if (!samples) return;
     const { total } = samples;
@@ -199,7 +228,7 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
       id={`tasbih-${id}`}
       role="region"
       aria-label={collectifDone ? 'Compteur de dhikr — objectif du groupe atteint' : 'Compteur de dhikr'}
-      className={'tc' + (collectifDone ? ' tc-inactive' : '')}
+      className={'tc' + (collectifDone ? ' tc-inactive' : '') + (embedded ? ' tc-embedded' : '')}
       onClick={handleTap}
     >
       {/* Réglages. stopPropagation empêche ces interactions de compter comme
@@ -214,8 +243,12 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
               <span className="tc-group-value">Objectif atteint</span>
             </div>
           ) : (
-            <div className="tc-group" title="Objectif du Zikr collectif — ce qu'il reste au groupe entier">
+            // Libellé explicite (revue design, point 4 : « chaque nombre doit
+            // avoir un libellé explicite ») — plus le seul emoji 🎯 à côté
+            // d'un nombre nu, ambigu quant à ce qu'il représente.
+            <div className="tc-group" title="Ce qu'il reste à réciter au groupe entier">
               <span aria-hidden>🎯</span>
+              <span className="tc-group-label">Objectif restant</span>
               <span className="tc-group-value">{collectifRestant.toLocaleString('fr-FR')}</span>
             </div>
           )
@@ -302,9 +335,18 @@ export default function TasbihChapelet({ id, t, collectifRestant }) {
           série et affichait donc « 00 » de façon ambiguë juste à côté d'une
           ligne « Progression 0/2086 » redondante — revue design). En Zikr
           collectif (uncapped=true dans useTasbih), t.total === t.count : ce
-          changement n'affecte donc pas son affichage. */}
-      <div className="tc-counter" aria-live="polite" aria-atomic="true">
-        {t.total}
+          changement n'affecte donc pas son affichage — SAUF que `myFait`
+          (corrigé, voir MemberCounter) remplace `t.total` brut quand fourni,
+          pour rester exact sur un second appareil. Libellé explicite
+          au-dessus du nombre (revue design, point 4 : « chaque nombre doit
+          avoir un libellé explicite et une fonction immédiatement
+          compréhensible ») — ce compteur est UNIQUE maintenant, plus dupliqué
+          juste en dessous par une ligne « Mes grains récités » séparée. Pulse
+          bref au tap (retour visuel immédiat, en plus de la vibration déjà
+          déclenchée par t.tap()). */}
+      {isCollectif && <div className="tc-counter-label">Vos grains récités</div>}
+      <div className={'tc-counter' + (pulse ? ' tc-counter-pulse' : '')} aria-live="polite" aria-atomic="true">
+        {isCollectif && myFait !== undefined ? myFait : t.total}
       </div>
       {!isCollectif && <div className="tc-counter-target">sur {t.numericTarget || '—'}</div>}
 
