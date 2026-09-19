@@ -833,6 +833,16 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .tc:hover { border-color: var(--accent); }
 .tc:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
 
+/* Zikr collectif (app/zikr/page.tsx, TasbihChapelet embedded=true) : le
+   chapelet vit DANS .zk-zikr-card, qui porte déjà fond/bordure/padding —
+   retire le cadre propre du chapelet pour éviter la « boîte dans la boîte »
+   (revue design). Garde le padding vertical (gap déjà porté par .tc) pour
+   ne pas coller le chapelet aux éléments voisins de la carte. */
+.tc.tc-embedded {
+  padding: 4px 0 0; border: none; border-radius: 0; background: none;
+}
+.tc.tc-embedded:hover, .tc.tc-embedded:active { background: none; border-color: transparent; }
+
 /* Objectif du Zikr collectif atteint (components/TasbihChapelet.js,
    `collectifDone`) : le compteur devient inactif — demandé explicitement.
    cursor + léger assombrissement suffisent à le signaler ; le clic est de

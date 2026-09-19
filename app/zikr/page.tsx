@@ -26,7 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart, Trophy, Target, Shield,
+  Mic, Heart, Trophy, Target, Shield, LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -845,13 +845,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
   return (
     <div className={'glass-panel' + (isMember ? ' zk-has-bottom-nav' : '')}>
-      {/* Barre de nav resserrée : seulement le retour, Partager (icône) et un
-          menu ⋮ à UNE SEULE entrée — « Gestion du groupe » — qui ouvre le
-          panneau admin dédié (onglet interne « admin », plus bas). Toutes
-          les fonctions administratives (modifier, demandes d'adhésion,
-          modération, approbation/suppression admin) y sont désormais
-          regroupées, séparées de l'expérience de récitation (revue design :
-          « les fonctions administratives deviennent secondaires »). */}
+      {/* Barre de nav resserrée : retour, Partager (icône) et un menu ⋮
+          — visible de TOUT membre désormais (pas seulement créateur/admin) :
+          « Quitter le groupe » (revue design : action secondaire rarement
+          utilisée, ne doit plus traîner en bas de l'onglet Participants) y
+          vit pour tous, « Gestion du groupe » (modifier, demandes d'adhésion,
+          modération, approbation/suppression admin) reste réservée au
+          créateur/admin, dans ce même menu. */}
       <div className="zk-detail-topbar">
         <button className="zk-link" onClick={onBack}>← Zikr</button>
         <span className="zk-topbar-actions">
@@ -859,12 +859,17 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
             <Share2 size={17} strokeWidth={2.5} aria-hidden="true" />
           </button>
-          {(g.status === 'owner' || g.isAdmin) && (
-            <button type="button" className={'zk-icon-btn' + (tab === 'admin' ? ' active' : '')}
-              onClick={() => setTab('admin')}
-              title="Gestion du groupe" aria-label="Gestion du groupe">
-              <Shield size={17} strokeWidth={2.5} aria-hidden="true" />
-            </button>
+          {isMember && (
+            <MoreMenu label="Plus d’actions sur ce zikr collectif">
+              {(g.status === 'owner' || g.isAdmin) && (
+                <button type="button" className="zk-attach-item" onClick={() => setTab('admin')}>
+                  <Shield size={16} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe
+                </button>
+              )}
+              <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doLeave}>
+                <LogOut size={16} strokeWidth={2.5} aria-hidden="true" /> Quitter le groupe
+              </button>
+            </MoreMenu>
           )}
         </span>
       </div>
@@ -1008,23 +1013,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             </div>
           )}
 
-          {g.status === 'owner' && (
-            <div className="zk-admin-section">
-              <h4>Modération</h4>
-              <button
-                type="button"
-                className="zk-notify-inactive"
-                onClick={doNotifyInactive}
-                disabled={notifyBusy || inactiveCount === 0}
-                title="Avertir les comptes n'ayant récité aucun grain — sinon ils seront retirés du groupe"
-              >
-                <Bell size={13} strokeWidth={2.5} aria-hidden="true" />
-                Notifier les inactifs{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
-              </button>
-              <p className="zk-muted">Avertir ou exclure un participant précis se fait depuis l’onglet Participants.</p>
-            </div>
-          )}
-
           {/* Administration (prozizou298@gmail.com ou tout compte
               admins/{clé}) : approuver pour la liste publique, ou
               supprimer n'importe quel zikr collectif — voir
@@ -1060,7 +1048,21 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           ligne, plus les deux boutons colorés en permanence d'avant). */}
       {isMember && tab === 'participants' && (
         <div className="zk-board">
-          <h3>Participants ({g.members.length})</h3>
+          <div className="zk-board-head">
+            <h3>Participants ({g.members.length})</h3>
+            {g.status === 'owner' && (
+              <button
+                type="button"
+                className="zk-notify-inactive"
+                onClick={doNotifyInactive}
+                disabled={notifyBusy || inactiveCount === 0}
+                title="Avertir les comptes n'ayant récité aucun grain — sinon ils seront retirés du groupe"
+              >
+                <Bell size={13} strokeWidth={2.5} aria-hidden="true" />
+                Notifier les inactifs{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
+              </button>
+            )}
+          </div>
           <div className="zk-board-list">
             {g.members.length === 0 ? (
               <p className="zk-muted">Aucun participant pour l’instant.</p>
@@ -1116,13 +1118,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 </div>
               );
             })}
-          </div>
-
-          {/* Quitter le groupe — action destructive volontairement éloignée
-              de l'écran de récitation et des actions courantes, accompagnée
-              d'une confirmation (voir doLeave). */}
-          <div className="zk-leave-zone">
-            <button type="button" className="zk-leave-link" onClick={doLeave}>Quitter ce zikr collectif</button>
           </div>
         </div>
       )}
@@ -1388,12 +1383,14 @@ function BottomNav({ tab, setTab, unreadCount }: {
 // Bloc de progression collective partagé (StaticProgress ET MemberCounter) —
 // revue design, point 7 : le pourcentage à CÔTÉ du titre (pas seulement en
 // fin de ligne, noyé dans "X / Y (Z %)") se lit avant même les chiffres.
-function CollectiveProgress({ total, target, label = 'Progression collective' }: { total: number; target: number; label?: string }) {
+function CollectiveProgress({ total, target, label = 'Progression collective', bare }: {
+  total: number; target: number; label?: string; bare?: boolean;
+}) {
   const pct = progressPct(total, target);
   const reached = target > 0 && total >= target;
   const remaining = Math.max(0, target - total);
   return (
-    <div className="zk-progress-block zk-progress-hero">
+    <div className={'zk-progress-block' + (bare ? '' : ' zk-progress-hero')}>
       <div className="zk-progress-head">
         <span>{label}</span>
         <strong className={reached ? 'zk-progress-pct done' : 'zk-progress-pct'}>{fmtPct(pct)}</strong>
@@ -1519,27 +1516,37 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
         </div>
       )}
 
-      <CollectiveProgress total={groupTotal} target={target} />
+      {/* Carte UNIQUE (revue design : « la vue est beaucoup trop longue
+          verticalement ») — progression collective, repère « Aujourd'hui »
+          et chapelet partageaient trois cadres empilés (fond+bordure+padding
+          chacun) ; un seul cadre englobant ici, CollectiveProgress et
+          TasbihChapelet passent en mode `bare`/`embedded` pour ne plus
+          dessiner le leur. */}
+      <div className="zk-zikr-card">
+        <CollectiveProgress total={groupTotal} target={target} bare />
 
-      {/* Aujourd'hui : repère secondaire, discret — le nombre personnel
-          principal (myFait) est désormais affiché UNE SEULE FOIS, dans le
-          chapelet lui-même (TasbihChapelet, libellé « Vos grains récités »)
-          au lieu d'être répété ici (revue design : « 102 » du chapelet et
-          « Mes grains récités 102 » juste en dessous créaient une
-          confusion). Ce second total est celui rapporté par le SERVEUR au
-          dernier sondage — pas corrigé comme `myFait` (t.total/syncedFait) :
-          un léger décalage (rattrapé au prochain envoi groupé,
-          SAVE_DEBOUNCE) est sans conséquence pour un simple repère
-          "aujourd'hui" (fenêtre UTC commune à tout le groupe, pas un minuit
-          par membre — lib/zikrLogic.js utcDateKey). */}
-      <div className="zk-today-chip">
-        <Clock size={12} strokeWidth={2.5} aria-hidden="true" />
-        Aujourd’hui : <strong>{fmt(Number(g.myDailyTotal) || 0)}</strong> grain{(Number(g.myDailyTotal) || 0) > 1 ? 's' : ''}
+        {/* Repère « Aujourd'hui » + nombre de participants sur UNE ligne —
+            le nombre personnel PRINCIPAL (myFait) est affiché UNE SEULE FOIS,
+            dans le chapelet lui-même (libellé « Vos grains récités »), pas
+            répété ici (revue design : « 102 » du chapelet et « Mes grains
+            récités 102 » juste en dessous créaient une confusion). Le total
+            du jour est celui rapporté par le SERVEUR au dernier sondage —
+            pas corrigé comme `myFait` (t.total/syncedFait) : un léger
+            décalage (rattrapé au prochain envoi groupé, SAVE_DEBOUNCE) est
+            sans conséquence pour un simple repère "aujourd'hui" (fenêtre UTC
+            commune à tout le groupe — lib/zikrLogic.js utcDateKey). */}
+        <div className="zk-today-chip">
+          <Clock size={12} strokeWidth={2.5} aria-hidden="true" />
+          Aujourd’hui <strong>{fmt(Number(g.myDailyTotal) || 0)}</strong>
+          <span className="zk-today-sep">·</span>
+          <Users size={12} strokeWidth={2.5} aria-hidden="true" />
+          {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
+        </div>
+
+        {/* Réglages masqués : pas de part personnelle en Zikr collectif,
+            l'objectif restant affiché EST celui du groupe entier. */}
+        <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} myFait={myFait} embedded />
       </div>
-
-      {/* Réglages masqués : pas de part personnelle en Zikr collectif,
-          l'objectif restant affiché EST celui du groupe entier. */}
-      <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} myFait={myFait} />
     </>
   );
 }

@@ -183,7 +183,7 @@
    pas un contrôle de composition. */
 .zk-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; padding: 0; margin-top: 0; border-radius: 50%;
+  width: 44px; height: 44px; padding: 0; margin-top: 0; border-radius: 50%;
   background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
   cursor: pointer; transition: color 0.2s, border-color 0.2s;
 }
@@ -204,15 +204,16 @@
 .zk-attach-item-danger svg { color: #e0607a; }
 .zk-attach-item-danger:hover { background: rgba(224,96,122,0.12); }
 
-/* Titre réduit d'environ 20-25 % (revue design, point 2 : « occupe
-   énormément d'espace ») — 1.6rem → 1.25rem, interligne resserré, largeur
-   maîtrisée pour éviter une coupure sur deux lignes trop brutale. */
-.zk-detail-head { text-align: center; margin: 16px 0 24px; }
+/* Titre resserré une seconde fois (revue design : « l'en-tête du Zikr
+   occupe trop de hauteur avant même d'arriver au compteur ») — marges
+   verticales divisées par ~2, phrase arabe et badge de formule rapprochés
+   du titre plutôt qu'espacés comme des blocs séparés. */
+.zk-detail-head { text-align: center; margin: 8px 0 14px; }
 .zk-detail-head h1 {
-  font-family: var(--font-display); font-weight: 700; font-size: 1.25rem;
-  line-height: 1.25; margin: 0 auto 8px; max-width: 30ch;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;
+  line-height: 1.2; margin: 0 auto 4px; max-width: 30ch;
 }
-.zk-phrase-big { font-size: 1.4rem; color: var(--text-main); margin: 0 0 10px; line-height: 1.4; }
+.zk-phrase-big { font-size: 1.2rem; color: var(--text-main); margin: 0 0 6px; line-height: 1.3; }
 /* Badge plutôt qu'un simple texte coloré (revue design, point 3 : « badge
    Zikr libre ») — même traitement visuel que .prod-chain (marché) ou
    .zk-cta-muted : une étiquette identifiable, pas juste une couleur d'accent
@@ -220,16 +221,26 @@
 .zk-preset-badge {
   display: inline-block; font-size: 0.76rem; font-weight: 600; color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: 999px; padding: 3px 12px; margin-bottom: 10px;
+  border-radius: 999px; padding: 3px 12px; margin-bottom: 6px;
 }
 /* Une seule ligne d'informations compacte (revue design, point 3) — jamais
    l'email complet du créateur (voir chatDisplayName, lib/zikrLogic.js). */
 .zk-owner { font-size: 0.8rem; color: var(--text-dim); }
-.zk-private-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 10px; font-size: 0.78rem; color: #d9a441; text-align: left; }
+/* Alerte compacte (revue design : « le message "En attente de validation…"
+   prend une zone importante, devrait devenir une alerte compacte ») — fond
+   teinté + coins arrondis pour se lire d'un coup d'œil comme UNE petite
+   notice, texte aligné à GAUCHE (un paragraphe centré sur plusieurs lignes
+   est plus difficile à scanner et paraît plus volumineux qu'il ne l'est). */
+.zk-private-note {
+  display: flex; align-items: flex-start; gap: 6px; margin-top: 6px;
+  padding: 7px 10px; border-radius: 10px;
+  background: rgba(217,164,65,0.1); font-size: 0.76rem; line-height: 1.35;
+  color: #d9a441; text-align: left;
+}
 .zk-private-note svg { flex-shrink: 0; margin-top: 2px; }
 .zk-online-text { color: #2dd4a0; font-weight: 600; }
 
-.zk-progress-block { margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px; }
+.zk-progress-block { margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
 /* En-tête de progression : le pourcentage à CÔTÉ du titre (revue design,
    point 7) — se lit avant même les chiffres, plutôt que noyé en fin de
    ligne dans "X / Y (Z %)". */
@@ -238,22 +249,13 @@
 .zk-progress-pct.done { color: #2dd4a0; }
 .zk-progress-meta { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
 .zk-progress-meta strong { color: var(--text-main); }
-/* Nombre personnel neutre (--accent) plutôt que doré — la palette limite
-   l'or aux réussites exceptionnelles (revue design, point 5), pas à un
-   simple repère de grains récités. */
-.zk-my-fait { display: block; text-align: center; font-size: 1.4rem; font-weight: 700; color: var(--accent); }
-/* Total (jamais remis à zéro) + total du jour côte à côte — voir MemberCounter. */
-.zk-my-stats { display: flex; gap: 10px; margin-top: 10px; }
-.zk-my-stats > div { flex: 1; min-width: 0; }
-.zk-my-stats .zk-my-fait { font-size: 1.15rem; }
-
 /* Carte « objectif atteint » (revue design, point 6 : « ressemble à une
    alerte ») — une information POSITIVE, pas un encadré jaune dominant :
    petite carte sobre, accent vert (réussite), le trophée reste discret. */
 .zk-reached-card {
   display: flex; align-items: center; gap: 12px; text-align: left;
   background: var(--surface-2); border: 1px solid rgba(45,212,160,0.35);
-  border-radius: 12px; padding: 12px 14px; margin-bottom: 24px;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
 }
 .zk-reached-card svg { flex-shrink: 0; color: #2dd4a0; }
 .zk-reached-card strong { display: block; font-size: 0.92rem; color: #2dd4a0; }
@@ -302,8 +304,14 @@
 
 /* ── Participants (présence, rythme, modération) ─────────── */
 .zk-board { margin: 4px 0 28px; }
+/* En-tête + « Notifier les inactifs » (créateur only, revue design : doit
+   vivre DANS la section Participants, pas dans Gestion du groupe) sur la
+   même ligne — passe sur deux lignes en douceur (flex-wrap) si le libellé
+   avec compteur ne tient pas à côté du titre sur un petit écran. */
+.zk-board-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 4px; }
+.zk-board-head h3 { margin: 0; }
 .zk-notify-inactive {
-  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
   background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
   color: #d9a441; border-radius: 20px; padding: 5px 12px;
   font-size: 0.74rem; font-weight: 700; font-family: var(--font-ui);
@@ -347,12 +355,6 @@
 }
 .zk-pace.suspect { background: rgba(224,96,122,0.15); color: #e0607a; }
 
-/* Quitter le groupe — délibérément à l'écart des actions courantes (bas de
-   l'onglet Participants, après une séparation), discret, avec confirmation
-   (window.confirm, voir doLeave) — revue design, point 15. */
-.zk-leave-zone { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--glass-border); text-align: center; }
-.zk-leave-link { background: none; border: none; color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-ui); cursor: pointer; padding: 6px; }
-.zk-leave-link:hover { color: #e0607a; }
 
 /* ── Vœux (dua) — ouverts par le créateur une fois l'objectif atteint ────
    Chaque vœu reste PRIVÉ (auteur + créateur seulement, jamais les autres
@@ -600,31 +602,40 @@
 .zk-amine-btn.amined svg { fill: #e0245e; }
 .zk-amine-btn:disabled { opacity: 0.6; cursor: default; }
 
-/* ── Icône active (bouclier « Gestion du groupe » dans la barre du haut) ── */
-.zk-icon-btn.active { color: var(--accent); border-color: var(--accent); }
-
-/* ── Progression collective — cœur de l'écran ─────────────────────────────
-   .zk-progress-hero : légère mise en avant (fond propre) du bloc affiché en
-   tête de l'écran Zikr — la hiérarchie demandée (« progression collective →
-   compteur/chapelet → bouton d'égrainage ») se lit d'un coup d'œil plutôt
-   que de se fondre dans le reste. */
+/* ── Carte UNIQUE : progression + repère du jour + chapelet ───────────────
+   Remplace trois cadres empilés (progression, « Aujourd'hui », chapelet —
+   chacun avec son propre fond/bordure/padding) par UN SEUL (revue design :
+   « la vue est beaucoup trop longue verticalement… l'empilement de
+   nombreuses sections pourrait être compacté »). C'est LA carte principale
+   de l'écran Zikr : compteur + progression + chapelet + bouton d'égrainage,
+   immédiatement sous l'alerte de validation le cas échéant. */
+.zk-zikr-card {
+  background: var(--surface-2); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 14px 14px 10px; margin-bottom: 16px;
+}
+/* Bare (dans .zk-zikr-card, prop `bare` de CollectiveProgress) : plus de
+   cadre propre — voir .zk-progress-hero, gardé pour StaticProgress (visiteur
+   non-membre), seul cas qui affiche encore la progression SANS chapelet
+   juste en dessous, donc toujours dans sa propre carte. */
 .zk-progress-hero {
   background: var(--surface-2); border: 1px solid var(--glass-border);
   border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
 }
 .zk-progress-remaining { color: var(--text-dim); font-weight: 500; }
 
-/* Repère « Aujourd'hui » — un seul chiffre personnel visible EN DEHORS du
-   chapelet (qui porte désormais le total principal, « Vos grains récités »)
-   pour ne pas recréer la confusion signalée (deux nombres personnels
-   affichés en parallèle sans hiérarchie claire). */
+/* Repère « Aujourd'hui » + nombre de participants, UNE ligne compacte —
+   texte simple (plus de pilule à fond/bordure propres, redondante dans
+   .zk-zikr-card) séparée du reste de la carte par un filet discret. Le
+   chapelet porte désormais le total personnel PRINCIPAL (« Vos grains
+   récités »), donc rien ici ne le répète (revue design : deux nombres
+   personnels sans hiérarchie claire). */
 .zk-today-chip {
-  display: inline-flex; align-items: center; gap: 6px; align-self: center;
-  margin: 0 auto 14px; padding: 5px 12px; border-radius: 20px;
-  background: var(--surface-2); border: 1px solid var(--glass-border);
-  color: var(--text-dim); font-size: 0.8rem;
+  display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap;
+  padding: 8px 0; margin: 2px 0 0; border-top: 1px dashed var(--glass-border);
+  color: var(--text-dim); font-size: 0.78rem;
 }
 .zk-today-chip strong { color: var(--text-main); font-variant-numeric: tabular-nums; }
+.zk-today-sep { color: var(--glass-border); margin: 0 2px; }
 
 /* ── Navigation fixe en pied d'écran (Zikr / Participants / Discussion) ───
    Demandé explicitement : garder les actions importantes accessibles sans
@@ -640,7 +651,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .zk-bottom-nav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; padding: 8px 4px 7px; background: none; border: none; cursor: pointer;
   color: var(--text-dim); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600;
   transition: color 0.15s ease;
