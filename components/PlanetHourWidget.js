@@ -1,6 +1,7 @@
 'use client';
-// Widget compact « heure planétaire actuelle », pour ne pas avoir à ouvrir le
-// module Planète en entier juste pour un coup d'œil. Réutilise la logique
+// Widget UNE LIGNE « heure planétaire actuelle » (voir .planet-widget,
+// app/globals.css), pour ne pas avoir à ouvrir le module Planète en entier
+// juste pour un coup d'œil. Réutilise la logique
 // pure de lib/planete.js (déjà validée sur la page complète) — ici seulement
 // l'UI + une position, moins exigeante que la page Planète (GPS one-shot,
 // pas d'affinage haute précision : un décalage de quelques centaines de
@@ -70,13 +71,24 @@ export default function PlanetHourWidget() {
     };
   }, []);
 
-  if (!state) return null; // accessoire : pas de spinner, apparaît quand prêt
-
+  // Widget compact UNE LIGNE (revue design : « Heure de Mars prend la largeur
+  // entière alors que son contenu est très court ») — plus une tuile de
+  // grille (.menu-item) : ♂ Mars • Défavorable, plutôt qu'une carte pleine
+  // hauteur pour trois mots. Squelette (pas `return null`) tant que l'état
+  // n'est pas prêt (position GPS, calcul) — évite un saut de mise en page une
+  // fois résolu (revue design : « skeleton au chargement »).
   return (
-    <Link href="/planete" className="menu-item planet-hour-widget">
-      <div style={{ fontSize: '2rem' }}>{CHALDEAN_EMOJIS[state.planet]}</div>
-      <h3>Heure de {state.planet}</h3>
-      <p className={'menu-item-desc ' + state.nature.cls}>{state.nature.txt}</p>
+    <Link href="/planete" className="planet-widget" aria-label={state ? `Heure de ${state.planet} — ${state.nature.txt}` : 'Heure planétaire du moment'}>
+      {state ? (
+        <>
+          <span className="planet-widget-glyph">{CHALDEAN_EMOJIS[state.planet]}</span>
+          <span className="planet-widget-text">
+            Heure de {state.planet} <span className={'planet-widget-nature ' + state.nature.cls}>• {state.nature.txt}</span>
+          </span>
+        </>
+      ) : (
+        <span className="planet-widget-skeleton" aria-hidden="true" />
+      )}
     </Link>
   );
 }

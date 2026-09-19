@@ -331,41 +331,91 @@ input:focus {
     gap: 20px;
 }
 
+/* Refonte densité (revue design : « cartes trop hautes par rapport à la
+   quantité d'information qu'elles contiennent ») — ~150-160px de large
+   (hérité de .sub-grid minmax(140px,1fr) plus bas) sur ~105-115px de haut
+   (min-height, pas une hauteur fixe : le contenu réel dépasse rarement),
+   fond légèrement plus clair que le fond de page (--surface-2, pas
+   --glass-bg qui donnait un flou de verre trop lourd pour une simple tuile),
+   bordure subtile, rayon 16px. Transition dédiée sur transform (150ms, pas
+   les 300ms de `transition: all` d'avant) pour un état tactile net et rapide
+   (revue design : « animations tactiles de 150-200 ms »). */
 .menu-item {
-    background: var(--glass-bg);
+    background: var(--surface-2);
     border: 1px solid var(--glass-border);
-    border-radius: 15px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 14px;
     text-align: center;
     cursor: pointer;
     text-decoration: none;
     color: var(--text-main);
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 150ms ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 120px;
+    gap: 6px;
+    min-height: 108px;
 }
 
 .menu-item:hover {
     background: var(--surface);
-    transform: translateY(-5px);
+    border-color: var(--accent);
+}
+
+/* État tactile clairement visible (revue design) — remplace l'ancien
+   translateY au survol (pensé pour la souris, sans effet perceptible au
+   tap) par un tassement net au clic, seul événement qui existe vraiment
+   sur mobile. */
+.menu-item:active {
+    transform: scale(.96);
+    transition-duration: 150ms;
+}
+
+/* Famille d'icônes UNIQUE (lucide-react, voir app/menu/page.tsx) — remplace
+   les emojis (styles hétérogènes : globe, cadeau, parchemin, pierre…) qui
+   « réduisaient l'identité visuelle » (revue design). Pastille teintée à
+   l'accent plutôt que l'icône nue : cohérent avec .zk-preset-badge/.
+   daily-content-kind, qui utilisent déjà ce traitement ailleurs dans l'app. */
+.menu-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+    flex-shrink: 0;
 }
 
 .menu-item h3 {
-    font-size: 1.1rem;
-    margin-top: 10px;
-    /* Gras franc (700) : la règle générale h1/h2/h3 les met à 600 — trop
-       proche du corps de texte pour des titres de tuiles. */
+    font-size: .92rem;
+    margin: 0;
     font-weight: 700;
+    /* Titre sur UNE ligne (revue design) — un nom de module trop long
+       tronque plutôt que de pousser la hauteur de la carte. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
+/* Contraste renforcé (revue design : « police très petite et peu
+   contrastée ») — .78rem→.8rem, poids 500 (pas le 400 par défaut hérité de
+   *{}) ; limité à DEUX lignes (line-clamp), jamais plus, quelle que soit la
+   longueur réelle de la description — garde-fou de hauteur indépendant de
+   la longueur du texte saisi. */
 .menu-item-desc {
-    font-size: .78rem;
+    font-size: .8rem;
+    font-weight: 500;
     color: var(--text-muted);
-    margin-top: 4px;
     line-height: 1.3;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Nature d'une heure planétaire (voir lib/planete.js natureOf()) — partagé
@@ -376,12 +426,48 @@ input:focus {
 .nat-def { color: #d9534f; }
 .nat-mix { color: var(--accent); }
 
-/* Widget « heure planétaire actuelle » (components/PlanetHourWidget.js) :
-   même carte que .menu-item, avec un léger liseré pour le distinguer des
-   modules statiques — c'est une donnée live, pas une simple entrée de menu. */
-.planet-hour-widget {
-    border-color: var(--accent);
-    grid-column: 1 / -1;
+/* Widget « heure planétaire actuelle » (components/PlanetHourWidget.js) —
+   UNE ligne compacte (revue design : « Heure de Mars prend la largeur
+   entière alors que son contenu est très court ») : ♂ Mars • Défavorable,
+   plus une carte pleine hauteur au même gabarit qu'une tuile de module. */
+.planet-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    background: var(--surface-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0 14px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-size: .85rem;
+    font-weight: 600;
+    transition: border-color 0.2s ease, transform 150ms ease;
+}
+.planet-widget:hover { border-color: var(--accent); }
+.planet-widget:active { transform: scale(.98); }
+.planet-widget-glyph { flex-shrink: 0; width: 20px; text-align: center; font-size: 1.05rem; color: var(--accent); }
+.planet-widget-nature { font-weight: 700; }
+/* Squelette (revue design : « skeleton au chargement ») tant que la position
+   GPS/le calcul ne sont pas prêts — évite un saut de mise en page une fois
+   résolu, plutôt que de n'afficher le widget qu'après coup. */
+.planet-widget-skeleton {
+    display: block;
+    height: 14px;
+    width: 55%;
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+        var(--glass-border) 25%,
+        color-mix(in srgb, var(--glass-border) 45%, transparent) 50%,
+        var(--glass-border) 75%);
+    background-size: 200% 100%;
+    animation: menu-skeleton 1.4s ease-in-out infinite;
+}
+@keyframes menu-skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .back-btn {
@@ -958,26 +1044,42 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    beaucoup plus évident »). */
 .tc-hint { font-size: .88rem; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
 
-/* ── Tableau de bord (accueil) — barre utilisateur + menus groupés ────────── */
-.user-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--glass-bg); border: 1px solid var(--glass-border);
-  border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
+/* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────
+   Fusionne ce qui était trois zones empilées (bouton Retour desktop à part,
+   barre profil/menu/déconnexion, PUIS un <div class="header"> séparé avec
+   titre + sous-titre) en UNE seule ligne 56-64px : logo à gauche, titre au
+   centre, profil/menu/déconnexion à droite (revue design : « le header est
+   assez volumineux et ses trois zones manquent d'une logique visuelle
+   immédiatement évidente »). */
+.menu-appbar {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 56px; margin-bottom: 14px;
 }
-/* Deux groupes visuellement dissociés : profil + menu à gauche, séparés par
-   un trait vertical du bouton de déconnexion isolé à droite. */
-.user-bar-left { display: flex; align-items: center; gap: 12px; }
-.user-bar-right {
-  display: flex; align-items: center;
-  padding-left: 14px; margin-left: 4px;
-  border-left: 1px solid var(--glass-border);
+.menu-appbar-logo {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: #fff; font-size: 1rem;
 }
+.menu-appbar-title {
+  flex: 1; min-width: 0; text-align: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+  letter-spacing: .5px; margin: 0;
+  background: -webkit-linear-gradient(45deg, var(--accent), var(--accent-hover));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.menu-appbar-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+
 .avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
   background: var(--accent); display: flex; align-items: center;
   justify-content: center; font-size: 1.2rem; font-weight: bold;
+  flex-shrink: 0;
 }
+/* Variante compacte de l'app bar (32px, contre 42px ailleurs) — combinée à
+   .avatar (`class="avatar avatar-sm"`), déclarée après pour l'emporter. */
+.avatar-sm { width: 32px; height: 32px; font-size: .95rem; }
 .signout-btn {
   background: transparent; border: 1px solid var(--glass-border);
   width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
@@ -1005,38 +1107,109 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .zk-switch.on .zk-switch-knob { transform: translateX(18px); }
 
 /* ── Contenu spirituel quotidien (components/DailyContentCard.js, /menu) ──
-   Pleine largeur, en dehors de .sub-grid — une tuile de module (140px) est
-   trop étroite pour un hadith/verset lisible. Réutilise .zk-switch
-   ci-dessus pour l'interrupteur : même composant visuel que le rappel de
-   wird, pas de doublon de style. */
+   REPLIÉ par défaut (revue design : « bloc relativement imposant pour un
+   élément secondaire ») — .daily-content-summary est la ligne toujours
+   visible (type + aperçu tronqué UNE ligne + chevron), .daily-content-body
+   le contenu complet, révélé via la même technique CSS grid-template-rows
+   0fr→1fr que .category-body plus bas (pas de mesure de hauteur en JS,
+   transition 180ms — revue design « 150-200ms »). Réutilise .zk-switch pour
+   l'interrupteur : même composant visuel que le rappel de wird. */
 .daily-content-card {
   background: var(--surface-2); border: 1px solid var(--glass-border);
-  border-radius: 14px; padding: 16px; margin-bottom: 22px;
+  border-radius: 14px; margin-bottom: 12px; overflow: hidden;
 }
-.daily-content-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.daily-content-summary {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: transparent; border: none; cursor: pointer; text-align: left;
+  padding: 12px 14px; margin: 0; color: var(--text-main); font-family: var(--font-ui);
+  min-height: 44px;
+}
 .daily-content-kind {
-  font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  color: var(--accent);
+  flex-shrink: 0; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px; padding: 3px 10px;
 }
-.daily-content-arabic { font-size: 1.15rem; line-height: 1.7; color: var(--text-main); margin: 0 0 10px; text-align: right; }
-.daily-content-text { font-size: .95rem; line-height: 1.55; color: var(--text-main); margin: 0 0 6px; }
-.daily-content-source { display: block; font-size: .78rem; color: var(--text-dim); }
-.daily-content-hint {
-  display: flex; align-items: center; gap: 6px; margin: 10px 0 0;
-  font-size: .78rem; color: var(--text-dim);
+.daily-content-preview {
+  flex: 1; min-width: 0; font-size: .85rem; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.daily-content-error { color: #f0819a; font-size: .78rem; margin: 8px 0 0; }
+.daily-content-chevron { flex-shrink: 0; color: var(--text-dim); transition: transform 180ms ease; }
+.daily-content-chevron.open { transform: rotate(180deg); }
 
-.menu-group { margin-bottom: 26px; }
-.group-title {
-  font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 14px;
-  padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
-  background: -webkit-linear-gradient(45deg, var(--accent), var(--accent-hover));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+.daily-content-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 180ms ease; }
+.daily-content-body.open { grid-template-rows: 1fr; }
+.daily-content-body-inner { overflow: hidden; min-height: 0; padding: 0 14px 14px; }
+.daily-content-arabic { font-size: 1.1rem; line-height: 1.7; color: var(--text-main); margin: 6px 0 10px; text-align: right; }
+.daily-content-text { font-size: .92rem; line-height: 1.5; color: var(--text-main); margin: 0 0 6px; }
+.daily-content-source { display: block; font-size: .76rem; color: var(--text-dim); margin-bottom: 10px; }
+.daily-content-notify-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-top: 10px; border-top: 1px dashed var(--glass-border);
+  font-size: .82rem; color: var(--text-muted);
 }
-.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-.sub-grid .menu-item h3 { font-size: .9rem; margin-top: 8px; }
-.menu-item:active { transform: scale(.96); box-shadow: 0 0 0 2px var(--accent) inset; }
+.daily-content-hint {
+  display: flex; align-items: center; gap: 6px; margin: 8px 0 0;
+  font-size: .76rem; color: var(--text-dim);
+}
+.daily-content-error { color: #f0819a; font-size: .76rem; margin: 8px 0 0; }
+
+.menu-group { margin-bottom: 18px; }
+/* Libellé de sous-section discret (Accès rapide) — PAS le traitement
+   gradient/souligné de .category-header-label (catégories) : une ligne de
+   raccourcis n'est pas une rubrique au même titre. */
+.group-title {
+  font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-dim); margin: 0 0 10px;
+}
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+
+/* ── Catégories repliables (app/menu/CategorySection.js) ──────────────────
+   Remplace l'ancienne grille plate + une section « premium » à part visuel-
+   lement distincte (revue design : « la séparation Al Qalam/Géomancie/Hatims
+   arrive très bas, donnant l'impression d'une seconde page ») — quatre
+   sections au même traitement (Spiritualité/Ressources/Sciences
+   traditionnelles/Outils), REPLIÉES par défaut : c'est ce qui raccourcit
+   réellement l'écran (les modules les plus utilisés restent accessibles via
+   Accès rapide, ci-dessus). */
+.category-section { margin-bottom: 10px; border: 1px solid var(--glass-border); border-radius: 14px; background: var(--surface-2); overflow: hidden; }
+.category-header {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: transparent; border: none; cursor: pointer; text-align: left;
+  padding: 12px 14px; margin: 0; color: var(--text-main); font-family: var(--font-ui);
+  min-height: 48px;
+}
+.category-header-icon {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+}
+.category-header-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: .95rem; font-weight: 700; }
+.category-badge {
+  flex-shrink: 0; font-size: .68rem; font-weight: 700; color: #d9a441;
+  background: rgba(217,164,65,0.14); border-radius: 999px; padding: 2px 9px;
+}
+.category-header-count { flex-shrink: 0; font-size: .8rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.category-chevron { flex-shrink: 0; color: var(--text-dim); transition: transform 180ms ease; }
+.category-chevron.open { transform: rotate(180deg); }
+
+/* Même technique grid-template-rows que .daily-content-body — un seul
+   mécanisme d'accordéon dans toute la page, pas deux implémentations
+   différentes pour le même effet. */
+.category-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 180ms ease; }
+.category-body.open { grid-template-rows: 1fr; }
+.category-body-inner { overflow: hidden; min-height: 0; }
+.category-grid { padding: 0 14px 14px; }
+/* Dernière tuile seule sur sa ligne (nombre d'éléments impair, grille à 2
+   colonnes) → pleine largeur plutôt qu'un vide à côté (revue design : « la
+   dernière ligne contient Parrainage seul », « grille visuellement
+   inachevée ») — s'applique à TOUTE .sub-grid (Accès rapide comme les
+   catégories : les récents peuvent tout aussi bien être en nombre impair).
+   Ne s'applique qu'en 2 colonnes (voir la media query ci-dessous) : au-delà,
+   .sub-grid étale déjà plus de colonnes et ce cas ne se présente pas de la
+   même façon. */
+@media (max-width: 480px) {
+  .sub-grid > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
 
 /* Sentinelle du rendu progressif (components/useProgressiveList.js) : repère
    invisible placé après la liste ; son approche déclenche le lot suivant.

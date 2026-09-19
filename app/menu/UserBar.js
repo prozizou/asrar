@@ -1,8 +1,13 @@
 'use client';
-// Barre utilisateur (ex-accueil) : compte, thème (AppDrawer), déconnexion.
-// Seule partie de /menu qui a besoin d'état client (useAuth) — extraite du
-// reste de la page (statique : liste des modules) pour que celle-ci reste un
-// composant serveur, cf. le commentaire d'en-tête de app/menu/page.js.
+// App bar compacte de /menu (56-64px) — fusionne ce qui était trois zones
+// empilées (bouton « Retour » desktop mis à part : l'ancien <div class=
+// "user-bar"> avatar+menu+déconnexion, PUIS un <div class="header"> séparé
+// avec le titre « Menu » et son sous-titre) en UNE seule ligne : logo à
+// gauche, titre au centre, profil/menu/déconnexion à droite (revue design :
+// « le header est assez volumineux et ses trois zones manquent d'une
+// logique visuelle immédiatement évidente »). Seule partie de /menu qui a
+// besoin d'état client (useAuth) — extraite du reste de la page (statique)
+// pour que celle-ci reste un composant serveur, cf. app/menu/page.tsx.
 import { useAuth } from '@/components/AuthProvider';
 import AppDrawer from '@/components/AppDrawer';
 import SmartImage from '@/components/SmartImage';
@@ -12,15 +17,17 @@ export default function UserBar() {
   const name = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Utilisateur');
 
   return (
-    <div className="user-bar">
-      <div className="user-bar-left">
-        <div className="avatar" title={user?.email || name} aria-label={name}>
+    <div className="menu-appbar">
+      <span className="menu-appbar-logo" aria-hidden="true">✦</span>
+      <h1 className="menu-appbar-title">Menu</h1>
+      <div className="menu-appbar-actions">
+        <div className="avatar avatar-sm" title={user?.email || name} aria-label={name}>
           {user?.photoURL ? (
             <SmartImage
               src={user.photoURL}
               alt=""
               fill
-              sizes="42px"
+              sizes="32px"
               referrerPolicy="no-referrer"
               style={{ objectFit: 'cover', borderRadius: '50%' }}
             />
@@ -29,8 +36,6 @@ export default function UserBar() {
           )}
         </div>
         <AppDrawer />
-      </div>
-      <div className="user-bar-right">
         <button className="signout-btn" onClick={signOut} title="Déconnexion" aria-label="Déconnexion">
           {/* Icône SVG (fiable sur tous les appareils) plutôt que le
               glyphe Unicode ⏻, absent de certaines polices système →
