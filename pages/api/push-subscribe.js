@@ -15,10 +15,9 @@
 // programmés (wird, session Zikr collectif) n'en ont aucun besoin, d'où la
 // possibilité de s'abonner aux notifications sans partager sa position.
 //
-// MIGRATION FIRESTORE (Phase 6, voir docs/FIRESTORE_SCHEMA.md) : collection
-// push_subscriptions/{uid}_{subId} = { uid, endpoint, keys:{p256dh,auth},
+// Écrit push_subscriptions/{uid}/{subId} = { endpoint, keys:{p256dh,auth},
 //   lat?, lng?, updatedAt } — subId = hash stable de `endpoint` (identifiant
-//   Web Push, mais contient des caractères invalides comme ID de document et
+//   Web Push, mais contient des caractères invalides comme clé Firebase et
 //   peut être long : jamais utilisé tel quel).
 
 const crypto = require("crypto");
@@ -53,7 +52,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de requêtes, réessayez dans une minute." });
   }
 
-  const firestore = app().firestore();
+  const db = app().database();
 
   try {
     if (action === "subscribe") {
@@ -66,31 +65,26 @@ export default async function handler(req, res) {
       // l'abonnement — seule l'heure planétaire en a besoin, et son cron
       // ignore déjà silencieusement un abonnement qui en est dépourvu.
       //
-      // set(...,{merge:true}) plutôt qu'un remplacement complet : un même
-      // endpoint (même abonnement navigateur) sert à la fois à l'heure
-      // planétaire et aux rappels — un second appel "subscribe" sans lat/lng
-      // (depuis /rappels, par ex.) ne doit pas EFFACER une position déjà
-      // enregistrée par le premier.
+      // update() plutôt que set() : un même endpoint (même abonnement
+      // navigateur) sert à la fois à l'heure planétaire et aux rappels — un
+      // second appel "subscribe" sans lat/lng (depuis /rappels, par ex.) ne
+      // doit pas EFFACER une position déjà enregistrée par le premier.
       const latN = coord(lat, -90, 90);
       const lngN = coord(lng, -180, 180);
-      await firestore.collection("push_subscriptions").doc(user.uid + "_" + subId(ep)).set({
-        uid: user.uid,
+      await db.ref("push_subscriptions/" + user.uid + "/" + subId(ep)).update({
         endpoint: ep,
         keys: { p256dh: String(keys.p256dh), auth: String(keys.auth) },
         ...(latN != null && lngN != null ? { lat: latN, lng: lngN } : {}),
         updatedAt: Date.now(),
-      }, { merge: true });
+      });
       return res.status(200).json({ ok: true });
     }
 
     if (action === "unsubscribe") {
       if (endpoint) {
-        await firestore.collection("push_subscriptions").doc(user.uid + "_" + subId(endpoint)).delete();
+        await db.ref("push_subscriptions/" + user.uid + "/" + subId(endpoint)).remove();
       } else {
-        const snap = await firestore.collection("push_subscriptions").where("uid", "==", user.uid).get();
-        const batch = firestore.batch();
-        snap.forEach((doc) => batch.delete(doc.ref));
-        if (!snap.empty) await batch.commit();
+        await db.ref("push_subscriptions/" + user.uid).remove();
       }
       return res.status(200).json({ ok: true });
     }

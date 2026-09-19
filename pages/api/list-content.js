@@ -4,10 +4,6 @@
 // Body (JSON) : { idToken, kind: "secret"|"book", cat? }
 //   - kind="secret" exige "cat" parmi les configurations.
 //   - kind="book"   ignore "cat".
-//
-// Lit Firestore (voir docs/FIRESTORE_SCHEMA.md) : "product" depuis la Phase 2
-// de la migration, "secret"/"book"/"formation"/"verset"/"asma" depuis la
-// Phase 3 — plus aucune lecture RTDB dans ce fichier.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -30,11 +26,11 @@ export default async function handler(req, res) {
   try {
     await verifyUser(idToken); // identité requise (page réservée aux connectés)
 
-    const snap = await app().firestore().collection(src.collection(cat)).get();
+    const snap = await app().database().ref(src.ref(cat)).once("value");
     const items = [];
-    snap.forEach((doc) => {
-      const v = doc.data() || {};
-      const meta = { _key: doc.id };
+    snap.forEach(child => {
+      const v = child.val() || {};
+      const meta = { _key: child.key };
       for (const k of Object.keys(v)) {
         if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
       }
