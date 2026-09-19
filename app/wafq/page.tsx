@@ -175,12 +175,13 @@ export default function WafqPage() {
           <p style={{ color: 'var(--text-muted)' }}>Carrés magiques par intention, exportables en image ou PDF pour impression.</p>
         </div>
 
-        {/* Section avancée — moteur porté de prozizou/Kanzou (lib/kanzouWafq.ts) :
+        {/* Section avancée — moteur porté de prozizou/Kanzou (lib/kanzouWafq.ts),
+            aussi accessible directement depuis /menu (tuile « Hatims ») :
             neuf tailles (3×3 à 11×11), plusieurs modes par taille, valeurs
             saisies directement selon la formule d'origine plutôt qu'une
             intention traduite automatiquement en constante. */}
         <Link href="/wafq/carre" className="wq-kanzou-link">
-          <span>🔢 Carrés numériques avancés</span>
+          <span>🔯 Hatims — Carrés numériques avancés</span>
           <span className="wq-kanzou-sub">9 tailles (3×3 à 11×11), plusieurs modes, export Word — moteur « Al Kanzou »</span>
         </Link>
 

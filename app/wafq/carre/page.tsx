@@ -1,10 +1,12 @@
 'use client';
-// « Carrés numériques » — page d'accueil (neuf tailles, 3×3 à 11×11) —
-// portée depuis prozizou/Kanzou app/page.tsx (voir lib/kanzouWafq.ts pour le
-// contexte complet du portage). Section avancée du module Wafq, à côté du
-// générateur par intention (app/wafq/page.tsx) : ici, on choisit une TAILLE
-// et on saisit des valeurs brutes selon la formule d'origine, plutôt qu'une
-// intention traduite automatiquement en constante.
+// « Hatims — Carrés numériques » — page d'accueil (neuf tailles, 3×3 à
+// 11×11) — portée depuis prozizou/Kanzou app/page.tsx (voir lib/kanzouWafq.ts
+// pour le contexte complet du portage). Accessible directement depuis /menu
+// (tuile « Hatims »), et toujours aussi depuis le générateur par intention
+// (app/wafq/page.tsx, section « Carrés numériques avancés ») — deux portes
+// d'entrée vers le même moteur : ici, on choisit une TAILLE et on saisit des
+// valeurs brutes selon la formule d'origine, plutôt qu'une intention
+// traduite automatiquement en constante.
 import './carre.css';
 import Link from 'next/link';
 
@@ -13,10 +15,10 @@ const SIZES = [3, 4, 5, 6, 7, 8, 9, 10, 11];
 export default function CarreIndexPage() {
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq" className="back-btn">← Retour au Wafq</Link>
+      <Link href="/menu" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <div className="header">
-          <h1>🔯 Carrés numériques</h1>
+          <h1>🔯 Hatims — Carrés numériques</h1>
           <p style={{ color: 'var(--text-muted)' }}>Neuf portes, neuf tailles de carré — choisissez une taille pour renseigner vos valeurs de départ.</p>
         </div>
 

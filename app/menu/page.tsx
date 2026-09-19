@@ -55,8 +55,17 @@ const MODULES: ModuleTile[] = [
 const MODULES_PREMIUM: ModuleTile[] = [
   { icon: '🖋️', label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam' },
   { icon: '🪨', label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie' },
-  // 🔯 Wafq et 🧿 Thalsams — masqués temporairement à la demande de
-  // l'utilisateur (2026-09-02). Pages /wafq et /thalsams toujours en place.
+  // Hatims (app/wafq/carre) — moteur « Al Kanzou » porté depuis
+  // prozizou/Kanzou (voir lib/kanzouWafq.ts) : neuf tailles de carrés
+  // numériques (3×3 à 11×11), export Word. Existait déjà comme section
+  // interne du module Wafq (masqué, voir juste en dessous) ; exposé ici en
+  // tuile de menu à part entière — demande explicite de l'utilisateur — sans
+  // déplacer le code, seulement ce point d'entrée direct.
+  { icon: '🔯', label: 'Hatims', desc: 'Calculer des carrés numériques (Al Kanzou) — 9 tailles, export Word', href: '/wafq/carre' },
+  // Wafq (générateur par intention) et 🧿 Thalsams — masqués temporairement
+  // à la demande de l'utilisateur (2026-09-02). Pages /wafq et /thalsams
+  // toujours en place ; /wafq garde son propre lien interne vers Hatims
+  // (app/wafq/page.tsx, section « Carrés numériques avancés »).
   // { icon: '🔯', label: 'Wafq', desc: 'Générer un talisman (carré magique) par intention', href: '/wafq' },
   // { icon: '🧿', label: 'Thalsams', desc: 'Générer une chaîne de lettres au poids exact recherché', href: '/thalsams' },
 ];
@@ -102,10 +111,10 @@ export default function MenuPage() {
         </div>
       </section>
 
-      {/* Al Qalam & Géomancie : dissociés des autres modules dans une section
-          dédiée (modules du palier « 1 An »). */}
+      {/* Al Qalam, Géomancie & Hatims : dissociés des autres modules dans une
+          section dédiée (modules du palier « 1 An »). */}
       <section className="menu-group">
-        <h2 className="group-title">Al Qalam &amp; Géomancie</h2>
+        <h2 className="group-title">Al Qalam, Géomancie &amp; Hatims</h2>
         <div className="sub-grid">
           {MODULES_PREMIUM.map((it) => (
             <MenuItem item={it} key={it.label} />
