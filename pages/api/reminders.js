@@ -1,17 +1,24 @@
-// api/reminders.js — Préférences de rappel de wird quotidien (lib/reminders.js
-// pour la logique pure de validation ; pages/api/cron/reminders.js pour
-// l'envoi effectif, pages/api/push-subscribe.js pour l'abonnement push lui-
-// même — un rappel de wird n'existe que si l'utilisateur a par ailleurs un
-// abonnement push actif, cf. lib/push.js subscribeToPushReminders).
+// api/reminders.js — Préférences de rappel de wird quotidien ET de contenu
+// quotidien (lib/reminders.js pour la logique pure de validation ;
+// pages/api/cron/reminders.js pour l'envoi effectif, pages/api/push-
+// subscribe.js pour l'abonnement push lui-même — un rappel n'existe que si
+// l'utilisateur a par ailleurs un abonnement push actif, cf. lib/push.js
+// subscribeToPushReminders).
 //
-// Body (JSON) : { idToken, action, wirdEnabled?, wirdHour?, wirdMinute?, tz? }
+// Body (JSON) : { idToken, action, wirdEnabled?, wirdHour?, wirdMinute?,
+//                 dailyContentEnabled?, tz? }
 //   action="get" → préférences actuelles (valeurs par défaut si jamais réglées)
-//   action="set" { wirdEnabled, wirdHour, wirdMinute, tz } → les enregistre
+//   action="set" → enregistre UNIQUEMENT les champs FOURNIS (voir plus bas) —
+//     wirdEnabled/dailyContentEnabled/tz sont chacun indépendants : activer
+//     le contenu quotidien depuis /menu (components/DailyContentCard.js) ne
+//     doit jamais écraser le réglage de wird fait depuis /ziku
+//     (components/WirdReminderToggle.js), et réciproquement.
 //
 // MIGRATION FIRESTORE (Phase 6, voir docs/FIRESTORE_SCHEMA.md) : document
 // Firestore reminder_settings/{uid} = { wirdEnabled, wirdHour, wirdMinute,
-//   tz, lastSentDate?, updatedAt } — lastSentDate (clé anti-doublon,
-//   "YYYY-MM-DD" dans `tz`) n'est écrit QUE par le cron, jamais ici.
+//   dailyContentEnabled, tz, lastSentDate?, lastContentSentDate?, updatedAt }
+//   — lastSentDate/lastContentSentDate (clés anti-doublon, "YYYY-MM-DD" dans
+//   `tz`) ne sont écrites QUE par le cron, jamais ici.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -29,7 +36,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, action, wirdEnabled, wirdHour, wirdMinute, tz } = parseBody(req);
+  const { idToken, action, wirdEnabled, wirdHour, wirdMinute, dailyContentEnabled, tz } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -49,23 +56,43 @@ export default async function handler(req, res) {
         wirdEnabled: v.wirdEnabled === true,
         wirdHour: cleanHour(v.wirdHour) ?? DEFAULT_HOUR,
         wirdMinute: cleanMinute(v.wirdMinute) ?? DEFAULT_MINUTE,
+        dailyContentEnabled: v.dailyContentEnabled === true,
         tz: v.tz || "UTC",
       });
     }
 
     if (action === "set") {
-      const hour = cleanHour(wirdHour);
-      const minute = cleanMinute(wirdMinute);
-      if (hour == null || minute == null) {
-        return res.status(400).json({ error: "Heure de rappel invalide." });
+      // Mise à jour PARTIELLE : seuls les champs explicitement fournis dans
+      // le body sont touchés (`!== undefined`, pas un simple `if (x)` — un
+      // false explicite doit pouvoir désactiver un réglage). `{merge:true}`
+      // côté Firestore laisse intacts les champs absents de `update`.
+      const update = { updatedAt: Date.now() };
+
+      if (wirdEnabled !== undefined) {
+        const hour = cleanHour(wirdHour);
+        const minute = cleanMinute(wirdMinute);
+        if (hour == null || minute == null) {
+          return res.status(400).json({ error: "Heure de rappel invalide." });
+        }
+        update.wirdEnabled = !!wirdEnabled;
+        update.wirdHour = hour;
+        update.wirdMinute = minute;
       }
-      await ref.set({
-        wirdEnabled: !!wirdEnabled,
-        wirdHour: hour,
-        wirdMinute: minute,
-        tz: cleanTimeZone(tz),
-        updatedAt: Date.now(),
-      }, { merge: true });
+
+      if (dailyContentEnabled !== undefined) {
+        update.dailyContentEnabled = !!dailyContentEnabled;
+      }
+
+      // Si `tz` est omis, le champ existant (ou son absence) reste tel
+      // quel : shouldSendWird/shouldSendDailyContent (lib/reminders.js)
+      // appliquent déjà cleanTimeZone(undefined) → "UTC" à la lecture, donc
+      // aucun repli à écrire ici. En pratique les deux appelants
+      // (WirdReminderToggle, DailyContentCard) envoient toujours `tz`.
+      if (tz !== undefined) {
+        update.tz = cleanTimeZone(tz);
+      }
+
+      await ref.set(update, { merge: true });
       return res.status(200).json({ ok: true });
     }
 

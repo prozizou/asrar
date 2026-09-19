@@ -47,21 +47,11 @@
 .zk-wird-time-row span { color: var(--text-dim); font-weight: 700; }
 .zk-wird-error { color: #f0819a; font-size: 0.78rem; margin: 8px 0 0; }
 
-/* Interrupteur (activer/désactiver) — même styles que .planete-page .switch
-   (app/planete/planete.css), dupliqués ici sous un préfixe .zk-* : pas de
-   classe globale partagée entre modules pour ce composant aujourd'hui. */
-.zk-switch {
-  flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px;
-  background: var(--glass-border); border: none; position: relative; cursor: pointer; padding: 0;
-  transition: background 0.2s ease;
-}
-.zk-switch.on { background: var(--accent); }
-.zk-switch:disabled { opacity: 0.5; cursor: default; }
-.zk-switch-knob {
-  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease;
-}
-.zk-switch.on .zk-switch-knob { transform: translateX(18px); }
+/* Interrupteur (activer/désactiver) — .zk-switch/.zk-switch-knob vivent
+   maintenant dans app/globals.css (déplacés depuis ici) : DailyContentCard
+   (components/DailyContentCard.js, /menu) les réutilise pour son propre
+   interrupteur de notification, et /menu n'importe pas ce fichier — une
+   classe partagée entre modules doit vivre dans le CSS chargé partout. */
 
 /* Titre de section (revue design, point 4) — sépare la création des zikrs
    déjà en cours. */
