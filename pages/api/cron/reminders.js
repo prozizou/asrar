@@ -1,8 +1,10 @@
 // api/cron/reminders.js — Envoi des rappels programmés : wird quotidien et
 // contenu quotidien — verset/hadith/dua, lib/dailyContent.js — (tous deux
-// dans reminder_settings/{uid}, réglés via pages/api/reminders.js) et
-// session Zikr collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le
-// créateur — voir lib/zikrLogic.js normalizeGroupInput).
+// dans reminder_settings/{uid}, réglés via pages/api/reminders.js), session
+// Zikr collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le créateur
+// — voir lib/zikrLogic.js normalizeGroupInput) et relance de réabonnement
+// (access_purchases/{emailKey}, écrite par admin-asrar-pro — voir
+// shouldSendRenewalReminder/shouldSendExpiredNotice, lib/reminders.js).
 //
 // Déclenché PÉRIODIQUEMENT par un planificateur externe (même mécanisme que
 // pages/api/cron/planet-push.js — voir server/cronAuth.js), à une cadence
@@ -41,7 +43,11 @@ const webpush = require("web-push");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
-const { shouldSendWird, shouldSendDailyContent, shouldSendSessionReminder, localDateKey } = require("../../../lib/reminders");
+const {
+  shouldSendWird, shouldSendDailyContent, shouldSendSessionReminder,
+  shouldSendRenewalReminder, shouldSendExpiredNotice, daysUntil, renewalWhatsAppUrl,
+  localDateKey,
+} = require("../../../lib/reminders");
 const { todayContent, pushBody, CONTENT_TYPE_LABEL } = require("../../../lib/dailyContent");
 
 export default async function handler(req, res) {
@@ -59,11 +65,17 @@ export default async function handler(req, res) {
   const now = new Date();
   const stats = {
     wirdSent: 0, wirdSkipped: 0, contentSent: 0, contentSkipped: 0,
-    sessionSent: 0, sessionSkipped: 0, removed: 0, errors: 0,
+    sessionSent: 0, sessionSkipped: 0,
+    renewalSent: 0, renewalSkipped: 0, expiredSent: 0, expiredSkipped: 0, renewalNoAccount: 0,
+    removed: 0, errors: 0,
   };
 
   try {
-    await Promise.all([sendDailyReminders(firestore, now, stats), sendSessionReminders(firestore, now, stats)]);
+    await Promise.all([
+      sendDailyReminders(firestore, now, stats),
+      sendSessionReminders(firestore, now, stats),
+      sendRenewalReminders(firestore, now, stats),
+    ]);
     // Dernière exécution + statistiques — consultable côté admin (console
     // Firebase, même principe que les autres nœuds admin-only du projet) pour
     // repérer un planificateur externe qui se serait arrêté (surveillance,
@@ -190,6 +202,84 @@ async function sendSessionReminders(firestore, now, stats) {
         await Promise.all([...uids].map((uid) => pushToUser(firestore, uid, payload, stats)));
         await g.ref.update({ sessionReminderSent: true });
         stats.sessionSent++;
+      })()
+    );
+  });
+  await Promise.all(tasks);
+}
+
+// ── Relance de réabonnement ───────────────────────────────────────────────
+// Lit access_purchases (Firestore, PARTAGÉE avec admin-asrar-pro — voir
+// server/access.js hasActiveAccess) : collection écrite par l'admin
+// (octroi/prolongation), jamais par ce cron, qui ne fait qu'y ajouter deux
+// marqueurs d'envoi (renewalReminderForExpiry/expiredNoticeForExpiry — voir
+// leur commentaire dans lib/reminders.js pour pourquoi une PROLONGATION
+// redéclenche automatiquement un futur rappel, sans action de l'admin).
+//
+// AUCUN opt-in ici (contrairement au wird/contenu quotidien) : c'est une
+// notification liée au COMPTE (comme un reçu d'achat), pas un rappel de
+// pratique — mais toujours limitée aux comptes ayant un abonnement PUSH
+// actif (renewalNoAccount / silencieux si aucun compte Firebase Auth ne
+// correspond à l'e-mail : accès jamais accordé à un compte réel, ex. saisie
+// erronée côté admin).
+async function sendRenewalReminders(firestore, now, stats) {
+  const snap = await firestore.collection("access_purchases").get();
+  const tasks = [];
+  snap.forEach((doc) => {
+    const p = doc.data() || {};
+    // emailKey() (server/access.js) : '.' → ',' — décodage identique à
+    // admin-asrar-pro (api/users.js, action="list_access").
+    const email = String(doc.id).replace(/,/g, ".");
+
+    const wantsReminder = shouldSendRenewalReminder(p, now);
+    const wantsExpired = shouldSendExpiredNotice(p, now);
+    if (!wantsReminder && !wantsExpired) { stats.renewalSkipped++; stats.expiredSkipped++; return; }
+
+    tasks.push(
+      (async () => {
+        // Un compte Firebase Auth doit exister pour cet e-mail — access_purchases
+        // peut contenir un octroi fait AVANT la première connexion du client
+        // (voir pages/api/reminders.js, wird : même situation), ou une faute
+        // de frappe côté admin : jamais bloquant, on passe juste ce document.
+        let userRecord;
+        try {
+          userRecord = await app().auth().getUserByEmail(email);
+        } catch {
+          stats.renewalNoAccount++;
+          return;
+        }
+        const update = {};
+
+        if (wantsReminder) {
+          const days = daysUntil(p.expiresAt, now);
+          const payload = JSON.stringify({
+            title: '⏳ Votre abonnement expire bientôt',
+            body: `Il vous reste ${days} jour${days > 1 ? 's' : ''} — renouvelez pour garder votre accès à ASRAR PRO.`,
+            url: renewalWhatsAppUrl({ email, expiresAt: p.expiresAt, expired: false }),
+            tag: 'renewal-reminder',
+          });
+          await pushToUser(firestore, userRecord.uid, payload, stats);
+          update.renewalReminderForExpiry = p.expiresAt;
+          stats.renewalSent++;
+        } else {
+          stats.renewalSkipped++;
+        }
+
+        if (wantsExpired) {
+          const payload = JSON.stringify({
+            title: '🔒 Votre abonnement a expiré',
+            body: "Votre accès premium ASRAR PRO a expiré. Renouvelez pour le retrouver.",
+            url: renewalWhatsAppUrl({ email, expiresAt: p.expiresAt, expired: true }),
+            tag: 'renewal-expired',
+          });
+          await pushToUser(firestore, userRecord.uid, payload, stats);
+          update.expiredNoticeForExpiry = p.expiresAt;
+          stats.expiredSent++;
+        } else {
+          stats.expiredSkipped++;
+        }
+
+        if (Object.keys(update).length > 0) await doc.ref.update(update);
       })()
     );
   });

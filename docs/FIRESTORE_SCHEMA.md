@@ -43,7 +43,9 @@ de document Firestore valides tels quels.
 
 | Collection | ID document | Champs | Source RTDB |
 |---|---|---|---|
-| `access_purchases` | email (encodage `,` conservé, ex. `baaye012@gmail,com`) | `token, expiresAt, level, plan, source, uid, at, amount?, label?, grantedBy?, productId?` | `purchased_user/{emailKey}` |
+| `access_purchases` | email (encodage `,` conservé, ex. `baaye012@gmail,com`) | `token, expiresAt, level, plan, source, uid, at, amount?, label?, grantedBy?, productId?, renewalReminderForExpiry?, expiredNoticeForExpiry?` | `purchased_user/{emailKey}` |
+
+`renewalReminderForExpiry`/`expiredNoticeForExpiry` (Phase 7) : écrits par `pages/api/cron/reminders.js` (relance de réabonnement, `lib/reminders.js` `shouldSendRenewalReminder`/`shouldSendExpiredNotice`) — mémorisent la valeur d'`expiresAt` pour laquelle un rappel a déjà été poussé, pas un simple booléen : une prolongation (nouvel `expiresAt` écrit par admin-asrar-pro) rend le marqueur obsolète et réarme le rappel automatiquement, sans action de l'admin.
 | `access_allowed` | email (idem) | legacy : `true`/nombre, ou `{until, level}` | `allowedUsers/{emailKey}` |
 | `access_admins` | email (idem) | `{value: true}` (existence = admin) | `admins/{emailKey}` |
 | `access_vip` | uid | `{value: true}` (existence = VIP) | `vip_users/{uid}` |
