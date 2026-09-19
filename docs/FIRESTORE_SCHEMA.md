@@ -120,7 +120,7 @@ notamment `collectionGroup("members").where("uid","==",me)` pour retrouver
 | Collection | ID document | Champs | Source RTDB |
 |---|---|---|---|
 | `push_subscriptions` | `${uid}_${subId}` | `{...subscription, uid}` | `push_subscriptions/{uid}/{subId}` |
-| `reminder_settings` | uid | `{wirdEnabled, wirdHour, wirdMinute, tz, updatedAt, lastSentDate?, lastSentAt?}` | `reminder_settings/{uid}` |
+| `reminder_settings` | uid | `{wirdEnabled, wirdHour, wirdMinute, dailyContentEnabled, tz, updatedAt, lastSentDate?, lastSentAt?, lastContentSentDate?, lastContentSentAt?}` | `reminder_settings/{uid}` — `dailyContentEnabled` (verset/hadith/dua, `lib/dailyContent.js`) ajouté en Phase 7, heure d'envoi FIXE (`DAILY_CONTENT_HOUR`, `lib/reminders.js`), pas de champ d'heure propre contrairement au wird. |
 | `analytics_visits` | `${date}_${uid}` | `{date, uid, n, last, email, country?, countryCode?}` | `analytics/visits/{date}/{uid}` |
 | `activity_feed` | id push-key | `{uid, email, type, page, at, country?, countryCode?}` | `activity_feed/{id}` |
 | `user_sessions` | uid | `{uid, email, country?, countryCode?, lastLoginAt, lastActivityAt}` | *(nouveau, pas de source RTDB)* — un doc par utilisateur, écrit par `pages/api/track.js` à chaque appel ; `country`/`countryCode` résolus depuis l'en-tête `x-vercel-ip-country` (voir `lib/countries.js`). Lu par le panneau d'administration (répartition par pays, connexions récentes). |

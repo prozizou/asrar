@@ -1,7 +1,8 @@
-// api/cron/reminders.js — Envoi des rappels programmés : wird quotidien
-// (reminder_settings/{uid}, réglé via pages/api/reminders.js) et session Zikr
-// collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le créateur —
-// voir lib/zikrLogic.js normalizeGroupInput).
+// api/cron/reminders.js — Envoi des rappels programmés : wird quotidien et
+// contenu quotidien — verset/hadith/dua, lib/dailyContent.js — (tous deux
+// dans reminder_settings/{uid}, réglés via pages/api/reminders.js) et
+// session Zikr collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le
+// créateur — voir lib/zikrLogic.js normalizeGroupInput).
 //
 // Déclenché PÉRIODIQUEMENT par un planificateur externe (même mécanisme que
 // pages/api/cron/planet-push.js — voir server/cronAuth.js), à une cadence
@@ -40,7 +41,8 @@ const webpush = require("web-push");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
-const { shouldSendWird, shouldSendSessionReminder, localDateKey } = require("../../../lib/reminders");
+const { shouldSendWird, shouldSendDailyContent, shouldSendSessionReminder, localDateKey } = require("../../../lib/reminders");
+const { todayContent, pushBody, CONTENT_TYPE_LABEL } = require("../../../lib/dailyContent");
 
 export default async function handler(req, res) {
   if (!authorized(req)) return res.status(401).json({ error: "Non autorisé." });
@@ -55,10 +57,13 @@ export default async function handler(req, res) {
 
   const firestore = app().firestore();
   const now = new Date();
-  const stats = { wirdSent: 0, wirdSkipped: 0, sessionSent: 0, sessionSkipped: 0, removed: 0, errors: 0 };
+  const stats = {
+    wirdSent: 0, wirdSkipped: 0, contentSent: 0, contentSkipped: 0,
+    sessionSent: 0, sessionSkipped: 0, removed: 0, errors: 0,
+  };
 
   try {
-    await Promise.all([sendWirdReminders(firestore, now, stats), sendSessionReminders(firestore, now, stats)]);
+    await Promise.all([sendDailyReminders(firestore, now, stats), sendSessionReminders(firestore, now, stats)]);
     // Dernière exécution + statistiques — consultable côté admin (console
     // Firebase, même principe que les autres nœuds admin-only du projet) pour
     // repérer un planificateur externe qui se serait arrêté (surveillance,
@@ -97,32 +102,61 @@ async function pushToUser(firestore, uid, payload, stats) {
   await Promise.all(tasks);
 }
 
-// ── Wird quotidien ───────────────────────────────────────────────
-async function sendWirdReminders(firestore, now, stats) {
+// ── Wird quotidien + contenu quotidien ───────────────────────────────────
+// UN SEUL passage sur reminder_settings pour les deux rappels (au lieu de
+// deux scans complets de la collection) — chaque document peut déclencher
+// l'un, l'autre, les deux, ou aucun, indépendamment (deux booléens/deux
+// dates de dernier envoi séparés, voir pages/api/reminders.js).
+async function sendDailyReminders(firestore, now, stats) {
   const snap = await firestore.collection("reminder_settings").get();
   const tasks = [];
   snap.forEach((doc) => {
     const uid = doc.id;
     const settings = doc.data() || {};
-    if (!shouldSendWird(settings, now)) { stats.wirdSkipped++; return; }
-    const payload = JSON.stringify({
-      title: '🤲 Rappel de wird',
-      body: "C'est l'heure de votre wird quotidien.",
-      // /rappels n'existe pas (aucune route sous app/ ne le sert — 404) : le
-      // réglage du wird (WirdReminderToggle.js) vit dans /zikr, seule
-      // destination réelle où l'utilisateur peut agir sur ce rappel (revue
-      // de sécurité, P0).
-      url: '/zikr',
-      tag: 'wird-reminder',
-    });
-    tasks.push(
-      pushToUser(firestore, uid, payload, stats).then(() =>
-        doc.ref.update({
-          lastSentDate: localDateKey(now, settings.tz || "UTC"),
-          lastSentAt: now.getTime(),
-        })
-      ).then(() => { stats.wirdSent++; })
-    );
+    const tz = settings.tz || "UTC";
+    const update = {};
+
+    if (shouldSendWird(settings, now)) {
+      const payload = JSON.stringify({
+        title: '🤲 Rappel de wird',
+        body: "C'est l'heure de votre wird quotidien.",
+        // /rappels n'existe pas (aucune route sous app/ ne le sert — 404) :
+        // le réglage du wird (WirdReminderToggle.js) vit dans /zikr, seule
+        // destination réelle où l'utilisateur peut agir sur ce rappel
+        // (revue de sécurité, P0).
+        url: '/zikr',
+        tag: 'wird-reminder',
+      });
+      tasks.push(
+        pushToUser(firestore, uid, payload, stats).then(() => { stats.wirdSent++; })
+      );
+      update.lastSentDate = localDateKey(now, tz);
+      update.lastSentAt = now.getTime();
+    } else {
+      stats.wirdSkipped++;
+    }
+
+    if (shouldSendDailyContent(settings, now)) {
+      const item = todayContent(now);
+      const payload = JSON.stringify({
+        title: '🌙 ' + (CONTENT_TYPE_LABEL[item.type] || 'Contenu du jour'),
+        body: pushBody(item),
+        // /menu affiche la même carte (components/DailyContentCard.js,
+        // même sélection déterministe par jour) — cohérent avec ce que le
+        // push vient d'annoncer.
+        url: '/menu',
+        tag: 'daily-content',
+      });
+      tasks.push(
+        pushToUser(firestore, uid, payload, stats).then(() => { stats.contentSent++; })
+      );
+      update.lastContentSentDate = localDateKey(now, tz);
+      update.lastContentSentAt = now.getTime();
+    } else {
+      stats.contentSkipped++;
+    }
+
+    if (Object.keys(update).length > 0) tasks.push(doc.ref.update(update));
   });
   await Promise.all(tasks);
 }
