@@ -1,6 +1,18 @@
-# Schéma Firestore — migration depuis Realtime Database
+# Schéma Firestore — migration depuis Realtime Database (ARCHIVÉ, migration annulée)
 
-> **Statut : Phases 0 à 6 de la migration RTDB → Firestore — TERMINÉE.** Ce
+> ⚠️ **Ce document est un historique — la migration décrite ici a été
+> ANNULÉE le 18/09.** Le quota Firestore (plan gratuit Spark, 50 000
+> lectures/jour) s'est révélé trop limitant en usage réel ; l'app est
+> revenue à la Realtime Database sur tous les modules. `firebase.json`,
+> `firestore.rules` et `firestore.indexes.json` ont été supprimés. Les
+> données Firestore accumulées entre le 10/09 (fin de la migration) et le
+> 18/09 (retour arrière) ont été recopiées vers la RTDB par
+> `scripts/sync-firestore-to-rtdb.js` avant le déploiement du code ci-dessous
+> annulé — voir ce script pour le mapping inverse exact. Conservé pour
+> mémoire (comprendre le mapping RTDB ↔ Firestore si une remigration est un
+> jour retentée, cette fois sur le plan Blaze).
+>
+> **Statut (historique) : Phases 0 à 6 de la migration RTDB → Firestore — TERMINÉE.** Ce
 > document décrit la collection Firestore cible pour chaque nœud RTDB
 > d'origine — voir `scripts/migrate-to-firestore.js` pour l'import des
 > données et `firestore.rules`/`firestore.indexes.json` pour les règles/
@@ -120,7 +132,7 @@ notamment `collectionGroup("members").where("uid","==",me)` pour retrouver
 | Collection | ID document | Champs | Source RTDB |
 |---|---|---|---|
 | `push_subscriptions` | `${uid}_${subId}` | `{...subscription, uid}` | `push_subscriptions/{uid}/{subId}` |
-| `reminder_settings` | uid | `{wirdEnabled, wirdHour, wirdMinute, dailyContentEnabled, tz, updatedAt, lastSentDate?, lastSentAt?, lastContentSentDate?, lastContentSentAt?}` | `reminder_settings/{uid}` — `dailyContentEnabled` (verset/hadith/dua, `lib/dailyContent.js`) ajouté en Phase 7, heure d'envoi FIXE (`DAILY_CONTENT_HOUR`, `lib/reminders.js`), pas de champ d'heure propre contrairement au wird. |
+| `reminder_settings` | uid | `{wirdEnabled, wirdHour, wirdMinute, tz, updatedAt, lastSentDate?, lastSentAt?}` | `reminder_settings/{uid}` |
 | `analytics_visits` | `${date}_${uid}` | `{date, uid, n, last, email, country?, countryCode?}` | `analytics/visits/{date}/{uid}` |
 | `activity_feed` | id push-key | `{uid, email, type, page, at, country?, countryCode?}` | `activity_feed/{id}` |
 | `user_sessions` | uid | `{uid, email, country?, countryCode?, lastLoginAt, lastActivityAt}` | *(nouveau, pas de source RTDB)* — un doc par utilisateur, écrit par `pages/api/track.js` à chaque appel ; `country`/`countryCode` résolus depuis l'en-tête `x-vercel-ip-country` (voir `lib/countries.js`). Lu par le panneau d'administration (répartition par pays, connexions récentes). |

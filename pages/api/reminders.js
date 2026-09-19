@@ -11,13 +11,13 @@
 //   action="set" → enregistre UNIQUEMENT les champs FOURNIS (voir plus bas) —
 //     wirdEnabled/dailyContentEnabled/tz sont chacun indépendants : activer
 //     le contenu quotidien depuis /menu (components/DailyContentCard.js) ne
-//     doit jamais écraser le réglage de wird fait depuis /ziku
+//     doit jamais écraser le réglage de wird fait depuis /zikr
 //     (components/WirdReminderToggle.js), et réciproquement.
 //
-// MIGRATION FIRESTORE (Phase 6, voir docs/FIRESTORE_SCHEMA.md) : document
-// Firestore reminder_settings/{uid} = { wirdEnabled, wirdHour, wirdMinute,
-//   dailyContentEnabled, tz, lastSentDate?, lastContentSentDate?, updatedAt }
-//   — lastSentDate/lastContentSentDate (clés anti-doublon, "YYYY-MM-DD" dans
+// Écrit reminder_settings/{uid} = { wirdEnabled, wirdHour, wirdMinute,
+//   dailyContentEnabled, tz, lastSentDate?, lastSentAt?,
+//   lastContentSentDate?, lastContentSentAt?, updatedAt } —
+//   lastSentDate/lastContentSentDate (clés anti-doublon, "YYYY-MM-DD" dans
 //   `tz`) ne sont écrites QUE par le cron, jamais ici.
 
 const { verifyUser } = require("../../server/access");
@@ -46,12 +46,13 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de requêtes, réessayez dans une minute." });
   }
 
-  const ref = app().firestore().collection("reminder_settings").doc(user.uid);
+  const db = app().database();
+  const ref = db.ref("reminder_settings/" + user.uid);
 
   try {
     if (action === "get") {
-      const snap = await ref.get();
-      const v = snap.exists ? snap.data() : {};
+      const snap = await ref.once("value");
+      const v = snap.val() || {};
       return res.status(200).json({
         wirdEnabled: v.wirdEnabled === true,
         wirdHour: cleanHour(v.wirdHour) ?? DEFAULT_HOUR,
@@ -64,8 +65,9 @@ export default async function handler(req, res) {
     if (action === "set") {
       // Mise à jour PARTIELLE : seuls les champs explicitement fournis dans
       // le body sont touchés (`!== undefined`, pas un simple `if (x)` — un
-      // false explicite doit pouvoir désactiver un réglage). `{merge:true}`
-      // côté Firestore laisse intacts les champs absents de `update`.
+      // false explicite doit pouvoir désactiver un réglage). ref.update()
+      // (RTDB) ne touche déjà QUE les clés présentes dans l'objet passé —
+      // pas besoin d'un `{merge:true}` comme côté Firestore.
       const update = { updatedAt: Date.now() };
 
       if (wirdEnabled !== undefined) {
@@ -92,7 +94,7 @@ export default async function handler(req, res) {
         update.tz = cleanTimeZone(tz);
       }
 
-      await ref.set(update, { merge: true });
+      await ref.update(update);
       return res.status(200).json({ ok: true });
     }
 
