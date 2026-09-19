@@ -976,6 +976,47 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .signout-btn:hover { background: var(--glass-bg); color: #fff; transform: none; }
 
+/* Interrupteur (activer/désactiver) partagé — utilisé par
+   WirdReminderToggle.js (/zikr) ET DailyContentCard.js (/menu) : classe
+   globale (chargée sur toutes les routes, contrairement à app/zikr/zikr.css)
+   plutôt qu'un doublon de style par module. Mêmes styles que
+   .planete-page .switch (app/planete/planete.css). */
+.zk-switch {
+  flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px;
+  background: var(--glass-border); border: none; position: relative; cursor: pointer; padding: 0;
+  transition: background 0.2s ease;
+}
+.zk-switch.on { background: var(--accent); }
+.zk-switch:disabled { opacity: 0.5; cursor: default; }
+.zk-switch-knob {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease;
+}
+.zk-switch.on .zk-switch-knob { transform: translateX(18px); }
+
+/* ── Contenu spirituel quotidien (components/DailyContentCard.js, /menu) ──
+   Pleine largeur, en dehors de .sub-grid — une tuile de module (140px) est
+   trop étroite pour un hadith/verset lisible. Réutilise .zk-switch
+   ci-dessus pour l'interrupteur : même composant visuel que le rappel de
+   wird, pas de doublon de style. */
+.daily-content-card {
+  background: var(--surface-2); border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 16px; margin-bottom: 22px;
+}
+.daily-content-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.daily-content-kind {
+  font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--accent);
+}
+.daily-content-arabic { font-size: 1.15rem; line-height: 1.7; color: var(--text-main); margin: 0 0 10px; text-align: right; }
+.daily-content-text { font-size: .95rem; line-height: 1.55; color: var(--text-main); margin: 0 0 6px; }
+.daily-content-source { display: block; font-size: .78rem; color: var(--text-dim); }
+.daily-content-hint {
+  display: flex; align-items: center; gap: 6px; margin: 10px 0 0;
+  font-size: .78rem; color: var(--text-dim);
+}
+.daily-content-error { color: #f0819a; font-size: .78rem; margin: 8px 0 0; }
+
 .menu-group { margin-bottom: 26px; }
 .group-title {
   font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 14px;

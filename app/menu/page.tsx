@@ -21,6 +21,7 @@
 import Link from 'next/link';
 import UserBar from './UserBar';
 import PlanetHourWidget from '@/components/PlanetHourWidget';
+import DailyContentCard from '@/components/DailyContentCard';
 
 interface ModuleTile {
   icon: string;
@@ -83,6 +84,12 @@ export default function MenuPage() {
         <h1>Menu</h1>
         <p style={{ color: 'var(--text-muted)' }}>Tous les modules</p>
       </div>
+
+      {/* Contenu spirituel quotidien (verset/hadith/dua) — voir
+          components/DailyContentCard.js. Placé en dehors de .sub-grid
+          (pleine largeur, pas une tuile de module) : un texte a besoin de
+          place pour rester lisible. */}
+      <DailyContentCard />
 
       <section className="menu-group">
         <div className="sub-grid">
