@@ -38,8 +38,20 @@ function geometryFor(large) {
   const RY = large ? 34 : 20;    // hauteur de l'arc
   const TOP_Y = large ? 44 : 26; // hauteur à laquelle les brins rejoignent l'arc
   // Volontairement asymétriques (le brin droit descend plus bas).
-  const BOT_R = large ? 2480 : 1480;
-  const BOT_L = large ? 2420 : 1440;
+  //
+  // ⚠️ Ces deux valeurs FIXENT L'ESPACEMENT DES GRAINS, pas seulement la
+  // réserve hors champ : les 100 grains sont répartis sur TOUTE la boucle,
+  // donc espacement = longueur_totale / 100. Mettre BOT_L/BOT_R à l'échelle
+  // en même temps que le reste (ce qu'avait fait l'agrandissement du gabarit
+  // large) doublait l'écart entre grains — 31 px de vide pour un grain de
+  // 20 px, « plus du tout naturel » pour un chapelet. Le gabarit large garde
+  // donc un fil PLUS COURT que la mise à l'échelle proportionnelle :
+  //   petit : 3073 px / 100 = 30,7 d'espacement pour un grain de 14 (vide 16,7)
+  //   large : 2354 px / 100 = 23,5 d'espacement pour un grain de 20 (vide 3,5)
+  // soit des grains quasi jointifs, enfilés, comme sur un vrai tasbih.
+  // Mesurable à tout moment avec getTotalLength() sur le tracé.
+  const BOT_R = large ? 1100 : 1480;
+  const BOT_L = large ? 1040 : 1440;
   const CX = VIEW_W / 2;
   // Le fil complet, dans l'ordre du parcours : arc du haut (gauche → droite),
   // brin droit vers le bas, boucle du bas (hors champ), puis `Z` referme en
