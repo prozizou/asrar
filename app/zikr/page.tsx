@@ -42,7 +42,7 @@ import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
 import {
-  progressPct, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
+  progressPct, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
   normalizePhone,
 } from '@/lib/zikrLogic';
@@ -888,6 +888,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // vraie page de messagerie, pas un composant posé sur un fond ») plutôt
   // que la carte flottante des autres onglets, voir .zk-chat-mode (zikr.css).
   const chatMode = isMember && tab === 'discussion';
+  // Écran Zikr (récitation) : masque le badge de formule et les précisions
+  // secondaires de l'en-tête (revue design — « le badge Zikr libre et
+  // certaines informations secondaires occupent de la place sans être
+  // prioritaires pendant la récitation ») — restent visibles sur les autres
+  // onglets (Participants/Discussion), où ce rappel a plus de valeur.
+  const recitingMode = isMember && tab === 'zikr';
 
   return (
     <div className={'zk-detail' + (isMember ? ' zk-has-bottom-nav' : '') + (chatMode ? ' zk-chat-mode' : '')}>
@@ -928,11 +934,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       <div className="zk-detail-head">
         <h1>{g.name}</h1>
         {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
-        {g.transliteration && <span className="zk-preset-badge">{g.transliteration}</span>}
-        <div className="zk-owner">
-          Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-          {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
-        </div>
+        {g.transliteration && !recitingMode && <span className="zk-preset-badge">{g.transliteration}</span>}
+        {!recitingMode && (
+          <div className="zk-owner">
+            Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
+            {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
+          </div>
+        )}
         {/* Les précisions ci-dessous (rappel push, invitation par lien…)
             alourdissent l'en-tête sans rien apporter une fois qu'on discute
             déjà dans le groupe — réservées à l'écran Zikr/Participants. */}
@@ -1446,25 +1454,33 @@ function BottomNav({ tab, setTab, unreadCount }: {
 }
 
 // Bloc de progression collective partagé (StaticProgress ET MemberCounter) —
-// revue design, point 7 : le pourcentage à CÔTÉ du titre (pas seulement en
-// fin de ligne, noyé dans "X / Y (Z %)") se lit avant même les chiffres.
-function CollectiveProgress({ total, target, label = 'Progression collective', bare }: {
-  total: number; target: number; label?: string; bare?: boolean;
+// revue design : trois lignes seulement — libellé, « total / cible · pct % »
+// (un seul endroit pour ces trois nombres, plus de pourcentage répété à côté
+// du titre ET dans la ligne méta), barre, puis un unique repère « restants ·
+// participants ». `remaining` (optionnel) laisse l'appelant fournir une
+// valeur déjà recalée (MemberCounter, qui tient compte des grains encore en
+// attente d'envoi) — sinon calculée ici via remainingOf (lib/zikrLogic.js),
+// SOURCE UNIQUE de ce calcul dans tout le composant (revue design : « piloté
+// par une seule source de calcul pour éviter toute divergence future »).
+function CollectiveProgress({ total, target, remaining, meta, label = 'Progression collective', bare }: {
+  total: number; target: number; remaining?: number; meta?: string; label?: string; bare?: boolean;
 }) {
   const pct = progressPct(total, target);
   const reached = target > 0 && total >= target;
-  const remaining = Math.max(0, target - total);
+  const rem = remaining !== undefined ? remaining : remainingOf(total, target);
   return (
     <div className={'zk-progress-block' + (bare ? '' : ' zk-progress-hero')}>
-      <div className="zk-progress-head">
-        <span>{label}</span>
-        <strong className={reached ? 'zk-progress-pct done' : 'zk-progress-pct'}>{fmtPct(pct)}</strong>
+      <div className="zk-progress-head">{label}</div>
+      <div className="zk-progress-stats">
+        <strong>{fmt(total)}</strong> / <strong>{fmt(target)}</strong>
+        <span className={reached ? 'zk-progress-pct done' : 'zk-progress-pct'}>· {fmtPct(pct)}</span>
       </div>
       <div className="zk-bar big"><span style={{ width: pct + '%' }} className={reached ? 'done' : ''} /></div>
-      <div className="zk-progress-meta">
-        <strong>{fmt(total)}</strong> accomplis sur <strong>{fmt(target)}</strong>
-        {!reached && <span className="zk-progress-remaining"> · {fmt(remaining)} restants</span>}
-      </div>
+      {(meta || !reached) && (
+        <div className="zk-progress-meta">
+          {reached ? meta : `${fmt(rem)} restants${meta ? ' · ' + meta : ''}`}
+        </div>
+      )}
     </div>
   );
 }
@@ -1564,7 +1580,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
 
   const pending = Math.max(0, t.total - syncedFait.current);
   const groupTotal = Math.min(target || Infinity, (Number(g.total) || 0) + pending);
-  const restant = Math.max(0, target - groupTotal);
+  const restant = remainingOf(groupTotal, target);
   // L'avancement enregistré fait foi s'il dépasse le compteur local (stockage
   // vidé, ou récitation faite depuis un autre appareil) — cohérent avec le
   // caractère monotone appliqué côté serveur.
@@ -1581,32 +1597,25 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
         </div>
       )}
 
-      {/* Carte UNIQUE (revue design : « la vue est beaucoup trop longue
-          verticalement ») — progression collective, repère « Aujourd'hui »
-          et chapelet partageaient trois cadres empilés (fond+bordure+padding
-          chacun) ; un seul cadre englobant ici, CollectiveProgress et
-          TasbihChapelet passent en mode `bare`/`embedded` pour ne plus
-          dessiner le leur. */}
+      {/* Carte UNIQUE, épurée à l'essentiel pendant la récitation (revue
+          design : « la progression collective, l'activité du jour, l'objectif
+          restant et le compteur personnel se disputent l'attention ») —
+          progression collective (total/cible/pct/restants/participants,
+          TOUT dans CollectiveProgress désormais) puis le chapelet, sans le
+          repère « Aujourd'hui » séparé d'avant : c'était un quatrième nombre
+          concurrent du compteur personnel (myFait, dominant dans le
+          chapelet) pour une information secondaire, déjà visible par membre
+          dans l'onglet Participants (m.dailyTotal). Le nombre de
+          participants rejoint la ligne « restants » de CollectiveProgress
+          (prop `meta`) plutôt que sa propre ligne séparée. */}
       <div className="zk-zikr-card">
-        <CollectiveProgress total={groupTotal} target={target} bare />
-
-        {/* Repère « Aujourd'hui » + nombre de participants sur UNE ligne —
-            le nombre personnel PRINCIPAL (myFait) est affiché UNE SEULE FOIS,
-            dans le chapelet lui-même (libellé « Vos grains récités »), pas
-            répété ici (revue design : « 102 » du chapelet et « Mes grains
-            récités 102 » juste en dessous créaient une confusion). Le total
-            du jour est celui rapporté par le SERVEUR au dernier sondage —
-            pas corrigé comme `myFait` (t.total/syncedFait) : un léger
-            décalage (rattrapé au prochain envoi groupé, SAVE_DEBOUNCE) est
-            sans conséquence pour un simple repère "aujourd'hui" (fenêtre UTC
-            commune à tout le groupe — lib/zikrLogic.js utcDateKey). */}
-        <div className="zk-today-chip">
-          <Clock size={12} strokeWidth={2.5} aria-hidden="true" />
-          Aujourd’hui <strong>{fmt(Number(g.myDailyTotal) || 0)}</strong>
-          <span className="zk-today-sep">·</span>
-          <Users size={12} strokeWidth={2.5} aria-hidden="true" />
-          {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-        </div>
+        <CollectiveProgress
+          total={groupTotal}
+          target={target}
+          remaining={restant}
+          meta={`${fmt(g.membersCount)} participant${g.membersCount > 1 ? 's' : ''}`}
+          bare
+        />
 
         {/* Réglages masqués : pas de part personnelle en Zikr collectif,
             l'objectif restant affiché EST celui du groupe entier. */}
