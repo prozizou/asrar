@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
 // les 4 tuiles masquées du menu (2026-09-02) — toutes doivent réagir pareil.
 const ROUTES = [
   '/', '/menu', '/asrar', '/abajad', '/planete', '/combinaisons',
-  '/zikr', '/rouwhania', '/bibliotheque', '/parrainage',
+  '/zikr', '/rouwhania', '/bibliotheque', '/parrainage', '/notifications',
   '/alqalam', '/geomancie', // premium
   '/thalsams', '/wafq', '/tafsir', '/formation', // masquées du menu, pages toujours actives
 ];

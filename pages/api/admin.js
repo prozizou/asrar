@@ -6,7 +6,10 @@
 // Actions :
 //   stats
 //   list-secrets {cat} · save-secret {cat,key?,faida,sirr,img} · delete-secret {cat,key}
+//     (nouveau Secret, key omise → notifie TOUS les utilisateurs connus,
+//     centre de notifications + push — voir server/notify.js notifyAllUsers)
 //   list-books · save-book {key?,titre,auteur,description,img,pdf} · delete-book {key}
+//     (nouveau document, key omise → même notification broadcast)
 //   list-formations · save-formation {key?,titre,description,prix,duree,attentes,img,meetLink} · delete-formation {key}
 //   list-products · save-product {key?,produit,Prix,...} · delete-product {key}
 //   list-sellers · seller-action {uid, op:'extend'|'suspend'|'activate', days?}
@@ -18,8 +21,17 @@ const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { notifyAllUsers } = require("../../server/notify");
+const { secretNotification, documentNotification } = require("../../lib/notifyTemplates");
 
 const DAY_MS = 86400000;
+
+// Nom d'expéditeur affiché pour les notifications broadcast (Secret,
+// document) : le nom PERSONNEL de l'admin qui publie n'est jamais exposé à
+// toute la base d'utilisateurs — cohérent avec le reste de l'app, où
+// Secrets/Bibliothèque sont déjà présentés comme du contenu ASRAR PRO, pas
+// comme venant d'un compte individuel.
+const BROADCAST_SENDER = "ASRAR PRO";
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -53,9 +65,24 @@ export default async function handler(req, res) {
         if (!SECRET_CATS.includes(cat)) return res.status(400).json({ error: "Catégorie inconnue." });
         const faida = str(body.faida, 200);
         if (!faida) return res.status(400).json({ error: "Titre (faida) requis." });
+        const isNew = !body.key; // édition d'un Secret existant → jamais renotifié
         const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
         const key = body.key || db.ref("db_sirr_" + cat).push().key;
         await db.ref("db_sirr_" + cat + "/" + key).update(rec);
+        if (isNew) {
+          // Diffusion à tous les utilisateurs connus (aucune fonctionnalité
+          // d'envoi ciblé pour ce module — voir server/notify.js
+          // notifyAllUsers). Attendue (pas fire-and-forget) : une fonction
+          // serverless peut être gelée dès la réponse envoyée, un envoi non
+          // attendu risquerait de ne jamais aboutir ; le .catch() évite pour
+          // autant qu'un échec de diffusion fasse échouer la publication.
+          await notifyAllUsers(db, {
+            ...secretNotification({ senderName: BROADCAST_SENDER, preview: faida }),
+            senderName: BROADCAST_SENDER,
+            targetUrl: "/asrar?item=" + key + "&cat=" + cat,
+            meta: { cat, key, tagSuffix: cat + ":" + key },
+          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-secret", key }));
+        }
         return res.json({ ok: true, key });
       }
       case "delete-secret": {
@@ -69,12 +96,22 @@ export default async function handler(req, res) {
       case "save-book": {
         const titre = str(body.titre, 200);
         if (!titre) return res.status(400).json({ error: "Titre requis." });
+        const isNew = !body.key; // édition d'un document existant → jamais renotifié
         const rec = {
           titre, auteur: str(body.auteur, 120), description: str(body.description, 2000),
           img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
         const key = body.key || db.ref("almaqtab").push().key;
         await db.ref("almaqtab/" + key).update(rec);
+        if (isNew) {
+          // Même diffusion broadcast que save-secret ci-dessus.
+          await notifyAllUsers(db, {
+            ...documentNotification({ senderName: BROADCAST_SENDER, preview: titre }),
+            senderName: BROADCAST_SENDER,
+            targetUrl: "/bibliotheque?item=" + key,
+            meta: { key, tagSuffix: key },
+          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-book", key }));
+        }
         return res.json({ ok: true, key });
       }
       case "delete-book": {

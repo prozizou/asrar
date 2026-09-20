@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { captureRef, claimRef } from '@/lib/share';
+import { ensurePushRegistration } from '@/lib/push';
 
 const AuthCtx = createContext({ user: null, loading: true, signOut: () => {} });
 export const useAuth = () => useContext(AuthCtx);
@@ -52,6 +53,7 @@ export default function AuthProvider({ children }) {
         } catch {}
         claimRef(); // transmet le parrainage au serveur (une seule fois)
         trackVisit(u);
+        ensurePush(); // abonne l'appareil aux push (une fois par chargement)
       }
     });
     return unsub;
@@ -144,6 +146,19 @@ function LoginScreen({ onLogin, status, error }) {
       </div>
     </div>
   );
+}
+
+// Abonnement push automatique après connexion (une seule fois par
+// chargement de l'app — l'abonnement lui-même persiste ; inutile de le
+// refaire à chaque rafraîchissement de jeton, qui redéclenche pourtant
+// onAuthStateChanged). Voir lib/push.js ensurePushRegistration pour la
+// logique fine (réabonnement silencieux si déjà autorisé, invite une seule
+// fois sinon). Best-effort, jamais bloquant.
+let _pushEnsured = false;
+function ensurePush() {
+  if (_pushEnsured) return;
+  _pushEnsured = true;
+  ensurePushRegistration().catch(() => {});
 }
 
 // Journalisation légère des visites (alimente le tableau de bord admin).

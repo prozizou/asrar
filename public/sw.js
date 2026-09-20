@@ -23,7 +23,7 @@
 // components/PwaGate.js écoute 'controllerchange' et recharge la page une
 // fois pour que le JS déjà chargé en mémoire reparte du nouveau build.
 
-const SW_VERSION = 'v45.84';
+const SW_VERSION = 'v45.86';
 
 // Répond à une demande de version depuis la page (voir components/AppDrawer.js
 // « Version de l'app » — reflète la version du SW réellement actif sur
@@ -82,15 +82,30 @@ self.addEventListener('push', (event) => {
   } catch {}
 
   const title = data.title || 'ASRAR PRO';
+  const url = data.url || '/notifications';
   const options = {
     body: data.body || '',
     icon: '/assets/icon-192.png',
     badge: '/assets/icon-192.png',
     tag: data.tag || 'asrar-notification', // remplace une notif du même tag au lieu d'empiler
-    data: { url: data.url || '/planete' },
+    data: { url },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  // On affiche TOUJOURS la notification système (Chrome pénalise un push
+  // "silencieux" reçu sous userVisibleOnly, jusqu'à révoquer l'abonnement) —
+  // ET on prévient les pages ASRAR ouvertes pour qu'elles rafraîchissent
+  // immédiatement leur cloche/centre de notifications (« application ouverte
+  // → affichage immédiat dans l'interface »), sans attendre le prochain
+  // sondage. Ces pages écoutent ce message (components/NotificationBell.js,
+  // app/notifications/page.tsx).
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      self.clients
+        .matchAll({ type: 'window', includeUncontrolled: true })
+        .then((clients) => clients.forEach((c) => c.postMessage({ type: 'asrar-notification' }))),
+    ])
+  );
 });
 
 // Clic sur la notification : ramène au premier onglet déjà ouvert s'il y en
