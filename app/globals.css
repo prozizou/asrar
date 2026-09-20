@@ -1080,8 +1080,26 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   background: -webkit-linear-gradient(45deg, var(--accent), var(--accent-hover));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-/* Unique cible à droite : l'avatar OUVRE le menu profil (thème, installation,
-   version, déconnexion) — components/AppDrawer.js, prop `trigger`. */
+/* Cloche de notifications (components/NotificationBell.js) — ouvre
+   /notifications (centre complet, pas de panneau déroulant). Badge non-lu en
+   coin haut-droit, chiffré (plafonné à « 9+ » plutôt que de continuer à
+   grossir sans fin). */
+.menu-appbar-bell {
+  position: relative; flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 50%; cursor: pointer;
+  color: var(--text-main); text-decoration: none;
+}
+.menu-appbar-bell:hover { background: var(--surface-2); transform: none; box-shadow: none; }
+.menu-appbar-bell-badge {
+  position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 999px; background: var(--accent); color: #fff;
+  font-size: .68rem; font-weight: 700; line-height: 16px; text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-deep);
+}
+/* L'avatar OUVRE le menu profil (thème, installation, version, déconnexion)
+   — components/AppDrawer.js, prop `trigger`. Avec la cloche, ce sont
+   désormais DEUX cibles à droite (voir UserBar.js pour la justification). */
 .menu-appbar-profile {
   flex-shrink: 0; width: 44px; height: 44px; padding: 0; margin: 0;
   display: flex; align-items: center; justify-content: center;
@@ -1513,3 +1531,56 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .sr-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .sr-item-email { font-size: .8rem; color: var(--text-dim); }
 .sr-item-text { margin: 0; font-size: .88rem; color: var(--text-main); white-space: pre-wrap; }
+
+/* ── Centre de notifications (app/notifications/page.tsx, components/
+   NotificationBell.js) ──────────────────────────────────────────────── */
+.notif-header {
+  display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px 10px;
+  margin-bottom: 14px;
+}
+.notif-header h1 { font-family: var(--font-display); font-size: 1.4rem; margin: 0; }
+.notif-markall {
+  flex-shrink: 0; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 999px;
+  padding: 6px 12px; font-size: .8rem; font-weight: 600; color: var(--accent);
+  font-family: var(--font-ui); cursor: pointer;
+}
+.notif-markall:disabled { opacity: .5; cursor: default; }
+
+.notif-push-banner {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid var(--accent);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; color: var(--text-main);
+  font-family: var(--font-ui); font-size: .85rem; font-weight: 600; cursor: pointer;
+}
+.notif-push-banner svg { flex-shrink: 0; color: var(--accent); }
+.notif-push-hint { font-size: .78rem; color: var(--text-dim); margin: 0 0 14px; }
+
+.notif-empty { color: var(--text-muted); font-size: .92rem; text-align: center; padding: 40px 0; }
+
+.notif-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.notif-item {
+  position: relative; width: 100%; display: flex; align-items: flex-start; gap: 12px;
+  text-align: left; background: var(--surface-2); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 12px; cursor: pointer; font-family: var(--font-ui);
+  transition: border-color 150ms ease;
+}
+.notif-item.unread { background: color-mix(in srgb, var(--accent) 8%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent) 35%, var(--glass-border)); }
+.notif-item:active { transform: scale(.99); }
+.notif-item-icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+}
+.notif-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notif-item-title { font-size: .9rem; font-weight: 700; color: var(--text-main); }
+.notif-item-preview {
+  font-size: .82rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.notif-item-meta { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: .74rem; color: var(--text-dim); }
+.notif-item-sender { font-weight: 600; }
+.notif-item-dot {
+  flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+  margin-top: 6px;
+}

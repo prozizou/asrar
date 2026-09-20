@@ -121,8 +121,9 @@
 //                              mediaDuration? } : membre only — discussion de
 //                              groupe façon WhatsApp, texte et/ou pièce jointe
 //                              (image ou audio — voir handleSendMessage) ;
-//                              notifie en push (best-effort) tous les AUTRES
-//                              membres (voir notifyNewMessage)
+//                              notifie tous les AUTRES membres (centre de
+//                              notifications + push best-effort — voir
+//                              notifyNewMessage, server/notify.js)
 //   action="messages"       → { groupId } : membre only — 200 derniers messages
 //   action="approveZikr"    → { groupId } : ADMINISTRATEUR only — fait passer
 //                              approved à true (voir action="list"/"create")
@@ -176,10 +177,12 @@ const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const { notifyUsers } = require("../../server/notify");
+const { zikrMessageNotification } = require("../../lib/notifyTemplates");
 const {
   normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey, normalizePhone,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
-  WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount,
+  WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount, chatDisplayName,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -1093,7 +1096,7 @@ async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawM
   await ref.set(msg);
   // Best-effort : le message reste enregistré ci-dessus même si VAPID est
   // mal configuré ou qu'un envoi push échoue — jamais bloquant pour l'auteur.
-  await notifyNewMessage(db, gid, user.uid, user.email, text, !!mediaUrl).catch(() => {});
+  await notifyNewMessage(db, gid, user.uid, user.email, user.name, text, !!mediaUrl).catch(() => {});
   return res.status(200).json({ ok: true, id: ref.key });
 }
 
@@ -1123,33 +1126,32 @@ async function handleMessages(db, res, user, gid) {
 }
 
 // ── Prévient les AUTRES membres qu'un nouveau message a été posté ──
-// Demandé explicitement (« bip sonore + notification aux membres ») : le bip
-// lui-même est joué CÔTÉ CLIENT (app/zikr/page.tsx, sur le sondage qui
-// détecte un nouveau message pas de soi) — cette notification push couvre le
-// cas où l'app n'est pas au premier plan (même infra que notifyReciting/
-// pushInactivityWarning ci-dessus). Aucun plafond par destinataire (contraste
-// avec notifyReciting) : un message reste un événement ponctuel et voulu par
-// son auteur, pas un signal répété automatiquement comme la reprise d'activité.
-async function notifyNewMessage(db, gid, senderUid, senderEmail, text, hasMedia) {
-  if (!configureVapid()) return;
+// Demandé explicitement (« bip sonore + notification aux membres », puis
+// centre de notifications in-app — voir server/notify.js) : le bip lui-même
+// est joué CÔTÉ CLIENT (app/zikr/page.tsx, sur le sondage qui détecte un
+// nouveau message pas de soi) ; notifyUsers() couvre le reste — persistance
+// dans notifications/{uid} (badge, historique) ET push best-effort pour le
+// cas où l'app n'est pas au premier plan. Aucun plafond par destinataire
+// (contraste avec notifyReciting) : un message reste un événement ponctuel
+// et voulu par son auteur, pas un signal répété automatiquement comme la
+// reprise d'activité.
+async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayName, text, hasMedia) {
   const [nameSnap, membersSnap] = await Promise.all([
     db.ref("zikr_groups/" + gid + "/name").once("value"),
     db.ref("zikr_members/" + gid).once("value"),
   ]);
   const groupName = nameSnap.val() || "Zikr collectif";
-  const body = text
-    ? `${senderEmail || "Un membre"} : ${text}`
-    : `${senderEmail || "Un membre"} a envoyé ${hasMedia ? "une pièce jointe" : "un message"}.`;
-  const payload = JSON.stringify({
-    title: '💬 ' + groupName,
-    body,
-    url: '/s?k=zikr&i=' + gid,
-    tag: 'zikr-chat-' + gid,
-  });
+  const senderName = chatDisplayName(senderEmail, senderDisplayName);
+  const notif = zikrMessageNotification({ senderName, preview: text, hasMedia });
 
   const targets = [];
   membersSnap.forEach((m) => { if (m.key !== senderUid) targets.push(m.key); });
-  await Promise.all(targets.map((uid) => sendPushToUid(db, uid, payload, "zikr:notifyNewMessage")));
+  await notifyUsers(db, targets, {
+    ...notif,
+    senderName,
+    targetUrl: '/zikr?item=' + gid,
+    meta: { gid, groupName, tagSuffix: gid },
+  });
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur
