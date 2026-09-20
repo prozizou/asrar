@@ -31,7 +31,6 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
-import WirdReminderToggleUntyped from '@/components/WirdReminderToggle';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import { useVoiceRecorder } from '@/components/useVoiceRecorder';
@@ -57,7 +56,6 @@ import {
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
-const WirdReminderToggle = WirdReminderToggleUntyped as any;
 const EmojiPicker = EmojiPickerUntyped as any;
 const AttachMenu = AttachMenuUntyped as any;
 const AudioMessage = AudioMessageUntyped as any;
@@ -273,8 +271,6 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
         <h1>Zikr collectif</h1>
         <p>Récitez ensemble pour atteindre un objectif commun.</p>
       </div>
-
-      <WirdReminderToggle />
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
         {creating ? (

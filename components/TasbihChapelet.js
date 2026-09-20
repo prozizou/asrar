@@ -1,7 +1,7 @@
 'use client';
-// Compteur de dhikr (UI) — chapelet complet, partagé par « Noms d'Allah »
-// (app/benefits) et le « Zikr collectif » (app/zikr). Pur affichage : toute la
-// logique métier vit dans useTasbih (components/useTasbih.js).
+// Compteur de dhikr (UI) — chapelet complet, utilisé par le « Zikr collectif »
+// (app/zikr). Pur affichage : toute la logique métier vit dans useTasbih
+// (components/useTasbih.js).
 //
 // Port du chapelet du ZIP de référence (« mon-chapelet »), qui remplace l'arc
 // à 9 grains précédent. Le fil est UN SEUL chemin SVG fermé : il monte à
@@ -20,16 +20,16 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 const BEAD_COUNT = 100;
 
 // Géométrie du fil — DEUX gabarits (voir geometryFor) : le chapelet du Zikr
-// collectif (`large`) est nettement plus grand (revue design : « le
+// collectif (`large`, seul consommateur restant depuis la suppression du
+// module « Noms d'Allah ») est nettement plus grand (revue design : « le
 // chapelet ne donne pas la sensation d'un véritable objet interactif, la
-// zone principale devrait lui être consacrée ») que celui des Noms d'Allah
-// (app/benefits, inchangé — sa propre revue design avait explicitement
-// demandé cette taille réduite, pour un écran qui garde tout un panneau de
-// réglages/séries/suggestions autour). Toutes les proportions (RX/RY/TOP_Y/
-// BOT_L/BOT_R) sont mises à l'échelle ensemble : même forme de boucle, juste
-// plus grande — le fil continue de descendre très bas hors champ (BOT_L/
-// BOT_R) pour porter les 100 grains à un espacement naturel, seule la
-// fenêtre AFFICHÉE (VIEW_W/VIEW_H) change.
+// zone principale devrait lui être consacrée »). Le gabarit compact reste en
+// place (aucun appelant actuel) au cas où un futur écran voudrait un
+// chapelet plus petit. Toutes les proportions (RX/RY/TOP_Y/BOT_L/BOT_R) sont
+// mises à l'échelle ensemble : même forme de boucle, juste plus grande — le
+// fil continue de descendre très bas hors champ (BOT_L/BOT_R) pour porter
+// les 100 grains à un espacement naturel, seule la fenêtre AFFICHÉE
+// (VIEW_W/VIEW_H) change.
 function geometryFor(large) {
   const VIEW_W = large ? 192 : 108;
   const VIEW_H = large ? 234 : 138;
@@ -85,14 +85,13 @@ const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 1
  * @param {number} [props.myFait]  Zikr collectif : valeur CORRIGÉE de mes
  *   grains (max du compteur local et du dernier total connu du serveur —
  *   voir MemberCounter, app/zikr/page.tsx) à afficher à la place de `t.total`
- *   brut, qui peut brièvement retarder sur un second appareil. Absent en
- *   dehors du Zikr collectif (Noms d'Allah) : `t.total` fait alors foi.
+ *   brut, qui peut brièvement retarder sur un second appareil. Absent hors du
+ *   Zikr collectif : `t.total` fait alors foi.
  * @param {boolean} [props.embedded]  Zikr collectif : true quand ce
  *   composant est nesté dans une carte englobante qui porte déjà son propre
  *   fond/bordure/padding (.zk-zikr-card, app/zikr/page.tsx) — retire le
  *   cadre PROPRE au chapelet (`.tc`) pour éviter un double encadrement
- *   (revue design : « boîte dans la boîte »). Le chapelet autonome des
- *   Noms d'Allah (app/benefits) garde son cadre habituel.
+ *   (revue design : « boîte dans la boîte »).
  */
 export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedded }) {
   const isCollectif = collectifRestant !== undefined;

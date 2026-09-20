@@ -28,7 +28,10 @@ const LEGACY = [
   ['/rouwhania/index.html', '/rouwhania'],
   ['/geomancie/tourab.html', '/geomancie'],
   ['/alqalam/index.html', '/alqalam'],
-  ['/Benefits/index.html', '/benefits'],
+  // Module « Noms d'Allah » supprimé (2026-09-20) — vieux favoris/liens
+  // renvoyés vers le tableau de bord plutôt que de laisser un 404 sec.
+  ['/Benefits/index.html', '/menu'],
+  ['/benefits', '/menu'],
 ];
 
 // Content-Security-Policy — définition dans lib/csp.js (source unique).
