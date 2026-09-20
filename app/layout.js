@@ -26,7 +26,7 @@ const SITE_URL = normalizeSiteUrl(process.env.SITE_URL, 'https://www.asrarpro.co
 
 const TITLE = 'ASRAR PRO';
 const DESCRIPTION =
-  "Les noms d'Allah, numérologie abjad, heures planétaires, géomancie, Rouwhanes et bibliothèque mystique.";
+  "Numérologie abjad, heures planétaires, géomancie, Rouwhanes et bibliothèque mystique.";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),

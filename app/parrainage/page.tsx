@@ -62,7 +62,7 @@ export default function ParrainagePage() {
   const partagerApp = () =>
     shareApp({
       title: 'ASRAR PRO',
-      text: "Assalamou aleykoum 🌙 Découvre ASRAR PRO : secrets mystiques, bibliothèque Almaqtab, géomancie et noms d'Allah.",
+      text: "Assalamou aleykoum 🌙 Découvre ASRAR PRO : secrets mystiques, bibliothèque Almaqtab, géomancie et numérologie.",
     });
 
   const copierLien = () => info && copy(info.link);
