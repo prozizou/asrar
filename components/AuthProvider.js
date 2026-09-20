@@ -119,7 +119,7 @@ function LoginScreen({ onLogin, status, error }) {
           </div>
           <div className="header">
             <h1>ASRAR PRO</h1>
-            <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Noms d'Allah • Géométrie mystique</p>
+            <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Numérologie • Géométrie mystique</p>
           </div>
           <button className="google-btn" onClick={onLogin} disabled={busy} aria-busy={busy}>
             {busy ? (

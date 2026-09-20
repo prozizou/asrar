@@ -1,30 +1,27 @@
-// api/cron/reminders.js — Envoi des rappels programmés : wird quotidien et
-// contenu quotidien — verset/hadith/dua, lib/dailyContent.js — (tous deux
-// dans reminder_settings/{uid}, réglés via pages/api/reminders.js), session
-// Zikr collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le créateur
-// — voir lib/zikrLogic.js normalizeGroupInput) et relance de réabonnement
+// api/cron/reminders.js — Envoi des rappels programmés : session Zikr
+// collectif à venir (zikr_groups/{gid}.sessionAt, réglé par le créateur —
+// voir lib/zikrLogic.js normalizeGroupInput) et relance de réabonnement
 // (purchased_user/{emailKey}, écrite par admin-asrar-pro — voir
 // shouldSendRenewalReminder/shouldSendExpiredNotice, lib/reminders.js).
 //
 // Déclenché PÉRIODIQUEMENT par un planificateur externe (même mécanisme que
 // pages/api/cron/planet-push.js — voir server/cronAuth.js), à une cadence
 // non garantie : toute la logique de décision (lib/reminders.js
-// shouldSendWird/shouldSendSessionReminder/...) est donc À BASE D'ÉTAT
-// (dernier envoi mémorisé, fenêtre tolérante) plutôt qu'à correspondance
-// exacte d'horaire — IDEMPOTENTE quel que soit l'écart réel entre deux
-// passages (lastSentDate/sessionReminderSent/renewalReminderForExpiry
-// empêchent tout doublon même si le planificateur repasse deux fois de
-// suite).
+// shouldSendSessionReminder/...) est donc À BASE D'ÉTAT (dernier envoi
+// mémorisé, fenêtre tolérante) plutôt qu'à correspondance exacte d'horaire —
+// IDEMPOTENTE quel que soit l'écart réel entre deux passages
+// (sessionReminderSent/renewalReminderForExpiry empêchent tout doublon même
+// si le planificateur repasse deux fois de suite).
 //
 // CADENCE (revue de sécurité, P0) : vercel.json ne programme ce endpoint
 // qu'UNE FOIS par jour (limite du plan Vercel Hobby — les cron jobs plus
 // fréquents qu'1×/jour exigent le plan Pro, cf. `vercel plan` du projet).
-// Or shouldSendWird() n'évalue qu'à l'instant où ce handler tourne : avec un
-// seul passage quotidien à heure fixe, tout utilisateur dont l'heure de wird
-// choisie tombe APRÈS cet instant local ne reçoit jamais son rappel (jamais
-// vrai que « heure locale actuelle ≥ heure cible » avant le lendemain, où le
-// même passage se reproduit trop tard une fois de plus). Solution retenue
-// SANS dépendre d'un upgrade de plan : .github/workflows/reminders-cron.yml
+// Or shouldSendSessionReminder() n'ouvre qu'une fenêtre étroite autour de
+// l'horaire fixé par le créateur (SESSION_LEAD_MS/GRACE_MS, lib/
+// reminders.js — 40 minutes au total) : avec un seul passage quotidien à
+// heure fixe, la quasi-totalité des sessions programmées tombent hors de
+// cette fenêtre et ne déclenchent jamais leur rappel. Solution retenue SANS
+// dépendre d'un upgrade de plan : .github/workflows/reminders-cron.yml
 // appelle ce endpoint toutes les 10 minutes via GitHub Actions (gratuit, pas
 // de limite de fréquence) — nécessite un secret de DÉPÔT GitHub `CRON_SECRET`
 // portant la même valeur que la variable d'environnement Vercel du même nom,
@@ -34,17 +31,19 @@
 // Réutilise push_subscriptions/{uid}/{subId} (pages/api/push-subscribe.js) —
 // le MÊME abonnement navigateur que l'heure planétaire, sans exiger de
 // position (lat/lng optionnels pour ce endpoint).
+//
+// (Anciens rappels « wird quotidien » et « contenu quotidien » retirés avec
+// leurs seules interfaces d'activation, components/WirdReminderToggle.js et
+// components/DailyContentCard.js — voir lib/reminders.js.)
 
 const webpush = require("web-push");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
 const {
-  shouldSendWird, shouldSendDailyContent, shouldSendSessionReminder,
+  shouldSendSessionReminder,
   shouldSendRenewalReminder, shouldSendExpiredNotice, daysUntil, renewalWhatsAppUrl,
-  localDateKey,
 } = require("../../../lib/reminders");
-const { todayContent, pushBody, CONTENT_TYPE_LABEL } = require("../../../lib/dailyContent");
 
 export default async function handler(req, res) {
   if (!authorized(req)) return res.status(401).json({ error: "Non autorisé." });
@@ -60,7 +59,6 @@ export default async function handler(req, res) {
   const db = app().database();
   const now = new Date();
   const stats = {
-    wirdSent: 0, wirdSkipped: 0, contentSent: 0, contentSkipped: 0,
     sessionSent: 0, sessionSkipped: 0,
     renewalSent: 0, renewalSkipped: 0, expiredSent: 0, expiredSkipped: 0, renewalNoAccount: 0,
     removed: 0, errors: 0,
@@ -68,7 +66,6 @@ export default async function handler(req, res) {
 
   try {
     await Promise.all([
-      sendDailyReminders(db, now, stats),
       sendSessionReminders(db, now, stats),
       sendRenewalReminders(db, now, stats),
     ]);
@@ -107,65 +104,6 @@ async function pushToUser(db, uid, payload, stats) {
         }
       })
     );
-  });
-  await Promise.all(tasks);
-}
-
-// ── Wird quotidien + contenu quotidien ───────────────────────────────────
-// UN SEUL passage sur reminder_settings pour les deux rappels (au lieu de
-// deux scans complets du nœud) — chaque compte peut déclencher l'un,
-// l'autre, les deux, ou aucun, indépendamment (deux booléens/deux dates de
-// dernier envoi séparés, voir pages/api/reminders.js).
-async function sendDailyReminders(db, now, stats) {
-  const snap = await db.ref("reminder_settings").once("value");
-  const tasks = [];
-  snap.forEach((userSnap) => {
-    const uid = userSnap.key;
-    const settings = userSnap.val() || {};
-    const tz = settings.tz || "UTC";
-    const update = {};
-
-    if (shouldSendWird(settings, now)) {
-      const payload = JSON.stringify({
-        title: '🤲 Rappel de wird',
-        body: "C'est l'heure de votre wird quotidien.",
-        // /rappels n'existe pas (aucune route sous app/ ne le sert — 404) :
-        // le réglage du wird (WirdReminderToggle.js) vit dans /zikr, seule
-        // destination réelle où l'utilisateur peut agir sur ce rappel
-        // (revue de sécurité, P0).
-        url: '/zikr',
-        tag: 'wird-reminder',
-      });
-      tasks.push(
-        pushToUser(db, uid, payload, stats).then(() => { stats.wirdSent++; })
-      );
-      update.lastSentDate = localDateKey(now, tz);
-      update.lastSentAt = now.getTime();
-    } else {
-      stats.wirdSkipped++;
-    }
-
-    if (shouldSendDailyContent(settings, now)) {
-      const item = todayContent(now);
-      const payload = JSON.stringify({
-        title: '🌙 ' + (CONTENT_TYPE_LABEL[item.type] || 'Contenu du jour'),
-        body: pushBody(item),
-        // /menu affiche la même carte (components/DailyContentCard.js,
-        // même sélection déterministe par jour) — cohérent avec ce que le
-        // push vient d'annoncer.
-        url: '/menu',
-        tag: 'daily-content',
-      });
-      tasks.push(
-        pushToUser(db, uid, payload, stats).then(() => { stats.contentSent++; })
-      );
-      update.lastContentSentDate = localDateKey(now, tz);
-      update.lastContentSentAt = now.getTime();
-    } else {
-      stats.contentSkipped++;
-    }
-
-    if (Object.keys(update).length > 0) tasks.push(db.ref("reminder_settings/" + uid).update(update));
   });
   await Promise.all(tasks);
 }
@@ -212,12 +150,11 @@ async function sendSessionReminders(db, now, stats) {
 // leur commentaire dans lib/reminders.js pour pourquoi une PROLONGATION
 // redéclenche automatiquement un futur rappel, sans action de l'admin).
 //
-// AUCUN opt-in ici (contrairement au wird/contenu quotidien) : c'est une
-// notification liée au COMPTE (comme un reçu d'achat), pas un rappel de
-// pratique — mais toujours limitée aux comptes ayant un abonnement PUSH
-// actif (renewalNoAccount / silencieux si aucun compte Firebase Auth ne
-// correspond à l'e-mail : accès jamais accordé à un compte réel, ex. saisie
-// erronée côté admin).
+// AUCUN opt-in ici : c'est une notification liée au COMPTE (comme un reçu
+// d'achat), pas un rappel de pratique — mais toujours limitée aux comptes
+// ayant un abonnement PUSH actif (renewalNoAccount / silencieux si aucun
+// compte Firebase Auth ne correspond à l'e-mail : accès jamais accordé à un
+// compte réel, ex. saisie erronée côté admin).
 async function sendRenewalReminders(db, now, stats) {
   const snap = await db.ref("purchased_user").once("value");
   const tasks = [];
@@ -234,9 +171,9 @@ async function sendRenewalReminders(db, now, stats) {
     tasks.push(
       (async () => {
         // Un compte Firebase Auth doit exister pour cet e-mail — purchased_user
-        // peut contenir un octroi fait AVANT la première connexion du client
-        // (voir pages/api/reminders.js, wird : même situation), ou une faute
-        // de frappe côté admin : jamais bloquant, on passe juste ce document.
+        // peut contenir un octroi fait AVANT la première connexion du client,
+        // ou une faute de frappe côté admin : jamais bloquant, on passe juste
+        // ce document.
         let userRecord;
         try {
           userRecord = await app().auth().getUserByEmail(email);

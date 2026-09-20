@@ -1534,7 +1534,7 @@ function StaticProgress({ total, target }: { total: number; target: number }) {
 // Compteur d'un participant — il égrène SANS PLAFOND (pas de part
 // individuelle : l'objectif partagé du groupe diminue en direct pour TOUT
 // le monde à la fois, cf. TasbihChapelet prop `collectifRestant`) avec le
-// MÊME chapelet que « Noms d'Allah » (components/TasbihChapelet.js).
+// chapelet partagé components/TasbihChapelet.js.
 //
 // La clé de persistance locale est propre à CE zikr collectif ET à CE
 // COMPTE (`collectif_{gid}_{uid}`) : sans le `_{uid}`, deux comptes Google

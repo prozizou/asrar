@@ -403,8 +403,8 @@ input:focus {
 /* Famille d'icônes UNIQUE (lucide-react, voir app/menu/page.tsx) — remplace
    les emojis (styles hétérogènes : globe, cadeau, parchemin, pierre…) qui
    « réduisaient l'identité visuelle » (revue design). Pastille teintée à
-   l'accent plutôt que l'icône nue : cohérent avec .zk-preset-badge/.
-   daily-content-kind, qui utilisent déjà ce traitement ailleurs dans l'app. */
+   l'accent plutôt que l'icône nue : cohérent avec .zk-preset-badge, qui
+   utilise déjà ce traitement ailleurs dans l'app. */
 .menu-item-icon {
     display: flex;
     align-items: center;
@@ -446,57 +446,13 @@ input:focus {
     overflow: hidden;
 }
 
-/* Nature d'une heure planétaire (voir lib/planete.js natureOf()) — partagé
-   entre app/planete/planete.css (scopé .planete-page) et tout usage hors de
-   ce module, ex. components/PlanetHourWidget.js sur /menu. */
+/* Nature d'une heure planétaire (voir lib/planete.js natureOf()) — classes
+   globales (pas scopées à .planete-page) : app/planete/page.tsx les
+   applique directement (.dash-nature-badge, .timeline-nature). */
 .nat-tfav { color: #38d66b; font-weight: 700; }
 .nat-fav { color: #8fd694; }
 .nat-def { color: #d9534f; }
 .nat-mix { color: var(--accent); }
-
-/* Widget « heure planétaire actuelle » (components/PlanetHourWidget.js) —
-   UNE ligne compacte (revue design : « Heure de Mars prend la largeur
-   entière alors que son contenu est très court ») : ♂ Mars • Défavorable,
-   plus une carte pleine hauteur au même gabarit qu'une tuile de module. */
-.planet-widget {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    background: var(--surface-2);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 0 14px;
-    margin-bottom: 12px;
-    text-decoration: none;
-    color: var(--text-main);
-    font-size: .85rem;
-    font-weight: 600;
-    transition: border-color 0.2s ease, transform 150ms ease;
-}
-.planet-widget:hover { border-color: var(--accent); }
-.planet-widget:active { transform: scale(.98); }
-.planet-widget-glyph { flex-shrink: 0; width: 20px; text-align: center; font-size: 1.05rem; color: var(--accent); }
-.planet-widget-nature { font-weight: 700; }
-/* Squelette (revue design : « skeleton au chargement ») tant que la position
-   GPS/le calcul ne sont pas prêts — évite un saut de mise en page une fois
-   résolu, plutôt que de n'afficher le widget qu'après coup. */
-.planet-widget-skeleton {
-    display: block;
-    height: 14px;
-    width: 55%;
-    border-radius: 6px;
-    background: linear-gradient(90deg,
-        var(--glass-border) 25%,
-        color-mix(in srgb, var(--glass-border) 45%, transparent) 50%,
-        var(--glass-border) 75%);
-    background-size: 200% 100%;
-    animation: menu-skeleton 1.4s ease-in-out infinite;
-}
-@keyframes menu-skeleton {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
 
 .back-btn {
     display: inline-block;
@@ -1152,71 +1108,6 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   display: flex; align-items: center; justify-content: center;
 }
 .signout-btn:hover { background: var(--glass-bg); color: #fff; transform: none; }
-
-/* Interrupteur (activer/désactiver) partagé — utilisé par
-   WirdReminderToggle.js (/zikr) ET DailyContentCard.js (/menu) : classe
-   globale (chargée sur toutes les routes, contrairement à app/zikr/zikr.css)
-   plutôt qu'un doublon de style par module. Mêmes styles que
-   .planete-page .switch (app/planete/planete.css). */
-.zk-switch {
-  flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px;
-  background: var(--glass-border); border: none; position: relative; cursor: pointer; padding: 0;
-  transition: background 0.2s ease;
-}
-.zk-switch.on { background: var(--accent); }
-.zk-switch:disabled { opacity: 0.5; cursor: default; }
-.zk-switch-knob {
-  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease;
-}
-.zk-switch.on .zk-switch-knob { transform: translateX(18px); }
-
-/* ── Contenu spirituel quotidien (components/DailyContentCard.js, /menu) ──
-   REPLIÉ par défaut (revue design : « bloc relativement imposant pour un
-   élément secondaire ») — .daily-content-summary est la ligne toujours
-   visible (type + aperçu tronqué UNE ligne + chevron), .daily-content-body
-   le contenu complet, révélé via la même technique CSS grid-template-rows
-   0fr→1fr (pas de mesure de hauteur en JS,
-   transition 180ms — revue design « 150-200ms »). Réutilise .zk-switch pour
-   l'interrupteur : même composant visuel que le rappel de wird. */
-.daily-content-card {
-  background: var(--surface-2); border: 1px solid var(--glass-border);
-  border-radius: 14px; margin-bottom: 12px; overflow: hidden;
-}
-.daily-content-summary {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  background: transparent; border: none; cursor: pointer; text-align: left;
-  padding: 12px 14px; margin: 0; color: var(--text-main); font-family: var(--font-ui);
-  min-height: 44px;
-}
-.daily-content-kind {
-  flex-shrink: 0; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: 999px; padding: 3px 10px;
-}
-.daily-content-preview {
-  flex: 1; min-width: 0; font-size: .85rem; color: var(--text-muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.daily-content-chevron { flex-shrink: 0; color: var(--text-dim); transition: transform 180ms ease; }
-.daily-content-chevron.open { transform: rotate(180deg); }
-
-.daily-content-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 180ms ease; }
-.daily-content-body.open { grid-template-rows: 1fr; }
-.daily-content-body-inner { overflow: hidden; min-height: 0; padding: 0 14px 14px; }
-.daily-content-arabic { font-size: 1.1rem; line-height: 1.7; color: var(--text-main); margin: 6px 0 10px; text-align: right; }
-.daily-content-text { font-size: .92rem; line-height: 1.5; color: var(--text-main); margin: 0 0 6px; }
-.daily-content-source { display: block; font-size: .76rem; color: var(--text-dim); margin-bottom: 10px; }
-.daily-content-notify-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding-top: 10px; border-top: 1px dashed var(--glass-border);
-  font-size: .82rem; color: var(--text-muted);
-}
-.daily-content-hint {
-  display: flex; align-items: center; gap: 6px; margin: 8px 0 0;
-  font-size: .76rem; color: var(--text-dim);
-}
-.daily-content-error { color: #f0819a; font-size: .76rem; margin: 8px 0 0; }
 
 .menu-group { margin-bottom: var(--space-5); }
 /* Libellé de section (Continuer, Favoris, Explorer) — échelle typographique

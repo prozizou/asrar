@@ -63,7 +63,7 @@ export default async function handler(req, res) {
   // le lien effectivement partagé (racine OU /s?r=<code>).
   let dest  = "/";
   let title = "ASRAR PRO — Sciences mystiques";
-  let desc  = "Secrets mystiques, bibliothèque Almaqtab, géomancie, noms d'Allah et marché mystique.";
+  let desc  = "Secrets mystiques, bibliothèque Almaqtab, géomancie, numérologie et marché mystique.";
   let image = site + "/assets/og-banner.jpg";
 
   // Métadonnées de l'élément pour la page d'accueil du lien (distinctes des
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
   const heading = itemTitle || "Sciences mystiques";
   const subline = hasItem
     ? "Ouvrez ce contenu dans l'application ASRAR PRO."
-    : "Secrets mystiques, noms d'Allah, heures planétaires, géomancie et marché mystique.";
+    : "Secrets mystiques, numérologie, heures planétaires, géomancie et marché mystique.";
 
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html; charset=utf-8");

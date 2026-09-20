@@ -19,39 +19,32 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 // l'impression que le compteur se réinitialisait).
 const BEAD_COUNT = 100;
 
-// Géométrie du fil — DEUX gabarits (voir geometryFor) : le chapelet du Zikr
-// collectif (`large`, seul consommateur restant depuis la suppression du
-// module « Noms d'Allah ») est nettement plus grand (revue design : « le
-// chapelet ne donne pas la sensation d'un véritable objet interactif, la
-// zone principale devrait lui être consacrée »). Le gabarit compact reste en
-// place (aucun appelant actuel) au cas où un futur écran voudrait un
-// chapelet plus petit. Toutes les proportions (RX/RY/TOP_Y/BOT_L/BOT_R) sont
-// mises à l'échelle ensemble : même forme de boucle, juste plus grande — le
-// fil continue de descendre très bas hors champ (BOT_L/BOT_R) pour porter
-// les 100 grains à un espacement naturel, seule la fenêtre AFFICHÉE
-// (VIEW_W/VIEW_H) change.
-function geometryFor(large) {
-  const VIEW_W = large ? 192 : 108;
-  const VIEW_H = large ? 234 : 138;
-  const BEAD_D = large ? 20 : 14;
-  const RX = large ? 52 : 30;    // demi-écart entre les deux brins
-  const RY = large ? 34 : 20;    // hauteur de l'arc
-  const TOP_Y = large ? 44 : 26; // hauteur à laquelle les brins rejoignent l'arc
+// Géométrie du fil (voir geometryFor) — gabarit nettement plus grand qu'un
+// arc classique (revue design : « le chapelet ne donne pas la sensation d'un
+// véritable objet interactif, la zone principale devrait lui être
+// consacrée »). Le fil continue de descendre très bas hors champ (BOT_L/
+// BOT_R) pour porter les 100 grains à un espacement naturel.
+function geometryFor() {
+  const VIEW_W = 192;
+  const VIEW_H = 234;
+  const BEAD_D = 20;
+  const RX = 52;    // demi-écart entre les deux brins
+  const RY = 34;    // hauteur de l'arc
+  const TOP_Y = 44; // hauteur à laquelle les brins rejoignent l'arc
   // Volontairement asymétriques (le brin droit descend plus bas).
   //
   // ⚠️ Ces deux valeurs FIXENT L'ESPACEMENT DES GRAINS, pas seulement la
   // réserve hors champ : les 100 grains sont répartis sur TOUTE la boucle,
   // donc espacement = longueur_totale / 100. Mettre BOT_L/BOT_R à l'échelle
-  // en même temps que le reste (ce qu'avait fait l'agrandissement du gabarit
-  // large) doublait l'écart entre grains — 31 px de vide pour un grain de
-  // 20 px, « plus du tout naturel » pour un chapelet. Le gabarit large garde
-  // donc un fil PLUS COURT que la mise à l'échelle proportionnelle :
-  //   petit : 3073 px / 100 = 30,7 d'espacement pour un grain de 14 (vide 16,7)
-  //   large : 2354 px / 100 = 23,5 d'espacement pour un grain de 20 (vide 3,5)
-  // soit des grains quasi jointifs, enfilés, comme sur un vrai tasbih.
-  // Mesurable à tout moment avec getTotalLength() sur le tracé.
-  const BOT_R = large ? 1100 : 1480;
-  const BOT_L = large ? 1040 : 1440;
+  // avec VIEW_W/VIEW_H (ce qu'avait fait un agrandissement précédent de ce
+  // gabarit) doublait l'écart entre grains — 31 px de vide pour un grain de
+  // 20 px, « plus du tout naturel » pour un chapelet. Le fil reste donc PLUS
+  // COURT que la mise à l'échelle proportionnelle : 2354 px / 100 grains =
+  // 23,5 d'espacement pour un grain de 20 (vide 3,5), soit des grains quasi
+  // jointifs, enfilés, comme sur un vrai tasbih. Mesurable à tout moment avec
+  // getTotalLength() sur le tracé.
+  const BOT_R = 1100;
+  const BOT_L = 1040;
   const CX = VIEW_W / 2;
   // Le fil complet, dans l'ordre du parcours : arc du haut (gauche → droite),
   // brin droit vers le bas, boucle du bas (hors champ), puis `Z` referme en
@@ -99,12 +92,10 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   // devient inactif — demandé explicitement. Continuer à taper au-delà de la
   // cible partagée n'a plus de sens (chaque grain compte pour le groupe
   // entier, pas une part personnelle) et laissait croire à tort qu'il restait
-  // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : le
-  // chapelet personnel (Noms d'Allah) reste `uncapped`, jamais concerné.
+  // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : un chapelet
+  // hors Zikr collectif (`collectifRestant` omis) resterait `uncapped`.
   const collectifDone = isCollectif && collectifRestant <= 0;
-  // Géométrie figée par instance (isCollectif ne change jamais après le
-  // montage) — voir geometryFor plus haut.
-  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH } = useMemo(() => geometryFor(isCollectif), [isCollectif]);
+  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH } = useMemo(() => geometryFor(), []);
   // Réglages (objectif/séries/suggestions/réinitialiser) repliés par défaut
   // (revue design, module Noms d'Allah) : affichés en permanence, ils
   // ajoutaient un rang de « pilules » avant même d'arriver au compteur, et

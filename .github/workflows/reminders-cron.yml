@@ -3,8 +3,9 @@ name: Reminders cron (haute fréquence)
 # Vercel Cron (vercel.json) ne peut déclencher /api/cron/reminders qu'UNE
 # FOIS par jour sur le plan Hobby actuel du projet (les crons plus fréquents
 # exigent le plan Pro) — voir le commentaire d'en-tête de
-# pages/api/cron/reminders.js pour l'impact fonctionnel (rappels de wird
-# manqués pour toute heure cible après le passage quotidien fixe). Ce
+# pages/api/cron/reminders.js pour l'impact fonctionnel (rappels de session
+# Zikr collectif manqués : leur fenêtre d'envoi ne dure que 40 minutes autour
+# de l'horaire fixé par le créateur, largement plus courte qu'un jour). Ce
 # workflow contourne la limite sans dépendre d'un upgrade de plan : GitHub
 # Actions n'a pas de contrainte de fréquence sur les cron schedules.
 #
