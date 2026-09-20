@@ -79,6 +79,34 @@
     --font-display:   Calibri, Carlito, 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-ar:        'Noto Naskh Arabic', serif;
 
+    /* ─── Échelle typographique, rayons et espacements (design system) ───
+       Revue design : « mettre en place un véritable Design System : mêmes
+       rayons de bordure, mêmes espacements, mêmes dimensions d'icônes,
+       typographie hiérarchisée ». Ces tokens sont la référence pour tout
+       nouvel écran ; les modules plus anciens y migrent au fil de leurs
+       refontes plutôt qu'en un seul remaniement à risque.
+       Tailles pensées en px (base 16) : 22 / 17 / 15 / 13 / 12.8. */
+    --fs-page-title:  1.375rem; /* titre de page (22px) */
+    --fs-section:     1.0625rem;/* titre de section/carte large (17px) */
+    --fs-card-title:  .9375rem; /* titre de tuile (15px) */
+    --fs-body:        .9375rem; /* texte courant (15px) */
+    --fs-body-sm:     .85rem;   /* texte secondaire (13.6px) */
+    --fs-caption:     .8rem;    /* légende/description de tuile (12.8px) */
+    --fs-label:       .8rem;    /* libellé de section en capitales (12.8px) */
+
+    --radius-sm:      10px;
+    --radius-md:      12px;
+    --radius-lg:      16px;
+    --radius-pill:    999px;
+
+    /* Grille de 4px : 4 / 8 / 12 / 16 / 24 / 32 */
+    --space-1:        4px;
+    --space-2:        8px;
+    --space-3:        12px;
+    --space-4:        16px;
+    --space-5:        24px;
+    --space-6:        32px;
+
     /* Ciel étoilé du fond animé (components/CosmicBackground.js) : bien
        visible sur le violet profond, discret en clair (voir override plus
        bas) pour ne pas ternir le fond menthe/lavande. */
@@ -343,8 +371,8 @@ input:focus {
 .menu-item {
     background: var(--surface-2);
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 14px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
     text-align: center;
     cursor: pointer;
     text-decoration: none;
@@ -390,7 +418,7 @@ input:focus {
 }
 
 .menu-item h3 {
-    font-size: .92rem;
+    font-size: var(--fs-card-title);
     margin: 0;
     font-weight: 700;
     /* Titre sur UNE ligne (revue design) — un nom de module trop long
@@ -407,7 +435,7 @@ input:focus {
    longueur réelle de la description — garde-fou de hauteur indépendant de
    la longueur du texte saisi. */
 .menu-item-desc {
-    font-size: .8rem;
+    font-size: var(--fs-caption);
     font-weight: 500;
     color: var(--text-muted);
     line-height: 1.3;
@@ -1087,14 +1115,26 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   color: #fff; font-size: 1rem;
 }
+/* Marque à GAUCHE, collée au logo (revue design : « logo + titre + profil ») —
+   plus un titre centré qui laissait deux blocs d'actions se répondre de part
+   et d'autre. */
 .menu-appbar-title {
-  flex: 1; min-width: 0; text-align: center;
-  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+  flex: 1; min-width: 0;
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-section);
   letter-spacing: .5px; margin: 0;
   background: -webkit-linear-gradient(45deg, var(--accent), var(--accent-hover));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-.menu-appbar-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+/* Unique cible à droite : l'avatar OUVRE le menu profil (thème, installation,
+   version, déconnexion) — components/AppDrawer.js, prop `trigger`. */
+.menu-appbar-profile {
+  flex-shrink: 0; width: 44px; height: 44px; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 50%; cursor: pointer;
+}
+.menu-appbar-profile:hover { background: var(--surface-2); transform: none; box-shadow: none; }
+.drawer-row-danger { color: #ff7070; }
+.drawer-row-danger svg { color: #ff7070; }
 
 .avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
@@ -1137,7 +1177,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    élément secondaire ») — .daily-content-summary est la ligne toujours
    visible (type + aperçu tronqué UNE ligne + chevron), .daily-content-body
    le contenu complet, révélé via la même technique CSS grid-template-rows
-   0fr→1fr que .category-body plus bas (pas de mesure de hauteur en JS,
+   0fr→1fr (pas de mesure de hauteur en JS,
    transition 180ms — revue design « 150-200ms »). Réutilise .zk-switch pour
    l'interrupteur : même composant visuel que le rappel de wird. */
 .daily-content-card {
@@ -1179,52 +1219,148 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .daily-content-error { color: #f0819a; font-size: .76rem; margin: 8px 0 0; }
 
-.menu-group { margin-bottom: 18px; }
-/* Libellé de sous-section discret (Accès rapide) — PAS le traitement
-   gradient/souligné de .category-header-label (catégories) : une ligne de
-   raccourcis n'est pas une rubrique au même titre. */
+.menu-group { margin-bottom: var(--space-5); }
+/* Libellé de section (Continuer, Favoris, Explorer) — échelle typographique
+   commune, voir les tokens --fs-* : un seul niveau de titre de section dans
+   tout le tableau de bord. */
 .group-title {
-  font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  color: var(--text-dim); margin: 0 0 10px;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-dim); margin: 0 0 var(--space-3);
 }
-.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+/* Grille responsive explicite (revue design) plutôt qu'un auto-fill qui
+   donnait 5 colonnes sur desktop : 2 cartes par ligne sur mobile, 1 sur les
+   très petits écrans, 3 sur tablette, 4 sur desktop. */
+.sub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+@media (max-width: 359px) { .sub-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 600px) { .sub-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 900px) { .sub-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* ── Catégories repliables (app/menu/CategorySection.js) ──────────────────
-   Remplace l'ancienne grille plate + une section « premium » à part visuel-
-   lement distincte (revue design : « la séparation Al Qalam/Géomancie/Hatims
-   arrive très bas, donnant l'impression d'une seconde page ») — quatre
-   sections au même traitement (Spiritualité/Ressources/Sciences
-   traditionnelles/Outils), REPLIÉES par défaut : c'est ce qui raccourcit
-   réellement l'écran (les modules les plus utilisés restent accessibles via
-   Accès rapide, ci-dessus). */
-.category-section { margin-bottom: 10px; border: 1px solid var(--glass-border); border-radius: 14px; background: var(--surface-2); overflow: hidden; }
-.category-header {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  background: transparent; border: none; cursor: pointer; text-align: left;
-  padding: 12px 14px; margin: 0; color: var(--text-main); font-family: var(--font-ui);
-  min-height: 48px;
+/* Tuile + son étoile « favori » : l'étoile est un FRÈRE du lien (jamais un
+   enfant, cf. MenuItemTile.js), donc posée en absolu sur le coin de la
+   carte. 40px de cible, au-dessus du lien (z-index) pour rester cliquable. */
+.menu-item-wrap { position: relative; display: flex; }
+.menu-item-wrap .menu-item { flex: 1; min-width: 0; }
+.menu-item-fav {
+  position: absolute; top: 2px; right: 2px; z-index: 1;
+  width: 40px; height: 40px; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 50%;
+  color: var(--text-dim); cursor: pointer;
+  transition: color .15s ease, transform 150ms ease;
 }
-.category-header-icon {
+.menu-item-fav:hover { color: #d9a441; background: none; transform: none; box-shadow: none; }
+.menu-item-fav.on { color: #d9a441; }
+.menu-item-fav:active { transform: scale(.9); }
+
+/* Invite quand aucun favori n'est encore épinglé — une ligne, pas une carte :
+   l'état vide ne doit pas peser plus lourd que le contenu qu'il remplace. */
+.menu-empty-hint {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-size: var(--fs-body-sm); color: var(--text-muted);
+  background: var(--surface-2); border-radius: var(--radius-md); padding: 10px 12px;
+}
+.menu-empty-hint svg { flex-shrink: 0; color: #d9a441; }
+
+/* ── Recherche globale (app/menu/MenuSearch.js) ───────────────────────────
+   Revue design : « absence de recherche visible ». Champ toujours présent
+   sous l'en-tête ; les résultats s'affichent juste dessous, en LIGNES
+   compactes (pas en cartes) — c'est une liste de raccourcis, pas une
+   deuxième grille de modules. */
+.menu-search-wrap { margin-bottom: var(--space-4); }
+.menu-search {
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
+  background: var(--surface-2); border-radius: var(--radius-md); padding: 0 12px;
+}
+.menu-search:focus-within { box-shadow: inset 0 0 0 1px var(--accent); }
+.menu-search > svg { flex-shrink: 0; color: var(--text-dim); }
+.menu-search input {
+  flex: 1; min-width: 0; margin: 0; padding: 10px 0; border: none; background: none;
+  color: var(--text-main); font-family: var(--font-ui); font-size: var(--fs-body);
+  outline: none;
+}
+.menu-search input::-webkit-search-cancel-button { display: none; }
+.menu-search-clear {
+  flex-shrink: 0; width: 32px; height: 32px; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 50%; color: var(--text-dim); cursor: pointer;
+}
+.menu-search-clear:hover { color: var(--text-main); background: none; transform: none; box-shadow: none; }
+.menu-search-results { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.menu-search-result {
+  display: flex; align-items: center; gap: 10px; min-height: 48px;
+  padding: 6px 10px; border-radius: var(--radius-md); background: var(--surface-2);
+  color: var(--text-main); text-decoration: none;
+}
+.menu-search-result:hover { background: var(--surface); }
+.menu-search-result-icon {
   flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 10px;
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
 }
-.category-header-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: .95rem; font-weight: 700; }
-.category-badge {
-  flex-shrink: 0; font-size: .68rem; font-weight: 700; color: #d9a441;
+.menu-search-result-icon svg { width: 18px; height: 18px; }
+.menu-search-result-id { display: flex; flex-direction: column; min-width: 0; }
+.menu-search-result-id strong { font-size: var(--fs-card-title); }
+.menu-search-result-id span { font-size: var(--fs-caption); color: var(--text-muted); }
+.menu-search-empty { margin: var(--space-2) 0 0; font-size: var(--fs-body-sm); color: var(--text-muted); }
+
+/* ── Familles de modules (app/menu/page.tsx → app/menu/[categorie]) ───────
+   Quatre lignes au lieu de douze tuiles déroulées : chacune ouvre sa page
+   dédiée. Les modules qu'elle contient sont NOMMÉS en sous-titre — on sait
+   ce qu'il y a dedans sans l'ouvrir, sans pour autant dupliquer des cartes
+   cliquables (revue design : « fonctions dupliquées »). Toute la ligne est
+   la cible : plus un chevron discret à viser. */
+.family-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.family-row {
+  display: flex; align-items: center; gap: var(--space-3); min-height: 64px;
+  padding: var(--space-3); border-radius: var(--radius-lg);
+  background: var(--surface-2); color: var(--text-main); text-decoration: none;
+  transition: background .15s ease, transform 150ms ease;
+}
+.family-row:hover { background: var(--surface); }
+.family-row:active { transform: scale(.985); }
+.family-row > svg { flex-shrink: 0; color: var(--text-dim); }
+.family-icon {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+}
+.family-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+/* flex-wrap : un titre long + son badge (« Sciences traditionnelles » +
+   « Accès 1 an ») passent proprement le badge à la ligne sur un écran
+   étroit, au lieu de le laisser chevaucher le texte replié. Le texte du
+   titre porte min-width:0 pour tronquer plutôt que déborder. */
+.family-title { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: var(--fs-section); font-weight: 700; }
+.family-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.family-items {
+  font-size: var(--fs-caption); color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Badges EXPLICITES (revue design : « les compteurs 3, 2, 1 An ne sont pas
+   immédiatement compréhensibles ») — « Accès 1 an », « 3 modules ». */
+.family-badge {
+  flex-shrink: 0; font-size: var(--fs-caption); font-weight: 700; color: #d9a441;
   background: rgba(217,164,65,0.14); border-radius: 999px; padding: 2px 9px;
 }
-.category-header-count { flex-shrink: 0; font-size: .8rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-.category-chevron { flex-shrink: 0; color: var(--text-dim); transition: transform 180ms ease; }
-.category-chevron.open { transform: rotate(180deg); }
+.family-count { flex-shrink: 0; font-size: var(--fs-caption); color: var(--text-dim); white-space: nowrap; }
+@media (max-width: 420px) { .family-count { display: none; } }
 
-/* Même technique grid-template-rows que .daily-content-body — un seul
-   mécanisme d'accordéon dans toute la page, pas deux implémentations
-   différentes pour le même effet. */
-.category-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 180ms ease; }
-.category-body.open { grid-template-rows: 1fr; }
-.category-body-inner { overflow: hidden; min-height: 0; }
-.category-grid { padding: 0 14px 14px; }
+/* En-tête d'une page de catégorie */
+.category-page-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.category-page-title {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: var(--font-display); font-size: var(--fs-page-title); font-weight: 700;
+  letter-spacing: .5px; margin: 0;
+}
+
+/* Dernière tuile seule sur sa ligne (nombre d'éléments impair, grille à 2
+   colonnes) → pleine largeur plutôt qu'un vide à côté (revue design : « la
+   dernière ligne contient Parrainage seul », « grille visuellement
+   inachevée »). Ne s'applique qu'en 2 colonnes : au-delà, la grille étale
+   plus de colonnes et ce cas ne se présente pas de la même façon. */
+@media (min-width: 360px) and (max-width: 599px) {
+  .sub-grid > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
 /* Dernière tuile seule sur sa ligne (nombre d'éléments impair, grille à 2
    colonnes) → pleine largeur plutôt qu'un vide à côté (revue design : « la
    dernière ligne contient Parrainage seul », « grille visuellement
