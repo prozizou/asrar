@@ -10,7 +10,7 @@
 // position est lue directement sur le tracé (getPointAtLength), donc ils le
 // suivent exactement, y compris dans la courbe de l'arc, et transitent
 // réellement par l'arc pour passer d'un brin à l'autre.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { objSubdivisions } from '@/lib/objSubdivisions';
 
 // Un vrai chapelet complet : 100 grains sur la boucle, visibles ou non. C'est
@@ -18,39 +18,40 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 // départ, au lieu de boucler au bout de quelques dizaines (ce qui donnait
 // l'impression que le compteur se réinitialisait).
 const BEAD_COUNT = 100;
-const BEAD_D = 14;
-const BEAD_R = BEAD_D / 2;
 
-// Fenêtre visible — réduite une seconde fois (revue design, écran Zikr
-// collectif : « le grand chapelet prend énormément d'espace ; sur mobile, le
-// compteur et le bouton d'égrainage doivent être prioritaires, pas
-// l'illustration ») — environ 45 % plus petit que l'original (250px de haut)
-// au lieu de ~30 % précédemment. Le fil, lui, descend toujours bien plus bas
-// (BOT_L/BOT_R) et se referme hors champ, seule la fenêtre AFFICHÉE rétrécit
-// — c'est cette réserve de grains masquée qui alimente le défilement sans
-// jamais laisser de trou.
-const VIEW_W = 108;
-const VIEW_H = 138;
-
-const CX = VIEW_W / 2;
-const RX = 30;    // demi-écart entre les deux brins
-const RY = 20;    // hauteur de l'arc
-const TOP_Y = 26; // hauteur à laquelle les brins rejoignent l'arc
-// Les brins descendent très bas hors champ : le fil est ainsi assez long pour
-// porter les 100 grains à un espacement naturel, en gardant la même géométrie
-// visible. Volontairement asymétriques (le brin droit descend plus bas).
-const BOT_R = 1480;
-const BOT_L = 1440;
-
-// Le fil complet, dans l'ordre du parcours : arc du haut (gauche → droite),
-// brin droit vers le bas, boucle du bas (hors champ), puis `Z` referme en
-// remontant le brin gauche. Avancer le long de ce chemin fait donc monter les
-// grains à gauche et descendre ceux de droite, comme une seule boucle.
-const LOOP_PATH =
-  `M ${CX - RX} ${TOP_Y} ` +
-  `A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
-  `L ${CX + RX} ${BOT_R} ` +
-  `Q ${CX} ${BOT_R + 80} ${CX - RX} ${BOT_L} Z`;
+// Géométrie du fil — DEUX gabarits (voir geometryFor) : le chapelet du Zikr
+// collectif (`large`) est nettement plus grand (revue design : « le
+// chapelet ne donne pas la sensation d'un véritable objet interactif, la
+// zone principale devrait lui être consacrée ») que celui des Noms d'Allah
+// (app/benefits, inchangé — sa propre revue design avait explicitement
+// demandé cette taille réduite, pour un écran qui garde tout un panneau de
+// réglages/séries/suggestions autour). Toutes les proportions (RX/RY/TOP_Y/
+// BOT_L/BOT_R) sont mises à l'échelle ensemble : même forme de boucle, juste
+// plus grande — le fil continue de descendre très bas hors champ (BOT_L/
+// BOT_R) pour porter les 100 grains à un espacement naturel, seule la
+// fenêtre AFFICHÉE (VIEW_W/VIEW_H) change.
+function geometryFor(large) {
+  const VIEW_W = large ? 192 : 108;
+  const VIEW_H = large ? 234 : 138;
+  const BEAD_D = large ? 20 : 14;
+  const RX = large ? 52 : 30;    // demi-écart entre les deux brins
+  const RY = large ? 34 : 20;    // hauteur de l'arc
+  const TOP_Y = large ? 44 : 26; // hauteur à laquelle les brins rejoignent l'arc
+  // Volontairement asymétriques (le brin droit descend plus bas).
+  const BOT_R = large ? 2480 : 1480;
+  const BOT_L = large ? 2420 : 1440;
+  const CX = VIEW_W / 2;
+  // Le fil complet, dans l'ordre du parcours : arc du haut (gauche → droite),
+  // brin droit vers le bas, boucle du bas (hors champ), puis `Z` referme en
+  // remontant le brin gauche. Avancer le long de ce chemin fait donc monter
+  // les grains à gauche et descendre ceux de droite, comme une seule boucle.
+  const LOOP_PATH =
+    `M ${CX - RX} ${TOP_Y} ` +
+    `A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
+    `L ${CX + RX} ${BOT_R} ` +
+    `Q ${CX} ${BOT_R + 80} ${CX - RX} ${BOT_L} Z`;
+  return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH };
+}
 
 const TAP_DURATION = 280;
 const TAP_PULSE_MS = 180; // durée du pulse visuel sur le compteur au tap (voir handleTap)
@@ -90,6 +91,9 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : le
   // chapelet personnel (Noms d'Allah) reste `uncapped`, jamais concerné.
   const collectifDone = isCollectif && collectifRestant <= 0;
+  // Géométrie figée par instance (isCollectif ne change jamais après le
+  // montage) — voir geometryFor plus haut.
+  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH } = useMemo(() => geometryFor(isCollectif), [isCollectif]);
   // Réglages (objectif/séries/suggestions/réinitialiser) repliés par défaut
   // (revue design, module Noms d'Allah) : affichés en permanence, ils
   // ajoutaient un rang de « pilules » avant même d'arriver au compteur, et
@@ -165,7 +169,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         bead.style.transform = `translate(${x - BEAD_R}px, ${y - BEAD_R}px)`;
       }
     },
-    [ensureSamples]
+    [ensureSamples, BEAD_D, BEAD_R, VIEW_H]
   );
 
   useEffect(() => {
@@ -223,197 +227,206 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
 
   const subs = objSubdivisions(t.target);
 
+  // Active/désactive le tap au clavier (Entrée/Espace) — la zone tactile
+  // (tc-tapzone, plus bas) est un vrai `role="button"` focusable, pas un
+  // simple `onClick` sur un `<div>` (revue design : « accessibilité
+  // clavier »). Espace empêche aussi le défilement de la page, comme pour
+  // n'importe quel bouton natif.
+  const onTapZoneKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleTap();
+    }
+  };
+
   return (
     <div
       id={`tasbih-${id}`}
-      role="region"
-      aria-label={collectifDone ? 'Compteur de dhikr — objectif du groupe atteint' : 'Compteur de dhikr'}
       className={'tc' + (collectifDone ? ' tc-inactive' : '') + (embedded ? ' tc-embedded' : '')}
-      onClick={handleTap}
     >
-      {/* Réglages. stopPropagation empêche ces interactions de compter comme
-          un tap de grain. Pour un Zikr collectif, seul l'objectif partagé du
-          groupe a un sens ici : pas de séries ni de remise à zéro
-          personnelle, qui effacerait à tort sa contribution. */}
-      <div className="tc-settings" onClick={(e) => e.stopPropagation()}>
-        {isCollectif ? (
-          collectifDone ? (
-            <div className="tc-group tc-group-done" title="Objectif du Zikr collectif atteint">
-              <span aria-hidden>🎉</span>
-              <span className="tc-group-value">Objectif atteint</span>
-            </div>
-          ) : (
-            // Libellé explicite (revue design, point 4 : « chaque nombre doit
-            // avoir un libellé explicite ») — plus le seul emoji 🎯 à côté
-            // d'un nombre nu, ambigu quant à ce qu'il représente.
-            <div className="tc-group" title="Ce qu'il reste à réciter au groupe entier">
-              <span aria-hidden>🎯</span>
-              <span className="tc-group-label">Objectif restant</span>
-              <span className="tc-group-value">{collectifRestant.toLocaleString('fr-FR')}</span>
-            </div>
-          )
-        ) : (
-          <>
-            {/* Replié par défaut : objectif/séries/suggestions/réinitialiser
-                sont des réglages, pas l'action principale — un bouton à
-                libellé clair plutôt que ces contrôles ouverts en permanence
-                (voir commentaire sur `settingsOpen` plus haut). */}
-            <button
-              type="button"
-              className="tc-settings-toggle"
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen((v) => !v)}
-            >
-              <span aria-hidden>⚙️</span> Réglages du compteur
-              {t.seriesCount > 0 && (
-                <span className="tc-loop">
-                  Série {t.loopCur}/{t.seriesCount}
-                </span>
-              )}
-            </button>
-
-            {settingsOpen && (
-              <>
-                <div className="tc-group" title="Objectif de récitation">
-                  <span aria-hidden>🎯</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Obj."
-                    aria-label="Objectif"
-                    value={t.target}
-                    onChange={(e) => t.setTarget(e.target.value)}
-                  />
-                </div>
-
-                <div className="tc-group" title="Nombre de séries — l'objectif est réparti dessus, le reste va sur la dernière">
-                  <span aria-hidden>🔁</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Séries"
-                    aria-label="Nombre de séries"
-                    value={t.series}
-                    onChange={(e) => t.setSeries(e.target.value)}
-                  />
-                </div>
-
-                {subs.length > 0 && (
-                  // Menu déroulant plutôt qu'une rangée de puces : objSubdivisions()
-                  // peut renvoyer jusqu'à 40 suggestions (objectifs très divisibles,
-                  // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
-                  // compact, un seul contrôle quel que soit le nombre de suggestions.
-                  <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
-                    <span aria-hidden>🔀</span>
-                    <select
-                      aria-label="Suggestions de répartition"
-                      value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
-                      onChange={(e) => { if (e.target.value) t.setSeries(e.target.value); }}
-                    >
-                      <option value="">Suggestions…</option>
-                      {subs.map((sub) => (
-                        <option key={sub.label} value={sub.series}>{sub.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Réinitialiser DANS le panneau replié plutôt qu'en accès
-                    direct (revue design) : un tap accidentel sur un bouton
-                    toujours visible pouvait effacer une série en cours. */}
-                <button type="button" className="tc-reset" aria-label="Réinitialiser le compteur" onClick={t.reset}>
-                  <span aria-hidden>↺</span> Réinitialiser
-                </button>
-              </>
+      {/* Réglages personnels (objectif/séries/suggestions/réinitialiser) —
+          UNIQUEMENT hors Zikr collectif : en collectif, l'objectif partagé
+          restant est déjà affiché par l'appelant (CollectiveProgress,
+          app/zikr/page.tsx) et « Objectif atteint » par la carte trophée
+          (.zk-reached-card) — le répéter ici une troisième fois n'apportait
+          plus rien pendant la récitation (revue design : « informations
+          secondaires qui occupent de la place sans être prioritaires »). */}
+      {!isCollectif && (
+        <div className="tc-settings">
+          {/* Replié par défaut : objectif/séries/suggestions/réinitialiser
+              sont des réglages, pas l'action principale — un bouton à
+              libellé clair plutôt que ces contrôles ouverts en permanence
+              (voir commentaire sur `settingsOpen` plus haut). */}
+          <button
+            type="button"
+            className="tc-settings-toggle"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((v) => !v)}
+          >
+            <span aria-hidden>⚙️</span> Réglages du compteur
+            {t.seriesCount > 0 && (
+              <span className="tc-loop">
+                Série {t.loopCur}/{t.seriesCount}
+              </span>
             )}
-          </>
-        )}
-      </div>
+          </button>
 
-      {/* Compteur = progression CUMULÉE vers l'objectif (t.total), pas le
-          compte de la série en cours (t.count, qui repart à 0 à chaque
-          série et affichait donc « 00 » de façon ambiguë juste à côté d'une
-          ligne « Progression 0/2086 » redondante — revue design). En Zikr
-          collectif (uncapped=true dans useTasbih), t.total === t.count : ce
-          changement n'affecte donc pas son affichage — SAUF que `myFait`
-          (corrigé, voir MemberCounter) remplace `t.total` brut quand fourni,
-          pour rester exact sur un second appareil. Libellé explicite
-          au-dessus du nombre (revue design, point 4 : « chaque nombre doit
-          avoir un libellé explicite et une fonction immédiatement
-          compréhensible ») — ce compteur est UNIQUE maintenant, plus dupliqué
-          juste en dessous par une ligne « Mes grains récités » séparée. Pulse
-          bref au tap (retour visuel immédiat, en plus de la vibration déjà
-          déclenchée par t.tap()). */}
-      {isCollectif && <div className="tc-counter-label">Vos grains récités</div>}
-      <div className={'tc-counter' + (pulse ? ' tc-counter-pulse' : '')} aria-live="polite" aria-atomic="true">
-        {isCollectif && myFait !== undefined ? myFait : t.total}
-      </div>
-      {!isCollectif && <div className="tc-counter-target">sur {t.numericTarget || '—'}</div>}
+          {settingsOpen && (
+            <>
+              <div className="tc-group" title="Objectif de récitation">
+                <span aria-hidden>🎯</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Obj."
+                  aria-label="Objectif"
+                  value={t.target}
+                  onChange={(e) => t.setTarget(e.target.value)}
+                />
+              </div>
 
-      {/* Série de jours (portée globale, tous dhikr confondus) */}
-      {t.streak > 0 && (
-        <div className="tc-streak" aria-live="polite">
-          <span>
-            🔥 Série : {t.streak} jour{t.streak > 1 ? 's' : ''}
-          </span>
-          {t.newBadge && (
-            <span className="tc-badge">
-              {t.newBadge.icon} Badge « {t.newBadge.label} » débloqué !
-            </span>
+              <div className="tc-group" title="Nombre de séries — l'objectif est réparti dessus, le reste va sur la dernière">
+                <span aria-hidden>🔁</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Séries"
+                  aria-label="Nombre de séries"
+                  value={t.series}
+                  onChange={(e) => t.setSeries(e.target.value)}
+                />
+              </div>
+
+              {subs.length > 0 && (
+                // Menu déroulant plutôt qu'une rangée de puces : objSubdivisions()
+                // peut renvoyer jusqu'à 40 suggestions (objectifs très divisibles,
+                // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
+                // compact, un seul contrôle quel que soit le nombre de suggestions.
+                <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
+                  <span aria-hidden>🔀</span>
+                  <select
+                    aria-label="Suggestions de répartition"
+                    value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
+                    onChange={(e) => { if (e.target.value) t.setSeries(e.target.value); }}
+                  >
+                    <option value="">Suggestions…</option>
+                    {subs.map((sub) => (
+                      <option key={sub.label} value={sub.series}>{sub.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Réinitialiser DANS le panneau replié plutôt qu'en accès
+                  direct (revue design) : un tap accidentel sur un bouton
+                  toujours visible pouvait effacer une série en cours. */}
+              <button type="button" className="tc-reset" aria-label="Réinitialiser le compteur" onClick={t.reset}>
+                <span aria-hidden>↺</span> Réinitialiser
+              </button>
+            </>
           )}
         </div>
       )}
 
-      {/* Barre de progression seule — le texte « Progression N/cible » a été
-          retiré : redondant avec le compteur ci-dessus, qui affiche
-          désormais directement cette même valeur. Sans objectif propre en
-          Zikr collectif (celui du groupe est déjà affiché dans les réglages
-          ci-dessus et par l'appelant), rien de pertinent à montrer ici. */}
-      {!isCollectif && (
-        <div className="tc-progress">
-          <div className="tc-bar" role="progressbar" aria-valuenow={t.total} aria-valuemin={0} aria-valuemax={t.numericTarget || 0}>
-            <span style={{ width: t.pct + '%' }} />
+      {/* Zone tactile UNIQUE (revue design : « toute la zone du chapelet
+          pourrait être cliquable ») — role="button" focusable au clavier
+          (Entrée/Espace), plutôt qu'un simple onClick sur un <div> englobant
+          aussi les réglages ci-dessus (qui, eux, ne doivent jamais compter
+          comme un tap — les séparer en évite le risque au lieu de reposer
+          sur un stopPropagation). */}
+      <div
+        className="tc-tapzone"
+        role="button"
+        tabIndex={collectifDone ? -1 : 0}
+        aria-disabled={collectifDone}
+        aria-label={collectifDone ? 'Objectif du groupe atteint — compteur inactif' : 'Toucher pour égrener un grain'}
+        onClick={handleTap}
+        onKeyDown={onTapZoneKeyDown}
+      >
+        {isCollectif && collectifDone && (
+          <div className="tc-group-done" title="Objectif du Zikr collectif atteint">
+            <span aria-hidden>🎉</span> Objectif atteint
+          </div>
+        )}
+
+        {/* Compteur = progression CUMULÉE vers l'objectif (t.total), pas le
+            compte de la série en cours (t.count, qui repart à 0 à chaque
+            série et affichait donc « 00 » de façon ambiguë juste à côté d'une
+            ligne « Progression 0/2086 » redondante — revue design). En Zikr
+            collectif (uncapped=true dans useTasbih), t.total === t.count : ce
+            changement n'affecte donc pas son affichage — SAUF que `myFait`
+            (corrigé, voir MemberCounter) remplace `t.total` brut quand fourni,
+            pour rester exact sur un second appareil. ÉLÉMENT DOMINANT de
+            l'écran en Zikr collectif (revue design : « le compteur personnel
+            doit devenir l'élément dominant ») — voir .tc-embedded .tc-counter,
+            app/globals.css. Pulse bref au tap (retour visuel immédiat, en
+            plus de la vibration déjà déclenchée par t.tap()). */}
+        {isCollectif && <div className="tc-counter-label">Vos récitations</div>}
+        <div className={'tc-counter' + (pulse ? ' tc-counter-pulse' : '')} aria-live="polite" aria-atomic="true">
+          {isCollectif && myFait !== undefined ? myFait : t.total}
+        </div>
+        {!isCollectif && <div className="tc-counter-target">sur {t.numericTarget || '—'}</div>}
+
+        {/* Série de jours (portée globale, tous dhikr confondus) */}
+        {t.streak > 0 && (
+          <div className="tc-streak" aria-live="polite">
+            <span>
+              🔥 Série : {t.streak} jour{t.streak > 1 ? 's' : ''}
+            </span>
+            {t.newBadge && (
+              <span className="tc-badge">
+                {t.newBadge.icon} Badge « {t.newBadge.label} » débloqué !
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Barre de progression seule — le texte « Progression N/cible » a été
+            retiré : redondant avec le compteur ci-dessus, qui affiche
+            désormais directement cette même valeur. Sans objectif propre en
+            Zikr collectif (celui du groupe est déjà affiché par l'appelant),
+            rien de pertinent à montrer ici. */}
+        {!isCollectif && (
+          <div className="tc-progress">
+            <div className="tc-bar" role="progressbar" aria-valuenow={t.total} aria-valuemin={0} aria-valuemax={t.numericTarget || 0}>
+              <span style={{ width: t.pct + '%' }} />
+            </div>
+          </div>
+        )}
+
+        {/* Le chapelet : le fil (SVG) puis les grains posés dessus. */}
+        <div
+          aria-hidden
+          className="tc-stage-wrap"
+          style={{
+            width: VIEW_W,
+            height: VIEW_H,
+            WebkitMaskImage: FADE_MASK,
+            maskImage: FADE_MASK,
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+          }}
+        >
+          <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
+            <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(165,120,60,0.55)" strokeWidth={2} />
+          </svg>
+
+          <div ref={stageRef} className="tc-stage">
+            {Array.from({ length: BEAD_COUNT }).map((_, i) => (
+              <div
+                key={i}
+                ref={(el) => {
+                  beadRefs.current[i] = el;
+                }}
+                className="tc-bead"
+                style={{ width: BEAD_D, height: BEAD_D }}
+              />
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Le chapelet : le fil (SVG) puis les grains posés dessus. */}
-      <div
-        aria-hidden
-        className="tc-stage-wrap"
-        style={{
-          width: VIEW_W,
-          height: VIEW_H,
-          WebkitMaskImage: FADE_MASK,
-          maskImage: FADE_MASK,
-          WebkitMaskRepeat: 'no-repeat',
-          maskRepeat: 'no-repeat',
-        }}
-      >
-        <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
-          <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(165,120,60,0.55)" strokeWidth={2} />
-        </svg>
-
-        <div ref={stageRef} className="tc-stage">
-          {Array.from({ length: BEAD_COUNT }).map((_, i) => (
-            <div
-              key={i}
-              ref={(el) => {
-                beadRefs.current[i] = el;
-              }}
-              className="tc-bead"
-              style={{ width: BEAD_D, height: BEAD_D }}
-            />
-          ))}
-        </div>
+        {!collectifDone && <p className="tc-hint">Touchez pour égrainer</p>}
       </div>
-
-      {/* Zone tactile explicite (revue design — « bouton principal absent,
-          l'action essentielle n'est pas évidente ») : tout `.tc` compte déjà
-          le tap (onClick sur le conteneur, inchangé), cet encart ne fait que
-          donner à l'ensemble un vrai relief de bouton plutôt qu'un simple
-          fond de page cliquable. */}
-      <p className="tc-hint">👆 Appuyer pour égrainer</p>
     </div>
   );
 }

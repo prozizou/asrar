@@ -903,43 +903,52 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    partagé par « Noms d'Allah » (/benefits) et le « Zikr collectif » (/zikr). */
 .tc {
   width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  text-align: center;
+}
+
+/* Zone tactile — TOUT le compteur/chapelet (revue design : « toute la zone
+   du chapelet pourrait être cliquable »), un vrai `role="button"` focusable
+   au clavier (components/TasbihChapelet.js), séparé des réglages (.tc-settings,
+   jamais un tap de grain). Relief de « vrai bouton » (revue design, module
+   Noms d'Allah — « le bouton principal (compter) n'est pas évident ») : sans
+   ce cadre, le chapelet se fondait dans le reste de la carte. */
+.tc-tapzone {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;
   cursor: pointer; user-select: none; touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent; text-align: center;
-  /* Relief de « vrai bouton » (revue design, module Noms d'Allah — « le
-     bouton principal (compter) n'est pas évident ») : sans ce cadre, le
-     chapelet se fondait dans le reste de la carte, sans rien signaler
-     visuellement qu'il s'agit d'une grande zone tactile. min-height : toute
-     la carte (pas seulement le fil/les grains) est la zone tactile — plus
-     grande que le seul chapelet (revue design : « zone tactile beaucoup plus
-     large »). */
+  -webkit-tap-highlight-color: transparent;
   padding: 18px 14px; border-radius: 18px; border: 1px solid var(--glass-border);
   background: var(--surface-2);
   transition: background .12s ease, border-color .15s ease;
 }
-.tc:hover { border-color: var(--accent); }
-.tc:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+.tc-tapzone:hover { border-color: var(--accent); }
+.tc-tapzone:active { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+.tc-tapzone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Zikr collectif (app/zikr/page.tsx, TasbihChapelet embedded=true) : le
    chapelet vit DANS .zk-zikr-card, qui porte déjà fond/bordure/padding —
-   retire le cadre propre du chapelet pour éviter la « boîte dans la boîte »
-   (revue design). Garde le padding vertical (gap déjà porté par .tc) pour
-   ne pas coller le chapelet aux éléments voisins de la carte. */
-.tc.tc-embedded {
+   retire le cadre propre de la zone tactile pour éviter la « boîte dans la
+   boîte » (revue design), tout en restant cliquable/focusable (juste sans
+   son propre relief visuel). */
+.tc-embedded .tc-tapzone {
   padding: 4px 0 0; border: none; border-radius: 0; background: none;
+  gap: 16px; /* grille 8px — plus d'air autour du grand chapelet/compteur */
 }
-.tc.tc-embedded:hover, .tc.tc-embedded:active { background: none; border-color: transparent; }
+.tc-embedded .tc-tapzone:hover, .tc-embedded .tc-tapzone:active { background: none; border-color: transparent; }
+.tc-embedded .tc-tapzone:focus-visible { outline-offset: 4px; }
 
 /* Objectif du Zikr collectif atteint (components/TasbihChapelet.js,
    `collectifDone`) : le compteur devient inactif — demandé explicitement.
    cursor + léger assombrissement suffisent à le signaler ; le clic est de
    toute façon ignoré par handleTap (pas seulement une question de style). */
-.tc.tc-inactive { cursor: default; opacity: .75; }
-.tc.tc-inactive:hover { border-color: var(--glass-border); }
+.tc.tc-inactive .tc-tapzone { cursor: default; opacity: .75; }
+.tc.tc-inactive .tc-tapzone:hover { border-color: var(--glass-border); }
+/* Autonome (PAS composé avec .tc-group) : seul badge affiché dans la zone
+   tactile une fois l'objectif du groupe atteint, voir TasbihChapelet.js. */
 .tc-group-done {
-  border-color: var(--success);
-  color: var(--success);
+  display: flex; align-items: center; gap: 6px; padding: 6px 14px;
+  border-radius: 10px; border: 1px solid var(--success); color: var(--success);
+  font-family: var(--font-ui); font-size: .88rem; font-weight: 700;
 }
-.tc-group-done .tc-group-value { color: var(--success); font-weight: 600; }
 
 .tc-settings {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
@@ -998,16 +1007,27 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 /* .tc-subdiv (menu déroulant des suggestions de répartition) réutilise
    .tc-group pour son apparence (icône + contrôle) — rien à ajouter ici. */
 /* Libellé au-dessus du grand nombre (Zikr collectif uniquement, voir
-   TasbihChapelet.js) — rend le compteur UNIQUE explicite (« Vos grains
-   récités ») au lieu de le laisser deviner par sa seule position, maintenant
-   qu'il n'est plus répété juste en dessous. */
-.tc-counter-label { font-size: .78rem; font-weight: 600; color: var(--text-dim); margin-bottom: -4px; }
+   TasbihChapelet.js) — rend le compteur UNIQUE explicite (« Vos
+   récitations ») au lieu de le laisser deviner par sa seule position,
+   maintenant qu'il n'est plus répété juste en dessous. --text-muted (pas
+   --text-dim) : reste un repère utile juste au-dessus de l'élément
+   dominant de l'écran, pas une mention accessoire (revue design : « certains
+   textes gris ont un contraste faible »). */
+.tc-counter-label { font-size: .82rem; font-weight: 600; color: var(--text-muted); margin-bottom: -4px; }
 .tc-counter {
   font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -.04em;
   font-variant-numeric: tabular-nums; color: var(--accent);
   text-shadow: 0 0 20px var(--accent-glow);
   transition: transform .15s ease;
 }
+/* Élément DOMINANT de l'écran en Zikr collectif (revue design : « le
+   compteur personnel doit devenir l'élément dominant ») — nettement plus
+   grand qu'aux Noms d'Allah (.tc-counter de base, ci-dessus, inchangée :
+   là-bas le compteur partage l'écran avec tout un panneau de réglages).
+   Lueur réduite (revue design : « réduire les effets lumineux et gradients
+   décoratifs au profit d'ombres très légères ») — un repère de profondeur
+   discret, plus le halo prononcé d'avant. */
+.tc-embedded .tc-counter { font-size: 4.4rem; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
 /* Pulse bref au tap (revue design : « animation subtile du grain ») — retour
    visuel immédiat en plus de la vibration (useTasbih.js) et du défilement du
    chapelet. */
@@ -1030,19 +1050,25 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   display: block; height: 100%; border-radius: inherit;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width .3s ease;
 }
-.tc-stage-wrap { position: relative; overflow: hidden; }
+.tc-stage-wrap { position: relative; overflow: hidden; margin: 4px 0; }
 .tc-thread { position: absolute; inset: 0; }
 .tc-stage { position: absolute; inset: 0; opacity: 0; transition: opacity .2s; }
 .tc-bead {
   position: absolute; left: 0; top: 0; border-radius: 50%;
   background: radial-gradient(circle at 38% 32%, #f7e6bd, #d9ab63 58%, #a9743a);
-  box-shadow: 0 2px 5px rgba(60,35,10,.45), inset 0 1px 2px rgba(255,245,220,.5);
+  box-shadow: 0 1px 3px rgba(60,35,10,.35);
 }
-/* Plus grand et plus affirmé que le simple sous-texte d'avant (.72rem,
-   texte atténué) — c'est l'invite d'action de toute la zone `.tc`, pas une
-   légende accessoire (revue design, « rendre appuyer pour égrainer
-   beaucoup plus évident »). */
-.tc-hint { font-size: .88rem; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+/* Invite d'action de toute la zone tactile (.tc-tapzone), pas une légende
+   accessoire — en pilule avec icône plutôt qu'un simple texte gris, pour
+   se lire comme une affordance et pas comme une instruction (revue design :
+   « ressemble davantage à une instruction qu'à une zone d'action évidente »). */
+.tc-hint {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .82rem; font-weight: 700; letter-spacing: .02em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 999px; padding: 6px 16px; margin: 0;
+}
+.tc-hint::before { content: '👆'; font-size: .9em; }
 
 /* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────
    Fusionne ce qui était trois zones empilées (bouton Retour desktop à part,

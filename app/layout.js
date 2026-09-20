@@ -82,6 +82,14 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: '#1a1712',
+  // Sans ceci, `env(safe-area-inset-*)` résout à 0 sur iOS même en mode PWA
+  // installé (statusBarStyle "black-translucent" ci-dessus ne suffit pas à
+  // lui seul) — les CSS qui s'appuient dessus pour dégager le cran-d'oreille/
+  // la zone de geste du bas (app/zikr/zikr.css .zk-bottom-nav, app/marche,
+  // app/boutique, app/asrar) restaient donc des no-op silencieux plutôt
+  // qu'une vraie protection (revue design Zikr : « la barre inférieure doit
+  // être parfaitement adaptée aux safe areas Android/iPhone et au mode PWA »).
+  viewportFit: 'cover',
 };
 
 // Anti-FOUC : pose data-theme sur <html> AVANT le premier rendu (comme le

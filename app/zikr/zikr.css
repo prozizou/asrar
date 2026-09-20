@@ -250,14 +250,21 @@
    aussi importante que le titre ou la progression. */
 .zk-online-text { color: #2dd4a0; font-weight: 500; }
 
-.zk-progress-block { margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
-/* En-tête de progression : le pourcentage à CÔTÉ du titre (revue design,
-   point 7) — se lit avant même les chiffres, plutôt que noyé en fin de
-   ligne dans "X / Y (Z %)". */
-.zk-progress-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); }
-.zk-progress-pct { font-size: 1.05rem; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
+/* Trois lignes seulement (revue design : « 16 641 / 15 641 / 1000
+   apparaissent plusieurs fois dans une zone assez réduite ») — libellé,
+   puis « total / cible · pct % » (un seul endroit pour ces trois nombres,
+   le pourcentage n'est plus répété à la fois ici ET à côté du titre), barre,
+   puis un unique repère « restants · participants ». */
+.zk-progress-block { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.zk-progress-head { font-size: 0.82rem; font-weight: 600; color: var(--text-dim); }
+.zk-progress-stats {
+  display: flex; align-items: baseline; justify-content: center; gap: 6px;
+  font-size: 1.2rem; font-variant-numeric: tabular-nums;
+}
+.zk-progress-stats strong { color: var(--text-main); font-weight: 700; }
+.zk-progress-pct { font-weight: 700; color: var(--accent); }
 .zk-progress-pct.done { color: #2dd4a0; }
-.zk-progress-meta { font-size: 0.9rem; color: var(--text-muted); text-align: center; }
+.zk-progress-meta { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
 .zk-progress-meta strong { color: var(--text-main); }
 /* Carte « objectif atteint » (revue design, point 6 : « ressemble à une
    alerte ») — une information POSITIVE, pas un encadré jaune dominant :
@@ -655,33 +662,24 @@
    nombreuses sections pourrait être compacté »). C'est LA carte principale
    de l'écran Zikr : compteur + progression + chapelet + bouton d'égrainage,
    immédiatement sous l'alerte de validation le cas échéant. */
+/* Pas de bordure (revue design : « la bordure de la grande carte et les
+   multiples séparateurs rendent l'ensemble un peu chargé ») — la différence
+   de teinte avec le fond de page (--surface-2 sur --bg-deep) suffit à
+   détacher la carte, une ombre très légère porte le reste du relief plutôt
+   qu'un contour dessiné + un halo (design system : « ombres très légères
+   plutôt que gradients/effets lumineux décoratifs »). */
 .zk-zikr-card {
-  background: var(--surface-2); border: 1px solid var(--glass-border);
-  border-radius: 16px; padding: 14px 14px 10px; margin-bottom: 16px;
+  background: var(--surface-2); box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  border-radius: 16px; padding: 16px 16px 12px; margin-bottom: 16px;
 }
 /* Bare (dans .zk-zikr-card, prop `bare` de CollectiveProgress) : plus de
    cadre propre — voir .zk-progress-hero, gardé pour StaticProgress (visiteur
    non-membre), seul cas qui affiche encore la progression SANS chapelet
    juste en dessous, donc toujours dans sa propre carte. */
 .zk-progress-hero {
-  background: var(--surface-2); border: 1px solid var(--glass-border);
+  background: var(--surface-2); box-shadow: 0 1px 3px rgba(0,0,0,.25);
   border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
 }
-.zk-progress-remaining { color: var(--text-dim); font-weight: 500; }
-
-/* Repère « Aujourd'hui » + nombre de participants, UNE ligne compacte —
-   texte simple (plus de pilule à fond/bordure propres, redondante dans
-   .zk-zikr-card) séparée du reste de la carte par un filet discret. Le
-   chapelet porte désormais le total personnel PRINCIPAL (« Vos grains
-   récités »), donc rien ici ne le répète (revue design : deux nombres
-   personnels sans hiérarchie claire). */
-.zk-today-chip {
-  display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap;
-  padding: 8px 0; margin: 2px 0 0; border-top: 1px dashed var(--glass-border);
-  color: var(--text-dim); font-size: 0.78rem;
-}
-.zk-today-chip strong { color: var(--text-main); font-variant-numeric: tabular-nums; }
-.zk-today-sep { color: var(--glass-border); margin: 0 2px; }
 
 /* ── Navigation fixe en pied d'écran (Zikr / Participants / Discussion) ───
    Demandé explicitement : garder les actions importantes accessibles sans
@@ -741,7 +739,12 @@
     position: fixed; inset: 0; z-index: 40;
     display: flex; flex-direction: column;
     background: var(--bg-deep);
-    padding: 12px 16px 0;
+    /* calc(...) plutôt qu'un padding-top fixe : ce mode touche VRAIMENT les
+       bords de l'écran (inset:0), donc le seul écran de toute l'app où le
+       cran-d'oreille/la barre de statut peuvent recouvrir le bouton Retour
+       une fois viewport-fit=cover actif (app/layout.js) — safe-area-inset-top
+       vaut 0 sur un appareil sans encoche, donc aucun effet ailleurs. */
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0;
     overflow: hidden;
   }
   .zk-chat-mode .zk-detail-topbar,
