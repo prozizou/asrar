@@ -53,7 +53,19 @@ export default function NotificationsPage() {
   useEffect(() => {
     load();
     const id = setInterval(load, POLL_MS);
-    return () => clearInterval(id);
+
+    // Rafraîchissement immédiat sur push reçu app ouverte (voir public/sw.js
+    // et components/NotificationBell.js).
+    let onMessage: ((e: MessageEvent) => void) | undefined;
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      onMessage = (e: MessageEvent) => { if (e.data && e.data.type === 'asrar-notification') load(); };
+      navigator.serviceWorker.addEventListener('message', onMessage);
+    }
+
+    return () => {
+      clearInterval(id);
+      if (onMessage) navigator.serviceWorker.removeEventListener('message', onMessage);
+    };
   }, [load]);
 
   useEffect(() => {

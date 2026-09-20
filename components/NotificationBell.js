@@ -26,7 +26,20 @@ export default function NotificationBell() {
   useEffect(() => {
     refresh();
     const id = setInterval(refresh, POLL_MS);
-    return () => clearInterval(id);
+
+    // Rafraîchissement IMMÉDIAT quand un push arrive alors que l'app est
+    // ouverte : le service worker (public/sw.js) poste un message à chaque
+    // notification reçue — on ne dépend pas du prochain tour de sondage.
+    let onMessage;
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      onMessage = (e) => { if (e.data && e.data.type === 'asrar-notification') refresh(); };
+      navigator.serviceWorker.addEventListener('message', onMessage);
+    }
+
+    return () => {
+      clearInterval(id);
+      if (onMessage) navigator.serviceWorker.removeEventListener('message', onMessage);
+    };
   }, [refresh]);
 
   const label = unread > 0 ? `Notifications — ${unread} non lue${unread > 1 ? 's' : ''}` : 'Notifications';
