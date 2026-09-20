@@ -99,7 +99,7 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
         <div className="drawer-overlay" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <div className="drawer-panel" role="dialog" aria-modal="true" aria-label="Menu">
             <div className="drawer-header">
-              <h3>✦ Menu ✦</h3>
+              <h3>Menu</h3>
               <button type="button" className="drawer-close" onClick={() => setOpen(false)} aria-label="Fermer le menu">
                 ✕
               </button>
