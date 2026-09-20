@@ -875,16 +875,23 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   if (!g) return <div className="glass-panel zk-loading"><Spinner /> Chargement…</div>;
 
   const isMember = g.status === 'member' || g.status === 'owner';
+  // Filet de sécurité : `members` DEVRAIT toujours être un tableau (jamais
+  // absent, voir pages/api/zikr.js handleGet) — mais une réponse 200 au
+  // corps tronqué (réseau instable) pouvait, avant le correctif de
+  // lib/api.js apiPost, laisser passer un objet vide en silence. Garde
+  // conservée en profondeur : `g` reste alors un objet exploitable plutôt
+  // que de plonger tout l'écran dans un TypeError.
+  const members = g.members || [];
   // Compte purement indicatif (bouton « Notifier les inactifs ») — le
   // décompte qui fait foi est celui recalculé par le serveur, voir
   // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
   // sondage affiché côté client).
-  const inactiveCount = g.members.filter((m) => m.uid !== uid && m.fait === 0).length;
+  const inactiveCount = members.filter((m) => m.uid !== uid && m.fait === 0).length;
   // Résumé de l'onglet Participants — comptés sur la liste RÉELLEMENT
   // affichée (plutôt que g.onlineCount, recalculé côté serveur) : le résumé
   // et les lignes en dessous racontent ainsi toujours la même chose.
-  const onlineCount = g.members.filter((m) => m.online).length;
-  const activeCount = g.members.filter((m) => m.fait > 0).length;
+  const onlineCount = members.filter((m) => m.online).length;
+  const activeCount = members.filter((m) => m.fait > 0).length;
   // Email et rythme instantané sont des signaux de MODÉRATION (identifier un
   // compte, repérer un tapotement mécanique) : réservés au créateur/admin,
   // comme le téléphone côté serveur (pages/api/zikr.js handleGet). Pour les
@@ -1123,7 +1130,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           <div className="zk-board-head">
             <div className="zk-board-heading">
               <h3 className="zk-board-label">
-                Participants <span className="zk-board-label-count">{g.members.length}</span>
+                Participants <span className="zk-board-label-count">{members.length}</span>
               </h3>
               <p className="zk-board-summary">
                 {onlineCount > 0 && <><span className="zk-online-text">{fmt(onlineCount)} en ligne</span> · </>}
@@ -1144,7 +1151,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             )}
           </div>
           <div className="zk-board-list">
-            {g.members.length === 0 ? (
+            {members.length === 0 ? (
               /* État vide travaillé (revue design) plutôt qu'une ligne de
                  texte atténué : dit aussi quoi FAIRE ensuite. */
               <div className="zk-board-empty">
@@ -1152,7 +1159,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 <strong>Personne n’a encore rejoint</strong>
                 <span>Partagez le lien du zikr pour inviter des participants.</span>
               </div>
-            ) : g.members.map((m) => {
+            ) : members.map((m) => {
               const suspect = m.rythme >= RYTHME_SUSPECT;
               const displayName = chatDisplayName(m.email, m.name);
               return (
