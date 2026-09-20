@@ -16,7 +16,9 @@ export default function UserBar() {
 
   return (
     <div className="menu-appbar">
-      <span className="menu-appbar-logo" aria-hidden="true">✦</span>
+      <span className="menu-appbar-logo" aria-hidden="true">
+        <SmartImage src="/assets/logo-mark.png" alt="" width={34} height={34} priority />
+      </span>
       <h1 className="menu-appbar-title">Asrar Pro</h1>
       <AppDrawer
         triggerClassName="menu-appbar-profile"

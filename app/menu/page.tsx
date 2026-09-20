@@ -3,11 +3,12 @@
 // Refonte (revue design, 2026-09-20) : la page déroulait les 12 modules, soit
 // en grille plate, soit en accordéons — plus une rangée « Accès rapide » qui
 // REPRENAIT quatre modules déjà listés plus bas. Désormais c'est un tableau
-// de bord : en-tête compact + recherche, le contenu du moment (hadith, heure
-// planétaire), la zone personnelle (Continuer / Favoris), puis seulement les
-// quatre FAMILLES — chacune ouvrant sa propre page (app/menu/[categorie]).
-// Un module n'apparaît donc plus qu'à un seul endroit, sauf s'il a été
-// épinglé/ouvert par l'utilisateur lui-même.
+// de bord : en-tête compact + recherche, la zone personnelle (Continuer /
+// Favoris), puis seulement les quatre FAMILLES — chacune ouvrant sa propre
+// page (app/menu/[categorie]). Un module n'apparaît donc plus qu'à un seul
+// endroit, sauf s'il a été épinglé/ouvert par l'utilisateur lui-même.
+// (Hadith du jour et heure planétaire retirés de cette page à la demande —
+// ils restent accessibles via leurs propres modules.)
 //
 // Composant SERVEUR (pas de 'use client') : le catalogue est statique
 // (lib/modulesCatalog.tsx) ; seules les parties interactives (en-tête de
@@ -17,8 +18,6 @@ import { ChevronRight } from 'lucide-react';
 import UserBar from './UserBar';
 import MenuSearch from './MenuSearch';
 import PersonalRows from './PersonalRows';
-import PlanetHourWidget from '@/components/PlanetHourWidget';
-import DailyContentCard from '@/components/DailyContentCard';
 import { CATEGORIES, ALL_MODULES, categoryOf } from '@/lib/modulesCatalog';
 
 // La recherche affiche la famille de chaque résultat : elle est résolue ici,
@@ -37,9 +36,6 @@ export default function MenuPage() {
 
       <UserBar />
       <MenuSearch items={SEARCH_ITEMS} />
-
-      <DailyContentCard />
-      <PlanetHourWidget />
 
       <PersonalRows allItems={ALL_MODULES} />
 
