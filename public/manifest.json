@@ -23,12 +23,6 @@
   ],
   "shortcuts": [
     {
-      "name": "Noms d'Allah",
-      "short_name": "Noms",
-      "url": "/benefits",
-      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
-    },
-    {
       "name": "Rouwhanes",
       "short_name": "Rouwhanes",
       "url": "/rouwhania",

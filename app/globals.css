@@ -1325,7 +1325,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .family-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 /* flex-wrap : un titre long + son badge (« Sciences traditionnelles » +
-   « Accès 1 an ») passent proprement le badge à la ligne sur un écran
+   « Accès premium ») passent proprement le badge à la ligne sur un écran
    étroit, au lieu de le laisser chevaucher le texte replié. Le texte du
    titre porte min-width:0 pour tronquer plutôt que déborder. */
 .family-title { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: var(--fs-section); font-weight: 700; }
@@ -1335,7 +1335,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Badges EXPLICITES (revue design : « les compteurs 3, 2, 1 An ne sont pas
-   immédiatement compréhensibles ») — « Accès 1 an », « 3 modules ». */
+   immédiatement compréhensibles ») — « Accès premium », « 3 modules ». */
 .family-badge {
   flex-shrink: 0; font-size: var(--fs-caption); font-weight: 700; color: #d9a441;
   background: rgba(217,164,65,0.14); border-radius: 999px; padding: 2px 9px;

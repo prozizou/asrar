@@ -61,13 +61,6 @@ l'état courant (forces, faiblesses, améliorations).
 │  │  ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
 │  │  ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
 │  │  └─ boutique.css   Styles du module (copie de boutique/boutique.css)
-│  ├─ benefits/         MODULE MIGRÉ — 99 Noms d'Allah
-│  │  ├─ page.js        Chargement, recherche/suggestions, favoris, modale
-│  │  ├─ NameCard.js      Carte (verrouillée / complète)
-│  │  ├─ NameModal.js     Modale d'un nom
-│  │  ├─ WafqSquares.js   Carrés magiques (awfaq 3×3 / 3×3 vide / 4×4)
-│  │  ├─ Tasbih.js        Compteur de dhikr (UI)
-│  │  └─ benefits.css   Styles du module (copie de Benefits/style.css)
 │  └─ bibliotheque/     MODULE MIGRÉ — Bibliothèque Almaqtab
 │     ├─ page.js        Grille de livres, social, ouverture PDF, partage
 │     ├─ CommentModal.js  Modale commentaires

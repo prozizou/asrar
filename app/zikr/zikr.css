@@ -3,10 +3,10 @@
    thème de globals.css (--accent, --bg-deep, --glass-border, --text-*). */
 
 /* Écran liste : plus de .glass-panel englobant (revue design, point 10 —
-   « cartes dans une carte ») — le héros, le rappel et chaque .zk-card sont
-   des éléments indépendants posés directement sur le fond de page, .container
-   fournissant déjà le padding externe. La fiche détail (GroupDetail) garde
-   .glass-panel : écran de lecture unique, pas la même accumulation de boîtes. */
+   « cartes dans une carte ») — le héros et chaque .zk-card sont des éléments
+   indépendants posés directement sur le fond de page, .container fournissant
+   déjà le padding externe. La fiche détail (GroupDetail) garde .glass-panel :
+   écran de lecture unique, pas la même accumulation de boîtes. */
 .zk-list-page { display: flex; flex-direction: column; }
 
 /* En-tête resserré (revue design, point 1) : titre + une ligne, plus le grand
@@ -14,38 +14,6 @@
 .zk-hero { text-align: center; margin-bottom: 16px; }
 .zk-hero h1 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 4px; }
 .zk-hero p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.4; margin: 0; }
-
-/* Rappel de wird quotidien (components/WirdReminderToggle.js) — en tête de
-   la liste, au-dessus du bouton « Créer un zikr collectif ». Revue design,
-   point 2 : une seule ligne (icône + libellé + heure en badge), l'éditeur
-   d'heure se déplie au clic plutôt que d'afficher l'heure deux fois (dans le
-   libellé ET dans deux champs juste en-dessous) ; un vrai interrupteur
-   sépare l'activation de l'ouverture du réglage d'heure (avant : une seule
-   case à cocher faisait les deux à la fois). */
-.zk-wird-reminder {
-  padding: 10px 12px; margin-bottom: 14px; border-radius: 12px;
-  background: var(--surface-2); border: 1px solid var(--glass-border);
-}
-.zk-wird-row { display: flex; align-items: center; gap: 10px; }
-.zk-wird-toggle {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
-  background: none; border: none; padding: 4px 0; cursor: pointer;
-  color: var(--text-main); font-family: var(--font-ui); text-align: left;
-}
-.zk-wird-toggle svg:first-child { color: var(--accent); flex-shrink: 0; }
-.zk-wird-toggle svg:last-child { color: var(--text-dim); flex-shrink: 0; }
-.zk-wird-label { font-size: 0.88rem; font-weight: 600; }
-.zk-wird-time-badge {
-  font-size: 0.8rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums;
-  background: var(--bg-deep); border-radius: 8px; padding: 2px 8px;
-}
-.zk-wird-time-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border); }
-.zk-wird-time-row input {
-  width: 60px; text-align: center; background: var(--bg-deep); border: 1px solid var(--glass-border);
-  border-radius: 8px; padding: 6px; color: var(--text-main); font-family: var(--font-ui); font-size: 0.85rem;
-}
-.zk-wird-time-row span { color: var(--text-dim); font-weight: 700; }
-.zk-wird-error { color: #f0819a; font-size: 0.78rem; margin: 8px 0 0; }
 
 /* Interrupteur (activer/désactiver) — .zk-switch/.zk-switch-knob vivent
    maintenant dans app/globals.css (déplacés depuis ici) : DailyContentCard

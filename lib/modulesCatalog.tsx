@@ -13,7 +13,7 @@
 // donc testable directement.
 import type { ReactNode } from 'react';
 import {
-  Scroll, Calculator, Globe, Sparkles, Star, Users, Wand2, BookOpen, Gift,
+  Scroll, Calculator, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
   Feather, Grid3x3, Hash, Moon, Layers,
 } from 'lucide-react';
 
@@ -46,7 +46,6 @@ export const CATEGORIES: ModuleCategory[] = [
     title: 'Spiritualité',
     icon: <Moon {...CAT_ICON} />,
     items: [
-      { icon: <Star {...ICON} />, label: "Noms d'Allah", desc: "Découvrir les 99 Noms d'Allah", href: '/benefits', keywords: ['asma', 'husna', '99 noms', 'beaux noms'] },
       { icon: <Users {...ICON} />, label: 'Zikr collectif', desc: 'Réciter un dhikr ensemble, objectif commun', href: '/zikr', keywords: ['dhikr', 'tasbih', 'chapelet', 'groupe', 'hatim'] },
       { icon: <Wand2 {...ICON} />, label: 'Rouwhanes', desc: "Générer des noms d'anges et un vœu", href: '/rouwhania', keywords: ['anges', 'rouhanya', 'rouwhania', 'voeu'] },
     ],
@@ -55,7 +54,7 @@ export const CATEGORIES: ModuleCategory[] = [
     slug: 'sciences-traditionnelles',
     title: 'Sciences traditionnelles',
     icon: <Layers {...CAT_ICON} />,
-    badge: 'Accès 1 an',
+    badge: 'Accès premium',
     items: [
       { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
       { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },

@@ -16,7 +16,7 @@ const CASES: Array<[string, string]> = [
   ['/asrar/asrar.html', '/asrar'],
   ['/abajad/abajad.html', '/abajad'],
   ['/alqalam/index.html', '/alqalam'],
-  ['/Benefits/index.html', '/benefits'],
+  ['/Benefits/index.html', '/menu'], // module supprimé (2026-09-20)
 ];
 
 test.describe('Compatibilité des anciennes URLs (redirects)', () => {

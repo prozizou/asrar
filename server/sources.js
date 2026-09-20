@@ -40,8 +40,8 @@ const SOURCES = {
     ref: () => "versetRef",
     secretFields: []
   },
-  // 99 Noms d'Allah — lus par le module Benefits. Toujours servis (Admin SDK) pour que
-  // TOUS les utilisateurs voient les noms depuis le RTDB ; le verrouillage carte est côté client.
+  // 99 Noms d'Allah — lus par lib/benefits.js (module Rouwhanes). Toujours servis
+  // (Admin SDK) pour que TOUS les utilisateurs voient les noms depuis le RTDB.
   asma: {
     ref: () => "data/appData/asmaUlHusna",
     secretFields: []
