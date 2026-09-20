@@ -1,9 +1,16 @@
 'use client';
-// Drawer principal de l'accueil : thème clair/sombre (contrôle désormais
-// unique de l'app, ex-bouton flottant ThemeToggle), paramètres et version.
-// Le thème initial est posé avant le rendu par le script anti-FOUC du layout ;
-// ici on ne fait que lire/écrire l'attribut data-theme déjà en place.
+// Menu PROFIL du tableau de bord : thème clair/sombre (contrôle désormais
+// unique de l'app, ex-bouton flottant ThemeToggle), paramètres, version et
+// DÉCONNEXION. Le thème initial est posé avant le rendu par le script
+// anti-FOUC du layout ; ici on ne fait que lire/écrire l'attribut data-theme
+// déjà en place.
+//
+// Le déclencheur est fourni par l'appelant (`trigger`, app/menu/UserBar.js
+// passe l'avatar) : l'en-tête n'a ainsi qu'UNE cible à droite — avant, le
+// hamburger de ce panneau, l'avatar et un bouton de déconnexion séparé s'y
+// alignaient tous les trois (revue design).
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import pkg from '@/package.json';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
 
@@ -30,7 +37,8 @@ function getSwVersion() {
   });
 }
 
-export default function AppDrawer() {
+export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
+  const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [swVersion, setSwVersion] = useState(null);
@@ -77,14 +85,14 @@ export default function AppDrawer() {
     <>
       <button
         type="button"
-        className="signout-btn"
+        className={triggerClassName || 'signout-btn'}
         onClick={() => setOpen(true)}
-        aria-label="Ouvrir le menu"
+        aria-label={triggerLabel || 'Ouvrir le menu'}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Menu"
+        title={triggerLabel || 'Menu'}
       >
-        ☰
+        {trigger || '☰'}
       </button>
 
       {open && (
@@ -155,6 +163,23 @@ export default function AppDrawer() {
                     numéro seul suffit, voir public/sw.js. */}
                 <span className="drawer-row-hint">{swVersion || `v${APP_VERSION}`}</span>
               </div>
+
+              {/* Déconnexion : déplacée ici depuis l'en-tête (revue design)
+                  — une action rare, qui n'a pas à occuper en permanence une
+                  cible à côté du profil, et qu'un tap accidentel ne doit pas
+                  déclencher. */}
+              <button type="button" className="drawer-row drawer-row-link drawer-row-danger" onClick={signOut}>
+                <span className="drawer-row-label">
+                  <span className="drawer-row-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                  </span>
+                  Déconnexion
+                </span>
+              </button>
             </div>
           </div>
         </div>
