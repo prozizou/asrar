@@ -345,8 +345,18 @@
    vivre DANS la section Participants, pas dans Gestion du groupe) sur la
    même ligne — passe sur deux lignes en douceur (flex-wrap) si le libellé
    avec compteur ne tient pas à côté du titre sur un petit écran. */
-.zk-board-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 4px; }
-.zk-board-head h3 { margin: 0; }
+.zk-board-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 10px; margin-bottom: 4px; }
+.zk-board-heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Même libellé discret que « Progression collective » (.zk-progress-head,
+   onglet Zikr) — les trois onglets partagent le même traitement d'en-tête
+   au lieu d'un <h3> par écran. */
+.zk-board-label { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600; color: var(--text-dim); margin: 0; }
+.zk-board-label-count {
+  font-size: 0.72rem; font-weight: 700; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums;
+}
+.zk-board-summary { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
 .zk-notify-inactive {
   display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
   background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4);
@@ -357,8 +367,27 @@
 .zk-notify-inactive:hover:not(:disabled) { background: rgba(217,164,65,0.2); }
 .zk-notify-inactive:disabled { opacity: 0.4; cursor: default; }
 .zk-board-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.zk-board-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
-.zk-board-row.me { border: 1px solid var(--accent); }
+.zk-board-row {
+  display: flex; align-items: center; gap: 10px; min-height: 56px;
+  padding: 8px 12px; border-radius: 12px; background: var(--surface-2);
+}
+/* Ma propre ligne : liseré d'accent À GAUCHE plutôt qu'un contour complet
+   (revue design : moins de bordures) — se repère aussi vite, sans dessiner
+   une boîte de plus dans une liste qui en aligne déjà plusieurs. */
+.zk-board-row.me {
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-2));
+}
+
+/* État vide (revue design : « états vides travaillés ») — dit aussi quoi
+   faire ensuite, au lieu d'une simple ligne de texte atténué. */
+.zk-board-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 28px 20px; border-radius: 14px; background: var(--surface-2);
+}
+.zk-board-empty svg { color: var(--text-dim); margin-bottom: 2px; }
+.zk-board-empty strong { font-size: 0.92rem; color: var(--text-main); }
+.zk-board-empty span { font-size: 0.82rem; color: var(--text-muted); max-width: 32ch; line-height: 1.35; }
 
 /* Identité moderne : avatar (photo Google ou initiale colorée) + nom en
    premier, e-mail en information SECONDAIRE (revue design, point 9) — plus
@@ -373,18 +402,27 @@
   background: var(--glass-border); border: 2px solid var(--surface-2);
 }
 .zk-online-dot.on { background: #2dd4a0; }
-.zk-board-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.zk-board-name { font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zk-board-email-sub { font-size: 0.74rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zk-role-tag {
-  display: inline-flex; align-items: center; gap: 3px; align-self: flex-end;
-  font-size: 0.68rem; font-weight: 700; color: #d9a441;
+.zk-board-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+/* Nom + marqueurs (créateur, vous) sur la même ligne — seul le NOM est
+   tronqué si la place manque, jamais les marqueurs (flex-shrink: 0). */
+.zk-board-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 0.9rem; font-weight: 600; }
+.zk-board-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zk-board-email-sub { font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Couronne seule (le mot « Créateur » vit dans son title/aria-label) : un
+   marqueur d'identité doit rester discret à côté du nom, pas rivaliser avec
+   le nombre de grains. */
+.zk-role-tag { display: inline-flex; align-items: center; flex-shrink: 0; color: #d9a441; }
+.zk-board-you {
+  flex-shrink: 0; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text-dim); background: var(--surface-3); border-radius: 999px; padding: 1px 7px;
 }
-/* Total (jamais remis à zéro) + total du jour, empilés — voir la boucle des
-   participants, app/zikr/page.tsx. */
+/* UN nombre dominant (le total, jamais remis à zéro), son unité en petit,
+   puis le total du jour seulement s'il y en a un — contraste relevé
+   (--text-muted, plus --text-dim à .68rem, illisible sur le violet sombre). */
 .zk-board-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
-.zk-board-count { font-weight: 700; font-size: 0.85rem; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.zk-board-today { font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zk-board-count { font-weight: 700; font-size: 1rem; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zk-board-count-unit { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); }
+.zk-board-today { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .zk-pace {
   display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
   font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;

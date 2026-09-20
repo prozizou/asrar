@@ -884,6 +884,17 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
   // sondage affiché côté client).
   const inactiveCount = g.members.filter((m) => m.uid !== uid && m.fait === 0).length;
+  // Résumé de l'onglet Participants — comptés sur la liste RÉELLEMENT
+  // affichée (plutôt que g.onlineCount, recalculé côté serveur) : le résumé
+  // et les lignes en dessous racontent ainsi toujours la même chose.
+  const onlineCount = g.members.filter((m) => m.online).length;
+  const activeCount = g.members.filter((m) => m.fait > 0).length;
+  // Email et rythme instantané sont des signaux de MODÉRATION (identifier un
+  // compte, repérer un tapotement mécanique) : réservés au créateur/admin,
+  // comme le téléphone côté serveur (pages/api/zikr.js handleGet). Pour les
+  // autres membres, une ligne de participant se limite au nom et au nombre
+  // de grains (revue design : une seule information dominante par ligne).
+  const canModerate = g.status === 'owner' || !!g.isAdmin;
   // Écran Discussion : bascule en plein écran mobile (revue design — « une
   // vraie page de messagerie, pas un composant posé sur un fond ») plutôt
   // que la carte flottante des autres onglets, voir .zk-chat-mode (zikr.css).
@@ -1109,8 +1120,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           ligne, plus les deux boutons colorés en permanence d'avant). */}
       {isMember && tab === 'participants' && (
         <div className="zk-board">
+          {/* En-tête : libellé discret + résumé d'UNE ligne (en ligne /
+              ont récité) plutôt qu'un titre seul — le même traitement que
+              « Progression collective » sur l'onglet Zikr, pour que les
+              trois onglets se ressemblent. */}
           <div className="zk-board-head">
-            <h3>Participants ({g.members.length})</h3>
+            <div className="zk-board-heading">
+              <h3 className="zk-board-label">
+                Participants <span className="zk-board-label-count">{g.members.length}</span>
+              </h3>
+              <p className="zk-board-summary">
+                {onlineCount > 0 && <><span className="zk-online-text">{fmt(onlineCount)} en ligne</span> · </>}
+                {fmt(activeCount)} {activeCount > 1 ? 'ont' : 'a'} récité
+              </p>
+            </div>
             {g.status === 'owner' && (
               <button
                 type="button"
@@ -1126,7 +1149,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           </div>
           <div className="zk-board-list">
             {g.members.length === 0 ? (
-              <p className="zk-muted">Aucun participant pour l’instant.</p>
+              /* État vide travaillé (revue design) plutôt qu'une ligne de
+                 texte atténué : dit aussi quoi FAIRE ensuite. */
+              <div className="zk-board-empty">
+                <Users size={24} strokeWidth={1.75} aria-hidden="true" />
+                <strong>Personne n’a encore rejoint</strong>
+                <span>Partagez le lien du zikr pour inviter des participants.</span>
+              </div>
             ) : g.members.map((m) => {
               const suspect = m.rythme >= RYTHME_SUSPECT;
               const displayName = chatDisplayName(m.email, m.name);
@@ -1147,20 +1176,37 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                       aria-label={m.online ? 'En ligne' : 'Hors ligne'}
                     />
                   </span>
+                  {/* Identité : les marqueurs (créateur, vous) rejoignent la
+                      LIGNE DU NOM plutôt que la colonne des chiffres — c'est
+                      de l'identité, pas une statistique. L'email ne s'affiche
+                      que pour le créateur/l'admin (canModerate) : partout
+                      ailleurs c'est une longue adresse répétée à chaque
+                      ligne, sans valeur pour un participant. */}
                   <span className="zk-board-id">
                     <span className="zk-board-name">
-                      {displayName}
-                      {m.uid === uid && <span className="zk-muted"> (vous)</span>}
+                      <span className="zk-board-name-text">{displayName}</span>
+                      {m.uid === g.ownerUid && (
+                        <span className="zk-role-tag" title="Créateur du zikr" aria-label="Créateur du zikr">
+                          <Crown size={11} strokeWidth={2.5} aria-hidden="true" />
+                        </span>
+                      )}
+                      {m.uid === uid && <span className="zk-board-you">vous</span>}
                     </span>
-                    <span className="zk-board-email-sub">{m.email || 'Membre'}</span>
+                    {canModerate && m.email && <span className="zk-board-email-sub">{m.email}</span>}
                   </span>
+                  {/* UN seul nombre dominant par ligne (le total, jamais remis
+                      à zéro) ; le total du jour n'apparaît que s'il y en a
+                      un, et le rythme instantané seulement pour la
+                      modération (voir canModerate). */}
                   <span className="zk-board-stats">
-                    {m.uid === g.ownerUid && (
-                      <span className="zk-role-tag"><Crown size={11} strokeWidth={2.5} aria-hidden="true" /> Créateur</span>
-                    )}
-                    <span className="zk-board-count">{fmt(m.fait)} grains</span>
-                    <span className="zk-board-today">auj. {fmt(m.dailyTotal)}</span>
-                    {m.rythme > 0 && (
+                    <span className="zk-board-count">
+                      {fmt(m.fait)} <span className="zk-board-count-unit">grains</span>
+                    </span>
+                    {/* « auj. » et pas « aujourd'hui » : le libellé long
+                        élargissait la colonne des chiffres au point de
+                        tronquer les noms sur un écran de 390 px. */}
+                    {m.dailyTotal > 0 && <span className="zk-board-today">+{fmt(m.dailyTotal)} auj.</span>}
+                    {canModerate && m.rythme > 0 && (
                       <span className={'zk-pace' + (suspect ? ' suspect' : '')} title="Rythme instantané">
                         {suspect ? <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> : <Zap size={11} strokeWidth={2.5} aria-hidden="true" />} {m.rythme}/min
                       </span>
