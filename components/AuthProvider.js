@@ -18,6 +18,7 @@ import { ChevronRight, Lock } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { captureRef, claimRef } from '@/lib/share';
 import { ensurePushRegistration } from '@/lib/push';
+import { ensureNativePushRegistration } from '@/lib/fcmNative';
 
 const AuthCtx = createContext({ user: null, loading: true, signOut: () => {} });
 export const useAuth = () => useContext(AuthCtx);
@@ -184,11 +185,18 @@ function LoginScreen({ onLogin, status, error }) {
 // onAuthStateChanged). Voir lib/push.js ensurePushRegistration pour la
 // logique fine (réabonnement silencieux si déjà autorisé, invite une seule
 // fois sinon). Best-effort, jamais bloquant.
+//
+// ensureNativePushRegistration() (lib/fcmNative.js) s'ajoute EN PLUS, jamais
+// à la place : c'est un no-op immédiat tant que l'app ne tourne pas dans la
+// coquille Capacitor (Capacitor.isNativePlatform() false sur le site web) —
+// un utilisateur peut donc avoir les deux canaux enregistrés à la fois
+// (navigateur ET app Android installée).
 let _pushEnsured = false;
 function ensurePush() {
   if (_pushEnsured) return;
   _pushEnsured = true;
   ensurePushRegistration().catch(() => {});
+  ensureNativePushRegistration().catch(() => {});
 }
 
 // Journalisation légère des visites (alimente le tableau de bord admin).
