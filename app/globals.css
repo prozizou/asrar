@@ -198,15 +198,6 @@ body {
     margin: 0 auto;
 }
 
-/* Centre verticalement l'écran de connexion (Google) dans la fenêtre,
-   au lieu de le laisser collé en haut avec un grand vide en dessous. */
-.login-screen {
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
 .glass-panel {
     background: var(--glass-bg);
@@ -774,67 +765,186 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }
 
-/* Le bouton Google de l'écran de connexion ne doit pas hériter du dégradé global */
-/* Bouton Google (components/AuthProvider.js LoginScreen) — volontairement
-   des couleurs FIXES (pas les tokens --accent/--surface du thème courant) :
-   c'est la charte que Google recommande pour ses boutons « Continuer avec »
-   (blanc net, texte gris foncé #3c4043), justement pour qu'il reste
-   identifiable et contrasté quel que soit le thème de l'app qui l'entoure —
-   contrairement à l'ancien style (fond blanc à 12% d'opacité, pensé pour le
-   thème sombre) qui devenait presque invisible sur le thème clair
-   turquoise/menthe (texte et fond quasi confondus, aucun repère de bouton).
-   `disabled` (pendant la connexion, voir `busy` dans LoginScreen) baisse
-   juste l'opacité et retire le curseur — jamais de changement de couleur qui
-   ferait disparaître le libellé « Connexion en cours… » affiché à la place
-   du logo Google (voir .google-btn-spinner ci-dessous). */
-.google-btn {
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════════════════
+   Bottom sheet de connexion (components/AuthProvider.js LoginScreen)
+   Revue design : « moderniser en Bottom Sheet premium, mobile-first,
+   compact, sombre » — palette bleu nuit/noir à accents bleus PROPRE à cet
+   écran (tokens --login-* locaux, ci-dessous), volontairement distincte du
+   violet/magenta --accent du reste de l'app : c'est la seule demande
+   explicite d'une palette différente pour un seul écran dans ce dépôt,
+   donc scopée ici plutôt que de toucher les tokens globaux.
+   ═══════════════════════════════════════════════════════════════════════ */
+.login-screen {
+  --login-accent:      #60a5fa;
+  --login-accent-glow: rgba(96, 165, 250, .35);
+  --login-ink:         #f4f7ff;
+  --login-ink-dim:      rgba(210, 221, 245, .62);
+  --login-ink-faint:    rgba(200, 212, 240, .5);
+  position: fixed;
+  inset: 0;
+  z-index: 1000; /* au-dessus du fond animé (CosmicBackground), sous #asrar-loader (999999) */
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 10px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, .16);
-  color: #3c4043;
-  font-weight: 600;
-  font-size: .98rem;
-  padding: 13px 20px;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
+}
+/* Arrière-plan assombri + flouté (« léger glassmorphism ») — le fond animé
+   (CosmicBackground, monté hors de AuthProvider donc déjà visible derrière)
+   reste deviné plutôt qu'effacé net. */
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 6, 16, .74);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  animation: loginBackdropIn .32s ease both;
+}
+@keyframes loginBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+.login-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: min(88vh, 620px);
+  overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(96,165,250,.10), transparent 120px),
+    linear-gradient(180deg, #0c1526 0%, #070c18 55%, #04070f 100%);
+  border: 1px solid rgba(96, 165, 250, .16);
+  border-bottom: none;
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -24px 60px rgba(0, 0, 0, .55), 0 -1px 0 rgba(255, 255, 255, .04) inset;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  animation: loginSheetIn .38s cubic-bezier(.22, 1, .36, 1) both;
+}
+/* Le sondage "compact" reste vrai jusqu'en très petite largeur : un peu
+   moins d'air latéral, jamais de texte qui déborde. */
+@media (max-width: 374px) {
+  .login-sheet { padding-left: 16px; padding-right: 16px; }
+}
+/* Tablette/desktop : le PRINCIPE du bottom sheet est conservé (demande
+   explicite), juste détaché du bord et pleinement arrondi plutôt que
+   plaqué edge-to-edge — un sheet plein écran collé au bord aurait l'air
+   d'un bug de mise en page sur un grand écran, pas d'un choix. */
+@media (min-width: 640px) {
+  .login-sheet {
+    margin-bottom: 32px;
+    border-radius: 26px;
+    border-bottom: 1px solid rgba(96, 165, 250, .16);
+  }
+}
+@keyframes loginSheetIn {
+  from { transform: translateY(100%); opacity: .4; }
+  to   { transform: translateY(0);    opacity: 1;  }
+}
+/* prefers-reduced-motion : ouverture instantanée plutôt que la translation,
+   cohérent avec le reste de l'app (voir .toast, .drawer-panel). */
+@media (prefers-reduced-motion: reduce) {
+  .login-backdrop, .login-sheet { animation: none; }
+}
+
+.login-sheet-handle {
+  display: block;
+  width: 38px; height: 4px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, .22);
+  margin: 6px auto 18px;
+}
+
+.login-sheet-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+}
+.login-sheet-glogo {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .08);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-sheet-heading { flex: 1; min-width: 0; }
+.login-sheet-heading h1 {
+  margin: 0; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.1rem; color: var(--login-ink);
+}
+.login-sheet-heading p {
+  margin: 2px 0 0; font-size: .82rem; color: var(--login-ink-dim);
+}
+
+/* Carte de compte (le seul « compte » disponible ici étant l'action Google
+   elle-même — voir le commentaire de LoginScreen) : teinte bleue subtile au
+   repos façon "état sélectionné", pour qu'elle se lise d'emblée comme
+   l'action à prendre plutôt que comme un bouton neutre parmi d'autres. */
+.login-account-card {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(96, 165, 250, .09), rgba(255, 255, 255, .02));
+  border: 1px solid rgba(96, 165, 250, .24);
+  border-radius: 18px;
+  padding: 13px 14px;
   cursor: pointer;
-  transition: background .2s ease, box-shadow .2s ease, opacity .2s ease;
+  font-family: var(--font-ui);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 24px rgba(0, 0, 0, .28);
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease;
 }
-.google-btn:hover:not(:disabled) {
-  background: #f8f9fa;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .18);
+.login-account-card:hover:not(:disabled) {
+  border-color: rgba(96, 165, 250, .45);
+  background: linear-gradient(180deg, rgba(96, 165, 250, .15), rgba(255, 255, 255, .02));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 12px 28px rgba(37, 99, 235, .2);
 }
-.google-btn:disabled {
-  opacity: .72;
-  cursor: default;
+.login-account-card:active:not(:disabled) {
+  transform: scale(.98);
+  background: linear-gradient(180deg, rgba(96, 165, 250, .2), rgba(255, 255, 255, .03));
 }
+.login-account-card:disabled { opacity: .68; cursor: default; }
+.login-account-card:focus-visible {
+  outline: 2px solid var(--login-accent); outline-offset: 2px;
+}
+.login-account-avatar {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 3px var(--login-accent-glow);
+}
+.login-account-label {
+  flex: 1; min-width: 0;
+  font-size: .96rem; font-weight: 600; color: var(--login-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.login-account-chevron { flex-shrink: 0; color: var(--login-ink-faint); }
+
+.login-secure-hint {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 16px;
+  font-size: .78rem;
+  color: var(--login-ink-faint);
+}
+.login-error {
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(217, 83, 79, .12);
+  border: 1px solid rgba(217, 83, 79, .28);
+  font-size: .85rem;
+  color: #ff9a95;
+  text-align: center;
+}
+
+/* Spinner du bouton Google (fond blanc de .login-account-avatar, contraste
+   sombre inchangé — voir asrar-spin, @keyframes déjà défini pour
+   #asrar-loader). */
 .google-btn-spinner {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   border: 2px solid rgba(60, 64, 67, .25);
   border-top-color: #3c4043;
-  animation: asrar-spin .8s linear infinite; /* @keyframes déjà défini pour #asrar-loader */
+  animation: asrar-spin .8s linear infinite;
   flex-shrink: 0;
-}
-
-/* Carte de connexion : mêmes tokens --glass-* que le reste de l'app (pas de
-   duplication de valeurs ici), juste un peu plus de air interne — voir
-   .login-secure-hint / .login-error ci-dessous pour le texte sous le bouton. */
-.login-card { padding: 34px 30px; }
-.login-secure-hint {
-  margin-top: 14px;
-  font-size: .82rem;
-  color: var(--text-faint);
-}
-.login-error {
-  margin-top: 14px;
-  font-size: .88rem;
-  color: var(--danger);
 }
 
 /* ── Dialogue « dernier commit » (drawer → Releases) ─────────────────────── */
@@ -1400,8 +1510,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .cosmic-blob-a {
   width: 260px; height: 260px; left: -70px; top: -40px;
   /* Mix réduit d'environ 60% (40% → 16%) : le halo turquoise/violet
-     donnait une impression de brume sur toute la carte de connexion — voir
-     aussi .login-logo-glow, seul endroit qui garde un glow marqué. */
+     donnait une impression de brume sur toute la carte de connexion. */
   background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
   animation: cosmicBlobDrift1 14s ease-in-out infinite;
 }
@@ -1446,46 +1555,6 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   50%      { opacity: 1; }
 }
 
-/* Marque de l'écran de connexion (components/AuthProvider.js LoginScreen) :
-   halo pulsant + losange, écho du fond animé — absent jusqu'ici, l'écran
-   n'affichait que le titre texte. */
-.login-logo {
-  position: relative;
-  width: 86px; height: 86px;
-  margin: 0 auto 18px;
-  display: flex; align-items: center; justify-content: center;
-}
-.login-logo-glow {
-  position: absolute; inset: -17px;
-  border-radius: 50%;
-  background: var(--accent);
-  /* Réduit d'environ 60% (.35 → .15) : le halo restait lisible comme un
-     souffle discret derrière le logo tout en cessant de "baver" en brume sur
-     le reste de la carte — c'était le seul endroit de l'écran de connexion
-     où un glow fort se justifie encore (voir aussi .cosmic-blob-a/b). */
-  opacity: .15;
-  filter: blur(16px);
-  animation: loginLogoPulse 3.2s ease-in-out infinite;
-}
-.login-logo-ring {
-  position: relative;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: var(--surface-2);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-}
-.login-logo-mark {
-  width: 32px; height: 32px;
-  transform: rotate(45deg);
-  border: 2px solid var(--accent-hover);
-}
-@keyframes loginLogoPulse {
-  0%, 100% { opacity: .6; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.05); }
-}
 
 /* ── Avis (étoiles) : components/StarRating.js + components/ReviewsSection.js
    — partagé Marché (boutiques) et Formation mystique, voir lib/reviews.js.
