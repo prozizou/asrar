@@ -32,11 +32,16 @@ généré (pas de SDK Android, pas d'accès à la console Firebase) :
    (`@capacitor/push-notifications` déclare déjà sa propre dépendance
    `firebase-messaging` — rien à ajouter de ce côté.)
 
-4. **Son de notification** — `lib/fcmNative.js` référence
-   `asrar_notification.mp3` pour chaque canal. Déposer le fichier audio à
-   `android/app/src/main/res/raw/asrar_notification.mp3` (sans lui, Android
-   retombe silencieusement sur la sonnerie système par défaut — rien ne
-   casse, mais ce n'est pas le son de marque prévu).
+4. **Sons de notification** — deux fichiers à déposer dans
+   `android/app/src/main/res/raw/` :
+   - `asrar_notification.mp3` (canaux FCM ordinaires, `lib/fcmNative.js`,
+     et choix « Son ASRAR » des alarmes d'heure planétaire).
+   - `asrar_notification_douce.mp3` (choix « Sonnerie douce » des alarmes
+     d'heure planétaire, `lib/planetAlarms.js` `SOUND_CHOICES`).
+
+   Sans eux, le canal compile et fonctionne mais reste **silencieux** — voir
+   la note de contrainte Android ci-dessous, ce n'est PAS un repli sur la
+   sonnerie système.
 
 5. **Icônes** — les icônes/splash actuels sont ceux par défaut de Capacitor.
    Les régénérer depuis le vrai logo (`public/assets/icon-512.png`) avec
