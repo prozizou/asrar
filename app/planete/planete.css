@@ -451,6 +451,7 @@ span.info-cell-icon { font-size: 1.3rem; line-height: 1; } /* symbole planétair
 .alarm-sheet-check { margin-top: 10px; }
 .alarm-sheet-radio input,
 .alarm-sheet-check input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+.alarm-sheet-note { font-size: 0.82rem; line-height: 1.4; color: var(--text-dim); margin: 12px 0 0; }
 .alarm-sheet-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
 .alarm-sheet-btn-secondary {
   background: none;

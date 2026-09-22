@@ -46,6 +46,9 @@ import {
 import { isSchedulable, OFFSET_CHOICES, SOUND_CHOICES, DEFAULT_ALARM_PREFS } from '@/lib/planetAlarms';
 import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, scheduleRepeatingAlarms, cancelAlarms } from '@/lib/planetAlarmsNative';
 import { getAllPlanetAlarmRecords, savePlanetAlarmRecord, clearPlanetAlarmRecord } from '@/lib/planetAlarmPrefsStore';
+import { pushSupported } from '@/lib/push';
+import { WEB_OFFSET_CHOICES, planetSlug } from '@/lib/planetWebAlarms';
+import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
 
 const Spinner = SpinnerUntyped as any;
 
@@ -485,19 +488,26 @@ function HourTimeline({
 }) {
   const nowIdx = rows.findIndex((r) => r.isNow);
 
-  // Alarmes : uniquement pertinent dans la coquille Capacitor Android — sur
-  // le site web, planetAlarmsSupported() reste false et aucune case ne
-  // s'affiche (même principe que PlanetPushToggle.js, qui rend `null` hors
-  // support plutôt qu'un contrôle inopérant). Vérifié une fois au montage de
-  // la timeline (pas par ligne) : coûte un seul import dynamique + un seul
-  // appel getPending(), quel que soit le nombre de lignes affichées.
-  const [alarmsSupported, setAlarmsSupported] = useState(false);
+  // Deux mécanismes d'alarme selon la plateforme, un seul actif à la fois :
+  //   - 'native' : coquille Capacitor Android → notification LOCALE exacte
+  //     programmée sur l'appareil (lib/planetAlarmsNative.js), réglages
+  //     complets (son/vibration/répétition), stockés par appareil.
+  //   - 'web'    : navigateur/PWA → le web ne peut pas programmer une alarme
+  //     locale ; on enregistre le choix côté serveur et un cron envoie le push
+  //     (lib/planetWebAlarmsClient.js). Réglage réduit au délai (le système
+  //     garde le contrôle du son/de la vibration ; la répétition est implicite
+  //     — le cron annonce chaque occurrence de la planète cochée).
+  //   - 'none'   : ni l'un ni l'autre (SSR, navigateur sans push) → aucune
+  //     cloche, comme PlanetPushToggle.js qui rend `null` hors support.
+  const [alarmMode, setAlarmMode] = useState<'none' | 'native' | 'web'>('none');
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
-  // Un enregistrement par planète (préférences + ids programmés), lu depuis
-  // lib/planetAlarmPrefsStore.js — recopié en état pour que les lignes se
-  // remettent à jour dès qu'une feuille de réglages est appliquée, sans
-  // relire localStorage à chaque rendu.
+  // Natif : un enregistrement par planète (préférences + ids programmés), lu
+  // depuis lib/planetAlarmPrefsStore.js — recopié en état pour que les lignes
+  // se remettent à jour dès qu'une feuille est appliquée, sans relire
+  // localStorage à chaque rendu.
   const [records, setRecords] = useState<Record<string, { prefs: any; scheduledIds: number[] }>>({});
+  // Web : planètes cochées (par compte, RTDB) → { slug: { offsetMin } }.
+  const [webAlarms, setWebAlarms] = useState<Record<string, { offsetMin: number }>>({});
   const [sheetRow, setSheetRow] = useState<any | null>(null);
 
   const refreshPending = useCallback(() => {
@@ -506,11 +516,16 @@ function HourTimeline({
 
   useEffect(() => {
     let cancelled = false;
-    planetAlarmsSupported().then((ok) => {
-      if (cancelled || !ok) return;
-      setAlarmsSupported(true);
-      setRecords(getAllPlanetAlarmRecords());
-      refreshPending();
+    planetAlarmsSupported().then((native) => {
+      if (cancelled) return;
+      if (native) {
+        setAlarmMode('native');
+        setRecords(getAllPlanetAlarmRecords());
+        refreshPending();
+      } else if (pushSupported()) {
+        setAlarmMode('web');
+        getWebAlarms().then((a) => { if (!cancelled) setWebAlarms(a); }).catch(() => {});
+      }
     });
     return () => { cancelled = true; };
   }, [refreshPending]);
@@ -520,8 +535,10 @@ function HourTimeline({
       <ol className="hour-timeline">
         {rows.map((r, i) => {
           const rec = records[r.planet];
-          const scheduled = !!rec && rec.scheduledIds.length > 0 && rec.scheduledIds.some((id) => pendingIds.has(id));
-          const canOpen = scheduled || isSchedulable(r.start.getTime(), Date.now());
+          const nativeOn = !!rec && rec.scheduledIds.length > 0 && rec.scheduledIds.some((id) => pendingIds.has(id));
+          const webOn = alarmMode === 'web' && !!webAlarms[planetSlug(r.planet) || ''];
+          const scheduled = alarmMode === 'native' ? nativeOn : webOn;
+          const showBell = alarmMode !== 'none' && (scheduled || isSchedulable(r.start.getTime(), Date.now()));
           return (
             <li
               key={i}
@@ -540,7 +557,7 @@ function HourTimeline({
                     {r.isNow ? ' — maintenant' : ''}
                   </span>
                   <span className="timeline-interval">{r.interval}</span>
-                  {alarmsSupported && canOpen && (
+                  {showBell && (
                     <button
                       type="button"
                       aria-haspopup="dialog"
@@ -566,7 +583,7 @@ function HourTimeline({
           );
         })}
       </ol>
-      {sheetRow && (
+      {sheetRow && alarmMode === 'native' && (
         <AlarmSettingsSheet
           row={sheetRow}
           record={records[sheetRow.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] }}
@@ -580,7 +597,110 @@ function HourTimeline({
           }}
         />
       )}
+      {sheetRow && alarmMode === 'web' && (
+        <WebAlarmSheet
+          row={sheetRow}
+          current={webAlarms[planetSlug(sheetRow.planet) || ''] || null}
+          onClose={() => setSheetRow(null)}
+          onApplied={(slug, entry) => {
+            setWebAlarms((prev) => {
+              const next = { ...prev };
+              if (entry) next[slug] = entry;
+              else delete next[slug];
+              return next;
+            });
+          }}
+        />
+      )}
     </>
+  );
+}
+
+// Feuille de réglages WEB (navigateur/PWA) — pendant réduit de
+// AlarmSettingsSheet : seul le délai est réglable (le système garde le
+// contrôle du son/de la vibration ; la répétition est implicite, le cron
+// annonce chaque occurrence). Écrit côté serveur (par compte) via
+// lib/planetWebAlarmsClient.js, contrairement au natif (localStorage).
+function WebAlarmSheet({
+  row,
+  current,
+  onClose,
+  onApplied,
+}: {
+  row: any;
+  current: { offsetMin: number } | null;
+  onClose: () => void;
+  onApplied: (slug: string, entry: { offsetMin: number } | null) => void;
+}) {
+  const slug = planetSlug(row.planet) || '';
+  const [offsetMin, setOffsetMin] = useState(current ? current.offsetMin : 0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const active = !!current;
+
+  const apply = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await setWebAlarm(row.planet, true, offsetMin);
+      onApplied(slug, { offsetMin });
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Impossible d'activer l'alarme.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await setWebAlarm(row.planet, false);
+      onApplied(slug, null);
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Impossible de désactiver l'alarme.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="alarm-sheet-backdrop" onClick={onClose}>
+      <div className="alarm-sheet glass-panel" role="dialog" aria-modal="true" aria-label={`Alarme — ${row.planet}`} onClick={(e) => e.stopPropagation()}>
+        <h4 className="alarm-sheet-title">
+          <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
+        </h4>
+
+        <p className="alarm-sheet-label">Me prévenir</p>
+        <div className="alarm-sheet-options">
+          {WEB_OFFSET_CHOICES.map((min) => (
+            <label key={min} className="alarm-sheet-radio">
+              <input type="radio" name="weboffset" checked={offsetMin === min} onChange={() => setOffsetMin(min)} />
+              {min === 0 ? 'À l’heure exacte' : `${min} min avant`}
+            </label>
+          ))}
+        </div>
+
+        <p className="alarm-sheet-note">
+          Notification envoyée à chaque fois que {row.planet} apparaît, sur tous vos appareils connectés à ce compte.
+        </p>
+
+        {error && <p className="error-text">{error}</p>}
+
+        <div className="alarm-sheet-actions">
+          {active && (
+            <button type="button" className="alarm-sheet-btn-secondary" onClick={disable} disabled={busy}>
+              Désactiver l’alarme
+            </button>
+          )}
+          <button type="button" className="access-btn" onClick={apply} disabled={busy}>
+            {active ? 'Mettre à jour' : "Activer l’alarme"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
