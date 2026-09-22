@@ -43,6 +43,9 @@ import {
   buildHourList,
   prefetchSunAPI,
 } from '@/lib/planete';
+import { isSchedulable, OFFSET_CHOICES, SOUND_CHOICES, DEFAULT_ALARM_PREFS } from '@/lib/planetAlarms';
+import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, scheduleRepeatingAlarms, cancelAlarms } from '@/lib/planetAlarmsNative';
+import { getAllPlanetAlarmRecords, savePlanetAlarmRecord, clearPlanetAlarmRecord } from '@/lib/planetAlarmPrefsStore';
 
 const Spinner = SpinnerUntyped as any;
 
@@ -400,6 +403,9 @@ export default function PlanetePage() {
                 rows={hoursTab === 'day' ? hours.day : hours.night}
                 remainingMin={remainingMin}
                 progressPct={progressPct}
+                lat={geo.lat}
+                lng={geo.lng}
+                sunCache={sunCache.current}
               />
             </div>
           )}
@@ -466,45 +472,230 @@ function HourTimeline({
   rows,
   remainingMin,
   progressPct,
+  lat,
+  lng,
+  sunCache,
 }: {
   rows: any[];
   remainingMin: number | null;
   progressPct: number;
+  lat: number | null;
+  lng: number | null;
+  sunCache: SunCache;
 }) {
   const nowIdx = rows.findIndex((r) => r.isNow);
+
+  // Alarmes : uniquement pertinent dans la coquille Capacitor Android — sur
+  // le site web, planetAlarmsSupported() reste false et aucune case ne
+  // s'affiche (même principe que PlanetPushToggle.js, qui rend `null` hors
+  // support plutôt qu'un contrôle inopérant). Vérifié une fois au montage de
+  // la timeline (pas par ligne) : coûte un seul import dynamique + un seul
+  // appel getPending(), quel que soit le nombre de lignes affichées.
+  const [alarmsSupported, setAlarmsSupported] = useState(false);
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
+  // Un enregistrement par planète (préférences + ids programmés), lu depuis
+  // lib/planetAlarmPrefsStore.js — recopié en état pour que les lignes se
+  // remettent à jour dès qu'une feuille de réglages est appliquée, sans
+  // relire localStorage à chaque rendu.
+  const [records, setRecords] = useState<Record<string, { prefs: any; scheduledIds: number[] }>>({});
+  const [sheetRow, setSheetRow] = useState<any | null>(null);
+
+  const refreshPending = useCallback(() => {
+    getPendingAlarmIds().then(setPendingIds);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    planetAlarmsSupported().then((ok) => {
+      if (cancelled || !ok) return;
+      setAlarmsSupported(true);
+      setRecords(getAllPlanetAlarmRecords());
+      refreshPending();
+    });
+    return () => { cancelled = true; };
+  }, [refreshPending]);
+
   return (
-    <ol className="hour-timeline">
-      {rows.map((r, i) => (
-        <li
-          key={i}
-          className={
-            'timeline-item' + (r.isNow ? ' is-now' : nowIdx >= 0 && i < nowIdx ? ' is-past' : '')
-          }
-        >
-          <span className="timeline-marker" aria-hidden="true">
-            <span className="timeline-dot" />
-          </span>
-          <div className="timeline-content">
-            <div className="timeline-head">
-              <span className="timeline-order">{i + 1}</span>
-              <span className="timeline-planet">
-                <span aria-hidden="true">{r.emoji}</span> {r.planet}
-                {r.isNow ? ' — maintenant' : ''}
+    <>
+      <ol className="hour-timeline">
+        {rows.map((r, i) => {
+          const rec = records[r.planet];
+          const scheduled = !!rec && rec.scheduledIds.length > 0 && rec.scheduledIds.some((id) => pendingIds.has(id));
+          const canOpen = scheduled || isSchedulable(r.start.getTime(), Date.now());
+          return (
+            <li
+              key={i}
+              className={
+                'timeline-item' + (r.isNow ? ' is-now' : nowIdx >= 0 && i < nowIdx ? ' is-past' : '')
+              }
+            >
+              <span className="timeline-marker" aria-hidden="true">
+                <span className="timeline-dot" />
               </span>
-              <span className="timeline-interval">{r.interval}</span>
-            </div>
-            <div className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</div>
-            {r.isNow && (
-              <div className="dash-progress timeline-progress">
-                <div className="dash-progress-track">
-                  <div className="dash-progress-fill" style={{ width: `${progressPct}%` }} />
+              <div className="timeline-content">
+                <div className="timeline-head">
+                  <span className="timeline-order">{i + 1}</span>
+                  <span className="timeline-planet">
+                    <span aria-hidden="true">{r.emoji}</span> {r.planet}
+                    {r.isNow ? ' — maintenant' : ''}
+                  </span>
+                  <span className="timeline-interval">{r.interval}</span>
+                  {alarmsSupported && canOpen && (
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-label={scheduled ? `Modifier l'alarme de ${r.planet}` : `Programmer une alarme pour ${r.planet}`}
+                      className={'timeline-alarm' + (scheduled ? ' on' : '')}
+                      onClick={() => setSheetRow(r)}
+                    >
+                      {scheduled ? '🔔✓' : '☐'}
+                    </button>
+                  )}
                 </div>
-                <span className="dash-progress-label">{remainingMin} min restantes</span>
+                <div className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</div>
+                {r.isNow && (
+                  <div className="dash-progress timeline-progress">
+                    <div className="dash-progress-track">
+                      <div className="dash-progress-fill" style={{ width: `${progressPct}%` }} />
+                    </div>
+                    <span className="dash-progress-label">{remainingMin} min restantes</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+            </li>
+          );
+        })}
+      </ol>
+      {sheetRow && (
+        <AlarmSettingsSheet
+          row={sheetRow}
+          record={records[sheetRow.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] }}
+          lat={lat}
+          lng={lng}
+          sunCache={sunCache}
+          onClose={() => setSheetRow(null)}
+          onApplied={(planet, record) => {
+            setRecords((prev) => ({ ...prev, [planet]: record }));
+            refreshPending();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// Feuille de réglages ouverte en tapant la cloche d'une ligne — « Me
+// prévenir / Sonnerie / Vibration / Répéter », revue produit du 2026-09-22.
+// Toujours pré-remplie avec les préférences déjà enregistrées pour CETTE
+// planète (record.prefs) — pas celles d'une autre ligne/planète.
+function AlarmSettingsSheet({
+  row,
+  record,
+  lat,
+  lng,
+  sunCache,
+  onClose,
+  onApplied,
+}: {
+  row: any;
+  record: { prefs: any; scheduledIds: number[] };
+  lat: number | null;
+  lng: number | null;
+  sunCache: SunCache;
+  onClose: () => void;
+  onApplied: (planet: string, record: { prefs: any; scheduledIds: number[] }) => void;
+}) {
+  const [prefs, setPrefs] = useState(record.prefs);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const active = record.scheduledIds.length > 0;
+
+  const errorMessage = (code?: string) => {
+    if (code === 'permission') return 'Autorisation refusée — activez les notifications pour ASRAR PRO dans les réglages du téléphone.';
+    if (code === 'position') return 'Position GPS requise pour programmer les occurrences à venir.';
+    if (code === 'past') return 'Cette heure est déjà passée.';
+    if (code === 'none') return 'Aucune occurrence à venir trouvée pour cette planète.';
+    return "Impossible d'activer l'alarme.";
+  };
+
+  const apply = async () => {
+    setBusy(true);
+    setError('');
+    await cancelAlarms(record.scheduledIds); // toujours repartir propre (offset/son/répétition ont pu changer)
+    const res = prefs.repeat
+      ? lat == null || lng == null
+        ? { ok: false as const, error: 'position' }
+        : await scheduleRepeatingAlarms({ planet: row.planet, prefs, lat, lng, cache: sunCache })
+      : await scheduleHourAlarm(row, prefs);
+    if (res.ok) {
+      const scheduledIds = 'ids' in res ? res.ids : [res.id];
+      savePlanetAlarmRecord(row.planet, { prefs, scheduledIds });
+      onApplied(row.planet, { prefs, scheduledIds });
+      onClose();
+    } else {
+      setError(errorMessage(res.error));
+    }
+    setBusy(false);
+  };
+
+  const disable = async () => {
+    setBusy(true);
+    await cancelAlarms(record.scheduledIds);
+    clearPlanetAlarmRecord(row.planet);
+    onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] });
+    onClose();
+    setBusy(false);
+  };
+
+  return (
+    <div className="alarm-sheet-backdrop" onClick={onClose}>
+      <div className="alarm-sheet glass-panel" role="dialog" aria-modal="true" aria-label={`Alarme — ${row.planet}`} onClick={(e) => e.stopPropagation()}>
+        <h4 className="alarm-sheet-title">
+          <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
+        </h4>
+
+        <p className="alarm-sheet-label">Me prévenir</p>
+        <div className="alarm-sheet-options">
+          {OFFSET_CHOICES.map((min) => (
+            <label key={min} className="alarm-sheet-radio">
+              <input type="radio" name="offset" checked={prefs.offsetMin === min} onChange={() => setPrefs({ ...prefs, offsetMin: min })} />
+              {min === 0 ? 'À l’heure exacte' : `${min} min avant`}
+            </label>
+          ))}
+        </div>
+
+        <p className="alarm-sheet-label">Sonnerie</p>
+        <div className="alarm-sheet-options">
+          {SOUND_CHOICES.map((s) => (
+            <label key={s.id} className="alarm-sheet-radio">
+              <input type="radio" name="sound" checked={prefs.soundId === s.id} onChange={() => setPrefs({ ...prefs, soundId: s.id })} />
+              {s.label}
+            </label>
+          ))}
+        </div>
+
+        <label className="alarm-sheet-check">
+          <input type="checkbox" checked={prefs.vibration} onChange={(e) => setPrefs({ ...prefs, vibration: e.target.checked })} />
+          Vibration
+        </label>
+        <label className="alarm-sheet-check">
+          <input type="checkbox" checked={prefs.repeat} onChange={(e) => setPrefs({ ...prefs, repeat: e.target.checked })} />
+          Répéter chaque fois que cette planète apparaît
+        </label>
+
+        {error && <p className="error-text">{error}</p>}
+
+        <div className="alarm-sheet-actions">
+          {active && (
+            <button type="button" className="alarm-sheet-btn-secondary" onClick={disable} disabled={busy}>
+              Désactiver l’alarme
+            </button>
+          )}
+          <button type="button" className="access-btn" onClick={apply} disabled={busy}>
+            {active ? 'Mettre à jour' : "Activer l’alarme"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

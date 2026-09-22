@@ -2,27 +2,36 @@
 // déclencheurs demandés (Secret publié, document publié, message Zikr
 // collectif) et par tout futur type de notification.
 //
-// DEUX effets par appel, jamais l'un sans l'autre :
+// TROIS effets par appel, jamais l'un sans les autres :
 //   1. Persistance in-app : notifications/{uid}/{id} = { type, title, body,
 //      senderName, targetUrl, createdAt, read, meta? } + un compteur non-lu
 //      dénormalisé (notifications_meta/{uid}/unread) — évite de recompter
 //      toute la liste à chaque affichage du badge (pages/api/notifications.js
 //      action="list" le renvoie tel quel).
-//   2. Push best-effort (même infra VAPID que pages/api/zikr.js,
+//   2. Push Web (VAPID) best-effort (même infra que pages/api/zikr.js,
 //      pages/api/cron/reminders.js, pages/api/cron/planet-push.js — dupliqué
 //      une 4e fois ici plutôt que factorisé avec eux, même raisonnement que
 //      pages/api/zikr.js : contextes d'appel trop différents pour partager
 //      un seul point d'entrée sans complexifier chacun) : couvre le cas où
-//      l'utilisateur n'a pas l'app au premier plan. Ne bloque JAMAIS la
-//      persistance in-app — un push qui échoue (abonnement expiré, VAPID mal
-//      configuré) ne doit jamais faire perdre la notification elle-même.
+//      l'utilisateur n'a pas l'app au premier plan (navigateur/PWA).
+//   3. Push FCM best-effort (fcm_devices/{uid}/{deviceId}, voir pages/api/
+//      push-fcm-register.js et lib/fcmNative.js) : même déclencheurs, pour
+//      les appareils où l'app est installée via la coquille Capacitor
+//      (Android). Canal DISTINCT de (2) — un même utilisateur peut recevoir
+//      les deux à la fois (navigateur ET app installée), chacun purgé
+//      indépendamment si son jeton/abonnement devient invalide.
 //
-// Écriture in-app TOUJOURS effectuée, même si VAPID est absent — le centre de
-// notifications (badge, historique) reste la source de vérité ; le push est
-// un plus, pas une dépendance.
+// Ni (2) ni (3) ne bloquent JAMAIS (1) — un push qui échoue (abonnement
+// expiré, VAPID/FCM mal configuré) ne doit jamais faire perdre la
+// notification elle-même. Écriture in-app TOUJOURS effectuée, même si VAPID
+// et FCM sont tous deux absents — le centre de notifications (badge,
+// historique) reste la source de vérité ; le push est un plus, pas une
+// dépendance.
 
 const webpush = require("web-push");
 const { reportError } = require("./log");
+const { app } = require("./grant");
+const { channelIdForNotifType, channelById } = require("../lib/pushChannels");
 
 // Nombre de notifications conservées par utilisateur (pages/api/notifications.js
 // ne relit de toute façon que les N plus récentes) — purge légère à l'écriture
@@ -57,6 +66,46 @@ async function sendPushToUid(db, uid, payload) {
           await db.ref("push_subscriptions/" + uid + "/" + key).remove();
         } else {
           await reportError("notify:push", e, { uid });
+        }
+      })
+    );
+  });
+  await Promise.all(tasks);
+}
+
+// Envoie `notif` (title/body/targetUrl/type — PAS le payload JSON du Web
+// Push, FCM veut des champs structurés) à TOUS les appareils FCM de `uid`,
+// en nettoyant ceux devenus invalides (jeton désinstallé/expiré) — même
+// politique de purge que sendPushToUid(), codes d'erreur FCM équivalents
+// aux 404/410 Web Push.
+async function sendFcmToUid(db, uid, notif, tag) {
+  const devicesSnap = await db.ref("fcm_devices/" + uid).once("value");
+  if (!devicesSnap.exists()) return;
+
+  const channelId = channelIdForNotifType(notif.type);
+  const channel = channelById(channelId);
+  const messaging = app().messaging();
+
+  const tasks = [];
+  devicesSnap.forEach((deviceSnap) => {
+    const key = deviceSnap.key;
+    const device = deviceSnap.val() || {};
+    if (!device.token || device.enabled === false) return;
+    tasks.push(
+      messaging.send({
+        token: device.token,
+        notification: { title: notif.title, body: notif.body },
+        data: { url: notif.targetUrl || "", type: notif.type || "", tag: tag || "" },
+        android: {
+          priority: channel.importance >= 4 ? "high" : "normal",
+          notification: { channelId, sound: "asrar_notification.mp3" },
+        },
+      }).catch(async (e) => {
+        const code = e && e.errorInfo && e.errorInfo.code;
+        if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token" || code === "messaging/invalid-argument") {
+          await db.ref("fcm_devices/" + uid + "/" + key).remove();
+        } else {
+          await reportError("notify:fcm", e, { uid });
         }
       })
     );
@@ -108,11 +157,15 @@ async function notifyUsers(db, uids, notif) {
     ...(notif.meta ? { meta: notif.meta } : {}),
   };
 
+  // Même `tag` pour les deux canaux (Web Push et FCM) — un second message du
+  // même type (ex. deux messages Zikr consécutifs) remplace la notification
+  // système précédente plutôt que de les empiler.
+  const tag = notif.type + (notif.meta && notif.meta.tagSuffix ? ":" + notif.meta.tagSuffix : "");
   const pushPayload = JSON.stringify({
     title: record.title,
     body: record.body,
     url: record.targetUrl,
-    tag: notif.type + (notif.meta && notif.meta.tagSuffix ? ":" + notif.meta.tagSuffix : ""),
+    tag,
   });
   const vapidReady = configureVapid();
 
@@ -124,6 +177,7 @@ async function notifyUsers(db, uids, notif) {
     await db.ref("notifications_meta/" + uid + "/unread").transaction((c) => (c || 0) + 1);
     await pruneOldest(db, uid).catch(() => {}); // best-effort, jamais bloquant
     if (vapidReady) await sendPushToUid(db, uid, pushPayload).catch(() => {});
+    await sendFcmToUid(db, uid, notif, tag).catch(() => {});
   }));
 }
 
