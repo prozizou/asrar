@@ -411,21 +411,40 @@ export const DIAMOND8_STEP = 8;
  *
  * IMPORTANT — contrairement aux carrés N×N (où chaque case n'appartient
  * qu'à UNE rangée), ici chaque case appartient à la fois à une rangée
- * "gauche à droite" ET à une rangée "droite à gauche". Le correctif
- * "dernières cases calculées par différence" utilisé pour le 9x9 (une
- * seule case manquante par rangée) ne s'applique donc pas : tenter de
- * calculer 8 cases par différence (une par rangée) crée une dépendance
- * circulaire (la case manquante d'une rangée "gauche à droite" dépend
- * alors de la case manquante d'une rangée "droite à gauche" qui elle-
- * même en dépend), impossible à résoudre par simple soustraction.
+ * "gauche à droite" ET à une rangée "droite à gauche" (et parfois aussi
+ * à l'une des 2 diagonales). Le correctif "dernières cases calculées
+ * par différence" utilisé pour le 9x9 (une seule case manquante par
+ * rangée) ne s'applique donc pas tel quel : calculer 8 cases par
+ * différence (une par rangée) créerait une dépendance circulaire (la
+ * case manquante d'une rangée "gauche à droite" dépendrait alors de la
+ * case manquante d'une rangée "droite à gauche" qui elle-même en
+ * dépend).
  *
- * Le décalage uniforme ne donne donc des sommes EXACTEMENT égales à
+ * Le décalage uniforme seul ne donne des sommes EXACTEMENT égales à
  * base que si (base - 124) est un multiple de 8 (voir
  * isValidDiamond8Base ci-dessous) — sinon `trunc()` introduit un écart
- * (ex. base=241 → sommes réelles de 236, pas 241). L'UI doit donc
- * n'accepter que ces valeurs plutôt que d'afficher un losange dont les
- * rangées ne totalisent pas le nombre entré.
+ * (ex. base=241 → sommes réelles de 236, pas 241).
+ *
+ * Correctif général (base quelconque, y compris hors de cette forme) :
+ * en posant reste = base - (124 + 8×k) (0 à 7, le reste de la division
+ * euclidienne de (base - 124) par 8), le décalage uniforme fait manquer
+ * exactement `reste` à CHACUNE des 10 rangées/diagonales (4 + 4 + 2),
+ * puisqu'elles partagent toutes la même somme de référence (132) avant
+ * décalage. Il suffit donc de reporter ce reste sur un sous-ensemble de
+ * cases judicieusement choisi plutôt que de le laisser manquer partout :
+ * DIAMOND8_REMAINDER_FIGURES (numéros de référence 26, 29, 30, 31 —
+ * chacun n'appartenant qu'à des rangées/diagonales sans aucune autre
+ * case de ce sous-ensemble) reçoit +reste, les 28 autres numéros
+ * restent inchangés. Vérifié par résolution case par case (rangée p=3 :
+ * seule 26 manque, donc correction(26) = reste ; diagonale principale :
+ * 26 et 27 manquent, or correction(26) = reste, donc correction(27) =
+ * reste − reste = 0 ; et ainsi de suite pour les 10 rangées/diagonales,
+ * qui somment alors toutes exactement à base, quel que soit le reste).
+ * Avec reste = 0 (base de la forme 124 + 8n), ce correctif est un no-op
+ * et restitue exactement le comportement d'origine.
  */
+const DIAMOND8_REMAINDER_FIGURES = new Set([26, 29, 30, 31]);
+
 export function isValidDiamond8Base(base: number): boolean {
   return Number.isInteger(base) && (base - DIAMOND8_OFFSET) % DIAMOND8_STEP === 0;
 }
@@ -461,16 +480,21 @@ const DIAMOND8_REFERENCE: [number, number][][] = [
 ];
 
 export function diamond8(base: number): Diamond8 {
-  const k = trunc((base - DIAMOND8_OFFSET) / 8);
+  const k = trunc((base - DIAMOND8_OFFSET) / DIAMOND8_STEP);
+  // Reste 0..7 de la division euclidienne — voir le commentaire du
+  // correctif ci-dessus. Nul (no-op) quand base = 124 + 8n exactement.
+  const remainder = trunc(base - (DIAMOND8_OFFSET + DIAMOND8_STEP * k));
   const cells: DiamondCell[] = [];
   for (let p = 0; p < 4; p++) {
     for (let q = 0; q < 4; q++) {
       const [outerRef, innerRef] = DIAMOND8_REFERENCE[p][q];
+      const outerCorrection = DIAMOND8_REMAINDER_FIGURES.has(outerRef) ? remainder : 0;
+      const innerCorrection = DIAMOND8_REMAINDER_FIGURES.has(innerRef) ? remainder : 0;
       cells.push({
         p,
         q,
-        outer: trunc(outerRef - 1 + k),
-        inner: trunc(innerRef - 1 + k),
+        outer: trunc(outerRef - 1 + k) + outerCorrection,
+        inner: trunc(innerRef - 1 + k) + innerCorrection,
       });
     }
   }

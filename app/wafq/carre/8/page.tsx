@@ -12,7 +12,7 @@ import TextScaleSlider from '../_components/TextScaleSlider';
 import ExportWordButton from '../_components/ExportWordButton';
 import MagicDiamond from '../_components/MagicDiamond';
 import {
-  carre8, diamond8, diamond8ToRows, isValidDiamond8Base, DIAMOND8_STEP,
+  carre8, diamond8, diamond8ToRows,
   SQUARE8_LAYOUT, type Square8, type Diamond8,
 } from '@/lib/kanzouWafq';
 import type { NumeralSystem } from '@/lib/kanzouNumerals';
@@ -63,18 +63,6 @@ export default function Carre8Page() {
       const b = Number(diamondBase);
       if (Number.isNaN(b)) { setDiamond(null); setError('Merci de renseigner un nombre valide.'); return; }
       if (b < DIAMOND_MIN_VALUE) { setDiamond(null); setError(`La valeur doit être supérieure à ${DIAMOND_MIN_VALUE}.`); return; }
-      if (!isValidDiamond8Base(b)) {
-        setDiamond(null);
-        const lower = b - ((b - DIAMOND_MIN_VALUE) % DIAMOND8_STEP);
-        const upper = lower + DIAMOND8_STEP;
-        setError(
-          `Ce nombre ne donne pas des rangées exactement égales à ${b} ` +
-            `(le losange n'a que 32 cases pour ${DIAMOND8_STEP} termes par rangée : ` +
-            `seul un nombre de la forme ${DIAMOND_MIN_VALUE} + ${DIAMOND8_STEP}×n convient). ` +
-            `Essayez ${lower} ou ${upper}.`
-        );
-        return;
-      }
       const ok = await ensureAccess(PREMIUM_LEVEL);
       if (!ok) return;
       setDiamond(diamond8(b));
@@ -100,9 +88,10 @@ export default function Carre8Page() {
             Absent de l’app Android d’origine. Losange de 32 nombres fourni par l’utilisateur : 4 rangées
             gauche-à-droite, 4 rangées droite-à-gauche et 2 colonnes somment toutes au nombre entré ; les
             losanges intérieurs concentriques somment à sa moitié. Chaque case du diagramme est coupée en
-            deux : un nombre « extérieur » (haut) et un nombre « intérieur » (bas). Ici, chaque case
-            appartient à une rangée des deux sens à la fois, donc seul un nombre de la forme{' '}
-            {DIAMOND_MIN_VALUE} + {DIAMOND8_STEP}×n donne des rangées exactement égales au nombre entré.
+            deux : un nombre « extérieur » (haut) et un nombre « intérieur » (bas). Un nombre de la forme{' '}
+            {DIAMOND_MIN_VALUE} + 8×n restitue les 32 nombres tels quels (décalés uniformément) ; pour tout
+            autre nombre, un petit correctif est appliqué sur 4 des 32 cases pour que les 10
+            rangées/colonnes somment malgré tout exactement au nombre entré.
           </p>
         )}
 
@@ -114,10 +103,7 @@ export default function Carre8Page() {
             </label>
           ) : (
             <label className="kz-field">
-              <span>
-                Nombre (supérieur à {DIAMOND_MIN_VALUE}, de la forme {DIAMOND_MIN_VALUE} + {DIAMOND8_STEP}×n
-                — ex. {DIAMOND_MIN_VALUE}, {DIAMOND_MIN_VALUE + DIAMOND8_STEP}, {DIAMOND_MIN_VALUE + 2 * DIAMOND8_STEP}…)
-              </span>
+              <span>Nombre (supérieur à {DIAMOND_MIN_VALUE})</span>
               <input type="number" inputMode="numeric" value={diamondBase} onChange={(e) => setDiamondBase(e.target.value)} />
             </label>
           )}
