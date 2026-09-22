@@ -7,6 +7,7 @@
 
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   HeadingLevel,
   Packer,
@@ -47,27 +48,38 @@ export async function exportSquareToDocx({
   const cols = rows[0]?.length ?? 1;
   const cellWidth = Math.floor(TABLE_WIDTH_DXA / cols);
 
+  // Bordure visible uniquement autour des cases réellement utilisées :
+  // les null de diamond8ToRows/hatimTriangleToRows ne sont là que pour
+  // centrer chaque rangée (silhouette du losange/triangle, voir leurs
+  // docstrings dans lib/kanzouWafq.ts) — les border/texte "—" d'origine
+  // sur CES cases dessinaient un rectangle plein, effaçant la silhouette
+  // que le tableau est censé reproduire. Une case null reste donc vide
+  // ET sans bordure ; les bordures par défaut du tableau sont désactivées
+  // (voir `borders` sur `Table` ci-dessous) pour ne pas les faire
+  // réapparaître derrière ce réglage par cellule.
+  const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: "auto" };
+  const SINGLE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: "auto" };
+
   const tableRows = rows.map(
     (row) =>
       new TableRow({
-        children: row.map(
-          (cell) =>
-            new TableCell({
-              width: { size: cellWidth, type: WidthType.DXA },
-              verticalAlign: VerticalAlign.CENTER,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: cell === null || cell === undefined ? "—" : String(cell),
-                      bold: true,
-                    }),
-                  ],
-                }),
-              ],
-            })
-        ),
+        children: row.map((cell) => {
+          const empty = cell === null || cell === undefined;
+          const border = empty ? NO_BORDER : SINGLE_BORDER;
+          return new TableCell({
+            width: { size: cellWidth, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER,
+            borders: { top: border, bottom: border, left: border, right: border },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: empty
+                  ? []
+                  : [new TextRun({ text: String(cell), bold: true })],
+              }),
+            ],
+          });
+        }),
       })
   );
 
@@ -99,6 +111,14 @@ export async function exportSquareToDocx({
             // Sans ça, docx retombe sur 100 dxa/colonne par défaut
             // (~0,18 cm) quel que soit le nombre de colonnes.
             columnWidths: new Array(cols).fill(cellWidth),
+            // Désactivées ici : sans ça, docx applique ses bordures de
+            // tableau par défaut derrière le réglage par cellule
+            // ci-dessus, ce qui ferait réapparaître un rectangle plein
+            // autour des cases vides du losange/triangle.
+            borders: {
+              top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER,
+              insideHorizontal: NO_BORDER, insideVertical: NO_BORDER,
+            },
             rows: tableRows,
           }),
         ],
