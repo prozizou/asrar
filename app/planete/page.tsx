@@ -43,6 +43,8 @@ import {
   buildHourList,
   prefetchSunAPI,
 } from '@/lib/planete';
+import { alarmIdFor, isSchedulable } from '@/lib/planetAlarms';
+import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, cancelHourAlarm } from '@/lib/planetAlarmsNative';
 
 const Spinner = SpinnerUntyped as any;
 
@@ -472,6 +474,25 @@ function HourTimeline({
   progressPct: number;
 }) {
   const nowIdx = rows.findIndex((r) => r.isNow);
+
+  // Alarmes : uniquement pertinent dans la coquille Capacitor Android — sur
+  // le site web, planetAlarmsSupported() reste false et aucune case ne
+  // s'affiche (même principe que PlanetPushToggle.js, qui rend `null` hors
+  // support plutôt qu'un contrôle inopérant). Vérifié une fois au montage de
+  // la timeline (pas par ligne) : coûte un seul import dynamique + un seul
+  // appel getPending(), quel que soit le nombre de lignes affichées.
+  const [alarmsSupported, setAlarmsSupported] = useState(false);
+  const [scheduledIds, setScheduledIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    planetAlarmsSupported().then((ok) => {
+      if (cancelled || !ok) return;
+      setAlarmsSupported(true);
+      getPendingAlarmIds().then((ids) => { if (!cancelled) setScheduledIds(ids); });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <ol className="hour-timeline">
       {rows.map((r, i) => (
@@ -492,6 +513,19 @@ function HourTimeline({
                 {r.isNow ? ' — maintenant' : ''}
               </span>
               <span className="timeline-interval">{r.interval}</span>
+              {alarmsSupported && (
+                <AlarmCheckbox
+                  row={r}
+                  scheduled={scheduledIds.has(alarmIdFor(r.planet, r.start.getTime()))}
+                  onChange={(id, on) => {
+                    setScheduledIds((prev) => {
+                      const next = new Set(prev);
+                      if (on) next.add(id); else next.delete(id);
+                      return next;
+                    });
+                  }}
+                />
+              )}
             </div>
             <div className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</div>
             {r.isNow && (
@@ -506,5 +540,54 @@ function HourTimeline({
         </li>
       ))}
     </ol>
+  );
+}
+
+// Case à cocher d'alarme d'une ligne — ☐ programmable, 🔔✓ programmée, rien
+// pour une heure déjà entamée/passée (impossible à programmer, voir
+// isSchedulable ci-dessous, lib/planetAlarms.js). État local propre à CE
+// composant (pas remonté au parent au-delà du Set d'ids) : chaque ligne ne
+// connaît que sa propre alarme.
+function AlarmCheckbox({
+  row,
+  scheduled,
+  onChange,
+}: {
+  row: any;
+  scheduled: boolean;
+  onChange: (id: number, on: boolean) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const id = alarmIdFor(row.planet, row.start.getTime());
+  if (!isSchedulable(row.start.getTime(), Date.now()) && !scheduled) return null;
+
+  const toggle = async () => {
+    setBusy(true);
+    setError('');
+    if (scheduled) {
+      await cancelHourAlarm(row);
+      onChange(id, false);
+    } else {
+      const res = await scheduleHourAlarm(row);
+      if (res.ok) onChange(id, true);
+      else setError(res.error === 'permission' ? 'Autorisation refusée.' : "Impossible d'activer l'alarme.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={scheduled}
+      aria-label={scheduled ? `Alarme activée pour ${row.planet}` : `Activer une alarme pour ${row.planet}`}
+      className={'timeline-alarm' + (scheduled ? ' on' : '')}
+      onClick={toggle}
+      disabled={busy}
+      title={error || undefined}
+    >
+      {scheduled ? '🔔✓' : '☐'}
+    </button>
   );
 }
