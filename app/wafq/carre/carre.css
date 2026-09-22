@@ -81,13 +81,117 @@
 .kz-triangle-edge { stroke: var(--accent); stroke-opacity: 0.4; }
 .kz-triangle-node { fill: var(--surface-2); stroke: var(--accent); stroke-opacity: 0.7; }
 
-.kz-doors { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 18px; }
-.kz-door {
-  display: flex; flex-direction: column; justify-content: space-between; height: 100px;
-  border-radius: 12px; border: 1px solid var(--glass-border); background: var(--surface-2); padding: 12px;
-  text-decoration: none; color: inherit; cursor: pointer;
+/* ─────────────────────────────────────────────────────────────────────
+   « Hatims — Carrés numériques » (page d'accueil, app/wafq/carre/page.tsx)
+   Ambiance sombre/mystique dédiée : logo livre+croissant, lanternes et
+   silhouette de mosquées décoratives, grille 2 colonnes fixes, halo violet
+   néon au survol/focus d'une porte (aperçu de « sélection », cette page
+   n'étant qu'une grille de liens de navigation vers /wafq/carre/[size]).
+   Tokens locaux (bronze/steel) scopés à .hatim-panel : purement décoratifs,
+   n'ont pas leur place dans les tokens globaux (app/globals.css).
+   ───────────────────────────────────────────────────────────────────── */
+.hatim-panel {
+  --hatim-bronze: #c9973f;
+  --hatim-bronze-soft: rgba(201, 151, 63, 0.32);
+  --hatim-bronze-strong: rgba(201, 151, 63, 0.65);
+  --hatim-steel: #7fa0c4;
+  --hatim-steel-soft: rgba(127, 160, 196, 0.28);
+  --hatim-steel-strong: rgba(127, 160, 196, 0.6);
+  position: relative;
+  overflow: hidden;
 }
-.kz-door:hover { border-color: var(--accent); }
-.kz-door.disabled { opacity: 0.5; cursor: default; }
-.kz-door-num { font-family: ui-monospace, monospace; font-size: 0.68rem; color: var(--text-muted); }
-.kz-door-size { font-family: var(--font-display); font-size: 1.3rem; color: var(--text-main); }
+
+.hatim-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.hatim-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; padding: 0; margin: 0; border-radius: 50%; flex-shrink: 0;
+  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-main);
+  text-decoration: none; cursor: pointer; transition: border-color .2s ease, background .2s ease;
+}
+.hatim-icon-btn:hover { border-color: var(--accent); background: var(--surface); }
+/* Icônes lucide-react dans un conteneur flex : sans taille CSS explicite (le
+   width/height posé par `size` n'est qu'un attribut HTML), l'icône peut se
+   réduire à 0 dans le calcul flex (min-width:auto) — même bug/même parade
+   que .menu-search-result-icon svg, .menu-search-clear ailleurs dans l'app. */
+.hatim-icon-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+.hatim-hero { position: relative; z-index: 1; padding-top: 4px; }
+.hatim-logo { display: block; margin: 0 auto 10px; filter: drop-shadow(0 0 8px rgba(245, 215, 142, 0.45)); }
+.hatim-title {
+  /* Titre serif à empattements — demande explicite pour cette page (aspect
+     « noble et traditionnel »), dérogation scopée ici plutôt que sur
+     --font-display (Calibri partout ailleurs, choix délibéré, voir plus
+     haut) ; police système (Georgia/Times) plutôt qu'un nouvel import
+     distant, cohérent avec le souci du reste du fichier de limiter les
+     requêtes de polices externes. */
+  font-family: Georgia, 'Times New Roman', var(--font-ar), serif;
+  font-weight: 700; letter-spacing: .5px;
+  font-size: 1.7rem; margin: 0 0 6px;
+  background: -webkit-linear-gradient(45deg, #f5d78e, var(--text-main));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hatim-subtitle { font-family: var(--font-ui); font-size: .95rem; color: var(--text-muted); margin: 0 0 4px; }
+.hatim-instructions { font-family: var(--font-ui); font-size: .82rem; color: var(--text-dim); margin: 0; }
+
+.hatim-help-panel { text-align: left; margin-top: 16px; }
+
+/* Grille à 2 colonnes fixes (demande explicite), pas d'auto-fill : la
+   maquette veut deux cartes par ligne quelle que soit la largeur. */
+.hatim-doors { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; position: relative; z-index: 1; }
+.hatim-door {
+  display: flex; align-items: center; gap: 10px;
+  border-radius: 16px; border: 1px solid var(--glass-border);
+  background: linear-gradient(160deg, rgba(20, 26, 54, 0.65), rgba(12, 16, 36, 0.55));
+  padding: 12px; text-decoration: none; color: inherit; cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .15s ease;
+}
+.hatim-door:hover, .hatim-door:focus-visible {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, var(--accent-hover) 20%, transparent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 22px 3px var(--accent-glow);
+  outline: none;
+}
+.hatim-door:active { transform: scale(.98); }
+
+.hatim-door-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.hatim-door-num { font-family: ui-monospace, monospace; font-size: 0.68rem; color: var(--text-muted); }
+.hatim-door-size { font-family: var(--font-display); font-size: 1.15rem; color: var(--text-main); }
+
+.hatim-thumb { display: grid; gap: 2px; width: 100%; max-width: 92px; aspect-ratio: 1; }
+.hatim-thumb-cell { border-radius: 2px; }
+.hatim-thumb-bronze .hatim-thumb-cell { background: var(--hatim-bronze-soft); border: 1px solid var(--hatim-bronze-strong); }
+.hatim-thumb-steel .hatim-thumb-cell { background: var(--hatim-steel-soft); border: 1px solid var(--hatim-steel-strong); }
+.hatim-door:hover .hatim-thumb-cell, .hatim-door:focus-visible .hatim-thumb-cell {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.hatim-door-action {
+  position: relative; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-dim);
+}
+.hatim-door:hover .hatim-door-action, .hatim-door:focus-visible .hatim-door-action {
+  border-color: var(--accent); color: var(--text-main);
+}
+.hatim-door-chevron, .hatim-door-check {
+  position: absolute; inset: 0; margin: auto; transition: opacity .18s ease, transform .18s ease;
+}
+.hatim-door-check { opacity: 0; transform: scale(.6); }
+.hatim-door:hover .hatim-door-chevron, .hatim-door:focus-visible .hatim-door-chevron { opacity: 0; transform: scale(.6); }
+.hatim-door:hover .hatim-door-check, .hatim-door:focus-visible .hatim-door-check { opacity: 1; transform: scale(1); }
+
+/* Décor : lanternes suspendues + silhouette de mosquées — discrètes,
+   ignorées des lecteurs d'écran (aria-hidden posé côté composant),
+   masquées sur mobile étroit pour ne pas encombrer le contenu utile. */
+.hatim-decor-lantern {
+  position: absolute; top: -6px; color: var(--hatim-bronze); opacity: 0.4; pointer-events: none; z-index: 0;
+}
+.hatim-decor-lantern-left { left: 4px; }
+.hatim-decor-lantern-right { right: 4px; }
+.hatim-decor-skyline {
+  display: block; width: 100%; height: 40px; margin-top: 24px; color: var(--accent); opacity: 0.18; pointer-events: none;
+}
+@media (max-width: 480px) {
+  .hatim-decor-lantern { display: none; }
+}
