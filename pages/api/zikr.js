@@ -126,7 +126,13 @@
 //                              notifyNewMessage, server/notify.js)
 //   action="messages"       → { groupId } : membre only — 200 derniers messages
 //   action="approveZikr"    → { groupId } : ADMINISTRATEUR only — fait passer
-//                              approved à true (voir action="list"/"create")
+//                              approved à true (voir action="list"/"create") ;
+//                              à la PREMIÈRE approbation (jamais en cas de
+//                              rappel idempotent sur un zikr déjà approuvé),
+//                              diffuse une notification à TOUS les
+//                              utilisateurs connus (centre de notifications +
+//                              push best-effort, même non-participants — voir
+//                              notifyAllUsers, server/notify.js)
 //
 // Nœuds (Admin SDK, écriture/lecture client interdites par les règles RTDB) :
 //   zikr_groups/{gid}        = { name, presetId, transliteration, arabic,
@@ -177,8 +183,13 @@ const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
-const { notifyUsers } = require("../../server/notify");
-const { zikrMessageNotification } = require("../../lib/notifyTemplates");
+const { notifyUsers, notifyAllUsers } = require("../../server/notify");
+const { zikrMessageNotification, zikrCollectifNotification } = require("../../lib/notifyTemplates");
+
+// Nom d'expéditeur affiché pour la diffusion "nouveau Zikr collectif" (même
+// principe que pages/api/admin.js BROADCAST_SENDER — le nom personnel de
+// l'admin qui approuve n'est jamais exposé à toute la base d'utilisateurs).
+const BROADCAST_SENDER = "ASRAR PRO";
 const {
   normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey, normalizePhone,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
@@ -960,8 +971,25 @@ async function handleApproveZikr(db, res, user, gid) {
   }
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const snap = await db.ref("zikr_groups/" + gid).once("value");
-  if (!snap.exists()) return res.status(404).json({ error: "Zikr collectif introuvable." });
+  const g = snap.val();
+  if (!g) return res.status(404).json({ error: "Zikr collectif introuvable." });
+
+  // Déjà approuvé (rappel idempotent, ou legacy où `approved` absent compte
+  // comme déjà public — voir handleList) : jamais de second envoi.
+  const alreadyApproved = g.approved !== false;
   await db.ref("zikr_groups/" + gid + "/approved").set(true);
+
+  if (!alreadyApproved) {
+    // Diffusion à TOUS les utilisateurs connus, même ceux qui n'y participent
+    // pas — best-effort, jamais bloquant pour la réponse à l'admin.
+    await notifyAllUsers(db, {
+      ...zikrCollectifNotification({ groupName: g.name }),
+      senderName: BROADCAST_SENDER,
+      targetUrl: "/zikr?item=" + gid,
+      meta: { gid, tagSuffix: gid },
+    }).catch((e) => reportError("zikr:notifyAllUsers", e, { action: "approveZikr", gid }));
+  }
+
   return res.status(200).json({ ok: true });
 }
 

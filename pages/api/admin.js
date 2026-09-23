@@ -13,7 +13,11 @@
 //   list-formations · save-formation {key?,titre,description,prix,duree,attentes,img,meetLink} · delete-formation {key}
 //   list-products · save-product {key?,produit,Prix,...} · delete-product {key}
 //   list-sellers · seller-action {uid, op:'extend'|'suspend'|'activate', days?}
+//     ('activate'/'extend' depuis un vendeur jusque-là inactif → diffuse une
+//     notification "nouvelle boutique" à TOUS les utilisateurs connus)
 //   grant-access {email, days?, level?} · revoke-access {email} · list-access
+//     (grant-access → notification CIBLÉE au compte concerné, si un compte
+//     Firebase Auth existe déjà pour cet e-mail)
 //   list-orders · list-activity · list-geomancie
 
 const { verifyUser, isAdmin, emailKey } = require("../../server/access");
@@ -21,8 +25,8 @@ const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
-const { notifyAllUsers } = require("../../server/notify");
-const { secretNotification, documentNotification } = require("../../lib/notifyTemplates");
+const { notifyAllUsers, notifyUsers } = require("../../server/notify");
+const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
 const DAY_MS = 86400000;
 
@@ -178,6 +182,7 @@ export default async function handler(req, res) {
         const ref = db.ref("sellers/" + uid);
         const cur = (await ref.once("value")).val();
         if (!cur) return res.status(404).json({ error: "Vendeur introuvable." });
+        const wasActive = cur.shopActive === true;
         if (op === "suspend")  await ref.update({ shopActive: false });
         else if (op === "activate") await ref.update({ shopActive: true });
         else if (op === "extend") {
@@ -185,6 +190,18 @@ export default async function handler(req, res) {
           const base = (typeof cur.expiresAt === "number" && cur.expiresAt > Date.now()) ? cur.expiresAt : Date.now();
           await ref.update({ shopActive: true, expiresAt: base + days * DAY_MS });
         } else return res.status(400).json({ error: "Opération inconnue." });
+
+        // Boutique qui devient (ou redevient, après suspension) disponible —
+        // diffuse à TOUS les utilisateurs connus. Best-effort, jamais bloquant.
+        if (!wasActive && (op === "activate" || op === "extend")) {
+          const shopName = (cur.shop && cur.shop.name) || "Une nouvelle boutique";
+          await notifyAllUsers(db, {
+            ...newShopNotification({ shopName }),
+            senderName: BROADCAST_SENDER,
+            targetUrl: "/",
+            meta: { uid, tagSuffix: uid },
+          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "seller-action", uid }));
+        }
         return res.json({ ok: true });
       }
 
@@ -218,6 +235,23 @@ export default async function handler(req, res) {
           until,
           level: Number.isFinite(level) && level > 0 ? level : 0
         });
+        // Notification CIBLÉE (pas de broadcast) au compte concerné —
+        // best-effort, silencieuse si aucun compte Firebase Auth n'existe
+        // encore pour cet e-mail (accès accordé avant la première connexion,
+        // ou faute de frappe côté admin) : jamais bloquant pour la réponse,
+        // même principe que pages/api/cron/reminders.js sendRenewalReminders.
+        try {
+          const userRecord = await app().auth().getUserByEmail(email);
+          await notifyUsers(db, [userRecord.uid], {
+            ...accessGrantedNotification(),
+            targetUrl: "/",
+            meta: { tagSuffix: "access" },
+          });
+        } catch (e) {
+          if (e && e.code !== "auth/user-not-found") {
+            await reportError("admin:notifyUsers", e, { action: "grant-access", email });
+          }
+        }
         return res.json({ ok: true, email, expiresAt: until === true ? "lifetime" : until, level: level || 0 });
       }
       // revoke-access {email} → retire l'accès manuel ET neutralise un ancien achat.
