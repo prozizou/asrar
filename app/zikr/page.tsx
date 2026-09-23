@@ -39,7 +39,7 @@ import AttachMenuUntyped from '@/components/AttachMenu';
 import AudioMessageUntyped from '@/components/AudioMessage';
 import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
-import { DHIKR_PRESETS, LIBRE_PRESET_ID } from '@/lib/dhikrPresets';
+import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
   progressPct, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
@@ -547,6 +547,47 @@ function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boo
   );
 }
 
+// En-tête de récitation (écran Zikr, recitingMode) — arche dorée façon
+// mihrab sur un ciel nocturne étoilé, silhouette de mosquée, croissant de
+// lune et lanternes suspendues : reprend explicitement le zikr EN COURS
+// (arabe + traduction française du preset le cas échéant + translittération)
+// plutôt qu'un simple titre, pour que la formule à réciter reste l'élément
+// visuellement dominant de l'écran. Palette volontairement fixe (nuit/or),
+// indépendante du thème clair/sombre de l'app — c'est l'identité demandée
+// pour cet écran précis, pas une déclinaison de --accent.
+function ZikrHero({ name, arabic, transliteration, presetId }: {
+  name: string; arabic?: string; transliteration?: string; presetId?: string;
+}) {
+  const meaning = presetId ? findPreset(presetId)?.meaning : undefined;
+  return (
+    <div className="zk-hero-arch">
+      <svg className="zk-hero-lantern left" viewBox="0 0 24 40" fill="none" aria-hidden="true">
+        <line x1="12" y1="0" x2="12" y2="6" stroke="#e8c477" strokeWidth="1.5" />
+        <path d="M6 6 h12 l-2 5 H8 Z" fill="#e8c477" />
+        <rect x="5" y="11" width="14" height="16" rx="4" fill="#e8c477" opacity="0.9" />
+        <rect x="8" y="14" width="8" height="10" rx="2" fill="#2a1854" />
+        <path d="M8 27 h8 l-2 5 h-4 Z" fill="#e8c477" />
+        <circle cx="12" cy="34" r="1.6" fill="#e8c477" />
+      </svg>
+      <svg className="zk-hero-lantern right" viewBox="0 0 24 40" fill="none" aria-hidden="true">
+        <line x1="12" y1="0" x2="12" y2="6" stroke="#e8c477" strokeWidth="1.5" />
+        <path d="M6 6 h12 l-2 5 H8 Z" fill="#e8c477" />
+        <rect x="5" y="11" width="14" height="16" rx="4" fill="#e8c477" opacity="0.9" />
+        <rect x="8" y="14" width="8" height="10" rx="2" fill="#2a1854" />
+        <path d="M8 27 h8 l-2 5 h-4 Z" fill="#e8c477" />
+        <circle cx="12" cy="34" r="1.6" fill="#e8c477" />
+      </svg>
+      <div className="zk-hero-body">
+        <div className="zk-hero-moon" aria-hidden="true" />
+        <div className="zk-hero-title">Zikr collectif · {name}</div>
+        {arabic && <div className="zk-hero-arabic" dir="rtl">{arabic}</div>}
+        {meaning && <div className="zk-hero-meaning">{meaning}</div>}
+        {transliteration && <div className="zk-hero-translit">{transliteration}</div>}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
 function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string) => void; onBack: () => void }) {
   const [g, setG] = useState<GroupDetailData | null>(null);
@@ -946,14 +987,18 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           compacte (créateur + participants + en ligne) — jamais l'email
           complet du créateur (revue design, point 3). */}
       <div className="zk-detail-head">
-        <h1>{g.name}</h1>
-        {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
-        {g.transliteration && !recitingMode && <span className="zk-preset-badge">{g.transliteration}</span>}
-        {!recitingMode && (
-          <div className="zk-owner">
-            Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-            {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
-          </div>
+        {recitingMode ? (
+          <ZikrHero name={g.name} arabic={g.arabic} transliteration={g.transliteration} presetId={g.presetId} />
+        ) : (
+          <>
+            <h1>{g.name}</h1>
+            {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
+            {g.transliteration && <span className="zk-preset-badge">{g.transliteration}</span>}
+            <div className="zk-owner">
+              Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
+              {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
+            </div>
+          </>
         )}
         {/* Les précisions ci-dessous (rappel push, invitation par lien…)
             alourdissent l'en-tête sans rien apporter une fois qu'on discute
@@ -1490,7 +1535,7 @@ function BottomNav({ tab, setTab, unreadCount }: {
           onClick={() => setTab(it.key)}
         >
           <span className="zk-bottom-nav-icon">
-            {it.icon}
+            <span className="zk-bottom-nav-icon-circle">{it.icon}</span>
             {it.key === 'discussion' && unreadCount > 0 && (
               <span className="zk-bottom-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
