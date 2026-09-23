@@ -547,44 +547,28 @@ function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boo
   );
 }
 
-// En-tête de récitation (écran Zikr, recitingMode) — arche dorée façon
-// mihrab sur un ciel nocturne étoilé, silhouette de mosquée, croissant de
-// lune et lanternes suspendues : reprend explicitement le zikr EN COURS
-// (arabe + traduction française du preset le cas échéant + translittération)
-// plutôt qu'un simple titre, pour que la formule à réciter reste l'élément
-// visuellement dominant de l'écran. Palette volontairement fixe (nuit/or),
-// indépendante du thème clair/sombre de l'app — c'est l'identité demandée
-// pour cet écran précis, pas une déclinaison de --accent.
+// En-tête de récitation (écran Zikr, recitingMode) — arche dorée fournie
+// (public/assets/zikr-hero-arch.png : ciel nocturne étoilé, silhouette de
+// mosquée, croissant de lune, lanternes suspendues) posée en fond plutôt que
+// reconstituée en CSS/SVG. Reprend explicitement le zikr EN COURS (arabe +
+// traduction française du preset le cas échéant + translittération)
+// superposé dans la zone de ciel de l'image, pour que la formule à réciter
+// reste l'élément visuellement dominant de l'écran.
 function ZikrHero({ name, arabic, transliteration, presetId }: {
   name: string; arabic?: string; transliteration?: string; presetId?: string;
 }) {
   const meaning = presetId ? findPreset(presetId)?.meaning : undefined;
   return (
-    <div className="zk-hero-arch">
-      <svg className="zk-hero-lantern left" viewBox="0 0 24 40" fill="none" aria-hidden="true">
-        <line x1="12" y1="0" x2="12" y2="6" stroke="#e8c477" strokeWidth="1.5" />
-        <path d="M6 6 h12 l-2 5 H8 Z" fill="#e8c477" />
-        <rect x="5" y="11" width="14" height="16" rx="4" fill="#e8c477" opacity="0.9" />
-        <rect x="8" y="14" width="8" height="10" rx="2" fill="#2a1854" />
-        <path d="M8 27 h8 l-2 5 h-4 Z" fill="#e8c477" />
-        <circle cx="12" cy="34" r="1.6" fill="#e8c477" />
-      </svg>
-      <svg className="zk-hero-lantern right" viewBox="0 0 24 40" fill="none" aria-hidden="true">
-        <line x1="12" y1="0" x2="12" y2="6" stroke="#e8c477" strokeWidth="1.5" />
-        <path d="M6 6 h12 l-2 5 H8 Z" fill="#e8c477" />
-        <rect x="5" y="11" width="14" height="16" rx="4" fill="#e8c477" opacity="0.9" />
-        <rect x="8" y="14" width="8" height="10" rx="2" fill="#2a1854" />
-        <path d="M8 27 h8 l-2 5 h-4 Z" fill="#e8c477" />
-        <circle cx="12" cy="34" r="1.6" fill="#e8c477" />
-      </svg>
-      <div className="zk-hero-body">
-        <div className="zk-hero-moon" aria-hidden="true" />
-        <div className="zk-hero-title">Zikr collectif · {name}</div>
-        {arabic && <div className="zk-hero-arabic" dir="rtl">{arabic}</div>}
-        {meaning && <div className="zk-hero-meaning">{meaning}</div>}
-        {transliteration && <div className="zk-hero-translit">{transliteration}</div>}
+    <>
+      <div className="zk-hero-caption">Zikr collectif · {name}</div>
+      <div className="zk-hero-arch">
+        <div className="zk-hero-body">
+          {arabic && <div className="zk-hero-arabic" dir="rtl">{arabic}</div>}
+          {meaning && <div className="zk-hero-meaning">{meaning}</div>}
+          {transliteration && <div className="zk-hero-translit">{transliteration}</div>}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

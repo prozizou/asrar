@@ -213,82 +213,49 @@
 .zk-online-text { color: #2dd4a0; font-weight: 500; }
 
 /* ── En-tête de récitation (écran Zikr, ZikrHero, recitingMode) ──────────
-   Arche dorée façon mihrab sur un ciel nocturne étoilé, silhouette de
-   mosquée, croissant de lune et lanternes suspendues (design fourni) — met
-   en avant le zikr EN COURS (arabe + traduction + translittération) plutôt
-   qu'un simple titre. Palette volontairement fixe (nuit/or), indépendante
-   du thème clair/sombre de l'app : c'est l'identité de cet écran précis. */
-.zk-hero-arch {
-  position: relative;
-  border-radius: 130px 130px 22px 22px / 90px 90px 22px 22px;
-  padding: 30px 20px 22px;
-  margin: 0 0 4px;
-  background:
-    radial-gradient(1.5px 1.5px at 20% 18%, #fff 100%, transparent 60%),
-    radial-gradient(1.5px 1.5px at 78% 12%, #fff 100%, transparent 60%),
-    radial-gradient(1px 1px at 62% 30%, #fff 100%, transparent 60%),
-    radial-gradient(1px 1px at 12% 45%, #fff 100%, transparent 60%),
-    radial-gradient(1.5px 1.5px at 88% 40%, #fff 100%, transparent 60%),
-    radial-gradient(1px 1px at 35% 8%, #fff 100%, transparent 60%),
-    linear-gradient(180deg, #2a1854 0%, #1c1040 45%, #140a2e 100%);
-  box-shadow:
-    inset 0 0 0 2px #e8c477,
-    inset 0 0 0 6px rgba(232, 196, 119, 0.18),
-    0 12px 30px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
-  text-align: center;
-}
-/* Silhouette de mosquée le long du bord bas — un seul clip-path, pas
-   d'image externe (aucun asset à héberger/charger). */
-.zk-hero-arch::before {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 46px;
-  background: #0d0620;
-  clip-path: polygon(
-    0% 100%, 0% 60%, 6% 60%, 6% 40%, 10% 40%, 10% 60%, 16% 60%, 16% 30%,
-    20% 15%, 24% 30%, 24% 60%, 32% 60%, 32% 45%, 36% 45%, 36% 60%,
-    44% 60%, 44% 20%, 50% 5%, 56% 20%, 56% 60%, 64% 60%, 64% 45%, 68% 45%, 68% 60%,
-    76% 60%, 76% 30%, 80% 15%, 84% 30%, 84% 60%, 90% 60%, 90% 40%, 94% 40%, 94% 60%,
-    100% 60%, 100% 100%
-  );
-}
-/* Halo doré derrière la lune. */
-.zk-hero-arch::after {
-  content: '';
-  position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
-  width: 120px; height: 120px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 196, 119, 0.45), transparent 70%);
-  pointer-events: none;
-}
-.zk-hero-body { position: relative; z-index: 2; padding-bottom: 30px; }
-/* Croissant : un disque plein + un disque décalé en couleur de fond
-   (inset shadow) plutôt qu'un SVG — même rendu, sans marquage supplémentaire. */
-.zk-hero-moon {
-  width: 30px; height: 30px; margin: 0 auto 6px; border-radius: 50%;
-  background: #e8c477;
-  box-shadow: 9px -2px 0 0 #1c1040 inset, 0 0 14px rgba(232, 196, 119, 0.8);
-}
-.zk-hero-lantern {
-  position: absolute; top: 34px; width: 30px; z-index: 2;
-  filter: drop-shadow(0 0 6px rgba(232, 196, 119, 0.5));
-}
-.zk-hero-lantern.left { left: 6px; }
-.zk-hero-lantern.right { right: 6px; }
-.zk-hero-title {
-  position: relative; z-index: 2;
+   Arche dorée sur un ciel nocturne étoilé, silhouette de mosquée, croissant
+   de lune et lanternes suspendues — illustration fournie (public/assets/
+   zikr-hero-arch.png, PNG à fond transparent hors de l'arche) plutôt qu'une
+   reconstitution en CSS. `aspect-ratio` calé sur ses proportions natives
+   (1672×941) : le cadre garde ses bonnes proportions à toute largeur sans
+   jamais déformer l'image. Le zikr EN COURS (arabe + traduction + translit-
+   tération) est superposé dans la zone de ciel sous la lune. Palette de
+   l'image volontairement fixe (nuit/or), indépendante du thème clair/sombre
+   de l'app : c'est l'identité de cet écran précis. */
+.zk-hero-caption {
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55); margin: 0 0 2px; padding: 0 34px;
+  color: var(--text-dim); margin: 0 0 6px; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.zk-hero-arabic {
-  position: relative; z-index: 2;
-  font-size: clamp(1.3rem, 7vw, 2.1rem); font-weight: 700; line-height: 1.35; margin: 8px 0 10px;
-  background: linear-gradient(180deg, #fff, #e8c477);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  word-wrap: break-word; padding: 0 8px;
+.zk-hero-arch {
+  position: relative;
+  aspect-ratio: 1672 / 941;
+  width: 100%;
+  margin: 0 0 8px;
+  background: url('/assets/zikr-hero-arch.png') no-repeat center / 100% 100%;
 }
-.zk-hero-meaning { position: relative; z-index: 2; font-size: 0.95rem; font-weight: 600; color: #fff; margin: 0 0 4px; }
-.zk-hero-translit { position: relative; z-index: 2; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; color: #e8c477; margin: 0; }
+/* Zone de ciel dégagée de l'illustration (sous la lune, au-dessus de la
+   silhouette de mosquée) — bande large pour rester lisible même sur un
+   téléphone étroit ; `overflow: visible` laisse un zikr libre sur deux
+   lignes déborder légèrement plutôt que d'être tronqué. */
+.zk-hero-body {
+  position: absolute; left: 9%; right: 9%; top: 40%; bottom: 12%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; text-align: center; overflow: visible;
+}
+.zk-hero-arabic {
+  font-size: clamp(0.95rem, 5.5vw, 1.6rem); font-weight: 700; line-height: 1.3; margin: 0 0 4px;
+  color: #fff;
+  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+.zk-hero-meaning {
+  font-size: clamp(0.64rem, 2.6vw, 0.82rem); font-weight: 600; color: #fff; margin: 0 0 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+.zk-hero-translit {
+  font-size: clamp(0.58rem, 2.3vw, 0.72rem); font-weight: 700; letter-spacing: 0.02em; color: #e8c477; margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
 
 /* Trois lignes seulement (revue design : « 16 641 / 15 641 / 1000
    apparaissent plusieurs fois dans une zone assez réduite ») — libellé,
