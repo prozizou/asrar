@@ -19,9 +19,15 @@ name: Planet push cron (haute fréquence)
 # Sans lui, chaque appel échoue en 401 (le cron Vercel quotidien reste le seul
 # filet de secours). SITE_URL : variable de dépôt si le domaine diffère de la
 # production.
+#
+# Déclenchement planifié DÉSACTIVÉ (2026-09) : GitHub Actions ne respectait
+# pas la cadence — écarts réels de 2 à 5h entre deux exécutions malgré le
+# schedule `*/5 * * * *` (throttling de l'ordonnanceur GitHub sur ce dépôt),
+# rendant les notifications d'heure planétaire trompeuses (envoyées des
+# heures après le vrai changement). Remplacé par un ping externe fiable à la
+# minute (cron-job.org → /api/cron/planet-push). `workflow_dispatch` reste
+# disponible pour un déclenchement manuel ponctuel.
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 jobs:
