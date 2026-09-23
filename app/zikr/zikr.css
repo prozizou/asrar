@@ -212,6 +212,51 @@
    aussi importante que le titre ou la progression. */
 .zk-online-text { color: #2dd4a0; font-weight: 500; }
 
+/* ── En-tête de récitation (écran Zikr, ZikrHero, recitingMode) ──────────
+   Arche dorée sur un ciel nocturne étoilé, silhouette de mosquée, croissant
+   de lune et lanternes suspendues — illustration fournie (public/assets/
+   zikr-hero-arch.png, PNG à fond transparent hors de l'arche) plutôt qu'une
+   reconstitution en CSS. `aspect-ratio` calé sur ses proportions natives
+   (1672×941) : le cadre garde ses bonnes proportions à toute largeur sans
+   jamais déformer l'image. Le zikr EN COURS (arabe + traduction + translit-
+   tération) est superposé dans la zone de ciel sous la lune. Palette de
+   l'image volontairement fixe (nuit/or), indépendante du thème clair/sombre
+   de l'app : c'est l'identité de cet écran précis. */
+.zk-hero-caption {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); margin: 0 0 6px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.zk-hero-arch {
+  position: relative;
+  aspect-ratio: 1672 / 941;
+  width: 100%;
+  margin: 0 0 8px;
+  background: url('/assets/zikr-hero-arch.png') no-repeat center / 100% 100%;
+}
+/* Zone de ciel dégagée de l'illustration (sous la lune, au-dessus de la
+   silhouette de mosquée) — bande large pour rester lisible même sur un
+   téléphone étroit ; `overflow: visible` laisse un zikr libre sur deux
+   lignes déborder légèrement plutôt que d'être tronqué. */
+.zk-hero-body {
+  position: absolute; left: 9%; right: 9%; top: 40%; bottom: 12%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; text-align: center; overflow: visible;
+}
+.zk-hero-arabic {
+  font-size: clamp(0.95rem, 5.5vw, 1.6rem); font-weight: 700; line-height: 1.3; margin: 0 0 4px;
+  color: #fff;
+  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+.zk-hero-meaning {
+  font-size: clamp(0.64rem, 2.6vw, 0.82rem); font-weight: 600; color: #fff; margin: 0 0 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+.zk-hero-translit {
+  font-size: clamp(0.58rem, 2.3vw, 0.72rem); font-weight: 700; letter-spacing: 0.02em; color: #e8c477; margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
 /* Trois lignes seulement (revue design : « 16 641 / 15 641 / 1000
    apparaissent plusieurs fois dans une zone assez réduite ») — libellé,
    puis « total / cible · pct % » (un seul endroit pour ces trois nombres,
@@ -683,36 +728,59 @@
 
 /* ── Navigation fixe en pied d'écran (Zikr / Participants / Discussion) ───
    Demandé explicitement : garder les actions importantes accessibles sans
-   parcourir toute la page. Même convention que .interaction-bar
-   (app/asrar/asrar.css) : fixe, safe-area gérée, z-index 100. */
-/* Hauteur de référence partagée (revue design : « navigation inférieure
-   surdimensionnée ») — 68px tient dans la fourchette 64–72px demandée ; une
-   seule variable évite que .zk-has-bottom-nav et le padding de compensation
-   de .zk-chat-mode (plus bas) ne divergent. */
-:root { --zk-nav-h: 68px; }
-.zk-has-bottom-nav { padding-bottom: calc(var(--zk-nav-h) + env(safe-area-inset-bottom, 0px)); }
+   parcourir toute la page — sous forme d'une pilule flottante (design fourni)
+   plutôt que d'une barre plate collée aux bords, à l'image de l'en-tête
+   .zk-hero-arch juste au-dessus : même palette nuit/or fixe, indépendante du
+   thème clair/sombre. L'onglet actif se distingue par un halo violet (accent
+   de l'app, --accent) autour de son icône plutôt qu'une simple couleur de
+   texte. */
+/* Hauteur + espace sous la pilule partagés par plusieurs calculs (padding de
+   compensation .zk-has-bottom-nav, zone de saisie du chat plein écran plus
+   bas) — une seule paire de variables évite qu'ils ne divergent. */
+:root { --zk-nav-h: 64px; --zk-nav-gap: 14px; }
+.zk-has-bottom-nav { padding-bottom: calc(var(--zk-nav-h) + var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px)); }
 .zk-bottom-nav {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
-  display: flex; justify-content: space-around; align-items: stretch;
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px));
+  width: min(608px, calc(100% - 32px));
+  z-index: 100;
+  display: flex; justify-content: space-around; align-items: stretch; gap: 4px;
   height: var(--zk-nav-h);
-  background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--glass-border);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: linear-gradient(180deg, #1c1040, #130a2c);
+  border: 1px solid rgba(232, 196, 119, 0.35);
+  border-radius: 999px; padding: 7px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 /* 3 colonnes de largeur STRICTEMENT identique (flex:1 sur les trois),
-   aucune "capsule" propre à l'onglet actif — seule la couleur change (voir
-   .active plus bas). margin-top:0 annule le bouton générique global
+   aucune "capsule" propre à l'onglet actif — seul le halo (voir .active plus
+   bas) change. margin-top:0 annule le bouton générique global
    (app/globals.css : `button{margin-top:15px}`) qui aurait sinon décalé
    chaque item vers le bas et déséquilibré la barre. */
 .zk-bottom-nav-item {
   flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; padding: 8px 4px 7px; margin-top: 0; background: none; border: none; cursor: pointer;
-  color: var(--text-dim); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600;
-  transition: color 0.15s ease;
+  gap: 2px; padding: 4px 4px 6px; margin-top: 0; background: none; border: none; border-radius: 999px; cursor: pointer;
+  color: rgba(255, 255, 255, 0.55); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700;
+  position: relative; transition: color 0.15s ease, background 0.15s ease;
 }
-.zk-bottom-nav-item.active { color: var(--accent); }
+.zk-bottom-nav-item.active {
+  color: #fff;
+  background: radial-gradient(circle at 50% 30%, var(--accent-glow), transparent 70%);
+}
+/* Point lumineux sous le libellé actif — dernier repère du design fourni,
+   distinct du halo autour de l'icône. */
+.zk-bottom-nav-item.active::after {
+  content: ''; position: absolute; bottom: 1px; width: 14px; height: 2.5px; border-radius: 3px;
+  background: #fff; box-shadow: 0 0 6px #fff;
+}
 .zk-bottom-nav-icon { position: relative; display: inline-flex; }
+.zk-bottom-nav-icon-circle {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%; transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.zk-bottom-nav-item.active .zk-bottom-nav-icon-circle {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow), inset 0 0 10px var(--accent-glow);
+}
 .zk-bottom-nav-badge {
   position: absolute; top: -5px; right: -9px; min-width: 15px; height: 15px; padding: 0 3px;
   border-radius: 999px; background: #e0607a; color: #fff;
@@ -759,11 +827,11 @@
      encart de hauteur fixe au milieu d'espace vide. */
   .zk-chat-mode .zk-chat-list { flex: 1; min-height: 0; max-height: none; }
   /* Ligne de saisie ancrée juste au-dessus de la barre de navigation fixe
-     (même variable --zk-nav-h que .zk-has-bottom-nav) — le sélecteur à deux
-     classes l'emporte sur le padding raccourci de .zk-voice-recording,
-     quel que soit l'ordre des règles dans ce fichier. */
+     (mêmes variables --zk-nav-h/--zk-nav-gap que .zk-has-bottom-nav) — le
+     sélecteur à deux classes l'emporte sur le padding raccourci de
+     .zk-voice-recording, quel que soit l'ordre des règles dans ce fichier. */
   .zk-chat-mode .zk-chat-input-row {
     flex-shrink: 0;
-    padding-bottom: calc(12px + var(--zk-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12px + var(--zk-nav-h) + var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px));
   }
 }
