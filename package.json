@@ -1,6 +1,6 @@
 {
   "name": "asrar-next",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "ASRAR PRO — application Next.js/React. Migration terminée : toutes les rubriques (secrets, marché, boutique, bibliothèque, calculs ésotériques…) sont servies par cette app, plus de site statique séparé.",
   "scripts": {

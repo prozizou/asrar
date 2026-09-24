@@ -4,6 +4,11 @@
 //   action="me"            → statut vendeur + fiche boutique + SES produits
 //   action="save-shop"     → { shop:{ name, description, phone } }   (vendeur actif)
 //   action="save-product"  → { product:{ key?, produit, Prix, devise, Image, description, number, chain } }
+//                              key absente → nouveau produit : diffuse une
+//                              notification à TOUS les utilisateurs connus
+//                              (centre de notifications + push best-effort,
+//                              voir notifyAllUsers, server/notify.js) — une
+//                              simple édition (key fournie) ne renotifie jamais
 //   action="delete-product"→ { key }                                  (propriétaire)
 //
 // Les produits vivent dans det_produits/{key} (le nœud du Marché). Écriture
@@ -16,6 +21,8 @@ const { app } = require("../../server/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { notifyAllUsers } = require("../../server/notify");
+const { newProductNotification } = require("../../lib/notifyTemplates");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -160,6 +167,7 @@ export default async function handler(req, res) {
 
       // Clé existante (édition) si elle nous appartient, sinon nouvelle.
       let key = str(product.key, 64);
+      const isNew = !key; // capturé AVANT l'assignation d'une nouvelle clé ci-dessous
       if (key) {
         const cur = (await db.ref("det_produits/" + key).once("value")).val();
         if (!cur) return res.status(404).json({ error: "Produit introuvable." });
@@ -188,6 +196,17 @@ export default async function handler(req, res) {
         updatedAt: Date.now()
       };
       await db.ref("det_produits/" + key).update(record);
+      if (isNew) {
+        // Diffusion à TOUS les utilisateurs connus — best-effort, jamais
+        // bloquant pour la réponse au vendeur (même principe que
+        // pages/api/admin.js save-secret/save-book).
+        await notifyAllUsers(db, {
+          ...newProductNotification({ vendorName: shopName, productName: nom }),
+          senderName: shopName,
+          targetUrl: "/?item=" + key,
+          meta: { key, tagSuffix: key },
+        }).catch((e) => reportError("shop:notifyAllUsers", e, { action: "save-product", key }));
+      }
       return res.status(200).json({ ok: true, key, product: { _key: key, ...record } });
     }
 

@@ -18,9 +18,14 @@ name: Reminders cron (haute fréquence)
 #
 # SITE_URL : variable de dépôt (Settings → Secrets and variables → Actions →
 # Variables) si le domaine diffère de la production actuelle.
+#
+# Déclenchement planifié DÉSACTIVÉ (2026-09) : GitHub Actions ne respectait
+# pas la cadence — écarts réels de 2 à 5h entre deux exécutions malgré le
+# schedule `*/10 * * * *` (throttling de l'ordonnanceur GitHub sur ce dépôt),
+# ce qui faisait manquer la fenêtre de 40 min des rappels de session. Remplacé
+# par un ping externe fiable (cron-job.org → /api/cron/reminders, toutes les
+# 10 min). `workflow_dispatch` reste disponible pour un déclenchement manuel.
 on:
-  schedule:
-    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 jobs:
