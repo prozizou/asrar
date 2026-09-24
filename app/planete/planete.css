@@ -37,7 +37,7 @@
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
-  padding-inline: clamp(12px, 4vw, 22px);
+  padding-inline: clamp(6px, 2vw, 16px);
 }
 
 .planete-page .back-btn {
@@ -865,7 +865,7 @@
   }
 
   .planete-page .container {
-    padding-inline: 10px;
+    padding-inline: 6px;
   }
 
   .planete-page .glass-panel {
