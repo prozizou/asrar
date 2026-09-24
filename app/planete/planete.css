@@ -10,8 +10,8 @@
   isolation: isolate;
   min-height: 100dvh;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
-  --planet-radius: 18px;
-  --planet-gap: 14px;
+  --planet-radius: 16px;
+  --planet-gap: 12px;
   --planet-glow: color-mix(in srgb, var(--accent) 22%, transparent);
   --planet-panel: color-mix(in srgb, var(--surface) 94%, transparent);
   --planet-panel-strong: color-mix(in srgb, var(--surface-2) 86%, var(--surface));
@@ -61,7 +61,7 @@
   background: var(--planet-panel);
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   border-radius: var(--planet-radius);
-  padding: clamp(0.95rem, 3.8vw, 1.35rem);
+  padding: clamp(0.85rem, 3.4vw, 1.2rem);
   margin-bottom: var(--planet-gap);
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.17);
   backdrop-filter: blur(12px);
@@ -114,10 +114,10 @@
 .planete-page .time-display {
   position: relative;
   z-index: 1;
-  margin: 6px 0 2px;
+  margin: 4px 0 0;
   color: var(--accent);
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 12vw, 3.35rem);
+  font-size: clamp(2.15rem, 11vw, 3.1rem);
   font-weight: 700;
   letter-spacing: 2px;
   line-height: 1.08;
@@ -129,7 +129,7 @@
 .planete-page .date-display {
   position: relative;
   z-index: 1;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: var(--text-dim);
   font-size: 0.92rem;
   font-style: normal;
@@ -139,7 +139,7 @@
 .planete-page .dash-hero {
   position: relative;
   z-index: 1;
-  padding-top: 4px;
+  padding-top: 2px;
   text-align: center;
 }
 
@@ -147,12 +147,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 7px;
 }
 
 .planete-page .dash-planet-symbol {
   color: var(--accent);
-  font-size: 2rem;
+  font-size: 1.7rem;
   line-height: 1;
   filter: drop-shadow(0 0 10px var(--planet-glow));
 }
@@ -160,7 +160,7 @@
 .planete-page .dash-planet-name {
   color: var(--text-main);
   font-family: var(--font-display);
-  font-size: 1.32rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
@@ -175,9 +175,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 30px;
-  margin-top: 8px;
-  padding: 5px 14px;
+  min-height: 26px;
+  margin-top: 6px;
+  padding: 4px 12px;
   border: 1px solid currentColor;
   border-radius: 999px;
   background: color-mix(in srgb, currentColor 12%, transparent);
@@ -188,11 +188,11 @@
 
 .planete-page .dash-progress {
   width: min(100%, 340px);
-  margin: 11px auto 0;
+  margin: 8px auto 0;
 }
 
 .planete-page .dash-progress-track {
-  height: 7px;
+  height: 6px;
   overflow: hidden;
   border-radius: 999px;
   background: color-mix(in srgb, var(--border) 88%, transparent);
@@ -215,8 +215,8 @@
 
 .planete-page .dash-next {
   width: min(100%, 440px);
-  margin: 11px auto 0;
-  padding-top: 9px;
+  margin: 8px auto 0;
+  padding-top: 7px;
   border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   color: color-mix(in srgb, var(--text-dim) 94%, white 6%);
   font-size: 0.82rem;
@@ -225,10 +225,10 @@
 
 /* Phase du jour : secondaire, compacte. */
 .planete-page .phase-line {
-  min-height: 48px;
-  padding: 0.72rem 1rem;
+  min-height: 34px;
+  padding: 0.42rem 0.9rem;
   color: color-mix(in srgb, var(--text-dim) 94%, white 6%);
-  font-size: 0.87rem;
+  font-size: 0.82rem;
   text-align: center;
 }
 
@@ -322,8 +322,8 @@
 
 .planete-page .push-toggle-row {
   width: min(100%, 520px);
-  margin: 12px auto 0;
-  padding-top: 10px;
+  margin: 8px auto 0;
+  padding-top: 8px;
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
 }
 
@@ -332,7 +332,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 44px;
+  min-height: 36px;
   cursor: default;
 }
 
@@ -345,8 +345,8 @@
 .planete-page .switch {
   position: relative;
   flex: 0 0 auto;
-  width: 48px;
-  height: 28px;
+  width: 42px;
+  height: 24px;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
   border-radius: 999px;
@@ -369,8 +369,8 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
@@ -378,14 +378,14 @@
 }
 
 .planete-page .switch.on .switch-knob {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 /* ───────── Jour / Nuit ───────── */
 .planete-page .hours-day-label {
-  margin: 10px 0 6px;
+  margin: 6px 0 4px;
   color: var(--accent);
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   text-align: center;
 }
 
@@ -396,8 +396,8 @@
   display: flex;
   gap: 4px;
   width: min(100%, 520px);
-  margin: 10px auto 8px;
-  padding: 4px;
+  margin: 6px auto 6px;
+  padding: 3px;
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 90%, transparent);
@@ -412,14 +412,14 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 42px;
-  padding: 8px 14px;
+  min-height: 26px;
+  padding: 4px 10px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: color-mix(in srgb, var(--text-dim) 92%, white 8%);
   cursor: pointer;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
@@ -480,7 +480,7 @@
 }
 
 .planete-page .timeline-item.is-past {
-  opacity: 0.58;
+  opacity: 0.72;
 }
 
 .planete-page .timeline-item.is-past .timeline-dot {
@@ -869,9 +869,9 @@
   }
 
   .planete-page .glass-panel {
-    margin-bottom: 10px;
-    padding: 0.9rem;
-    border-radius: 16px;
+    margin-bottom: 8px;
+    padding: 0.75rem;
+    border-radius: 14px;
   }
 
   .planete-page .dash-card::after {
@@ -881,15 +881,15 @@
   }
 
   .planete-page .time-display {
-    font-size: clamp(2.1rem, 12vw, 2.75rem);
+    font-size: clamp(1.95rem, 11vw, 2.5rem);
   }
 
   .planete-page .dash-planet-symbol {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .planete-page .dash-planet-name {
-    font-size: 1.18rem;
+    font-size: 1.05rem;
   }
 
   .planete-page .info-grid {
