@@ -3,9 +3,10 @@
 // — isolé du reste de /planete pour garder son état (permission/abonnement)
 // séparé de l'horloge/GPS de la page.
 import { useEffect, useState } from 'react';
-import { pushSupported, getPushSubscriptionState, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
+import { pushSupported, getPushSubscriptionState, subscribeToPush, unsubscribeFromPush, syncPlanetPushPosition } from '@/lib/push';
 
-export default function PlanetPushToggle() {
+/** @param {{lat?: number|null, lng?: number|null}} props */
+export default function PlanetPushToggle({ lat = null, lng = null }) {
   const [state, setState] = useState('checking'); // checking | unsupported | denied | subscribed | unsubscribed
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +19,12 @@ export default function PlanetPushToggle() {
     getPushSubscriptionState().then(setState);
   }, []);
 
+  useEffect(() => {
+    if (state === 'subscribed') syncPlanetPushPosition(lat, lng).catch(() => {
+      setError('Position des notifications non actualisée. Réessayez avec une connexion.');
+    });
+  }, [state, lat, lng]);
+
   if (state === 'checking' || state === 'unsupported') return null; // rien à proposer sur cet appareil
 
   const toggle = async () => {
@@ -28,7 +35,7 @@ export default function PlanetPushToggle() {
         await unsubscribeFromPush();
         setState('unsubscribed');
       } else {
-        await subscribeToPush();
+        await subscribeToPush(lat != null && lng != null ? { lat, lng } : null);
         setState('subscribed');
       }
     } catch (e) {
