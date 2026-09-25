@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, action, subscription, lat, lng, endpoint } = parseBody(req);
+  const { idToken, action, subscription, lat, lng, endpoint, timeZone } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -69,12 +69,21 @@ export default async function handler(req, res) {
       // navigateur) sert à la fois à l'heure planétaire et aux rappels — un
       // second appel "subscribe" sans lat/lng (depuis /rappels, par ex.) ne
       // doit pas EFFACER une position déjà enregistrée par le premier.
+      if (timeZone != null) {
+        try {
+          if (typeof timeZone !== 'string') throw new Error('Invalid timezone');
+          new Intl.DateTimeFormat('fr-FR', { timeZone }).format();
+        } catch {
+          return res.status(400).json({ error: 'Fuseau horaire invalide.' });
+        }
+      }
       const latN = coord(lat, -90, 90);
       const lngN = coord(lng, -180, 180);
       await db.ref("push_subscriptions/" + user.uid + "/" + subId(ep)).update({
         endpoint: ep,
         keys: { p256dh: String(keys.p256dh), auth: String(keys.auth) },
         ...(latN != null && lngN != null ? { lat: latN, lng: lngN } : {}),
+        ...(timeZone ? { timeZone } : {}),
         updatedAt: Date.now(),
       });
       return res.status(200).json({ ok: true });
