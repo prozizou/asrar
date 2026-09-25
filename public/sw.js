@@ -84,7 +84,9 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'ASRAR PRO';
   const url = data.url || '/notifications';
   const options = {
-    body: data.body || '',
+    body: data.validUntil && Date.now() >= data.validUntil
+      ? 'Ce créneau est terminé. Ouvrez les heures planétaires pour consulter l’état actuel.'
+      : data.body || '',
     icon: '/assets/icon-192.png',
     badge: '/assets/icon-192.png',
     tag: data.tag || 'asrar-notification', // remplace une notif du même tag au lieu d'empiler
