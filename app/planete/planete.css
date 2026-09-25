@@ -2,7 +2,6 @@
  * ASRAR PRO — Heures planétaires
  * Refonte UI/UX professionnelle, responsive et robuste.
  * Compatible avec la structure /app/planete/page.tsx du commit 72b1669.
- * Aucun changement du moteur astronomique/planétaire ou de la logique d'alarme.
  */
 
 .planete-page {
@@ -37,7 +36,7 @@
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
-  padding-inline: clamp(6px, 2vw, 16px);
+  padding: 0;
 }
 
 .planete-page .back-btn {
@@ -865,7 +864,7 @@
   }
 
   .planete-page .container {
-    padding-inline: 6px;
+    padding: 0;
   }
 
   .planete-page .glass-panel {
