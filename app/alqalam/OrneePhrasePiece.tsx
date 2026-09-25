@@ -55,7 +55,8 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
   }
 
   return (
-    <div ref={ref} className="orne-pages" data-export-ready={!piece.overflow && piece.pages.length > 0}>
+    <div ref={ref} className="orne-pages" data-export-ready={!piece.overflow && piece.pages.length > 0}
+      data-export-reason={piece.overflowReason || ''}>
       <p className="orne-format" dir="ltr">A4 paysage · 297 × 210 mm · Marges 0,5 cm</p>
       {piece.pages.length === 0 ? (
         // N'arrive que sur un débordement 'layout' (un jeton, à lui seul, ne
@@ -142,6 +143,11 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                         ))}
                       </g>
                     )}
+                    {!inner && innerText.trim() && (
+                      <text x="0" y="4" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fill="#a22">
+                        Texte trop long
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -163,8 +169,8 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
 
       {piece.overflowReason === 'vow' && (
         <p className="orne-hint orne-overflow" role="status">
-          ⚠️ Ce vœu est trop long pour tenir dans {piece.loops > 1 ? 'toutes les boucles' : 'la boucle'}, même en
-          micro-écriture. Raccourcissez-le, ou choisissez moins de lettres à gonfler.
+          ⚠️ Le vœu saisi ({innerText.trim().length} caractères) ne tient pas dans {piece.loops > 1 ? 'les boucles' : 'la boucle'}.
+          Raccourcissez-le pour exporter la pièce sans perdre de texte.
         </p>
       )}
       {piece.overflowReason === 'pages' && (

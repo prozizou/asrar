@@ -981,10 +981,10 @@ export default function AlQalamPage() {
                     />
 
                     <button className="btn-glass" onClick={onPrintOrnement} disabled={!ornementLetters.length}>
-                      <Printer size={16} strokeWidth={2} aria-hidden="true" /> PDF / Impression
+                      <Printer size={16} strokeWidth={2} aria-hidden="true" /> Télécharger le PDF
                     </button>
                     <p className="orne-hint">
-                      Choisissez « Enregistrer en PDF » comme destination. La pièce s&apos;imprime en A4 paysage.
+                      Le PDF est téléchargé directement au format A4 paysage, avec ses numéros de page.
                     </p>
                   </>
                 ) : (
