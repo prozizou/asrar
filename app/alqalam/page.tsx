@@ -17,7 +17,7 @@
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -269,6 +269,34 @@ export default function AlQalamPage() {
     () => buildPreview({ baseText, totalMultiplier, intercalatedPhrase, isRasmMode, searchTerm }),
     [baseText, totalMultiplier, intercalatedPhrase, isRasmMode, searchTerm]
   );
+
+  // Copier/partager le résultat complet, indépendamment de l’aperçu limité.
+  const resultText = () => {
+    const raw = htmlToPlainText(formaterTexteIntercale(baseText, intercalatedPhrase));
+    const text = isRasmMode ? convertirEnRasm(raw) : raw;
+    if ((text.length + 1) * totalMultiplier > 2000000) {
+      throw new Error('Ce résultat est trop volumineux pour le presse-papiers. Utilisez l’export Word ou PDF dans Outils.');
+    }
+    return (text + ' ').repeat(totalMultiplier).trim();
+  };
+  const copyResult = async () => {
+    try {
+      await navigator.clipboard.writeText(resultText());
+      showToast('Résultat complet copié.');
+    } catch (error) {
+      showToast(error instanceof Error && error.message.includes('volumineux') ? error.message : 'Copie indisponible. Sélectionnez le texte ou utilisez l’export dans Outils.', 'error');
+    }
+  };
+  const shareResult = async () => {
+    try {
+      const text = resultText();
+      if (navigator.share) await navigator.share({ title: 'Écriture spirituelle — ASRAR PRO', text });
+      else { await navigator.clipboard.writeText(text); showToast('Partage indisponible : résultat copié.'); }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      showToast(error instanceof Error && error.message.includes('volumineux') ? error.message : 'Le partage a échoué. Essayez Copier ou l’export dans Outils.', 'error');
+    }
+  };
 
   // ─── Suggestions de versets (debounce) ───
   const onInput = (v: string) => {
@@ -571,9 +599,10 @@ export default function AlQalamPage() {
       <div className="bg-shape shape2" />
 
       <div className="app-container">
-        <Link href="/" className="back-btn">
-          ← Retour
-        </Link>
+        <header className="alq-heading">
+          <Link href="/" aria-label="Retour à l’accueil"><ArrowLeft size={24} aria-hidden="true" /></Link>
+          <h1>Écriture spirituelle</h1>
+        </header>
 
         {writingMode === null ? (
           // Menu de sélection : quel type d'écriture ? Précède l'outil — évite
@@ -634,8 +663,10 @@ export default function AlQalamPage() {
               </button>
             </div>
 
-            <div style={{ position: 'relative', width: '100%' }}>
+            <div className="alq-text-field" style={{ position: 'relative', width: '100%' }}>
+              <label htmlFor="alq-source">Texte à répéter</label>
               <textarea
+                id="alq-source"
                 ref={inputRef}
                 className="glass-input top-textarea"
                 placeholder="يحبونهم كحب الله..."
@@ -664,8 +695,13 @@ export default function AlQalamPage() {
               )}
             </div>
 
-            <div className="grid-row-2-1">
+            <div className="grid-row-2-1 alq-repeat-row">
+              <label htmlFor="alq-repetitions">Nombre de répétitions</label>
               <input
+                id="alq-repetitions"
+                min={1}
+                step={1}
+                inputMode="numeric"
                 type="number"
                 className="glass-input"
                 placeholder="100"
@@ -677,8 +713,9 @@ export default function AlQalamPage() {
                 aria-label="Nombre de répétitions de base"
                 max={config.MAX_TOTAL_REPEAT}
               />
-              <button className="btn-glass" onClick={onWrite}>
-                Écrire
+              <button type="button" className="btn-glass" onClick={onWrite}>
+                Générer{Number.isInteger(Number(repCount)) && Number(repCount) > 0
+                  ? ` ${Math.min(Number(repCount), config.MAX_TOTAL_REPEAT).toLocaleString('fr-FR')}` : ''} répétitions
               </button>
             </div>
 
@@ -741,6 +778,9 @@ export default function AlQalamPage() {
               </div>
             )}
 
+            <details className="alq-tools">
+              <summary><SlidersHorizontal size={20} aria-hidden="true" /> Outils <ChevronDown size={18} className="alq-tools-chevron" aria-hidden="true" /></summary>
+              <div className="alq-tools-content">
             <select
               className="glass-input"
               aria-label="Outils d'édition"
@@ -956,9 +996,10 @@ export default function AlQalamPage() {
             )}
 
             <div className="slider-container">
-              <span className="slider-label">Taille du texte</span>
+              <div className="alq-slider-heading"><label className="slider-label" htmlFor="alq-font-size">Taille du texte</label><output htmlFor="alq-font-size">{fontSize} px</output></div>
               <input
                 type="range"
+                id="alq-font-size"
                 className="slider"
                 min="12"
                 max="60"
@@ -969,11 +1010,23 @@ export default function AlQalamPage() {
                 }}
               />
             </div>
+              </div>
+            </details>
           </div>
         )}
 
         {/* Aperçu */}
-        <div className="output-section">
+        <section className="output-section alq-result" aria-labelledby="alq-result-title">
+          <div className="alq-result-header">
+            <h2 id="alq-result-title"><FileText size={22} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
+            {totalMultiplier > 0 && !showOrnement && (
+              <div className="alq-result-actions">
+                <button type="button" onClick={copyResult}><Copy size={17} aria-hidden="true" /> Copier</button>
+                <button type="button" onClick={shareResult}><Share2 size={17} aria-hidden="true" /> Partager</button>
+              </div>
+            )}
+          </div>
+          {totalMultiplier > 0 && !showOrnement && <div className="alq-result-badge"><bdi dir="auto">{htmlToPlainText(baseText)}</bdi><span>× {totalMultiplier.toLocaleString('fr-FR')}</span></div>}
           {showOrnement && ornementLetters.length > 0 ? (
             <div className="orne-stage glass-panel">
               <OrneePhrasePiece
@@ -983,15 +1036,20 @@ export default function AlQalamPage() {
                 innerText={ornementVoeu}
               />
             </div>
-          ) : (
+          ) : totalMultiplier > 0 ? (
             <div
               className="output-area glass-panel"
               style={{ fontSize: fontSize + 'px' }}
-              aria-live="polite"
+              tabIndex={0}
+              aria-label="Texte généré"
               dangerouslySetInnerHTML={{ __html: preview.html }}
             />
-          )}
-        </div>
+          ) : <p className="alq-result-empty">Saisissez votre texte et générez les répétitions pour voir le résultat.</p>}
+          {totalMultiplier > 0 && !showOrnement && <p className="alq-result-status" role="status">
+            {totalMultiplier.toLocaleString('fr-FR')} répétition{totalMultiplier > 1 ? 's' : ''} générée{totalMultiplier > 1 ? 's' : ''}.
+            {' '}L’aperçu peut être limité ; la copie et les exports utilisent le résultat complet.
+          </p>}
+        </section>
       </div>
 
       {/* Popup options Word / PDF — même choix ouverture/fermeture pour les deux formats. */}
