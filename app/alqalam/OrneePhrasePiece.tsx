@@ -55,7 +55,8 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
   }
 
   return (
-    <div ref={ref} className="orne-pages">
+    <div ref={ref} className="orne-pages" data-export-ready={!piece.overflow && piece.pages.length > 0}>
+      <p className="orne-format" dir="ltr">A4 paysage · 297 × 210 mm · Marges 0,5 cm</p>
       {piece.pages.length === 0 ? (
         // N'arrive que sur un débordement 'layout' (un jeton, à lui seul, ne
         // tient dans la largeur de page même au rayon plancher) : aucune
@@ -115,7 +116,8 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                       x={item.x}
                       y={item.y}
                       textAnchor="middle"
-                      style={{ direction: 'rtl' }}
+                      style={{ direction: 'rtl', wordSpacing: item.wordSpacing }}
+                      xmlSpace="preserve"
                       fontFamily={FONT}
                       fontWeight="700"
                       fontSize={item.fontSize}
@@ -143,6 +145,17 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                   </g>
                 );
               })}
+              <text
+                x={page.W / 2}
+                y={page.H - PHRASE_PIECE.MARGIN - 4}
+                textAnchor="middle"
+                direction="ltr"
+                fontFamily="Arial, sans-serif"
+                fontSize="13"
+                fill="#333"
+              >
+                {pi + 1} / {piece.pageCount}
+              </text>
             </svg>
           </div>
         ))
