@@ -239,9 +239,12 @@ export default function AsrarPage() {
   return (
     <div className="container asrar-page">
       <div className="asrar-topbar" ref={topbarRef}>
-        <Link href="/" className="back-btn">
-          ← Retour
-        </Link>
+        {inDetail ? (
+          <div className="secret-detail-topbar">
+            <button type="button" className="secret-return" onClick={goBackFromSecret}>← Retour</button>
+            <span dir="auto">{sentenceCaseIfShouting(currentSecret?.data.faida || 'Secret mystique')}</span>
+          </div>
+        ) : <Link href="/" className="back-btn">← Retour</Link>}
         {!inDetail && (
           // .cat-rail-wrap porte le dégradé de bord droit (voir asrar.css) —
           // indice visuel qu'il reste des catégories à faire défiler, plutôt
@@ -271,7 +274,7 @@ export default function AsrarPage() {
         <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
           <div className="asrar-main">
             {inDetail ? (
-              <SecretDetail secret={currentSecret} catLabel={currentCat.label} onBack={goBackFromSecret} />
+              <SecretDetail secret={currentSecret} catLabel={currentCat.label} />
             ) : (
               <div className="secrets-list">
                 {/* Titre de page = catégorie sélectionnée (pas seulement dans

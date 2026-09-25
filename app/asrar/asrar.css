@@ -713,3 +713,85 @@ body.comment-open #asrarViewBtn { display: none !important; }
   font-size: calc(1.3rem * var(--asrar-scale)); font-weight: 700;
 }
 .rdr-sirr { line-height: 1.9; }
+/* Fiche Secrets : lecture compacte, galerie et actions accessibles. */
+.secret-detail-topbar { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.secret-detail-topbar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .95rem; }
+.asrar-page .secret-return {
+  display: inline-flex; align-items: center; flex: 0 0 auto; width: auto;
+  min-height: 44px; padding: 0 8px; margin: 0; border: 0; background: transparent;
+  color: var(--asrar-gold); font-size: .95rem; border-radius: 10px;
+}
+.secret-detail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.secret-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.secret-detail .detail-expand { width: auto; margin: 0; min-height: 44px; padding: 10px 16px; font-size: .9rem; border-radius: 12px; }
+.secret-detail .detail-expand:disabled { opacity: .65; cursor: wait; }
+.secret-detail-summary, .secret-instructions {
+  min-width: 0; padding: 18px; border: 1px solid var(--asrar-border-2);
+  border-radius: 18px; background: var(--asrar-surface);
+}
+.secret-detail-summary h1 { font-size: clamp(1.25rem, 5vw, 1.7rem); line-height: 1.35; margin: 6px 0 16px; overflow-wrap: anywhere; }
+.secret-gallery { min-width: 0; }
+.asrar-page .secret-gallery-open {
+  position: relative; display: block; width: 100%; height: clamp(160px, 52vw, 280px);
+  padding: 0; margin: 0; overflow: hidden; border-radius: 12px;
+  background: var(--asrar-surface-2); border: 1px solid var(--asrar-border); cursor: zoom-in;
+}
+.secret-gallery-open > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.secret-zoom-label { position: absolute; right: 8px; bottom: 8px; display: inline-flex; gap: 6px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(10, 8, 18, .86); color: #fff; font-size: .8rem; }
+.secret-gallery-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; font-size: .85rem; }
+.asrar-page .secret-gallery-nav button, .secret-image-dialog .secret-gallery-nav button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; min-height: 44px; margin: 0; padding: 8px;
+  border: 1px solid var(--asrar-border); border-radius: 50%; background: transparent; color: inherit;
+}
+.secret-instructions h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 1.1rem; color: var(--asrar-gold); }
+.secret-reading-steps { list-style: none; counter-reset: reading-step; padding: 0; margin: 0; }
+.secret-reading-steps > li {
+  counter-increment: reading-step; position: relative; padding: 16px 0 16px 38px;
+  border-top: 1px solid var(--asrar-border);
+}
+.secret-reading-steps > li:first-child { border-top: 0; padding-top: 4px; }
+.secret-reading-steps > li:last-child { padding-bottom: 0; }
+.secret-reading-steps > li::before {
+  content: counter(reading-step); position: absolute; left: 0; top: 16px;
+  width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--asrar-gold) 18%, transparent);
+  color: var(--asrar-gold); font-size: .8rem; font-weight: 700;
+}
+.secret-reading-steps > li:first-child::before { top: 4px; }
+.secret-reading-steps > li.source-numbered { padding-left: 0; }
+.secret-reading-steps > li.source-numbered::before { content: none; }
+.secret-paragraph { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.65; color: var(--asrar-text); }
+.secret-inline-arabic { font-family: var(--font-ar); font-size: 1.3em; line-height: 1.8; unicode-bidi: isolate; }
+.secret-interactions {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 45;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  width: 100%; max-width: 800px; padding: 6px 16px max(6px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--asrar-border-2); background: var(--asrar-bg-deep);
+}
+.asrar-page .secret-interactions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 52px; min-height: 44px; width: auto; margin: 0; padding: 8px;
+  border: 0; border-radius: 10px; background: transparent; color: var(--asrar-text); font-size: .9rem;
+}
+.asrar-page .secret-interactions .is-liked { color: #ec407a; }
+.asrar-page .secret-interactions .is-saved { color: var(--asrar-gold); }
+.asrar-page .asrar-wrap.detail-mode { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+.secret-image-dialog {
+  width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0;
+  border: 0; padding: 64px 16px max(16px, env(safe-area-inset-bottom));
+  background: #100d18; color: #fff; overflow: auto;
+}
+.secret-image-dialog[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.secret-image-dialog::backdrop { background: rgba(0,0,0,.9); }
+.secret-image-dialog > img { display: block; max-width: 100%; max-height: calc(100dvh - 160px); object-fit: contain; }
+.secret-image-dialog .secret-image-close { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 12px; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 8px; border: 1px solid #777; background: #292333; color: #fff; border-radius: 50%; }
+.secret-detail button:focus-visible, .secret-return:focus-visible { outline: 2px solid var(--asrar-gold); outline-offset: 3px; }
+@media (min-width: 640px) {
+  .secret-detail-summary, .secret-instructions { padding: 24px; }
+  .secret-detail { gap: 20px; }
+}
+@media (max-width: 360px) {
+  .secret-detail-summary, .secret-instructions { padding: 14px; }
+  .secret-reading-steps > li { padding-left: 34px; }
+}
