@@ -12,8 +12,8 @@
 //   1. ABONNEMENT GLOBAL (PlanetPushToggle) — pour CHAQUE abonnement
 //      (push_subscriptions/{uid}/{subId}, écrit par pages/api/push-subscribe.js),
 //      calcule l'heure planétaire actuelle à SA position (lib/planete.js) et
-//      notifie SEULEMENT si la planète a changé depuis le dernier envoi
-//      (lastPlanet) — pas de doublon.
+//      notifie à chaque occurrence et changement de moitié de Mercure
+//      (lastStateKey) — pas de doublon pour un même état.
 //
 //   2. ALARMES WEB PAR PLANÈTE (opt-in, planet_web_alarms/{uid}/{slug}, écrit
 //      par pages/api/planet-web-alarm.js) — pendant web des alarmes locales
@@ -31,7 +31,7 @@
 
 const webpush = require("web-push");
 const { app } = require("../../../server/grant");
-const { computePday, currentHour, natureOf, buildHourList } = require("../../../lib/planete");
+const { computePday, currentHour, planetaryNotification, buildHourList } = require("../../../lib/planete");
 const { dueWebAlarms, planetFromSlug } = require("../../../lib/planetWebAlarms");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
@@ -94,22 +94,21 @@ export default async function handler(req, res) {
 async function processSubscription(db, uid, key, sub, now) {
   if (sub.lat == null || sub.lng == null || !sub.endpoint || !sub.keys) return "skipped";
 
-  const pday = computePday(now, sub.lat, sub.lng, {});
+  const pday = computePday(now, sub.lat, sub.lng, {}, sub.timeZone);
   const cur = currentHour(now, pday);
-  if (sub.lastPlanet === cur.planet) return "skipped"; // toujours la même heure, rien à annoncer
-
-  const nature = natureOf(cur.planet, cur.fraction);
+  const { state, title, body } = planetaryNotification(cur, now, sub.timeZone);
+  if (sub.lastStateKey === state.stateKey) return "skipped";
   const payload = JSON.stringify({
-    title: `🪐 Heure de ${cur.planet}`,
-    body: nature.txt,
-    url: "/planete",
-    tag: "planet-hour",
+    title, body, url: "/planete", tag: "planet-hour",
+    validUntil: state.validUntil.getTime(),
   });
 
   const ref = db.ref(`push_subscriptions/${uid}/${key}`);
   try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
-    await ref.update({ lastPlanet: cur.planet, lastSentAt: Date.now() });
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, {
+      TTL: Math.max(0, Math.floor((state.validUntil.getTime() - Date.now()) / 1000)),
+    });
+    await ref.update({ lastPlanet: cur.planet, lastStateKey: state.stateKey, lastSentAt: Date.now() });
     return "sent";
   } catch (e) {
     if (e && (e.statusCode === 404 || e.statusCode === 410)) {
@@ -160,13 +159,13 @@ async function processUserWebAlarms(db, uid, enabled, now) {
     const v = s.val() || {};
     if (v.endpoint && v.keys) subs.push({ key: s.key, endpoint: v.endpoint, keys: v.keys });
     if (v.lat != null && v.lng != null && (!ref || (v.updatedAt || 0) > (ref.updatedAt || 0))) {
-      ref = { lat: v.lat, lng: v.lng, updatedAt: v.updatedAt || 0 };
+      ref = { lat: v.lat, lng: v.lng, updatedAt: v.updatedAt || 0, timeZone: v.timeZone };
     }
   });
   if (!subs.length || !ref) return 0; // pas d'abonnement ou pas de position → rien à faire
 
   const noMatch = { isDay: null, idx: -1 };
-  const pday = computePday(now, ref.lat, ref.lng, {});
+  const pday = computePday(now, ref.lat, ref.lng, {}, ref.timeZone);
   const rows = [...buildHourList(pday, noMatch, true), ...buildHourList(pday, noMatch, false)];
   const due = dueWebAlarms({ rows, enabled, nowMs: now.getTime() });
   if (!due.length) return 0;
@@ -175,10 +174,13 @@ async function processUserWebAlarms(db, uid, enabled, now) {
   for (const d of due) {
     const offsetMin = (enabled[d.slug] && enabled[d.slug].offsetMin) || 0;
     const planet = d.planet || planetFromSlug(d.slug);
-    const nature = natureOf(planet, 0);
+    const row = rows.find((r) => r.planet === planet && r.start.getTime() === d.triggerMs + offsetMin * 60000);
+    if (!row || now >= row.end) continue;
+    const { body, state } = planetaryNotification(row, now < row.start ? row.start : now, ref.timeZone);
     const payload = JSON.stringify({
       title: offsetMin > 0 ? `🪐 ${planet} dans ${offsetMin} min` : `🪐 Heure de ${planet}`,
-      body: nature.txt,
+      body,
+      validUntil: state.validUntil.getTime(),
       url: "/planete",
       tag: "planet-alarm-" + d.slug,
     });
