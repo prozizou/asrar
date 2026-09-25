@@ -41,7 +41,7 @@ import {
   phaseOf,
   natureOf,
   buildHourList,
-  prefetchSunAPI,
+  planetaryHourState,
 } from '@/lib/planete';
 import { isSchedulable, OFFSET_CHOICES, SOUND_CHOICES, DEFAULT_ALARM_PREFS } from '@/lib/planetAlarms';
 import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, scheduleRepeatingAlarms, cancelAlarms } from '@/lib/planetAlarmsNative';
@@ -145,9 +145,7 @@ export default function PlanetePage() {
       clearTimeout(timeoutId);
       const { lat, lng, acc } = best;
       setGeo({ lat, lng, city: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, accuracy: acc, named: false, ready: true, error: null });
-      recompute(lat, lng); // 1) calcul local immédiat
-      await prefetchSunAPI(lat, lng, sunCache.current);
-      recompute(lat, lng); // 2) affiné via l'API Sunrise-Sunset
+      recompute(lat, lng); // même source solaire hors-ligne que les notifications
       const city = await reverseGeocode(lat, lng);
       if (city) setGeo((g) => ({ ...g, city, named: true }));
     };
@@ -204,7 +202,7 @@ export default function PlanetePage() {
   const cur = useMemo(() => (ready ? currentHour(now, pday) : null), [ready, now, pday]);
   const next = useMemo(() => (ready && cur ? nextHour(pday, cur) : null), [ready, cur, pday]);
   const phase = ready ? phaseOf(now, todaySun!.sunrise, todaySun!.sunset) : { icon: '🌟', name: 'Chargement...', badge: 'Phase en cours' };
-  const nature = cur ? natureOf(cur.planet, cur.fraction) : null;
+  const nature = cur ? planetaryHourState(cur, now).nature : null;
   // Pas de `fraction` pour l'heure SUIVANTE : elle n'a pas encore commencé —
   // pour Mercure (seule planète dont la nature dépend de l'avancement dans
   // l'heure), natureOf() retombe alors sur le libellé générique « 1re moitié
@@ -380,7 +378,7 @@ export default function PlanetePage() {
               second gros bouton turquoise identique au précédent — c'est une
               préférence, pas l'action principale de la page. Voir
               PlanetPushToggle.js. */}
-          <PlanetPushToggle />
+          <PlanetPushToggle lat={geo.lat} lng={geo.lng} />
 
           {hoursError && <p className="error-text">{hoursError}</p>}
           {hours && (
