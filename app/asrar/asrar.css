@@ -35,392 +35,217 @@
     --star-opacity: 0.32;
 }
 
-/* ───── Style ───── */
-body {
-  background: var(--asrar-bg) !important;
-  margin: 0;
-  font-family: var(--font-ui);
-  color: var(--asrar-text);
-  overflow-x: hidden;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-.container {
+/* Catalogue : sélecteurs propres à Secrets, sans collision avec les
+   .search-bar flex: 2 1 300px du Marché / 250px de la Bibliothèque. */
+.asrar-page.container {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0 16px max(24px, env(safe-area-inset-bottom));
   background: transparent;
+  border: 0;
   box-shadow: none;
-  border: none;
 }
-
-.back-btn {
-  color: var(--asrar-text);
-  text-decoration: none;
-  font-size: 0.9rem;
-  display: inline-block;
-  margin-bottom: 1rem;
-  opacity: 0.7;
+.asrar-page > .glass-panel {
+  background: transparent;
+  backdrop-filter: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 20px 0 0;
 }
-
-.glass-panel {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  border: none !important;
-  padding: 1rem 0;
-}
-
-/* Barre de catégories : ex-rail latéral gauche (colonne étroite qui défilait
-   avec la liste). Deux passages précédents ont échoué en conditions réelles :
-   1) `position: sticky` — le rail disparaît quand même au scroll.
-   2) `position: fixed` seul sur .cat-rail — corrige la disparition, mais en
-      se plaçant à `top: 0` du viewport il recouvre le lien « ← Retour »
-      (rendu dans le flux normal juste au-dessus du panneau).
-   Solution : le lien retour ET le rail de catégories sont regroupés dans une
-   SEULE barre fixe (.asrar-topbar), donc plus aucun recouvrement possible —
-   les deux sont toujours visibles ensemble, tout le temps. Le rail reste une
-   seule ligne HORIZONTALE qui défile latéralement (comme .vendors-scroll ou
-   .filters ailleurs dans l'app) plutôt qu'un empilement sur plusieurs lignes :
-   hauteur fixe et prévisible, beaucoup moins « verticale ».
-   .asrar-topbar-spacer réserve, plus bas dans le flux normal, la place
-   correspondant à la hauteur réelle de la barre fixe (avec ou sans le rail,
-   absent en mode détail). */
 .asrar-topbar {
   position: fixed;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 800px; /* aligné sur .container */
-  box-sizing: border-box;
+  max-width: 800px;
   z-index: 40;
   background: var(--asrar-bg-deep);
-  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--asrar-border);
+  padding: max(4px, env(safe-area-inset-top)) 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 4px;
 }
-
 .asrar-topbar .back-btn {
-  margin-bottom: 0; /* la barre fixe gère déjà l'espacement (gap) */
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 44px;
+  margin: 0;
+  color: var(--asrar-text-soft);
+  font-size: 0.875rem;
+  text-decoration: none;
 }
-
-.asrar-topbar-spacer {
-  height: 48px; /* barre = lien retour seul (mode détail) */
-}
-.asrar-topbar-spacer.with-cats {
-  height: 96px; /* barre = lien retour + rail de catégories */
-}
-
-.asrar-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Indice visuel de défilement (revue design, point 4) : un dégradé fixe sur
-   le bord droit signale qu'il reste des catégories hors champ, plutôt que la
-   barre nette et coupée qui donnait une impression d'interface tronquée (5
-   catégories au total, ~3 visibles au repos sur mobile). Volontairement
-   statique (pas de disparition au scroll — demanderait de suivre la position
-   de scroll en JS) : suffisant comme indice, sans complexité supplémentaire. */
-.cat-rail-wrap {
-  position: relative;
-}
-.cat-rail-wrap::after {
+.asrar-topbar-spacer { height: 60px; }
+.asrar-topbar-spacer.with-cats { height: 108px; }
+.asrar-wrap { display: flex; flex-direction: column; gap: 16px; }
+.asrar-main { flex: 1; min-width: 0; }
+.cat-rail-wrap { position: relative; }
+.cat-rail-wrap::before, .cat-rail-wrap::after {
   content: '';
   position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 28px;
-  background: linear-gradient(to right, transparent, var(--asrar-bg-deep));
+  top: 0; bottom: 0;
+  width: 12px;
   pointer-events: none;
+  z-index: 1;
+  opacity: 0;
 }
-
+.cat-rail-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, var(--asrar-bg-deep), transparent);
+}
+.cat-rail-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, var(--asrar-bg-deep), transparent);
+}
+.cat-rail-wrap.can-scroll-left::before,
+.cat-rail-wrap.can-scroll-right::after { opacity: 1; }
 .cat-rail {
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
   align-items: center;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  gap: 0.6rem;
-  /* Espace de respiration avant le dégradé ci-dessus, pour que le dernier
-     onglet ne soit jamais partiellement masqué par le fondu. */
-  padding-right: 20px;
+  gap: 8px;
+  padding: 2px 12px;
+  scroll-padding-inline: 12px;
+  scroll-snap-type: x proximity;
 }
 .cat-rail::-webkit-scrollbar { display: none; }
-
-.cat-item {
-  background: var(--asrar-surface);
+.asrar-page .cat-item {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 14px;
   border: 1px solid var(--asrar-border);
   border-radius: 999px;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: var(--asrar-surface);
   color: var(--asrar-text);
-  flex: 0 0 auto;
+  cursor: pointer;
   white-space: nowrap;
+  scroll-snap-align: center;
+  transition: background .2s, border-color .2s;
 }
-
-.cat-item.active {
+.asrar-page .cat-item.active {
   background: var(--asrar-cream);
   color: var(--text-on-accent);
   border-color: var(--asrar-cream);
 }
-
-.cat-item .ic {
-  /* Icône vectorielle (lucide-react, taille posée en prop) : hérite de
-     `color` via currentColor — bascule automatiquement au blanc quand
-     .active passe le fond en accent, sans règle supplémentaire. */
-  flex-shrink: 0;
-}
-
-.cat-item .lb {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-/* Vue liste */
-.asrar-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.secrets-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-/* En-tête de section (revue design, point 1) : la catégorie sélectionnée
-   redevient un TITRE DE PAGE (pas seulement l'onglet actif dans le rail),
-   avec un décompte — l'ancien écran passait directement des onglets à de
-   grandes cartes, sans repère de contexte.
-   Empilé plutôt qu'espacé aux extrémités (revue design, point 3) : le
-   décompte plaqué à droite du titre, sur toute la largeur, se lisait comme
-   un élément indépendant plutôt que lié au titre — juste en dessous, il se
-   rattache visuellement au titre en un seul repère « où je suis / combien
-   de contenus », plus compact verticalement en plus. */
-.section-header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 10px;
-}
-.section-title {
+.cat-item .ic { flex-shrink: 0; }
+.cat-item .lb { font-size: .75rem; text-transform: uppercase; letter-spacing: .025em; font-weight: 600; }
+.secrets-list { display: flex; flex-direction: column; gap: 16px; }
+.secrets-section-header { display: flex; flex-direction: column; gap: 4px; }
+.secrets-section-title {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: clamp(1.4rem, 5vw, 1.75rem);
+  line-height: 1.2;
   font-weight: 700;
   color: var(--asrar-text);
   margin: 0;
 }
-.section-count {
-  font-size: 0.78rem;
-  color: var(--asrar-text-soft); /* était --asrar-text-dim : plus près du titre, gagne à être un peu plus lisible (revue design, point 9) */
-  white-space: nowrap;
-}
-
-/* Recherche (revue design, point 9 de la revue précédente) : filtre CLIENT
-   sur la catégorie déjà chargée (voir app/asrar/page.tsx) — pas d'appel
-   serveur, la liste complète de la catégorie est déjà en cache.
-   Hauteur figée explicitement (revue design la plus récente, priorité n°1 :
-   « ressemble davantage à une grande carte vide qu'à un champ de
-   recherche ») — box-sizing: border-box + height fixe sur le conteneur ET
-   l'input garantissent ~46px quoi qu'il arrive, plutôt que de dépendre
-   d'un padding vertical sur l'input qu'une règle globale plus générique
-   pourrait faire dériver. Sélecteur `input[type="search"]` (spécificité
-   supérieure à `input[type="text"]` du fond global, voir globals.css) : ne
-   dépend pas de l'ordre de chargement des feuilles de style. */
-.search-bar {
+.secrets-section-count { font-size: .875rem; color: var(--asrar-text-soft); overflow-wrap: anywhere; }
+.asrar-page .secrets-search {
   display: flex;
+  flex: 0 0 52px;
   align-items: center;
-  gap: 8px;
-  height: 46px;
-  box-sizing: border-box;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  margin: 0;
+  padding: 0 14px;
   background: var(--surface-input);
   border: 1px solid var(--asrar-border);
-  border-radius: 12px;
-  padding: 0 14px;
-  margin-bottom: 10px;
-  color: var(--asrar-text-dim);
+  border-radius: 14px;
+  color: var(--asrar-text-soft);
 }
-.search-bar input[type="search"] {
+.secrets-search > svg { flex-shrink: 0; }
+.asrar-page .secrets-search input[type="search"] {
   flex: 1 1 0;
-  width: auto;
+  width: 100%;
   min-width: 0;
   height: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   color: var(--asrar-text);
-  font-size: 0.92rem;
+  font-size: 16px;
   outline: none;
 }
-.search-bar input::placeholder {
-  color: var(--asrar-text-dim);
-  opacity: 1;
-}
-/* Neutralise le chrome natif d'un <input type="search"> sur WebKit
-   (icône loupe/bouton d'effacement ajoutés par le navigateur) — double
-   emploi avec l'icône Search (lucide) déjà affichée, et source possible
-   d'un rendu/alignement incohérent selon le navigateur. */
-.search-bar input[type="search"]::-webkit-search-decoration,
-.search-bar input[type="search"]::-webkit-search-cancel-button,
-.search-bar input[type="search"]::-webkit-search-results-button,
-.search-bar input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.secrets-empty {
-  color: var(--asrar-text-dim);
-  text-align: center;
-  padding: 2rem;
-}
-
-/* Grille de cartes (revue design, points 2/3/6) : REMPLACE l'ancien système
-   à deux présentations (carte compacte en ligne sans image vs. grande carte
-   verticale à vignette 180px avec image) — celui-ci donnait l'impression de
-   deux composants différents selon que le contenu avait une image ou non, et
-   la version avec image poussait une seule carte à occuper presque tout
-   l'écran sur un titre long. UNE seule structure de carte maintenant, dans
-   les deux cas : vignette à RATIO FIXE (pas de hauteur fixe qui dépend de la
-   présence d'une image) + repli icône cohérent (voir .secret-thumb) quand
-   l'image manque, la même structure "chip catégorie + titre" partout.
-   2 colonnes dès le mobile (auto-fill sur grand écran) : 2 à 3 contenus
-   visibles à l'écran au lieu d'un seul. */
-.secrets-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px; /* était 0.8rem (12.8px) — un peu plus de respiration entre les cartes (revue design, point 8) */
-}
-@media (min-width: 520px) {
-  .secrets-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-}
-
-/* Bordure --asrar-border-2 (au lieu de --asrar-border) : même correctif de
-   contraste que .detail-card (revue design, point 9 — « les bordures se
-   perdent dans le fond violet très sombre »), pour une identité cohérente
-   entre la liste et le détail. */
-.secret-card {
-  background: var(--asrar-surface);
-  border: 1px solid var(--asrar-border-2);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s, border-color 0.2s;
+.secrets-search input::placeholder { color: var(--asrar-text-soft); opacity: 1; }
+.secrets-search:focus-within { outline: 2px solid var(--asrar-gold); outline-offset: 2px; }
+.secrets-empty { color: var(--asrar-text-soft); text-align: center; padding: 24px 8px; }
+.secrets-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.asrar-page .secret-card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.secret-card:hover {
-  background: var(--asrar-surface-2);
-  border-color: var(--asrar-border-2);
-  transform: translateY(-2px);
-}
-
-/* Cadre d'image standardisé (revue design, point 3) : le contenu mélange
-   photos, captures d'écran, texte arabe photographié, dessins, schémas
-   manuscrits — des dimensions et cadrages très hétérogènes. `aspect-ratio`
-   + `object-fit: cover` (posé sur SmartImage, voir page.tsx) impose un
-   CADRE fixe plutôt que de laisser l'image dicter la hauteur de la carte,
-   quelle que soit la source. Le repli (pas d'image) montre une icône plutôt
-   que l'ancien emoji 📜 — cohérent avec le reste de l'identité vectorielle. */
-.secret-thumb {
-  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
-  aspect-ratio: 16 / 9;
-  background: var(--asrar-border);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--asrar-surface);
+  border: 1px solid var(--asrar-border);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--asrar-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.asrar-page .secret-card:hover { background: var(--asrar-surface-2); border-color: var(--asrar-border-2); }
+.asrar-page .secret-card:focus-visible,
+.asrar-page .cat-item:focus-visible { outline: 2px solid var(--asrar-gold); outline-offset: 3px; }
+.secret-thumb {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--asrar-text-dim);
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--asrar-surface-2);
+  color: var(--asrar-text-soft);
   flex-shrink: 0;
 }
-/* Léger voile uniforme (revue design, point 6 : « les images sont très
-   hétérogènes... éventuellement un léger overlay sombre ») — une teinte
-   neutre et discrète (10 %) qui rapproche visuellement des sources aussi
-   différentes qu'une photo contrastée, un manuscrit clair ou une capture
-   d'écran, sans jamais les assombrir au point de les rendre illisibles.
-   Au-dessus de l'image (SmartImage rendue avant ce pseudo-élément dans le
-   DOM), en dessous de la puce favori (voir .secret-bookmark-badge). */
-.secret-thumb::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-}
-
-/* Puce favori (revue design, point 5 : « aucun indicateur... favori,
-   popularité... »). Popularité/type de contenu écartés : /api/list-content
-   ne sert pas ces champs pour ce nœud (voir le commentaire sur
-   .secret-cat-chip un peu plus bas) et les ajouter demanderait un appel par
-   fiche ou un changement serveur, hors périmètre d'une passe d'affichage.
-   Le favori, lui, est une donnée RÉELLEMENT déjà disponible : déjà stocké
-   en local (voir bmKey dans SecretDetail.js), simple à relire ici sans
-   appel réseau supplémentaire. */
+.secret-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .secret-bookmark-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--asrar-gold);
+  position: absolute; top: 8px; right: 8px; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0, 0, 0, .65); color: var(--asrar-gold);
 }
-
-.secret-body {
-  padding: 0.7rem 0.8rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-/* Repère de catégorie sur la carte (revue design, point 8) : la liste ne
-   porte pas de champ durée/description dans son modèle de données actuel
-   (métadonnées servies par /api/list-content — voir server/sources.js) sans
-   aller chercher le CONTENU complet de chaque élément juste pour l'afficher
-   en liste, ce qui casserait la frontière métadonnées/contenu payant que le
-   reste de l'app respecte (voir ANALYSE.md, sécurité du paywall). Le libellé
-   de catégorie, lui, est déjà connu côté client (onglet actif) — l'afficher
-   ici donne au moins un repère de classement sans appel supplémentaire. */
-.secret-cat-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--asrar-gold);
-}
-
+.secret-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px; }
+.secret-cat-chip { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--asrar-gold); }
 .secret-title {
   font-family: var(--font-display);
+  font-size: .95rem;
+  line-height: 1.4;
   font-weight: 600;
-  font-size: 0.92rem;
-  line-height: 1.35;
+  min-height: 2.8em;
   color: var(--asrar-text);
-  /* Casse déjà adoucie en amont (sentenceCaseIfShouting, voir page.tsx) —
-     pas de text-transform ici : un titre légitimement mixte ne doit jamais
-     être reforcé dans un sens ou l'autre par la CSS. */
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* était 3 (revue design, point 7) — grille plus régulière, quelle que soit la longueur du titre */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 640px) {
+  .secrets-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asrar-page .secret-card, .asrar-page .cat-item { transition: none; }
 }
 
 /* Vue détail (revue design) : une seule carte, bordure plus marquée + ombre

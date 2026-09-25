@@ -78,6 +78,14 @@ export default function AsrarPage() {
   const [currentSecret, setCurrentSecret] = useState<CurrentSecret | null>(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const bootRef = useRef(false);
+  const topbarRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const [topbarHeight, setTopbarHeight] = useState<number>();
+  const [railEdges, setRailEdges] = useState({ left: false, right: false });
+  const updateRailEdges = useCallback(() => {
+    const rail = railRef.current;
+    if (rail) setRailEdges({ left: rail.scrollLeft > 2, right: rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 2 });
+  }, []);
 
   // Repère favori sur les cartes (revue design, point 5 : « aucun indicateur
   // permettant de distinguer rapidement les contenus... favori » — la seule
@@ -191,6 +199,26 @@ export default function AsrarPage() {
   }, [loadSecrets, openSecret]);
 
   const inDetail = !!currentSecret;
+  // Mesure la barre réelle : lien retour, zoom texte et safe-area compris.
+  useEffect(() => {
+    const bar = topbarRef.current;
+    if (!bar) return;
+    const measure = () => { setTopbarHeight(bar.getBoundingClientRect().height); updateRailEdges(); };
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    measure();
+    return () => observer.disconnect();
+  }, [inDetail, updateRailEdges]);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const active = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!rail || !active) return;
+    const target = active.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2;
+    rail.scrollTo({ left: target, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    updateRailEdges();
+  }, [currentCat.id, inDetail, updateRailEdges]);
+
   const closeSecret = useCallback(() => setCurrentSecret(null), []);
   // Backpress Android : ferme le détail (pas de vraie navigation de page ici).
   const goBackFromSecret = useHistoryClose(inDetail, closeSecret);
@@ -209,8 +237,8 @@ export default function AsrarPage() {
   const { visible: visibleList, sentinelRef, hasMore } = useProgressiveList(filteredList);
 
   return (
-    <div className="container">
-      <div className="asrar-topbar">
+    <div className="container asrar-page">
+      <div className="asrar-topbar" ref={topbarRef}>
         <Link href="/" className="back-btn">
           ← Retour
         </Link>
@@ -219,23 +247,25 @@ export default function AsrarPage() {
           // indice visuel qu'il reste des catégories à faire défiler, plutôt
           // que la barre coupée net qui donnait une impression d'interface
           // tronquée (5 catégories, seules les ~3 premières visibles au repos).
-          <div className="cat-rail-wrap">
-            <div className="cat-rail">
+          <div className={`cat-rail-wrap${railEdges.left ? ' can-scroll-left' : ''}${railEdges.right ? ' can-scroll-right' : ''}`}>
+            <div className="cat-rail" ref={railRef} onScroll={updateRailEdges} role="group" aria-label="Catégories de secrets">
               {CATS.map((cat) => (
-                <div
+                <button
+                  type="button"
+                  aria-pressed={cat.id === currentCat.id}
                   key={cat.id}
                   className={'cat-item' + (cat.id === currentCat.id ? ' active' : '')}
                   onClick={() => switchCat(cat)}
                 >
                   <cat.Icon size={16} strokeWidth={2} className="ic" aria-hidden="true" />
                   <span className="lb">{cat.label}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
         )}
       </div>
-      <div className={'asrar-topbar-spacer' + (inDetail ? '' : ' with-cats')} />
+      <div className={'asrar-topbar-spacer' + (inDetail ? '' : ' with-cats')} style={{ height: topbarHeight }} aria-hidden />
 
       <div className="glass-panel">
         <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
@@ -250,9 +280,9 @@ export default function AsrarPage() {
                     supplémentaire) — revue design : sans ce bloc, on passait
                     directement des onglets à de grandes cartes, sans repère
                     de « où suis-je / combien de contenus ». */}
-                <div className="section-header">
-                  <h1 className="section-title">{currentCat.label}</h1>
-                  <span className="section-count">
+                <div className="secrets-section-header">
+                  <h1 className="secrets-section-title">{currentCat.label}</h1>
+                  <span className="secrets-section-count">
                     {loadingList
                       ? '…'
                       : search.trim()
@@ -261,7 +291,7 @@ export default function AsrarPage() {
                   </span>
                 </div>
                 {!loadingList && list.length > 0 && (
-                  <label className="search-bar">
+                  <label className="secrets-search">
                     <Search size={16} strokeWidth={2} aria-hidden="true" />
                     <input
                       type="search"
@@ -287,25 +317,27 @@ export default function AsrarPage() {
                       quasiment tout l'écran sur un titre long — une seule
                       carte visible à la fois. Un seul type de carte
                       maintenant (plus de distinction has-cover / sans image) :
-                      vignette à ratio fixe (16/9, voir .secret-thumb dans
+                      vignette à ratio fixe (4/3, voir .secret-thumb dans
                       asrar.css) avec une icône de repli cohérente au lieu
                       d'un emoji quand l'image manque, la même structure
                       « chip catégorie + titre » dans tous les cas. */}
                   <div className="secrets-grid">
                   {visibleList.map((item) => (
-                    <div
+                    <button
+                      type="button"
+                      title={sentenceCaseIfShouting(item.faida)}
                       key={item.key}
                       className="secret-card"
                       onClick={() => openSecret(currentCat.id, item.key)}
                     >
-                      <div className="secret-thumb">
+                      <span className="secret-thumb">
                         {item.img ? (
                           <SmartImage
                             src={optimImg(item.img, 400)}
                             alt=""
                             fill
                             sizes="(max-width: 640px) 46vw, 220px"
-                            style={{ objectFit: 'cover' }}
+                            style={{ objectFit: 'contain' }}
                           />
                         ) : (
                           <ScrollText size={26} strokeWidth={1.6} aria-hidden="true" />
@@ -315,12 +347,12 @@ export default function AsrarPage() {
                             <Bookmark size={13} strokeWidth={2} fill="currentColor" aria-hidden="true" />
                           </span>
                         )}
-                      </div>
-                      <div className="secret-body">
+                      </span>
+                      <span className="secret-body">
                         <span className="secret-cat-chip">{currentCat.label}</span>
-                        <div className="secret-title">{sentenceCaseIfShouting(item.faida)}</div>
-                      </div>
-                    </div>
+                        <span className="secret-title">{sentenceCaseIfShouting(item.faida)}</span>
+                      </span>
+                    </button>
                   ))}
                   </div>
                   {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
