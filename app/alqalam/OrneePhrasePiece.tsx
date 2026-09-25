@@ -105,7 +105,7 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                   y2={c.y}
                   stroke="#000"
                   strokeWidth={c.width}
-                  strokeLinecap="round"
+                  strokeLinecap="butt"
                 />
               ))}
 
@@ -133,7 +133,7 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
                 const inner = item.inner;
                 return (
                   <g key={i} transform={`translate(${item.cx} ${item.cy})`}>
-                    <path d={item.bowl} fill="none" stroke="#000" strokeWidth={item.stroke} strokeLinejoin="round" />
+                    <path d={item.bowl} fill="#fff" stroke="#000" strokeWidth={item.stroke} strokeLinejoin="round" />
                     {inner && (
                       <g style={{ direction: 'rtl' }} fontFamily={FONT} fontWeight="700" fill="#000">
                         {inner.lines.map((line, li) => (
