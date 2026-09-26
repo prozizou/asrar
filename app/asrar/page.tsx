@@ -12,13 +12,13 @@
 // dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './asrar.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower2, ScrollText, Bookmark, ChevronRight } from 'lucide-react';
+import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower, ScrollText, Bookmark, ChevronRight } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
 import { sentenceCaseIfShouting } from '@/lib/text';
+import { secretImages } from '@/lib/secretPresentation';
 import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
@@ -58,7 +58,7 @@ const CATS: Category[] = [
   { id: 'ouverture', Icon: DoorOpen, label: 'Ouvertures', tagline: 'Une méthode spirituelle pour ouvrir les portes de la réussite et de la baraka.' },
   { id: 'deblocage', Icon: Lock, label: 'Déblocages', tagline: 'Une formule puissante pour lever les blocages et libérer votre chemin.' },
   { id: 'ilham', Icon: BookOpen, label: 'Ilham&Wilaya', tagline: "Une pratique pour recevoir l'inspiration divine et se rapprocher de la wilaya." },
-  { id: 'domptage', Icon: Flower2, label: 'Domptages', tagline: 'Une méthode éprouvée pour gagner en maîtrise, en influence et en ascendant.' },
+  { id: 'domptage', Icon: Flower, label: 'Domptages', tagline: 'Une méthode éprouvée pour gagner en maîtrise, en influence et en ascendant.' },
 ];
 
 export default function AsrarPage() {
@@ -107,6 +107,13 @@ export default function AsrarPage() {
     }
   }, [list, currentCat.id, currentSecret]);
 
+  // Images en échec de chargement (URL morte, hôte injoignable) : on retombe
+  // sur l'icône de repli au lieu d'une vignette vide.
+  const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
+  const markBroken = useCallback((key: string) => {
+    setBrokenImgs((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+  }, []);
+
   const loadSecrets = useCallback(async (catId: string) => {
     if (cacheRef.current[catId]) {
       setList(cacheRef.current[catId]);
@@ -119,7 +126,9 @@ export default function AsrarPage() {
         key: val._key,
         faida: val.faida || val.title || val.titre || 'Secret sans titre',
         desc: val.description || val.desc || val.resume || '',
-        img: val.img || val.image || null,
+        // Même lecture que la fiche détail (img, image, images[], imgs[]) :
+        // un secret dont la seule image est dans `images` avait un placeholder.
+        img: secretImages(val)[0] || null,
         ts: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
       }));
       // Les plus récents en haut (updatedAt desc, sinon ordre des clés push).
@@ -232,7 +241,7 @@ export default function AsrarPage() {
             <button type="button" className="secret-return" onClick={goBackFromSecret}>← Retour</button>
             <span dir="auto">{sentenceCaseIfShouting(currentSecret?.data.faida || 'Secret mystique')}</span>
           </div>
-        ) : <Link href="/" className="back-btn">← Retour</Link>}
+        ) : null}
         {!inDetail && (
           // .cat-rail-wrap porte le dégradé de bord droit (voir asrar.css) —
           // indice visuel qu'il reste des catégories à faire défiler, plutôt
@@ -248,7 +257,7 @@ export default function AsrarPage() {
                   className={'cat-item' + (cat.id === currentCat.id ? ' active' : '')}
                   onClick={() => switchCat(cat)}
                 >
-                  <cat.Icon size={24} strokeWidth={1.9} className="ic" aria-hidden="true" />
+                  <cat.Icon size={22} strokeWidth={2} className="ic" aria-hidden="true" />
                   <span className="lb">{cat.label}</span>
                 </button>
               ))}
@@ -284,16 +293,17 @@ export default function AsrarPage() {
                       onClick={() => openSecret(currentCat.id, item.key)}
                     >
                       <span className="secret-thumb">
-                        {item.img ? (
+                        {item.img && !brokenImgs.has(item.key) ? (
                           <SmartImage
-                            src={optimImg(item.img, 400)}
+                            src={optimImg(item.img, 280)}
                             alt=""
                             fill
-                            sizes="(max-width: 640px) 40vw, 220px"
+                            sizes="132px"
                             style={{ objectFit: 'cover' }}
+                            onError={() => markBroken(item.key)}
                           />
                         ) : (
-                          <ScrollText size={30} strokeWidth={1.5} aria-hidden="true" />
+                          <ScrollText size={28} strokeWidth={1.5} aria-hidden="true" />
                         )}
                         {bookmarkedKeys.has(item.key) && (
                           <span className="secret-bookmark-badge" title="Dans vos favoris">
@@ -307,7 +317,7 @@ export default function AsrarPage() {
                         <span className="secret-desc">{item.desc || currentCat.tagline}</span>
                       </span>
                       <span className="secret-go" aria-hidden="true">
-                        <ChevronRight size={20} strokeWidth={2.4} />
+                        <ChevronRight size={20} strokeWidth={2.6} />
                       </span>
                     </button>
                   ))}
