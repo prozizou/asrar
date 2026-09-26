@@ -249,6 +249,11 @@ html[data-theme="light"] .asrar-page {
   color: var(--sc-title);
   overflow-wrap: anywhere;
 }
+/* Titre/description détectés arabe (dir="auto" ci-dessus, voir page.tsx) :
+   RTL + justifié plutôt que l'alignement gauche par défaut d'un conteneur
+   LTR — un secret dont l'introduction commence par une formule arabe ne
+   doit pas s'afficher à l'envers visuellement. */
+.secret-title:dir(rtl), .secret-desc:dir(rtl) { text-align: justify; text-align-last: right; }
 .secret-rule {
   display: block;
   width: 36px;
@@ -420,7 +425,8 @@ html[data-theme="light"] .asrar-page {
   font-size: 1.25rem;
   line-height: 2.1;
   direction: rtl;
-  text-align: right;
+  text-align: justify;
+  text-align-last: right;
   margin: 16px 0;
   color: var(--asrar-text);
   white-space: pre-wrap;
@@ -802,6 +808,13 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .secret-reading-steps > li.source-numbered { padding-left: 0; }
 .secret-reading-steps > li.source-numbered::before { content: none; }
 .secret-paragraph { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.65; color: var(--asrar-text); }
+/* Paragraphe entièrement arabe (dir="auto" détecte le sens dominant, voir
+   SecretDetail.js) : justifié comme le corps FR, plutôt que l'alignement à
+   droite simple par défaut. Un paragraphe mixte (FR + mots arabes isolés en
+   <bdi>, cf. .secret-inline-arabic) reste en LTR/justifié FR normal — seul
+   le sens global du bloc bascule. */
+.secret-paragraph:dir(rtl) { text-align: justify; text-align-last: right; }
+#secret-detail-title:dir(rtl) { text-align: right; }
 .secret-inline-arabic { font-family: var(--font-ar); font-size: 1.3em; line-height: 1.8; unicode-bidi: isolate; }
 .secret-interactions {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 45;
