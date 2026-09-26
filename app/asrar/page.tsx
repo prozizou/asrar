@@ -33,10 +33,6 @@ interface Category {
   id: string;
   Icon: typeof Lock;
   label: string;
-  // Accroche affichée sous le titre d'une carte quand le secret n'a pas de
-  // description propre (le nœud db_sirr_* ne stocke aujourd'hui que
-  // faida/sirr/img — voir pages/api/admin.js).
-  tagline: string;
 }
 
 interface SecretListItem {
@@ -54,11 +50,11 @@ interface CurrentSecret {
 }
 
 const CATS: Category[] = [
-  { id: 'protection', Icon: ShieldCheck, label: 'Protections', tagline: 'Une protection éprouvée basée sur des versets sacrés et des formules spirituelles.' },
-  { id: 'ouverture', Icon: DoorOpen, label: 'Ouvertures', tagline: 'Une méthode spirituelle pour ouvrir les portes de la réussite et de la baraka.' },
-  { id: 'deblocage', Icon: Lock, label: 'Déblocages', tagline: 'Une formule puissante pour lever les blocages et libérer votre chemin.' },
-  { id: 'ilham', Icon: BookOpen, label: 'Ilham&Wilaya', tagline: "Une pratique pour recevoir l'inspiration divine et se rapprocher de la wilaya." },
-  { id: 'domptage', Icon: Flower, label: 'Domptages', tagline: 'Une méthode éprouvée pour gagner en maîtrise, en influence et en ascendant.' },
+  { id: 'protection', Icon: ShieldCheck, label: 'Protections' },
+  { id: 'ouverture', Icon: DoorOpen, label: 'Ouvertures' },
+  { id: 'deblocage', Icon: Lock, label: 'Déblocages' },
+  { id: 'ilham', Icon: BookOpen, label: 'Ilham&Wilaya' },
+  { id: 'domptage', Icon: Flower, label: 'Domptages' },
 ];
 
 export default function AsrarPage() {
@@ -125,7 +121,7 @@ export default function AsrarPage() {
       const mapped: SecretListItem[] = (items || []).map((val: any) => ({
         key: val._key,
         faida: val.faida || val.title || val.titre || 'Secret sans titre',
-        desc: val.description || val.desc || val.resume || '',
+        desc: val.intro || val.description || val.desc || '',
         // Même lecture que la fiche détail (img, image, images[], imgs[]) :
         // un secret dont la seule image est dans `images` avait un placeholder.
         img: secretImages(val)[0] || null,
@@ -314,7 +310,7 @@ export default function AsrarPage() {
                       <span className="secret-body">
                         <span className="secret-title">{sentenceCaseIfShouting(item.faida)}</span>
                         <span className="secret-rule" aria-hidden="true" />
-                        <span className="secret-desc">{item.desc || currentCat.tagline}</span>
+                        {item.desc && <span className="secret-desc">{item.desc}</span>}
                       </span>
                       <span className="secret-go" aria-hidden="true">
                         <ChevronRight size={20} strokeWidth={2.6} />

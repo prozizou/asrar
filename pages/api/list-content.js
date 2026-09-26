@@ -11,6 +11,7 @@ const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { vendorKey } = require("../../lib/market");
+const { secretIntro } = require("../../lib/secretPresentation");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -41,6 +42,10 @@ export default async function handler(req, res) {
       // l'autre pour le même vendeur (compte recréé) et fait apparaître deux
       // cartes boutique pour la même boutique.
       if (kind === "product") meta.vendorKey = vendorKey(v);
+      // Secrets : courte introduction (~150 caractères) tirée du début du
+      // texte payant, pour la carte de liste — le texte complet reste réservé
+      // à /api/get-content (abonnés).
+      if (kind === "secret") meta.intro = secretIntro(v.sirr || v.content);
       items.push(meta);
     });
 

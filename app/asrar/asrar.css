@@ -105,16 +105,34 @@
 .cat-rail-wrap.can-scroll-left::before,
 .cat-rail-wrap.can-scroll-right::after { opacity: 1; }
 /* ───── Liste « maquette » : onglets tuiles + cartes horizontales ─────
-   Palette fixe (vert profond + blanc) reprise telle quelle de la maquette,
-   identique en clair et en sombre. */
+   Palette dérivée des tokens globaux (globals.css) pour suivre le toggle
+   clair/sombre comme le reste de l'app : sombre = violet (cartes #241639,
+   accent --accent), clair = cartes blanches et turquoise profond. */
 .asrar-page {
-  --sc-green: #0f5c4f;
-  --sc-green-line: #1f8f74;
+  --sc-active: var(--accent);
+  --sc-on-active: var(--text-on-accent);
+  --sc-line: var(--accent);
+  --sc-card: var(--card-bg);
+  --sc-card-border: var(--border-soft);
+  --sc-title: var(--text-main);
+  --sc-text: var(--text-dim);
+  --sc-go-bg: color-mix(in srgb, var(--accent) 20%, transparent);
+  --sc-go: var(--accent);
+  --sc-thumb-bg: var(--card-accent);
+  --sc-thumb-ink: var(--text-faint);
+  --sc-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+html[data-theme="light"] .asrar-page {
+  --sc-active: var(--accent-hover);
+  --sc-line: var(--accent);
   --sc-card: #ffffff;
   --sc-card-border: rgba(15, 92, 79, 0.08);
   --sc-title: #0f4c42;
   --sc-text: #5d6b69;
   --sc-go-bg: #e3f1ed;
+  --sc-go: #0f4c42;
+  --sc-thumb-bg: #f6f1e4;
+  --sc-thumb-ink: #9a8f74;
   --sc-shadow: 0 4px 16px rgba(15, 60, 52, 0.10);
 }
 .cat-rail {
@@ -156,9 +174,9 @@
   transition: background .2s, color .2s;
 }
 .asrar-page .cat-item.active {
-  background: var(--sc-green);
-  color: #ffffff;
-  border-color: var(--sc-green);
+  background: var(--sc-active);
+  color: var(--sc-on-active);
+  border-color: var(--sc-active);
 }
 .cat-item .ic { flex-shrink: 0; }
 .cat-item .lb { font-size: .74rem; font-weight: 600; letter-spacing: -.01em; }
@@ -189,10 +207,10 @@
   cursor: pointer;
   transition: transform .15s, box-shadow .2s;
 }
-.asrar-page .secret-card:hover { box-shadow: 0 6px 22px rgba(15, 60, 52, 0.16); }
+.asrar-page .secret-card:hover { border-color: var(--sc-line); }
 .asrar-page .secret-card:active { transform: scale(.99); }
 .asrar-page .secret-card:focus-visible,
-.asrar-page .cat-item:focus-visible { outline: 2px solid var(--sc-green-line); outline-offset: 3px; }
+.asrar-page .cat-item:focus-visible { outline: 2px solid var(--sc-line); outline-offset: 3px; }
 .secret-thumb {
   /* Largeur fixe, hauteur = hauteur de la carte (étirée) : l'image occupe
      tout le bord gauche comme sur la maquette. */
@@ -206,15 +224,15 @@
   min-height: 112px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f6f1e4;
-  color: #9a8f74;
+  background: var(--sc-thumb-bg);
+  color: var(--sc-thumb-ink);
 }
 .secret-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .secret-bookmark-badge {
   position: absolute; top: 6px; right: 6px; z-index: 1;
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border-radius: 50%;
-  background: var(--sc-green); color: #ffffff;
+  background: var(--sc-active); color: var(--sc-on-active);
 }
 .secret-body {
   display: flex;
@@ -237,7 +255,7 @@
   height: 3px;
   margin: 12px 0 11px;
   border-radius: 2px;
-  background: var(--sc-green-line);
+  background: var(--sc-line);
 }
 .secret-desc {
   font-size: 13.5px;
@@ -257,7 +275,7 @@
   height: 38px;
   border-radius: 50%;
   background: var(--sc-go-bg);
-  color: var(--sc-title);
+  color: var(--sc-go);
 }
 .secret-cat-chip { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--asrar-gold); }
 @media (max-width: 380px) {
