@@ -308,9 +308,9 @@ export default function AsrarPage() {
                         )}
                       </span>
                       <span className="secret-body">
-                        <span className="secret-title">{sentenceCaseIfShouting(item.faida)}</span>
+                        <span className="secret-title" dir="auto">{sentenceCaseIfShouting(item.faida)}</span>
                         <span className="secret-rule" aria-hidden="true" />
-                        {item.desc && <span className="secret-desc">{item.desc}</span>}
+                        {item.desc && <span className="secret-desc" dir="auto">{item.desc}</span>}
                       </span>
                       <span className="secret-go" aria-hidden="true">
                         <ChevronRight size={20} strokeWidth={2.6} />
