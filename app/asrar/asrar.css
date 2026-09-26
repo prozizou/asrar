@@ -81,7 +81,7 @@
   text-decoration: none;
 }
 .asrar-topbar-spacer { height: 60px; }
-.asrar-topbar-spacer.with-cats { height: 108px; }
+.asrar-topbar-spacer.with-cats { height: 150px; }
 .asrar-wrap { display: flex; flex-direction: column; gap: 16px; }
 .asrar-main { flex: 1; min-width: 0; }
 .cat-rail-wrap { position: relative; }
@@ -104,145 +104,164 @@
 }
 .cat-rail-wrap.can-scroll-left::before,
 .cat-rail-wrap.can-scroll-right::after { opacity: 1; }
+/* ───── Liste « maquette » : onglets tuiles + cartes horizontales ─────
+   Palette fixe (vert profond + blanc) reprise telle quelle de la maquette,
+   identique en clair et en sombre. */
+.asrar-page {
+  --sc-green: #0f5c4f;
+  --sc-green-line: #1f8f74;
+  --sc-card: #ffffff;
+  --sc-card-border: rgba(15, 92, 79, 0.08);
+  --sc-title: #0f4c42;
+  --sc-text: #5d6b69;
+  --sc-go-bg: #e3f1ed;
+  --sc-shadow: 0 4px 16px rgba(15, 60, 52, 0.10);
+}
 .cat-rail {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  gap: 8px;
-  padding: 2px 12px;
-  scroll-padding-inline: 12px;
+  gap: 6px;
+  padding: 4px 2px 6px;
   scroll-snap-type: x proximity;
 }
 .cat-rail::-webkit-scrollbar { display: none; }
 .asrar-page .cat-item {
-  flex: 0 0 auto;
-  display: inline-flex;
+  flex: 1 0 auto;
+  min-width: 60px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   width: auto;
-  min-height: 44px;
+  min-height: 80px;
   margin: 0;
-  padding: 8px 14px;
-  border: 1px solid var(--asrar-border);
-  border-radius: 999px;
-  background: var(--asrar-surface);
-  color: var(--asrar-text);
+  padding: 12px 6px 10px;
+  border: 1px solid var(--sc-card-border);
+  border-radius: 16px;
+  background: var(--sc-card);
+  color: var(--sc-title);
+  box-shadow: var(--sc-shadow);
   cursor: pointer;
   white-space: nowrap;
   scroll-snap-align: center;
-  transition: background .2s, border-color .2s;
+  transition: background .2s, color .2s;
 }
 .asrar-page .cat-item.active {
-  background: var(--asrar-cream);
-  color: var(--text-on-accent);
-  border-color: var(--asrar-cream);
+  background: var(--sc-green);
+  color: #ffffff;
+  border-color: var(--sc-green);
 }
 .cat-item .ic { flex-shrink: 0; }
-.cat-item .lb { font-size: .75rem; text-transform: uppercase; letter-spacing: .025em; font-weight: 600; }
+.cat-item .lb { font-size: .74rem; font-weight: 600; letter-spacing: -.01em; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 .secrets-list { display: flex; flex-direction: column; gap: 16px; }
-.secrets-section-header { display: flex; flex-direction: column; gap: 4px; }
-.secrets-section-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 5vw, 1.75rem);
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--asrar-text);
-  margin: 0;
-}
-.secrets-section-count { font-size: .875rem; color: var(--asrar-text-soft); overflow-wrap: anywhere; }
-.asrar-page .secrets-search {
-  display: flex;
-  flex: 0 0 52px;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 52px;
-  min-height: 52px;
-  max-height: 52px;
-  margin: 0;
-  padding: 0 14px;
-  background: var(--surface-input);
-  border: 1px solid var(--asrar-border);
-  border-radius: 14px;
-  color: var(--asrar-text-soft);
-}
-.secrets-search > svg { flex-shrink: 0; }
-.asrar-page .secrets-search input[type="search"] {
-  flex: 1 1 0;
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  color: var(--asrar-text);
-  font-size: 16px;
-  outline: none;
-}
-.secrets-search input::placeholder { color: var(--asrar-text-soft); opacity: 1; }
-.secrets-search:focus-within { outline: 2px solid var(--asrar-gold); outline-offset: 2px; }
 .secrets-empty { color: var(--asrar-text-soft); text-align: center; padding: 24px 8px; }
-.secrets-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.secrets-grid { display: flex; flex-direction: column; gap: 16px; }
 .asrar-page .secret-card {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0;
-  background: var(--asrar-surface);
-  border: 1px solid var(--asrar-border);
-  border-radius: 16px;
-  overflow: hidden;
-  color: var(--asrar-text);
+  padding: 12px;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-card-border);
+  border-radius: 18px;
+  box-shadow: var(--sc-shadow);
+  color: var(--sc-text);
   text-align: left;
   font: inherit;
   cursor: pointer;
-  transition: background .2s, border-color .2s;
+  transition: transform .15s, box-shadow .2s;
 }
-.asrar-page .secret-card:hover { background: var(--asrar-surface-2); border-color: var(--asrar-border-2); }
+.asrar-page .secret-card:hover { box-shadow: 0 6px 22px rgba(15, 60, 52, 0.16); }
+.asrar-page .secret-card:active { transform: scale(.99); }
 .asrar-page .secret-card:focus-visible,
-.asrar-page .cat-item:focus-visible { outline: 2px solid var(--asrar-gold); outline-offset: 3px; }
+.asrar-page .cat-item:focus-visible { outline: 2px solid var(--sc-green-line); outline-offset: 3px; }
 .secret-thumb {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: var(--asrar-surface-2);
-  color: var(--asrar-text-soft);
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: 38%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1.03;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f6f1e4;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: #9a8f74;
 }
-.secret-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.secret-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .secret-bookmark-badge {
-  position: absolute; top: 8px; right: 8px; z-index: 1;
+  position: absolute; top: 6px; right: 6px; z-index: 1;
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(0, 0, 0, .65); color: var(--asrar-gold);
+  background: var(--sc-green); color: #ffffff;
 }
-.secret-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px; }
-.secret-cat-chip { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--asrar-gold); }
+.secret-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 0;
+}
 .secret-title {
-  font-family: var(--font-display);
-  font-size: .95rem;
-  line-height: 1.4;
-  font-weight: 600;
-  min-height: 2.8em;
-  color: var(--asrar-text);
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--sc-title);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-@media (min-width: 640px) {
-  .secrets-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.secret-rule {
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin: 12px 0 10px;
+  border-radius: 2px;
+  background: var(--sc-green-line);
+}
+.secret-desc {
+  font-size: .88rem;
+  line-height: 1.45;
+  color: var(--sc-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.secret-go {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sc-go-bg);
+  color: var(--sc-title);
+}
+.secret-cat-chip { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--asrar-gold); }
+@media (max-width: 380px) {
+  .asrar-page .secret-card { gap: 12px; padding: 10px; }
+  .secret-title { font-size: .95rem; }
+  .secret-desc { font-size: .85rem; }
+  .secret-go { width: 38px; height: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .asrar-page .secret-card, .asrar-page .cat-item { transition: none; }

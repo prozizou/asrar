@@ -11,9 +11,9 @@
 // (composants/hooks partagés, hors scope de ce batch) — mêmes principes que
 // dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './asrar.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Unlock, Flame, Sparkles, Shield, DoorOpen, ScrollText, Search, Bookmark } from 'lucide-react';
+import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower2, ScrollText, Bookmark, ChevronRight } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
@@ -26,22 +26,23 @@ import SecretDetail from './SecretDetail';
 
 const SmartImage = SmartImageUntyped as any;
 
-// Icônes vectorielles (lucide-react) à la place des émojis 🔓🌀✨🛡️🚪 — revue
-// design : le rendu d'un émoji varie selon Android/iOS/le fabricant du
-// téléphone, ce qui nuit à une identité visuelle cohérente. Choix
-// sémantiques (pas de correspondance 1:1 parfaite pour des concepts
-// ésotériques comme « Domptage ») : Unlock=déblocage, Flame=domptage
-// (maîtrise/pouvoir), Sparkles=ilham (inspiration), Shield=protection,
-// DoorOpen=ouverture (de voie).
+// Icônes vectorielles (lucide-react) plutôt que des émojis (rendu variable
+// selon Android/iOS). Ordre, libellés et pictogrammes calqués sur la
+// maquette : onglets carrés « icône au-dessus du libellé ».
 interface Category {
   id: string;
-  Icon: typeof Unlock;
+  Icon: typeof Lock;
   label: string;
+  // Accroche affichée sous le titre d'une carte quand le secret n'a pas de
+  // description propre (le nœud db_sirr_* ne stocke aujourd'hui que
+  // faida/sirr/img — voir pages/api/admin.js).
+  tagline: string;
 }
 
 interface SecretListItem {
   key: string;
   faida: string;
+  desc: string;
   img: string | null;
   ts: number;
 }
@@ -53,11 +54,11 @@ interface CurrentSecret {
 }
 
 const CATS: Category[] = [
-  { id: 'deblocage', Icon: Unlock, label: 'Déblocage' },
-  { id: 'domptage', Icon: Flame, label: 'Domptage' },
-  { id: 'ilham', Icon: Sparkles, label: 'Ilham' },
-  { id: 'protection', Icon: Shield, label: 'Protection' },
-  { id: 'ouverture', Icon: DoorOpen, label: 'Ouverture' },
+  { id: 'protection', Icon: ShieldCheck, label: 'Protections', tagline: 'Une protection éprouvée basée sur des versets sacrés et des formules spirituelles.' },
+  { id: 'ouverture', Icon: DoorOpen, label: 'Ouvertures', tagline: 'Une méthode spirituelle pour ouvrir les portes de la réussite et de la baraka.' },
+  { id: 'deblocage', Icon: Lock, label: 'Déblocages', tagline: 'Une formule puissante pour lever les blocages et libérer votre chemin.' },
+  { id: 'ilham', Icon: BookOpen, label: 'Ilham&Wilaya', tagline: "Une pratique pour recevoir l'inspiration divine et se rapprocher de la wilaya." },
+  { id: 'domptage', Icon: Flower2, label: 'Domptages', tagline: 'Une méthode éprouvée pour gagner en maîtrise, en influence et en ascendant.' },
 ];
 
 export default function AsrarPage() {
@@ -71,10 +72,6 @@ export default function AsrarPage() {
   const [currentCat, setCurrentCat] = useState<Category>(CATS[0]);
   const [list, setList] = useState<SecretListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  // Recherche : filtre côté client la catégorie déjà chargée (pas d'appel
-  // serveur supplémentaire — `list` est déjà en cache par catégorie). Réinitialisée
-  // à chaque changement de catégorie (switchCat).
-  const [search, setSearch] = useState('');
   const [currentSecret, setCurrentSecret] = useState<CurrentSecret | null>(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const bootRef = useRef(false);
@@ -92,8 +89,7 @@ export default function AsrarPage() {
   // donnée de ce type déjà disponible SANS appel réseau supplémentaire : le
   // favori est stocké en local par SecretDetail.js (bmKey), simplement relu
   // ici. Popularité/type de contenu écartés : /api/list-content ne sert pas
-  // ces champs pour ce nœud (voir le commentaire sur .secret-cat-chip,
-  // asrar.css) et les ajouter demanderait un appel par fiche ou un
+  // ces champs pour ce nœud (voir server/sources.js) et les ajouter demanderait un appel par fiche ou un
   // changement serveur, hors périmètre d'une passe d'affichage.
   // Recalculé au changement de catégorie/liste ET au retour depuis la fiche
   // détail (currentSecret redevient null) — un favori qui vient d'être
@@ -122,6 +118,7 @@ export default function AsrarPage() {
       const mapped: SecretListItem[] = (items || []).map((val: any) => ({
         key: val._key,
         faida: val.faida || val.title || val.titre || 'Secret sans titre',
+        desc: val.description || val.desc || val.resume || '',
         img: val.img || val.image || null,
         ts: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
       }));
@@ -174,7 +171,6 @@ export default function AsrarPage() {
   const switchCat = (cat: Category) => {
     setCurrentCat(cat);
     setCurrentSecret(null);
-    setSearch('');
     loadSecrets(cat.id);
   };
 
@@ -223,18 +219,10 @@ export default function AsrarPage() {
   // Backpress Android : ferme le détail (pas de vraie navigation de page ici).
   const goBackFromSecret = useHistoryClose(inDetail, closeSecret);
 
-  const filteredList = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((item) => item.faida.toLowerCase().includes(q));
-  }, [list, search]);
-
   // Rendu progressif : une catégorie chargée ne monte plus toutes ses cartes
-  // (vignettes comprises) d'un bloc. Le compteur repart à chaque changement de
-  // catégorie OU de recherche, `filteredList` étant remplacée dans les deux
-  // cas (nouvelle référence à chaque changement de `search`/`list` — voir
-  // useProgressiveList.js, prévu dès l'origine pour ce cas).
-  const { visible: visibleList, sentinelRef, hasMore } = useProgressiveList(filteredList);
+  // (vignettes comprises) d'un bloc ; le compteur repart à chaque changement
+  // de catégorie (`list` remplacée — voir useProgressiveList.js).
+  const { visible: visibleList, sentinelRef, hasMore } = useProgressiveList(list);
 
   return (
     <div className="container asrar-page">
@@ -260,7 +248,7 @@ export default function AsrarPage() {
                   className={'cat-item' + (cat.id === currentCat.id ? ' active' : '')}
                   onClick={() => switchCat(cat)}
                 >
-                  <cat.Icon size={16} strokeWidth={2} className="ic" aria-hidden="true" />
+                  <cat.Icon size={24} strokeWidth={1.9} className="ic" aria-hidden="true" />
                   <span className="lb">{cat.label}</span>
                 </button>
               ))}
@@ -277,53 +265,15 @@ export default function AsrarPage() {
               <SecretDetail secret={currentSecret} catLabel={currentCat.label} />
             ) : (
               <div className="secrets-list">
-                {/* Titre de page = catégorie sélectionnée (pas seulement dans
-                    l'onglet actif) + décompte, et recherche client (filtre
-                    `list`, déjà en cache par catégorie — aucun appel serveur
-                    supplémentaire) — revue design : sans ce bloc, on passait
-                    directement des onglets à de grandes cartes, sans repère
-                    de « où suis-je / combien de contenus ». */}
-                <div className="secrets-section-header">
-                  <h1 className="secrets-section-title">{currentCat.label}</h1>
-                  <span className="secrets-section-count">
-                    {loadingList
-                      ? '…'
-                      : search.trim()
-                      ? `${filteredList.length} résultat${filteredList.length > 1 ? 's' : ''} pour « ${search.trim()} »`
-                      : `${list.length} contenu${list.length > 1 ? 's' : ''}`}
-                  </span>
-                </div>
-                {!loadingList && list.length > 0 && (
-                  <label className="secrets-search">
-                    <Search size={16} strokeWidth={2} aria-hidden="true" />
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Rechercher une pratique…"
-                      aria-label={`Rechercher dans ${currentCat.label}`}
-                    />
-                  </label>
-                )}
-
                 {loadingList ? (
                   <div className="loader" />
                 ) : list.length === 0 ? (
                   <p className="secrets-empty">Aucun secret trouvé dans cette catégorie.</p>
-                ) : filteredList.length === 0 ? (
-                  <p className="secrets-empty">Aucun résultat pour « {search.trim()} ».</p>
                 ) : (
                   <>
-                  {/* Grille compacte (2 colonnes sur mobile, plus large sur
-                      grand écran) : les anciennes cartes « has-cover » à
-                      hauteur fixe (180px de vignette + titre) prenaient
-                      quasiment tout l'écran sur un titre long — une seule
-                      carte visible à la fois. Un seul type de carte
-                      maintenant (plus de distinction has-cover / sans image) :
-                      vignette à ratio fixe (4/3, voir .secret-thumb dans
-                      asrar.css) avec une icône de repli cohérente au lieu
-                      d'un emoji quand l'image manque, la même structure
-                      « chip catégorie + titre » dans tous les cas. */}
+                  {/* Cartes horizontales (maquette) : vignette à gauche, titre en
+                      capitales + filet vert + description, flèche ronde à droite. */}
+                  <h1 className="sr-only">{currentCat.label}</h1>
                   <div className="secrets-grid">
                   {visibleList.map((item) => (
                     <button
@@ -339,11 +289,11 @@ export default function AsrarPage() {
                             src={optimImg(item.img, 400)}
                             alt=""
                             fill
-                            sizes="(max-width: 640px) 46vw, 220px"
-                            style={{ objectFit: 'contain' }}
+                            sizes="(max-width: 640px) 40vw, 220px"
+                            style={{ objectFit: 'cover' }}
                           />
                         ) : (
-                          <ScrollText size={26} strokeWidth={1.6} aria-hidden="true" />
+                          <ScrollText size={30} strokeWidth={1.5} aria-hidden="true" />
                         )}
                         {bookmarkedKeys.has(item.key) && (
                           <span className="secret-bookmark-badge" title="Dans vos favoris">
@@ -352,8 +302,12 @@ export default function AsrarPage() {
                         )}
                       </span>
                       <span className="secret-body">
-                        <span className="secret-cat-chip">{currentCat.label}</span>
                         <span className="secret-title">{sentenceCaseIfShouting(item.faida)}</span>
+                        <span className="secret-rule" aria-hidden="true" />
+                        <span className="secret-desc">{item.desc || currentCat.tagline}</span>
+                      </span>
+                      <span className="secret-go" aria-hidden="true">
+                        <ChevronRight size={20} strokeWidth={2.4} />
                       </span>
                     </button>
                   ))}
