@@ -19,6 +19,7 @@ import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
 import { optimImg } from '@/lib/img';
 import { sentenceCaseIfShouting } from '@/lib/text';
+import { secretImages } from '@/lib/secretPresentation';
 import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
@@ -107,6 +108,13 @@ export default function AsrarPage() {
     }
   }, [list, currentCat.id, currentSecret]);
 
+  // Images en échec de chargement (URL morte, hôte injoignable) : on retombe
+  // sur l'icône de repli au lieu d'une vignette vide.
+  const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
+  const markBroken = useCallback((key: string) => {
+    setBrokenImgs((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+  }, []);
+
   const loadSecrets = useCallback(async (catId: string) => {
     if (cacheRef.current[catId]) {
       setList(cacheRef.current[catId]);
@@ -119,7 +127,9 @@ export default function AsrarPage() {
         key: val._key,
         faida: val.faida || val.title || val.titre || 'Secret sans titre',
         desc: val.description || val.desc || val.resume || '',
-        img: val.img || val.image || null,
+        // Même lecture que la fiche détail (img, image, images[], imgs[]) :
+        // un secret dont la seule image est dans `images` avait un placeholder.
+        img: secretImages(val)[0] || null,
         ts: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
       }));
       // Les plus récents en haut (updatedAt desc, sinon ordre des clés push).
@@ -284,16 +294,17 @@ export default function AsrarPage() {
                       onClick={() => openSecret(currentCat.id, item.key)}
                     >
                       <span className="secret-thumb">
-                        {item.img ? (
+                        {item.img && !brokenImgs.has(item.key) ? (
                           <SmartImage
-                            src={optimImg(item.img, 400)}
+                            src={optimImg(item.img, 240)}
                             alt=""
                             fill
-                            sizes="(max-width: 640px) 40vw, 220px"
+                            sizes="116px"
                             style={{ objectFit: 'cover' }}
+                            onError={() => markBroken(item.key)}
                           />
                         ) : (
-                          <ScrollText size={30} strokeWidth={1.5} aria-hidden="true" />
+                          <ScrollText size={28} strokeWidth={1.5} aria-hidden="true" />
                         )}
                         {bookmarkedKeys.has(item.key) && (
                           <span className="secret-bookmark-badge" title="Dans vos favoris">
@@ -307,7 +318,7 @@ export default function AsrarPage() {
                         <span className="secret-desc">{item.desc || currentCat.tagline}</span>
                       </span>
                       <span className="secret-go" aria-hidden="true">
-                        <ChevronRight size={20} strokeWidth={2.4} />
+                        <ChevronRight size={22} strokeWidth={2.4} />
                       </span>
                     </button>
                   ))}
