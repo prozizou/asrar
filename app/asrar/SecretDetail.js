@@ -4,7 +4,7 @@
 // favori, feuille de commentaires) est géré par React au lieu du DOM.
 import { useEffect, useRef, useState } from 'react';
 import { Share2, FileText, Heart, MessageCircle, Bookmark, ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { secretImages, secretParagraphs, secretInlineParts } from '@/lib/secretPresentation';
+import { secretImages, secretParagraphs, secretInlineParts, secretIsArabic } from '@/lib/secretPresentation';
 import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
 import { useAccess } from '@/components/AccessProvider';
@@ -101,7 +101,7 @@ export default function SecretDetail({ secret, catLabel }) {
 
       <section className="secret-detail-summary">
         {catLabel && <span className="secret-cat-chip">{catLabel}</span>}
-        <h1 id="secret-detail-title" dir="auto">{title}</h1>
+        <h1 id="secret-detail-title" dir={secretIsArabic(title) ? 'rtl' : 'auto'}>{title}</h1>
         {img && (
           <div className="secret-gallery">
             <button type="button" className="secret-gallery-open" onClick={() => setFullscreen(true)} aria-label={`Agrandir l’image ${imageIndex + 1}`}>
@@ -124,15 +124,23 @@ export default function SecretDetail({ secret, catLabel }) {
         <h2 id="secret-instructions-title"><FileText size={22} aria-hidden="true" /> Instructions</h2>
         {paragraphs.length ? (
           <ol className="secret-reading-steps">
-            {paragraphs.map((paragraph, index) => (
-              <li key={index} className={/^\s*\d+[.)]\s/.test(paragraph) ? 'source-numbered' : ''}>
-                <div className="secret-paragraph" dir="auto">
-                  {secretInlineParts(paragraph).map((part, i) => part.arabic
-                    ? <bdi className="secret-inline-arabic" dir="rtl" lang="ar" key={i}>{part.text}</bdi>
-                    : <span key={i}>{part.text}</span>)}
-                </div>
-              </li>
-            ))}
+            {paragraphs.map((paragraph, index) => {
+              // Paragraphe majoritairement arabe (formule/verset seul sur sa
+              // ligne) : bloc RTL direct plutôt que dir="auto", qui ne
+              // détecterait jamais le sens ici — voir secretIsArabic().
+              const arabic = secretIsArabic(paragraph);
+              return (
+                <li key={index} className={/^\s*\d+[.)]\s/.test(paragraph) ? 'source-numbered' : ''}>
+                  <div className={'secret-paragraph' + (arabic ? ' secret-paragraph-ar' : '')} dir={arabic ? 'rtl' : 'auto'} lang={arabic ? 'ar' : undefined}>
+                    {arabic
+                      ? paragraph
+                      : secretInlineParts(paragraph).map((part, i) => part.arabic
+                        ? <bdi className="secret-inline-arabic" dir="rtl" lang="ar" key={i}>{part.text}</bdi>
+                        : <span key={i}>{part.text}</span>)}
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         ) : <p className="secrets-empty">Le contenu de ce secret est indisponible.</p>}
       </section>
