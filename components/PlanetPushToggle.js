@@ -5,8 +5,13 @@
 import { useEffect, useState } from 'react';
 import { pushSupported, getPushSubscriptionState, subscribeToPush, unsubscribeFromPush, syncPlanetPushPosition } from '@/lib/push';
 
-/** @param {{lat?: number|null, lng?: number|null}} props */
-export default function PlanetPushToggle({ lat = null, lng = null }) {
+/**
+ * @param {{lat?: number|null, lng?: number|null, compact?: boolean}} props
+ *   `compact` : rendu icône-seule pour le header de l'écran heures
+ *   (app/planete/page.tsx, HoursScreen) — même état/logique, le libellé texte
+ *   reste lu par les lecteurs d'écran (sr-only) mais n'occupe plus de largeur.
+ */
+export default function PlanetPushToggle({ lat = null, lng = null, compact = false }) {
   const [state, setState] = useState('checking'); // checking | unsupported | denied | subscribed | unsubscribed
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -53,9 +58,9 @@ export default function PlanetPushToggle({ lat = null, lng = null }) {
   // passer, à tort, pour tout aussi prioritaire.
   const isOn = state === 'subscribed';
   return (
-    <div className="push-toggle-row">
+    <div className={'push-toggle-row' + (compact ? ' compact' : '')}>
       <label className="push-toggle">
-        <span className="push-toggle-label">Notifications des heures planétaires</span>
+        <span className={'push-toggle-label' + (compact ? ' sr-only' : '')}>Notifications des heures planétaires</span>
         <button
           type="button"
           role="switch"
@@ -67,10 +72,10 @@ export default function PlanetPushToggle({ lat = null, lng = null }) {
           <span className="switch-knob" />
         </button>
       </label>
-      {state === 'denied' && (
+      {!compact && state === 'denied' && (
         <p className="error-text">Notifications bloquées par le navigateur — autorisez-les dans ses réglages pour ce site.</p>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {!compact && error && <p className="error-text">{error}</p>}
     </div>
   );
 }
