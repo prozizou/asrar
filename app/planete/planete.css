@@ -36,7 +36,7 @@
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
-  padding: 0;
+  padding: 12px 16px 24px;
 }
 
 .planete-page .back-btn {
@@ -439,17 +439,18 @@
 
 .planete-page .timeline-item {
   position: relative;
-  padding: 0 0 12px 27px;
+  padding: 0 0 8px 26px;
 }
 
 .planete-page .timeline-item:last-child {
   padding-bottom: 0;
 }
 
+/* Marqueur centré sur la 1re ligne de la carte (padding 12 + moitié de 44). */
 .planete-page .timeline-marker {
   position: absolute;
   left: 0;
-  top: 13px;
+  top: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -461,8 +462,8 @@
   content: '';
   position: absolute;
   left: 8px;
-  top: 29px;
-  bottom: -12px;
+  top: 43px;
+  bottom: -25px;
   width: 2px;
   background: color-mix(in srgb, var(--border) 88%, transparent);
 }
@@ -492,7 +493,7 @@
 
 .planete-page .timeline-item.is-now .timeline-marker {
   left: -3px;
-  top: 11px;
+  top: 24px;
 }
 
 .planete-page .timeline-item.is-now .timeline-dot {
@@ -504,9 +505,9 @@
 
 .planete-page .timeline-content {
   min-width: 0;
-  padding: 9px 10px;
+  padding: 12px 10px 12px 12px;
   border: 1px solid transparent;
-  border-radius: 13px;
+  border-radius: 14px;
   transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
@@ -516,17 +517,28 @@
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 76%, transparent);
 }
 
+/* Heure cochée (sélection unique) : même violet que l'horloge activée. */
+.planete-page .timeline-item.is-selected .timeline-content {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+/* [Numéro] [Planète + statut] [Heure] [Action] — colonnes fixes : l'heure et
+   l'horloge restent alignées d'une ligne à l'autre quelle que soit la
+   longueur du nom ou du statut. */
 .planete-page .timeline-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 44px;
+  grid-template-areas: 'num main time action';
   align-items: center;
-  gap: 7px;
+  column-gap: 8px;
   min-width: 0;
-  flex-wrap: wrap;
+  min-height: 44px; /* hauteur identique avec ou sans horloge (heures passées) */
 }
 
 .planete-page .timeline-order {
+  grid-area: num;
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   width: 22px;
@@ -543,19 +555,37 @@
   color: var(--text-on-accent);
 }
 
-.planete-page .timeline-planet {
+.planete-page .timeline-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
   min-width: 0;
+}
+
+.planete-page .timeline-planet {
+  max-width: 100%;
   color: var(--text-main);
   font-size: 0.91rem;
   font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .planete-page .timeline-interval {
-  margin-left: auto;
+  grid-area: time;
   color: color-mix(in srgb, var(--text-dim) 94%, white 6%);
   font-size: 0.77rem;
   font-variant-numeric: tabular-nums;
+  text-align: right;
   white-space: nowrap;
+}
+
+.planete-page .timeline-action {
+  grid-area: action;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .planete-page .timeline-alarm {
@@ -566,7 +596,7 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  margin: -6px 0 -6px 2px;
+  margin: 0; /* neutralise la marge globale des boutons (globals.css) */
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
   border-radius: 50%;
@@ -606,21 +636,23 @@
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-/* Réglages fins (délai, sonnerie, répétition) — visible une fois cochée. */
+/* Réglages fins (délai, sonnerie, répétition) — sous le statut de l'heure
+   cochée, pour ne jamais décaler la colonne des horaires. */
 .planete-page .timeline-alarm-settings {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin: -4px 0 -4px 2px;
-  padding: 0;
+  gap: 5px;
+  min-height: 32px;
+  margin: 2px 0 -6px -6px;
+  padding: 0 6px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--accent);
   cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ───────── Alarme en train de sonner ───────── */
@@ -687,17 +719,17 @@
 }
 
 .planete-page .timeline-nature {
-  margin-top: 2px;
-  padding-left: 29px;
+  display: block;
+  max-width: 100%;
   font-size: 0.78rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .planete-page .timeline-progress {
   width: auto;
   max-width: none;
-  margin: 7px 0 0 29px;
+  margin: 8px 52px 0 30px;
 }
 
 /* ───────── Régents de la semaine ───────── */
@@ -936,14 +968,16 @@
     opacity: 0.035;
   }
 
+  /* ≈16 px de marge extérieure, de 320 à 520 px. */
   .planete-page .container {
-    padding: 0;
+    padding: 12px 16px 24px;
   }
 
   .planete-page .glass-panel {
-    margin-bottom: 8px;
-    padding: 0.75rem;
-    border-radius: 14px;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 16px;
+    border-radius: 22px;
   }
 
   .planete-page .dash-card::after {
@@ -983,37 +1017,37 @@
   }
 
   .planete-page .timeline-item {
-    padding-left: 25px;
+    padding-left: 22px;
   }
 
   .planete-page .timeline-content {
-    padding: 8px 8px;
+    padding: 12px 8px 12px 10px;
   }
 
   .planete-page .timeline-head {
-    gap: 6px;
+    grid-template-columns: 22px minmax(0, 1fr) auto 42px;
+    column-gap: 7px;
   }
 
   .planete-page .timeline-planet {
-    font-size: 0.86rem;
+    font-size: 0.87rem;
   }
 
   .planete-page .timeline-interval {
-    flex: 1 1 86px;
-    margin-left: 0;
-    font-size: 0.72rem;
-    text-align: right;
+    font-size: 0.73rem;
   }
 
   .planete-page .timeline-alarm {
-    flex-basis: 42px;
     width: 42px;
     height: 42px;
   }
 
   .planete-page .timeline-nature {
-    padding-left: 28px;
-    font-size: 0.73rem;
+    font-size: 0.74rem;
+  }
+
+  .planete-page .timeline-progress {
+    margin-right: 49px;
   }
 
   .planete-page .week-today-card {
@@ -1024,6 +1058,31 @@
     grid-column: 1 / -1;
     justify-self: end;
     margin-top: -2px;
+  }
+}
+
+/* ≤ 359 px (ex. 320 px) : l'horaire passe sous le statut, dans la même
+   colonne — le nom, le statut, l'horaire et l'horloge restent entiers,
+   sans débordement horizontal. */
+@media (max-width: 359px) {
+  .planete-page .container {
+    padding-inline: 12px;
+  }
+
+  .planete-page .glass-panel {
+    padding: 14px 12px;
+  }
+
+  .planete-page .timeline-head {
+    grid-template-columns: 22px minmax(0, 1fr) 42px;
+    grid-template-areas:
+      'num main action'
+      'num time action';
+    row-gap: 1px;
+  }
+
+  .planete-page .timeline-interval {
+    text-align: left;
   }
 }
 

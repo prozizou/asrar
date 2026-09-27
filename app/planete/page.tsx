@@ -51,6 +51,7 @@ import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } fro
 import { WEB_OFFSET_CHOICES, planetSlug, planetFromSlug, ringingWebAlarms } from '@/lib/planetWebAlarms';
 import { unlockAlarmAudio, startAlarmRing, stopAlarmRing } from '@/lib/alarmRinger';
 import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
+import { hourEntries, hourIdOf, selectedHourIdFrom } from '@/lib/planetHourSelection';
 
 const Spinner = SpinnerUntyped as any;
 
@@ -76,6 +77,11 @@ interface Hours {
 }
 
 type SunCache = Record<string, { sunrise: Date; sunset: Date }>;
+type Period = 'day' | 'night';
+// Natif : un enregistrement par planète (lib/planetAlarmPrefsStore.js).
+type NativeRecord = { prefs: any; scheduledIds: number[]; startMs?: number | null };
+// Web : planètes cochées (par compte, RTDB), indexées par slug.
+type WebAlarmEntry = { offsetMin: number; onceStartMs?: number | null };
 
 // Nom de ville (réseau, AFFICHAGE seulement — la position vient du GPS).
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
@@ -403,7 +409,8 @@ export default function PlanetePage() {
                 </button>
               </div>
               <HourTimeline
-                rows={hoursTab === 'day' ? hours.day : hours.night}
+                hours={hours}
+                period={hoursTab}
                 remainingMin={remainingMin}
                 progressPct={progressPct}
                 lat={geo.lat}
@@ -472,20 +479,23 @@ export default function PlanetePage() {
 // DÉJÀ dans l'ordre chronologique (buildHourList) : aucun réagencement
 // nécessaire, contrairement à l'ancien composant.
 function HourTimeline({
-  rows,
+  hours,
+  period,
   remainingMin,
   progressPct,
   lat,
   lng,
   sunCache,
 }: {
-  rows: any[];
+  hours: Hours;
+  period: Period;
   remainingMin: number | null;
   progressPct: number;
   lat: number | null;
   lng: number | null;
   sunCache: SunCache;
 }) {
+  const rows = period === 'day' ? hours.day : hours.night;
   const nowIdx = rows.findIndex((r) => r.isNow);
 
   // Deux mécanismes d'alarme selon la plateforme, un seul actif à la fois :
@@ -495,21 +505,18 @@ function HourTimeline({
   //   - 'web'    : navigateur/PWA → le web ne peut pas programmer une alarme
   //     locale ; on enregistre le choix côté serveur et un cron envoie le push
   //     (lib/planetWebAlarmsClient.js). Réglage réduit au délai (le système
-  //     garde le contrôle du son/de la vibration ; la répétition est implicite
-  //     — le cron annonce chaque occurrence de la planète cochée).
+  //     garde le contrôle du son/de la vibration).
   //   - 'none'   : ni l'un ni l'autre (SSR, navigateur sans push) → aucune
   //     cloche, comme PlanetPushToggle.js qui rend `null` hors support.
   const [alarmMode, setAlarmMode] = useState<'none' | 'native' | 'web'>('none');
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
-  // Natif : un enregistrement par planète (préférences + ids programmés), lu
-  // depuis lib/planetAlarmPrefsStore.js — recopié en état pour que les lignes
-  // se remettent à jour dès qu'une feuille est appliquée, sans relire
-  // localStorage à chaque rendu.
-  const [records, setRecords] = useState<Record<string, { prefs: any; scheduledIds: number[] }>>({});
-  // Web : planètes cochées (par compte, RTDB) → { slug: { offsetMin } }.
-  const [webAlarms, setWebAlarms] = useState<Record<string, { offsetMin: number }>>({});
+  // Natif : un enregistrement par planète (préférences + ids programmés +
+  // heure choisie), lu depuis lib/planetAlarmPrefsStore.js — recopié en état
+  // pour que les lignes se remettent à jour sans relire localStorage.
+  const [records, setRecords] = useState<Record<string, NativeRecord>>({});
+  const [webAlarms, setWebAlarms] = useState<Record<string, WebAlarmEntry>>({});
   const [sheetRow, setSheetRow] = useState<any | null>(null);
-  const [busyPlanet, setBusyPlanet] = useState<string | null>(null);
+  const [busyHourId, setBusyHourId] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState('');
   // Alarme en train de sonner (écran plein + sonnerie en boucle, web).
   const [ringing, setRinging] = useState<{ planet: string; emoji: string; interval: string; offsetMin: number } | null>(null);
@@ -598,42 +605,69 @@ function HourTimeline({
 
   useEffect(() => () => stopAlarmRing(), []);
 
-  // Clic sur l'horloge d'une ligne : coche/décoche DIRECTEMENT l'alarme au
-  // début de l'heure de cette planète (réglages déjà enregistrés pour la
-  // planète, sinon « à l'heure exacte »). Les réglages fins (délai, sonnerie,
-  // répétition) restent accessibles via le petit bouton à côté.
-  const toggleAlarm = async (r: any, scheduled: boolean) => {
+  // SÉLECTION UNIQUE : l'heure cochée est identifiée par son id propre
+  // (période + rang + début + fin, lib/planetHourSelection.js) — JAMAIS par le
+  // nom de planète, qui cochait toutes les occurrences d'une même planète.
+  // Dérivée des données d'alarme (pas d'un état local à part) : elle reste
+  // juste après un re-render, un changement d'onglet Jour/Nuit ou un
+  // rechargement.
+  const entries = useMemo(() => hourEntries(hours), [hours]);
+  const selectedHourId = useMemo(
+    () => selectedHourIdFrom({ entries, mode: alarmMode, webAlarms, records, pendingIds, nowMs: Date.now() }),
+    [entries, alarmMode, webAlarms, records, pendingIds]
+  );
+
+  // Clic sur l'horloge d'une ligne : coche CETTE heure (et décoche toute
+  // autre — une seule heure à la fois), ou la décoche si elle l'était déjà.
+  // Réglages déjà enregistrés pour la planète, sinon « à l'heure exacte ».
+  // Les réglages fins restent accessibles via le petit bouton à côté.
+  const toggleAlarm = async (r: any, hourId: string, isSelected: boolean) => {
     unlockAlarmAudio();
-    setBusyPlanet(r.planet);
+    setBusyHourId(hourId);
     setToggleError('');
     try {
       if (alarmMode === 'native') {
-        const record = records[r.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] };
-        if (scheduled) {
-          await cancelAlarms(record.scheduledIds);
+        if (isSelected) {
+          const record = records[r.planet];
+          if (record) await cancelAlarms(record.scheduledIds);
           clearPlanetAlarmRecord(r.planet);
-          setRecords((prev) => ({ ...prev, [r.planet]: { prefs: record.prefs, scheduledIds: [] } }));
+          setRecords((prev) => ({ ...prev, [r.planet]: { prefs: record?.prefs || DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null } }));
         } else {
-          const res = await applyNativeAlarm(r, record, record.prefs, lat, lng, sunCache);
+          // Libère toute autre heure cochée (préférences conservées).
+          const cleared: Record<string, NativeRecord> = {};
+          for (const [planet, rec] of Object.entries(records)) {
+            if (!rec.scheduledIds.length) { cleared[planet] = rec; continue; }
+            await cancelAlarms(rec.scheduledIds);
+            savePlanetAlarmRecord(planet, { prefs: rec.prefs, scheduledIds: [] });
+            cleared[planet] = { prefs: rec.prefs, scheduledIds: [], startMs: null };
+          }
+          const base = cleared[r.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] };
+          const res = await applyNativeAlarm(r, base, base.prefs, lat, lng, sunCache);
+          setRecords(res.ok ? { ...cleared, [r.planet]: res.record } : cleared);
           if (!res.ok) throw new Error(nativeAlarmErrorMessage(res.error));
-          setRecords((prev) => ({ ...prev, [r.planet]: res.record }));
         }
         refreshPending();
       } else if (alarmMode === 'web') {
         const slug = planetSlug(r.planet) || '';
-        if (scheduled) {
+        if (isSelected) {
           await setWebAlarm(r.planet, false);
           setWebAlarms((prev) => { const next = { ...prev }; delete next[slug]; return next; });
         } else {
-          await setWebAlarm(r.planet, true, 0);
-          setWebAlarms((prev) => ({ ...prev, [slug]: { offsetMin: 0 } }));
+          // Libère les autres planètes cochées, puis lie l'alarme à CETTE heure.
+          const others = Object.keys(webAlarms).filter((s) => s !== slug);
+          await Promise.all(others.map((s) => setWebAlarm(planetFromSlug(s) || '', false)));
+          const offsetMin = webAlarms[slug]?.offsetMin || 0;
+          const onceStartMs = r.start.getTime();
+          await setWebAlarm(r.planet, true, offsetMin, onceStartMs);
+          setWebAlarms({ [slug]: { offsetMin, onceStartMs } });
           ensureDevicePush();
         }
       }
     } catch (e: any) {
       setToggleError(e?.message || "Impossible de modifier l'alarme.");
+      if (alarmMode === 'web') getWebAlarms().then(setWebAlarms).catch(() => {}); // resynchronise après un échec partiel
     } finally {
-      setBusyPlanet(null);
+      setBusyHourId(null);
     }
   };
 
@@ -641,16 +675,16 @@ function HourTimeline({
     <>
       <ol className="hour-timeline">
         {rows.map((r, i) => {
-          const rec = records[r.planet];
-          const nativeOn = !!rec && rec.scheduledIds.length > 0 && rec.scheduledIds.some((id) => pendingIds.has(id));
-          const webOn = alarmMode === 'web' && !!webAlarms[planetSlug(r.planet) || ''];
-          const scheduled = alarmMode === 'native' ? nativeOn : webOn;
+          const hourId = hourIdOf(period, i, r);
+          const scheduled = hourId === selectedHourId;
           const showBell = alarmMode !== 'none' && (scheduled || isSchedulable(r.start.getTime(), Date.now()));
           return (
             <li
-              key={i}
+              key={hourId}
               className={
-                'timeline-item' + (r.isNow ? ' is-now' : nowIdx >= 0 && i < nowIdx ? ' is-past' : '')
+                'timeline-item' +
+                (r.isNow ? ' is-now' : nowIdx >= 0 && i < nowIdx ? ' is-past' : '') +
+                (scheduled ? ' is-selected' : '')
               }
             >
               <span className="timeline-marker" aria-hidden="true">
@@ -659,42 +693,46 @@ function HourTimeline({
               <div className="timeline-content">
                 <div className="timeline-head">
                   <span className="timeline-order">{i + 1}</span>
-                  <span className="timeline-planet">
-                    <span aria-hidden="true">{r.emoji}</span> {r.planet}
-                    {r.isNow ? ' — maintenant' : ''}
+                  <span className="timeline-main">
+                    <span className="timeline-planet">
+                      <span aria-hidden="true">{r.emoji}</span> {r.planet}
+                      {r.isNow ? ' — maintenant' : ''}
+                    </span>
+                    <span className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</span>
+                    {showBell && scheduled && (
+                      <button
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-label={`Réglages de l'alarme de ${r.planet}`}
+                        className="timeline-alarm-settings"
+                        onClick={() => setSheetRow(r)}
+                      >
+                        <SlidersHorizontal size={13} strokeWidth={2} aria-hidden="true" /> Réglages
+                      </button>
+                    )}
                   </span>
                   <span className="timeline-interval">{r.interval}</span>
-                  {showBell && scheduled && (
-                    <button
-                      type="button"
-                      aria-haspopup="dialog"
-                      aria-label={`Réglages de l'alarme de ${r.planet}`}
-                      className="timeline-alarm-settings"
-                      onClick={() => setSheetRow(r)}
-                    >
-                      <SlidersHorizontal size={15} strokeWidth={2} aria-hidden="true" />
-                    </button>
-                  )}
-                  {showBell && (
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={scheduled}
-                      aria-label={`Alarme au début de l'heure de ${r.planet}`}
-                      title={scheduled ? 'Alarme activée — toucher pour désactiver' : 'Activer une alarme au début de cette heure'}
-                      className={'timeline-alarm' + (scheduled ? ' on' : '')}
-                      disabled={busyPlanet === r.planet}
-                      onClick={() => toggleAlarm(r, scheduled)}
-                    >
-                      {scheduled ? (
-                        <AlarmClockCheck size={20} strokeWidth={2.2} aria-hidden="true" />
-                      ) : (
-                        <AlarmClock size={20} strokeWidth={2} aria-hidden="true" />
-                      )}
-                    </button>
-                  )}
+                  <span className="timeline-action">
+                    {showBell && (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={scheduled}
+                        aria-label={`Alarme au début de l'heure de ${r.planet}, ${r.interval}`}
+                        title={scheduled ? 'Alarme activée — toucher pour désactiver' : 'Activer une alarme au début de cette heure'}
+                        className={'timeline-alarm' + (scheduled ? ' on' : '')}
+                        disabled={busyHourId !== null}
+                        onClick={() => toggleAlarm(r, hourId, scheduled)}
+                      >
+                        {scheduled ? (
+                          <AlarmClockCheck size={20} strokeWidth={2.2} aria-hidden="true" />
+                        ) : (
+                          <AlarmClock size={20} strokeWidth={2} aria-hidden="true" />
+                        )}
+                      </button>
+                    )}
+                  </span>
                 </div>
-                <div className={'timeline-nature ' + r.nat.cls}>● {r.nat.txt}</div>
                 {r.isNow && (
                   <div className="dash-progress timeline-progress">
                     <div className="dash-progress-track">
@@ -736,7 +774,7 @@ function HourTimeline({
       {sheetRow && alarmMode === 'native' && (
         <AlarmSettingsSheet
           row={sheetRow}
-          record={records[sheetRow.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] }}
+          record={records[sheetRow.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null }}
           lat={lat}
           lng={lng}
           sunCache={sunCache}
@@ -771,12 +809,12 @@ function HourTimeline({
 // réglages. Repart toujours propre (délai/son/répétition ont pu changer).
 async function applyNativeAlarm(
   row: any,
-  record: { prefs: any; scheduledIds: number[] },
+  record: NativeRecord,
   prefs: any,
   lat: number | null,
   lng: number | null,
   sunCache: SunCache
-): Promise<{ ok: true; record: { prefs: any; scheduledIds: number[] } } | { ok: false; error?: string }> {
+): Promise<{ ok: true; record: NativeRecord } | { ok: false; error?: string }> {
   await cancelAlarms(record.scheduledIds);
   const res = prefs.repeat
     ? lat == null || lng == null
@@ -785,8 +823,9 @@ async function applyNativeAlarm(
     : await scheduleHourAlarm(row, prefs);
   if (!res.ok) return { ok: false, error: res.error };
   const scheduledIds = 'ids' in res ? res.ids : [res.id];
-  savePlanetAlarmRecord(row.planet, { prefs, scheduledIds });
-  return { ok: true, record: { prefs, scheduledIds } };
+  const startMs: number = row.start.getTime();
+  savePlanetAlarmRecord(row.planet, { prefs, scheduledIds, startMs });
+  return { ok: true, record: { prefs, scheduledIds, startMs } };
 }
 
 function nativeAlarmErrorMessage(code?: string) {
@@ -819,9 +858,9 @@ function WebAlarmSheet({
   onApplied,
 }: {
   row: any;
-  current: { offsetMin: number } | null;
+  current: WebAlarmEntry | null;
   onClose: () => void;
-  onApplied: (slug: string, entry: { offsetMin: number } | null) => void;
+  onApplied: (slug: string, entry: WebAlarmEntry | null) => void;
 }) {
   const slug = planetSlug(row.planet) || '';
   const [offsetMin, setOffsetMin] = useState(current ? current.offsetMin : 0);
@@ -833,8 +872,9 @@ function WebAlarmSheet({
     setBusy(true);
     setError('');
     try {
-      await setWebAlarm(row.planet, true, offsetMin);
-      onApplied(slug, { offsetMin });
+      const onceStartMs: number = row.start.getTime(); // reste liée à CETTE heure
+      await setWebAlarm(row.planet, true, offsetMin, onceStartMs);
+      onApplied(slug, { offsetMin, onceStartMs });
       ensureDevicePush();
       onClose();
     } catch (e: any) {
@@ -876,7 +916,7 @@ function WebAlarmSheet({
         </div>
 
         <p className="alarm-sheet-note">
-          Notification envoyée à chaque fois que {row.planet} apparaît, sur tous vos appareils connectés à ce compte.
+          Alarme pour cette heure uniquement ({row.interval}), sur tous vos appareils connectés à ce compte.
         </p>
 
         {error && <p className="error-text">{error}</p>}
@@ -910,12 +950,12 @@ function AlarmSettingsSheet({
   onApplied,
 }: {
   row: any;
-  record: { prefs: any; scheduledIds: number[] };
+  record: NativeRecord;
   lat: number | null;
   lng: number | null;
   sunCache: SunCache;
   onClose: () => void;
-  onApplied: (planet: string, record: { prefs: any; scheduledIds: number[] }) => void;
+  onApplied: (planet: string, record: NativeRecord) => void;
 }) {
   const [prefs, setPrefs] = useState(record.prefs);
   const [busy, setBusy] = useState(false);
@@ -939,7 +979,7 @@ function AlarmSettingsSheet({
     setBusy(true);
     await cancelAlarms(record.scheduledIds);
     clearPlanetAlarmRecord(row.planet);
-    onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] });
+    onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null });
     onClose();
     setBusy(false);
   };

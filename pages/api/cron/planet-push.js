@@ -132,7 +132,7 @@ async function processWebAlarmsAll(db, now) {
     const enabled = {}; // slug -> { offsetMin, lastSentTrigger }
     userSnap.forEach((planetSnap) => {
       const v = planetSnap.val() || {};
-      if (v.enabled) enabled[planetSnap.key] = { offsetMin: v.offsetMin, lastSentTrigger: v.lastSentTrigger };
+      if (v.enabled) enabled[planetSnap.key] = { offsetMin: v.offsetMin, lastSentTrigger: v.lastSentTrigger, onceStartMs: v.onceStartMs };
     });
     if (Object.keys(enabled).length) tasks.push(processUserWebAlarms(db, uid, enabled, now));
   });
@@ -195,8 +195,11 @@ async function processUserWebAlarms(db, uid, enabled, now) {
     });
     // Envoi à tous les abonnements du compte ; nettoyage des abonnements morts.
     await Promise.allSettled(subs.map((sub) => sendWebAlarm(db, uid, sub, payload)));
-    // Déduplication : marque l'occurrence comme envoyée (triggerMs monotone).
-    await db.ref(`planet_web_alarms/${uid}/${d.slug}`).update({ lastSentTrigger: d.triggerMs, lastSentAt: Date.now() });
+    // Alarme ponctuelle (heure précise) : consommée → supprimée. Sinon,
+    // déduplication : marque l'occurrence comme envoyée (triggerMs monotone).
+    const alarmRef = db.ref(`planet_web_alarms/${uid}/${d.slug}`);
+    if (enabled[d.slug] && enabled[d.slug].onceStartMs != null) await alarmRef.remove();
+    else await alarmRef.update({ lastSentTrigger: d.triggerMs, lastSentAt: Date.now() });
     sent++;
   }
   return sent;
