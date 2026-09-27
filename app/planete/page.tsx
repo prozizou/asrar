@@ -28,7 +28,7 @@
 import './planete.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Globe, Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Globe, Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, AlarmClock, AlarmClockCheck, SlidersHorizontal } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
 import PlanetPushToggle from '@/components/PlanetPushToggle';
@@ -42,12 +42,14 @@ import {
   natureOf,
   buildHourList,
   planetaryHourState,
+  upcomingPlanetOccurrences,
 } from '@/lib/planete';
 import { isSchedulable, OFFSET_CHOICES, SOUND_CHOICES, DEFAULT_ALARM_PREFS } from '@/lib/planetAlarms';
 import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, scheduleRepeatingAlarms, cancelAlarms } from '@/lib/planetAlarmsNative';
 import { getAllPlanetAlarmRecords, savePlanetAlarmRecord, clearPlanetAlarmRecord } from '@/lib/planetAlarmPrefsStore';
-import { pushSupported } from '@/lib/push';
-import { WEB_OFFSET_CHOICES, planetSlug } from '@/lib/planetWebAlarms';
+import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } from '@/lib/push';
+import { WEB_OFFSET_CHOICES, planetSlug, planetFromSlug, ringingWebAlarms } from '@/lib/planetWebAlarms';
+import { unlockAlarmAudio, startAlarmRing, stopAlarmRing } from '@/lib/alarmRinger';
 import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
 
 const Spinner = SpinnerUntyped as any;
@@ -507,6 +509,10 @@ function HourTimeline({
   // Web : planètes cochées (par compte, RTDB) → { slug: { offsetMin } }.
   const [webAlarms, setWebAlarms] = useState<Record<string, { offsetMin: number }>>({});
   const [sheetRow, setSheetRow] = useState<any | null>(null);
+  const [busyPlanet, setBusyPlanet] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState('');
+  // Alarme en train de sonner (écran plein + sonnerie en boucle, web).
+  const [ringing, setRinging] = useState<{ planet: string; emoji: string; interval: string; offsetMin: number } | null>(null);
 
   const refreshPending = useCallback(() => {
     getPendingAlarmIds().then(setPendingIds);
@@ -527,6 +533,109 @@ function HourTimeline({
     });
     return () => { cancelled = true; };
   }, [refreshPending]);
+
+  // Premier tap n'importe où sur la page → déverrouille l'audio (contrainte
+  // navigateur, voir lib/alarmRinger.js) pour qu'une alarme déjà cochée lors
+  // d'une visite précédente puisse sonner sans nouveau clic sur l'horloge.
+  useEffect(() => {
+    const unlock = () => unlockAlarmAudio();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
+
+  // Sonnerie DANS LA PAGE (web) : à chaque tic, les occurrences cochées dont
+  // le déclenchement tombe dans ]tic précédent, maintenant] font sonner
+  // l'alarme (ringingWebAlarms). Les occurrences viennent de
+  // upcomingPlanetOccurrences (d'hier — la nuit avant le lever appartient à
+  // la journée planétaire de la veille — à demain), recalculées toutes les
+  // 30 min — l'alarme sonne donc aussi après minuit sans recharger la page.
+  // Le push serveur (sw.js) continue de couvrir le cas page fermée.
+  const rungKeys = useRef<Set<string>>(new Set());
+  const ring = useCallback((planet: string, triggerMs: number, row: any, offsetMin: number) => {
+    const key = planet + ':' + triggerMs;
+    if (rungKeys.current.has(key)) return;
+    rungKeys.current.add(key);
+    setRinging({ planet, emoji: row?.emoji || '🪐', interval: row?.interval || '', offsetMin });
+    startAlarmRing(() => setRinging(null));
+  }, []);
+
+  useEffect(() => {
+    if (alarmMode !== 'web' || lat == null || lng == null) return;
+    const planets = Object.keys(webAlarms).map((slug) => planetFromSlug(slug)).filter(Boolean) as string[];
+    if (!planets.length) return;
+    let occ: any[] = [];
+    let builtAt = 0;
+    let prev = Date.now();
+    const tick = () => {
+      const nowMs = Date.now();
+      if (nowMs - builtAt > 30 * 60000) {
+        occ = planets.flatMap((p) => upcomingPlanetOccurrences(p, new Date(nowMs - 86400000), 3, lat, lng, sunCache, prev - 1));
+        builtAt = nowMs;
+      }
+      for (const d of ringingWebAlarms({ rows: occ, enabled: webAlarms, prevMs: prev, nowMs })) {
+        ring(d.planet, d.triggerMs, d.row, webAlarms[d.slug]?.offsetMin || 0);
+      }
+      prev = nowMs;
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [alarmMode, webAlarms, lat, lng, sunCache, ring]);
+
+  // Push reçu pendant que la page est ouverte (public/sw.js relaie les
+  // alarmes) : filet de sécurité si le minuteur local a été gelé par le
+  // navigateur. Même clé de déduplication → jamais deux sonneries.
+  useEffect(() => {
+    if (alarmMode !== 'web' || typeof navigator === 'undefined' || !navigator.serviceWorker) return;
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data;
+      if (!d || d.type !== 'asrar-planet-alarm' || !d.planet || !d.triggerMs) return;
+      ring(d.planet, d.triggerMs, { emoji: d.emoji, interval: d.interval }, d.offsetMin || 0);
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [alarmMode, ring]);
+
+  useEffect(() => () => stopAlarmRing(), []);
+
+  // Clic sur l'horloge d'une ligne : coche/décoche DIRECTEMENT l'alarme au
+  // début de l'heure de cette planète (réglages déjà enregistrés pour la
+  // planète, sinon « à l'heure exacte »). Les réglages fins (délai, sonnerie,
+  // répétition) restent accessibles via le petit bouton à côté.
+  const toggleAlarm = async (r: any, scheduled: boolean) => {
+    unlockAlarmAudio();
+    setBusyPlanet(r.planet);
+    setToggleError('');
+    try {
+      if (alarmMode === 'native') {
+        const record = records[r.planet] || { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [] };
+        if (scheduled) {
+          await cancelAlarms(record.scheduledIds);
+          clearPlanetAlarmRecord(r.planet);
+          setRecords((prev) => ({ ...prev, [r.planet]: { prefs: record.prefs, scheduledIds: [] } }));
+        } else {
+          const res = await applyNativeAlarm(r, record, record.prefs, lat, lng, sunCache);
+          if (!res.ok) throw new Error(nativeAlarmErrorMessage(res.error));
+          setRecords((prev) => ({ ...prev, [r.planet]: res.record }));
+        }
+        refreshPending();
+      } else if (alarmMode === 'web') {
+        const slug = planetSlug(r.planet) || '';
+        if (scheduled) {
+          await setWebAlarm(r.planet, false);
+          setWebAlarms((prev) => { const next = { ...prev }; delete next[slug]; return next; });
+        } else {
+          await setWebAlarm(r.planet, true, 0);
+          setWebAlarms((prev) => ({ ...prev, [slug]: { offsetMin: 0 } }));
+          ensureDevicePush();
+        }
+      }
+    } catch (e: any) {
+      setToggleError(e?.message || "Impossible de modifier l'alarme.");
+    } finally {
+      setBusyPlanet(null);
+    }
+  };
 
   return (
     <>
@@ -555,15 +664,33 @@ function HourTimeline({
                     {r.isNow ? ' — maintenant' : ''}
                   </span>
                   <span className="timeline-interval">{r.interval}</span>
-                  {showBell && (
+                  {showBell && scheduled && (
                     <button
                       type="button"
                       aria-haspopup="dialog"
-                      aria-label={scheduled ? `Modifier l'alarme de ${r.planet}` : `Programmer une alarme pour ${r.planet}`}
-                      className={'timeline-alarm' + (scheduled ? ' on' : '')}
+                      aria-label={`Réglages de l'alarme de ${r.planet}`}
+                      className="timeline-alarm-settings"
                       onClick={() => setSheetRow(r)}
                     >
-                      {scheduled ? '🔔✓' : '☐'}
+                      <SlidersHorizontal size={15} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  )}
+                  {showBell && (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={scheduled}
+                      aria-label={`Alarme au début de l'heure de ${r.planet}`}
+                      title={scheduled ? 'Alarme activée — toucher pour désactiver' : 'Activer une alarme au début de cette heure'}
+                      className={'timeline-alarm' + (scheduled ? ' on' : '')}
+                      disabled={busyPlanet === r.planet}
+                      onClick={() => toggleAlarm(r, scheduled)}
+                    >
+                      {scheduled ? (
+                        <AlarmClockCheck size={20} strokeWidth={2.2} aria-hidden="true" />
+                      ) : (
+                        <AlarmClock size={20} strokeWidth={2} aria-hidden="true" />
+                      )}
                     </button>
                   )}
                 </div>
@@ -581,6 +708,31 @@ function HourTimeline({
           );
         })}
       </ol>
+      {toggleError && <p className="error-text">{toggleError}</p>}
+      {ringing && (
+        <div className="alarm-ringing-backdrop" role="alertdialog" aria-modal="true" aria-label={`Alarme — ${ringing.planet}`}>
+          <div className="alarm-ringing glass-panel">
+            <div className="alarm-ringing-icon" aria-hidden="true">
+              <AlarmClock size={46} strokeWidth={2} />
+            </div>
+            <p className="alarm-ringing-planet">
+              <span aria-hidden="true">{ringing.emoji}</span> {ringing.planet}
+            </p>
+            <p className="alarm-ringing-when">
+              {ringing.offsetMin > 0 ? `commence dans ${ringing.offsetMin} min` : 'commence maintenant'}
+              {ringing.interval ? ` · ${ringing.interval}` : ''}
+            </p>
+            <button
+              type="button"
+              className="access-btn"
+              autoFocus
+              onClick={() => { stopAlarmRing(); setRinging(null); }}
+            >
+              Arrêter l’alarme
+            </button>
+          </div>
+        </div>
+      )}
       {sheetRow && alarmMode === 'native' && (
         <AlarmSettingsSheet
           row={sheetRow}
@@ -614,6 +766,47 @@ function HourTimeline({
   );
 }
 
+// Programme (ou reprogramme) l'alarme native d'une planète avec `prefs` —
+// partagé entre l'horloge cochée directement sur la ligne et la feuille de
+// réglages. Repart toujours propre (délai/son/répétition ont pu changer).
+async function applyNativeAlarm(
+  row: any,
+  record: { prefs: any; scheduledIds: number[] },
+  prefs: any,
+  lat: number | null,
+  lng: number | null,
+  sunCache: SunCache
+): Promise<{ ok: true; record: { prefs: any; scheduledIds: number[] } } | { ok: false; error?: string }> {
+  await cancelAlarms(record.scheduledIds);
+  const res = prefs.repeat
+    ? lat == null || lng == null
+      ? { ok: false as const, error: 'position' }
+      : await scheduleRepeatingAlarms({ planet: row.planet, prefs, lat, lng, cache: sunCache })
+    : await scheduleHourAlarm(row, prefs);
+  if (!res.ok) return { ok: false, error: res.error };
+  const scheduledIds = 'ids' in res ? res.ids : [res.id];
+  savePlanetAlarmRecord(row.planet, { prefs, scheduledIds });
+  return { ok: true, record: { prefs, scheduledIds } };
+}
+
+function nativeAlarmErrorMessage(code?: string) {
+  if (code === 'permission') return 'Autorisation refusée — activez les notifications pour ASRAR PRO dans les réglages du téléphone.';
+  if (code === 'position') return 'Position GPS requise pour programmer les occurrences à venir.';
+  if (code === 'past') return 'Cette heure est déjà passée.';
+  if (code === 'none') return 'Aucune occurrence à venir trouvée pour cette planète.';
+  return "Impossible d'activer l'alarme.";
+}
+
+// Web : pour que l'alarme arrive aussi page FERMÉE, l'appareil doit être
+// abonné au push. Abonnement « rappels » (sans géolocalisation, voir
+// lib/push.js) — best-effort : un refus n'empêche pas la sonnerie page
+// ouverte.
+function ensureDevicePush() {
+  getPushSubscriptionState()
+    .then((state) => (state === 'unsubscribed' ? subscribeToPushReminders() : null))
+    .catch(() => {});
+}
+
 // Feuille de réglages WEB (navigateur/PWA) — pendant réduit de
 // AlarmSettingsSheet : seul le délai est réglable (le système garde le
 // contrôle du son/de la vibration ; la répétition est implicite, le cron
@@ -642,6 +835,7 @@ function WebAlarmSheet({
     try {
       await setWebAlarm(row.planet, true, offsetMin);
       onApplied(slug, { offsetMin });
+      ensureDevicePush();
       onClose();
     } catch (e: any) {
       setError(e?.message || "Impossible d'activer l'alarme.");
@@ -728,30 +922,15 @@ function AlarmSettingsSheet({
   const [error, setError] = useState('');
   const active = record.scheduledIds.length > 0;
 
-  const errorMessage = (code?: string) => {
-    if (code === 'permission') return 'Autorisation refusée — activez les notifications pour ASRAR PRO dans les réglages du téléphone.';
-    if (code === 'position') return 'Position GPS requise pour programmer les occurrences à venir.';
-    if (code === 'past') return 'Cette heure est déjà passée.';
-    if (code === 'none') return 'Aucune occurrence à venir trouvée pour cette planète.';
-    return "Impossible d'activer l'alarme.";
-  };
-
   const apply = async () => {
     setBusy(true);
     setError('');
-    await cancelAlarms(record.scheduledIds); // toujours repartir propre (offset/son/répétition ont pu changer)
-    const res = prefs.repeat
-      ? lat == null || lng == null
-        ? { ok: false as const, error: 'position' }
-        : await scheduleRepeatingAlarms({ planet: row.planet, prefs, lat, lng, cache: sunCache })
-      : await scheduleHourAlarm(row, prefs);
+    const res = await applyNativeAlarm(row, record, prefs, lat, lng, sunCache);
     if (res.ok) {
-      const scheduledIds = 'ids' in res ? res.ids : [res.id];
-      savePlanetAlarmRecord(row.planet, { prefs, scheduledIds });
-      onApplied(row.planet, { prefs, scheduledIds });
+      onApplied(row.planet, res.record);
       onClose();
     } else {
-      setError(errorMessage(res.error));
+      setError(nativeAlarmErrorMessage(res.error));
     }
     setBusy(false);
   };

@@ -183,6 +183,15 @@ async function processUserWebAlarms(db, uid, enabled, now) {
       validUntil: state.validUntil.getTime(),
       url: "/planete",
       tag: "planet-alarm-" + d.slug,
+      // Alarme (public/sw.js) : notification persistante + vibration, et
+      // relais vers /planete ouverte qui fait SONNER l'alarme (dédupliquée
+      // par planète + triggerMs avec le minuteur local de la page).
+      alarm: true,
+      planet,
+      emoji: row.emoji,
+      interval: row.interval,
+      offsetMin,
+      triggerMs: d.triggerMs,
     });
     // Envoi à tous les abonnements du compte ; nettoyage des abonnements morts.
     await Promise.allSettled(subs.map((sub) => sendWebAlarm(db, uid, sub, payload)));
