@@ -7,12 +7,14 @@
 // abonnements (push_subscriptions). Enregistrement PAR COMPTE — socle « tous
 // mes appareils ».
 //
-// Body (JSON) : { idToken, action, planet?, enabled?, offsetMin? }
-//   action="list"                              → { alarms: { slug: { offsetMin } } } (planètes cochées)
-//   action="set" { planet, enabled, offsetMin } → coche/décoche une planète
+// Body (JSON) : { idToken, action, planet?, enabled?, offsetMin?, startMs? }
+//   action="list"                                       → { alarms: { slug: { offsetMin, onceStartMs } } }
+//   action="set" { planet, enabled, offsetMin, startMs } → coche/décoche une planète
 //
-// Écrit planet_web_alarms/{uid}/{slug} = { enabled, offsetMin, lastSentTrigger,
-//   updatedAt }. Décocher SUPPRIME l'entrée (le cron n'itère que les cochées).
+// Écrit planet_web_alarms/{uid}/{slug} = { enabled, offsetMin, onceStartMs,
+//   lastSentTrigger, updatedAt }. `startMs` (début de l'heure cochée) lie
+//   l'alarme à CETTE occurrence seulement (sélection unique sur /planete) ;
+//   sans lui, ancien format : chaque occurrence de la planète est annoncée. Décocher SUPPRIME l'entrée (le cron n'itère que les cochées).
 // À la coche, lastSentTrigger est amorcé à `maintenant` : seule la PROCHAINE
 // occurrence de la planète déclenche un push, jamais celle déjà en cours.
 
@@ -23,6 +25,10 @@ const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { planetSlug, validateWebOffset } = require("../../lib/planetWebAlarms");
 
+// Une alarme ponctuelle dont l'heure est passée depuis plus longtemps que ça
+// est périmée (cron manqué) : retirée à la lecture plutôt que laissée cochée.
+const ONCE_STALE_MS = 2 * 3600_000;
+
 const RATE_LIMIT = { max: 20, windowMs: 60_000 };
 
 export default async function handler(req, res) {
@@ -30,7 +36,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, action, planet, enabled, offsetMin } = parseBody(req);
+  const { idToken, action, planet, enabled, offsetMin, startMs } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -47,10 +53,15 @@ export default async function handler(req, res) {
     if (action === "list") {
       const snap = await db.ref(base).once("value");
       const alarms = {};
+      const stale = [];
       snap.forEach((child) => {
         const v = child.val() || {};
-        if (v.enabled) alarms[child.key] = { offsetMin: validateWebOffset(v.offsetMin) };
+        if (!v.enabled) return;
+        const onceStartMs = Number.isFinite(v.onceStartMs) ? v.onceStartMs : null;
+        if (onceStartMs != null && Date.now() - onceStartMs > ONCE_STALE_MS) { stale.push(child.key); return; }
+        alarms[child.key] = { offsetMin: validateWebOffset(v.offsetMin), onceStartMs };
       });
+      await Promise.all(stale.map((slug) => db.ref(base + "/" + slug).remove().catch(() => {})));
       return res.status(200).json({ ok: true, alarms });
     }
 
@@ -62,6 +73,7 @@ export default async function handler(req, res) {
         await ref.set({
           enabled: true,
           offsetMin: validateWebOffset(offsetMin),
+          onceStartMs: Number.isFinite(startMs) ? startMs : null,
           // Amorce : n'annonce que la prochaine occurrence, pas celle en cours.
           lastSentTrigger: Date.now(),
           updatedAt: Date.now(),
