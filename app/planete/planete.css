@@ -558,7 +558,6 @@
   white-space: nowrap;
 }
 
-/* Cloche claire : inactive = sobre, active = dorée/violette + coche. */
 .planete-page .timeline-alarm {
   position: relative;
   display: inline-flex;
@@ -572,28 +571,22 @@
   border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
   border-radius: 50%;
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
-  color: var(--text-dim);
+  color: color-mix(in srgb, var(--text-dim) 80%, transparent);
   cursor: pointer;
-  font-size: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.planete-page .timeline-alarm::before {
-  content: '🔔';
-  font-size: 1rem;
-  opacity: 0.56;
-  filter: grayscale(1);
+.planete-page .timeline-alarm:disabled {
+  opacity: 0.55;
+  cursor: progress;
 }
 
+/* Horloge cochée : dorée/violette + petite coche. */
 .planete-page .timeline-alarm.on {
   border-color: color-mix(in srgb, var(--accent) 74%, white 5%);
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
-}
-
-.planete-page .timeline-alarm.on::before {
-  opacity: 1;
-  filter: none;
 }
 
 .planete-page .timeline-alarm.on::after {
@@ -611,6 +604,86 @@
   font-size: 0.62rem;
   font-weight: 900;
   box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Réglages fins (délai, sonnerie, répétition) — visible une fois cochée. */
+.planete-page .timeline-alarm-settings {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px 0 -4px 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+/* ───────── Alarme en train de sonner ───────── */
+.alarm-ringing-backdrop {
+  position: fixed;
+  z-index: 2100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.alarm-ringing {
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 22px 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--border));
+  border-radius: 22px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.alarm-ringing-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  animation: alarm-shake 0.5s ease-in-out infinite;
+}
+
+.alarm-ringing-planet {
+  margin: 0 0 4px;
+  color: var(--text-main);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.alarm-ringing-when {
+  margin: 0 0 18px;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+.alarm-ringing .access-btn {
+  width: 100%;
+}
+
+@keyframes alarm-shake {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alarm-ringing-icon { animation: none; }
 }
 
 .planete-page .timeline-nature {

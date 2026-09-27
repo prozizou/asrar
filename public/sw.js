@@ -23,7 +23,7 @@
 // components/PwaGate.js écoute 'controllerchange' et recharge la page une
 // fois pour que le JS déjà chargé en mémoire reparte du nouveau build.
 
-const SW_VERSION = 'v46.1';
+const SW_VERSION = 'v46.2';
 
 // Répond à une demande de version depuis la page (voir components/AppDrawer.js
 // « Version de l'app » — reflète la version du SW réellement actif sur
@@ -93,6 +93,15 @@ self.addEventListener('push', (event) => {
     data: { url },
   };
 
+  // Alarme d'heure planétaire cochée (pages/api/cron/planet-push.js, pass 2) :
+  // se comporte comme une alarme — reste affichée jusqu'à action, vibre
+  // longuement et re-sonne même si une notif du même tag est déjà là.
+  if (data.alarm) {
+    options.requireInteraction = true;
+    options.renotify = true;
+    options.vibrate = [500, 250, 500, 250, 500, 250, 800];
+  }
+
   // On affiche TOUJOURS la notification système (Chrome pénalise un push
   // "silencieux" reçu sous userVisibleOnly, jusqu'à révoquer l'abonnement) —
   // ET on prévient les pages ASRAR ouvertes pour qu'elles rafraîchissent
@@ -105,7 +114,14 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(title, options),
       self.clients
         .matchAll({ type: 'window', includeUncontrolled: true })
-        .then((clients) => clients.forEach((c) => c.postMessage({ type: 'asrar-notification' }))),
+        .then((clients) => clients.forEach((c) => {
+          c.postMessage({ type: 'asrar-notification' });
+          // Page /planete ouverte → elle fait sonner l'alarme (app/planete/page.tsx).
+          if (data.alarm) {
+            c.postMessage({ type: 'asrar-planet-alarm', planet: data.planet, emoji: data.emoji,
+              interval: data.interval, offsetMin: data.offsetMin, triggerMs: data.triggerMs });
+          }
+        })),
     ])
   );
 });
