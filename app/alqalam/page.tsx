@@ -23,6 +23,7 @@ import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
 import {
   config,
+  formules,
   buildPreview,
   formaterTexteIntercale,
   buildIntercalatedText,
@@ -156,7 +157,7 @@ export default function AlQalamPage() {
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupFormat, setPopupFormat] = useState<'docx' | 'pdf'>('docx'); // quel export le popup ouverture/fermeture déclenche
+  const [popupFormat, setPopupFormat] = useState<'docx' | 'pdf' | 'orne'>('docx'); // quel export le popup ouverture/fermeture déclenche
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -178,6 +179,13 @@ export default function AlQalamPage() {
   // peut produire PLUSIEURS pages — printPieces retrouve tous les
   // svg.orne-svg qu'il contient, dans l'ordre du DOM, au moment d'imprimer.
   const ornementSvgRef = useRef<HTMLDivElement | null>(null);
+  // Ouverture/fermeture choisies dans le popup du PDF ornement : elles
+  // encadrent le texte composé (X) DANS la pièce elle-même, et l'aperçu
+  // les montre aussi — ce qui s'affiche est ce qui sera exporté.
+  const [ornementFrame, setOrnementFrame] = useState({ ouv: false, ferm: false });
+  // Export demandé mais pas encore lancé : on attend que la pièce soit
+  // recomposée avec le nouveau cadre avant de convertir ses SVG en PDF.
+  const [ornementExportPending, setOrnementExportPending] = useState(false);
 
   // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé — c'est
   // ce texte que l'ornement analyse pour y détecter les lettres choisies :
@@ -211,6 +219,21 @@ export default function AlQalamPage() {
   }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
 
   const ornementSourceText = useMemo(() => buildOrnementSourceText(), [buildOrnementSourceText]);
+  // Texte réellement orné : X, précédé/suivi des formules choisies. Le Rasm
+  // suit le premier/dernier bloc, comme pour l'export Word/PDF classique.
+  // Les lettres proposées restent celles détectées dans X seul : le cadre
+  // gonfle les mêmes lettres, sans ajouter de cases à cocher.
+  const ornementPhrase = useMemo(() => {
+    if (!ornementSourceText) return '';
+    const firstRasm = accumulatedBlocks.length ? accumulatedBlocks[0].isRasmMode : isRasmMode;
+    const lastRasm = baseText.trim() && totalMultiplier > 0 ? isRasmMode : !!accumulatedBlocks[accumulatedBlocks.length - 1]?.isRasmMode;
+    const withRasm = (t: string, rasm: boolean) => (rasm ? convertirEnRasm(t) : t).trim();
+    return [
+      ornementFrame.ouv ? withRasm(formules.ouverture, firstRasm) : '',
+      ornementSourceText,
+      ornementFrame.ferm ? withRasm(formules.fermeture, lastRasm) : '',
+    ].filter(Boolean).join(' ');
+  }, [ornementSourceText, ornementFrame, accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
   const ornementDetected = useMemo(() => detectRoundLetters(ornementSourceText), [ornementSourceText]);
 
   useEffect(() => {
@@ -355,15 +378,36 @@ export default function AlQalamPage() {
   };
 
   // ─── Ornement : impression (protégé) ───
+  // Le bouton propose d'abord ouverture/fermeture (même popup que Word/PDF) ;
+  // le choix recompose la pièce, puis l'effet ci-dessous exporte ses pages.
   const onPrintOrnement = async () => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
-    try {
-      await printPieces(ornementSvgRef.current, docName.trim() || 'ornement');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
-    }
+    setPopupFormat('orne');
+    setPopupOpen(true);
   };
+
+  const triggerOrnementExport = (ouv: boolean, ferm: boolean) => {
+    setPopupOpen(false);
+    setOrnementFrame({ ouv, ferm });
+    setOrnementExportPending(true);
+  };
+
+  useEffect(() => {
+    if (!ornementExportPending) return;
+    // Laisse le navigateur peindre la pièce recomposée (nouveau cadre) avant
+    // de lire ses SVG ; relancé si le texte change encore entre-temps.
+    const id = window.setTimeout(async () => {
+      setOrnementExportPending(false);
+      try {
+        await printPieces(ornementSvgRef.current, docName.trim() || 'ornement');
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
+      }
+    }, 60);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ornementExportPending, ornementPhrase]);
 
   const changeWritingMode = () => {
     setWritingMode(null);
@@ -591,7 +635,11 @@ export default function AlQalamPage() {
   };
 
   const triggerExport = (useOuv: boolean, useFerm: boolean) =>
-    popupFormat === 'pdf' ? triggerPdf(useOuv, useFerm) : triggerDocx(useOuv, useFerm);
+    popupFormat === 'orne'
+      ? triggerOrnementExport(useOuv, useFerm)
+      : popupFormat === 'pdf'
+        ? triggerPdf(useOuv, useFerm)
+        : triggerDocx(useOuv, useFerm);
 
   return (
     <div className="alq-page">
@@ -984,7 +1032,8 @@ export default function AlQalamPage() {
                       <Printer size={16} strokeWidth={2} aria-hidden="true" /> Télécharger le PDF
                     </button>
                     <p className="orne-hint">
-                      Le PDF est téléchargé directement au format A4 paysage, avec ses numéros de page.
+                      Le PDF est téléchargé directement au format A4 portrait, avec ses numéros de page. Vous choisirez
+                      d&apos;abord l&apos;ouverture et/ou la fermeture à ajouter autour du texte.
                     </p>
                   </>
                 ) : (
@@ -1031,7 +1080,7 @@ export default function AlQalamPage() {
             <div className="orne-stage glass-panel">
               <OrneePhrasePiece
                 ref={ornementSvgRef}
-                phrase={ornementSourceText}
+                phrase={ornementPhrase}
                 letters={ornementLetters}
                 innerText={ornementVoeu}
               />
@@ -1057,7 +1106,11 @@ export default function AlQalamPage() {
         <div className="popup-overlay" onClick={(e) => e.target === e.currentTarget && setPopupOpen(false)}>
           <div className="popup-content glass-panel">
             <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 12, color: 'var(--accent-blue)' }}>
-              {popupFormat === 'pdf' ? '📄 Générer le document PDF' : '📝 Générer le document Word (.docx)'}
+              {popupFormat === 'orne'
+                ? '📄 Télécharger l’ornement en PDF'
+                : popupFormat === 'pdf'
+                  ? '📄 Générer le document PDF'
+                  : '📝 Générer le document Word (.docx)'}
             </div>
             <button className="popup-item" onClick={() => triggerExport(true, true)}>
               Avec ouverture et fermeture
