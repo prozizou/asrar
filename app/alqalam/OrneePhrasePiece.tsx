@@ -19,17 +19,29 @@ import { composePhrasePages, makeMeasurer, ensureFontReady, PHRASE_PIECE } from 
 const FONT = "'Scheherazade New', 'Alkalami', serif";
 const FONT_SPEC = '700 40px "Scheherazade New"';
 
+interface OrnementSegment {
+  /** Texte de ce segment (ouverture, X ou fermeture). */
+  text: string;
+  /** Lettres gonflées dans CE segment seulement — vide pour un segment qui
+   *  doit rester du texte naturel (ouverture/fermeture). */
+  letters: string[];
+}
+
 interface OrneePhrasePieceProps {
-  /** Phrase porteuse, en arabe (plusieurs mots). */
+  /** Phrase porteuse, en arabe (plusieurs mots) — sert de repli et d'aria-label. */
   phrase: string;
   /** Lettres dont CHAQUE occurrence est gonflée en boucle (م ه ص ض ط). */
   letters: string[];
   /** Vœu ou verset, répété dans chaque boucle. */
   innerText: string;
+  /** Ouverture/X/fermeture, chacun avec son propre jeu de lettres à gonfler
+   *  (typiquement vide pour ouverture/fermeture) — voir composePhrasePages.
+   *  Prend le pas sur `phrase`/`letters` quand fourni. */
+  segments?: OrnementSegment[];
 }
 
 const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(function OrneePhrasePiece(
-  { phrase, letters, innerText },
+  { phrase, letters, innerText, segments },
   ref
 ) {
   const [fontReady, setFontReady] = useState(false);
@@ -46,8 +58,8 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
 
   const measure = useMemo(() => (typeof document === 'undefined' ? null : makeMeasurer(FONT)), []);
   const piece = useMemo(
-    () => (measure && fontReady ? composePhrasePages({ phrase, letters, innerText, measure }) : null),
-    [measure, fontReady, phrase, letters, innerText]
+    () => (measure && fontReady ? composePhrasePages({ phrase, letters, innerText, measure, segments }) : null),
+    [measure, fontReady, phrase, letters, innerText, segments]
   );
 
   if (!piece) {

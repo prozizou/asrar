@@ -219,21 +219,27 @@ export default function AlQalamPage() {
   }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
 
   const ornementSourceText = useMemo(() => buildOrnementSourceText(), [buildOrnementSourceText]);
-  // Texte réellement orné : X, précédé/suivi des formules choisies. Le Rasm
-  // suit le premier/dernier bloc, comme pour l'export Word/PDF classique.
-  // Les lettres proposées restent celles détectées dans X seul : le cadre
-  // gonfle les mêmes lettres, sans ajouter de cases à cocher.
-  const ornementPhrase = useMemo(() => {
-    if (!ornementSourceText) return '';
+  // Segments de la pièce : ouverture et fermeture RESTENT du texte naturel
+  // (aucune lettre à gonfler — demandé explicitement, « ils doivent rester
+  // naturelle comme je l'ai écrit ») ; seul X (le texte déjà composé par
+  // l'utilisateur) reçoit les boucles. Le Rasm suit le premier/dernier
+  // bloc, comme pour l'export Word/PDF classique. `ornementPhrase` ne sert
+  // plus qu'à l'aria-label (texte à plat, sans distinction de segment).
+  const ornementSegments = useMemo(() => {
+    if (!ornementSourceText) return [];
     const firstRasm = accumulatedBlocks.length ? accumulatedBlocks[0].isRasmMode : isRasmMode;
     const lastRasm = baseText.trim() && totalMultiplier > 0 ? isRasmMode : !!accumulatedBlocks[accumulatedBlocks.length - 1]?.isRasmMode;
     const withRasm = (t: string, rasm: boolean) => (rasm ? convertirEnRasm(t) : t).trim();
     return [
-      ornementFrame.ouv ? withRasm(formules.ouverture, firstRasm) : '',
-      ornementSourceText,
-      ornementFrame.ferm ? withRasm(formules.fermeture, lastRasm) : '',
-    ].filter(Boolean).join(' ');
-  }, [ornementSourceText, ornementFrame, accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
+      ornementFrame.ouv ? { text: withRasm(formules.ouverture, firstRasm), letters: [] } : null,
+      { text: ornementSourceText, letters: ornementLetters },
+      ornementFrame.ferm ? { text: withRasm(formules.fermeture, lastRasm), letters: [] } : null,
+    ].filter((s): s is { text: string; letters: string[] } => !!s);
+  }, [ornementSourceText, ornementFrame, ornementLetters, accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
+  const ornementPhrase = useMemo(
+    () => ornementSegments.map((s) => s.text).join(' '),
+    [ornementSegments]
+  );
   const ornementDetected = useMemo(() => detectRoundLetters(ornementSourceText), [ornementSourceText]);
 
   useEffect(() => {
@@ -407,7 +413,7 @@ export default function AlQalamPage() {
     }, 60);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ornementExportPending, ornementPhrase]);
+  }, [ornementExportPending, ornementSegments]);
 
   const changeWritingMode = () => {
     setWritingMode(null);
@@ -1082,6 +1088,7 @@ export default function AlQalamPage() {
                 ref={ornementSvgRef}
                 phrase={ornementPhrase}
                 letters={ornementLetters}
+                segments={ornementSegments}
                 innerText={ornementVoeu}
               />
             </div>
