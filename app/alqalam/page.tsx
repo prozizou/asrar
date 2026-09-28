@@ -1091,8 +1091,9 @@ export default function AlQalamPage() {
                         </button>
                       </div>
                       <p className="orne-hint">
-                        Boucles, lettres et vœu grandissent ensemble, dans les mêmes proportions. Les lignes sont
-                        justifiées (liaisons allongées) et réparties sur toute la hauteur de la page.
+                        Seules les lettres gonflées et le vœu changent de taille ; les lettres et mots voisins
+                        restent inchangés. Les lignes sont justifiées (liaisons allongées) et réparties sur toute la
+                        hauteur de la page.
                       </p>
                     </div>
 
