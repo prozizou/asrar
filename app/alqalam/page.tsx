@@ -36,8 +36,8 @@ import {
   loadQuranUthmani,
   matchUthmaniSourate,
 } from '@/lib/alqalam';
-import { detectRoundLetters, printPieces } from '@/lib/alqalamOrne';
-import OrneePhrasePiece from './OrneePhrasePiece';
+import { detectRoundLetters } from '@/lib/alqalamOrne';
+import OrneePhrasePiece, { type OrneePhrasePieceHandle } from './OrneePhrasePiece';
 
 const Spinner = SpinnerUntyped as any;
 
@@ -175,10 +175,9 @@ export default function AlQalamPage() {
   // texte, jamais réinjecter les autres à sa place.
   const [ornementLettersTouched, setOrnementLettersTouched] = useState(false);
   const [ornementVoeu, setOrnementVoeu] = useState('');
-  // Conteneur de l'ornement (et non plus un unique <svg>) : composePhrasePages
-  // peut produire PLUSIEURS pages — printPieces retrouve tous les
-  // svg.orne-svg qu'il contient, dans l'ordre du DOM, au moment d'imprimer.
-  const ornementSvgRef = useRef<HTMLDivElement | null>(null);
+  // Poignée de l'ornement : exportPdf() vectorise toutes les pages (même
+  // celles pas encore affichées) et les transcrit en PDF vectoriel.
+  const ornementSvgRef = useRef<OrneePhrasePieceHandle | null>(null);
   // Ouverture/fermeture choisies dans le popup du PDF ornement : elles
   // encadrent le texte composé (X) DANS la pièce elle-même, et l'aperçu
   // les montre aussi — ce qui s'affiche est ce qui sera exporté.
@@ -405,10 +404,16 @@ export default function AlQalamPage() {
     // de lire ses SVG ; relancé si le texte change encore entre-temps.
     const id = window.setTimeout(async () => {
       setOrnementExportPending(false);
+      if (!ornementSvgRef.current) return;
+      setProgress({ pct: 0, text: 'Préparation du PDF vectoriel…' });
       try {
-        await printPieces(ornementSvgRef.current, docName.trim() || 'ornement');
+        await ornementSvgRef.current.exportPdf(docName.trim() || 'ornement', (pct: number, text: string) =>
+          setProgress({ pct, text })
+        );
       } catch (e) {
-        showToast(e instanceof Error ? e.message : 'Impression impossible.', 'error');
+        showToast(e instanceof Error ? e.message : 'Export impossible.', 'error');
+      } finally {
+        setProgress(null);
       }
     }, 60);
     return () => window.clearTimeout(id);
@@ -1038,7 +1043,7 @@ export default function AlQalamPage() {
                       <Printer size={16} strokeWidth={2} aria-hidden="true" /> Télécharger le PDF
                     </button>
                     <p className="orne-hint">
-                      Le PDF est téléchargé directement au format A4 portrait, avec ses numéros de page. Vous choisirez
+                      Le PDF vectoriel est téléchargé directement au format A4 portrait, avec ses numéros de page. Vous choisirez
                       d&apos;abord l&apos;ouverture et/ou la fermeture à ajouter autour du texte.
                     </p>
                   </>
