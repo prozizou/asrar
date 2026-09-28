@@ -41,6 +41,9 @@ import OrneePhrasePiece, { type OrneePhrasePieceHandle } from './OrneePhrasePiec
 
 const Spinner = SpinnerUntyped as any;
 
+const ORNE_SCALE_MIN = 50;
+const ORNE_SCALE_MAX = 300;
+
 const savePref = (k: string, v: string) => {
   try {
     localStorage.setItem('cali_' + k, v);
@@ -175,6 +178,15 @@ export default function AlQalamPage() {
   // texte, jamais réinjecter les autres à sa place.
   const [ornementLettersTouched, setOrnementLettersTouched] = useState(false);
   const [ornementVoeu, setOrnementVoeu] = useState('');
+  // Échelle de l'ornement, en % : agrandit ou réduit ENSEMBLE le vœu et les
+  // lettres gonflées (boucles, liaisons, texte), sans changer la structure —
+  // voir `scale` dans composePhrasePages.
+  const [ornementScale, setOrnementScale] = useState(100);
+  const changeOrnementScale = (value: number) => {
+    const v = Math.max(ORNE_SCALE_MIN, Math.min(ORNE_SCALE_MAX, Math.round(value / 10) * 10));
+    setOrnementScale(v);
+    savePref('ornementScale', String(v));
+  };
   // Poignée de l'ornement : exportPdf() vectorise toutes les pages (même
   // celles pas encore affichées) et les transcrit en PDF vectoriel.
   const ornementSvgRef = useRef<OrneePhrasePieceHandle | null>(null);
@@ -272,6 +284,8 @@ export default function AlQalamPage() {
     if (fs !== null) setFontSize(parseInt(fs, 10) || 28);
     const dn = getPref('docName');
     if (dn !== null) setDocName(dn);
+    const os = parseInt(getPref('ornementScale') || '', 10);
+    if (os >= ORNE_SCALE_MIN && os <= ORNE_SCALE_MAX) setOrnementScale(os);
     // Le mode Rasm n'est réactivé qu'après vérification d'accès (au clic).
 
     const savedBlocks = loadAccumulated();
@@ -1039,6 +1053,49 @@ export default function AlQalamPage() {
                       aria-label="Texte à écrire dans les boucles"
                     />
 
+                    <div className="slider-container orne-scale">
+                      <div className="alq-slider-heading">
+                        <label className="slider-label" htmlFor="ornement-scale">
+                          Taille du vœu et des lettres gonflées
+                        </label>
+                        <output htmlFor="ornement-scale">{ornementScale} %</output>
+                      </div>
+                      <div className="orne-scale-row">
+                        <button
+                          type="button"
+                          className="orne-scale-btn"
+                          onClick={() => changeOrnementScale(ornementScale - 10)}
+                          disabled={ornementScale <= ORNE_SCALE_MIN}
+                          aria-label="Réduire le vœu et les lettres gonflées"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="range"
+                          id="ornement-scale"
+                          className="slider"
+                          min={ORNE_SCALE_MIN}
+                          max={ORNE_SCALE_MAX}
+                          step={10}
+                          value={ornementScale}
+                          onChange={(e) => changeOrnementScale(parseInt(e.target.value, 10))}
+                        />
+                        <button
+                          type="button"
+                          className="orne-scale-btn"
+                          onClick={() => changeOrnementScale(ornementScale + 10)}
+                          disabled={ornementScale >= ORNE_SCALE_MAX}
+                          aria-label="Agrandir le vœu et les lettres gonflées"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="orne-hint">
+                        Boucles, lettres et vœu grandissent ensemble, dans les mêmes proportions. Les lignes sont
+                        justifiées (liaisons allongées) et réparties sur toute la hauteur de la page.
+                      </p>
+                    </div>
+
                     <button className="btn-glass" onClick={onPrintOrnement} disabled={!ornementLetters.length}>
                       <Printer size={16} strokeWidth={2} aria-hidden="true" /> Télécharger le PDF
                     </button>
@@ -1095,6 +1152,7 @@ export default function AlQalamPage() {
                 letters={ornementLetters}
                 segments={ornementSegments}
                 innerText={ornementVoeu}
+                scale={ornementScale / 100}
               />
             </div>
           ) : totalMultiplier > 0 ? (
