@@ -41,7 +41,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Globe, Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft,
-  Sun, Moon, AlarmClock, AlarmClockCheck, SlidersHorizontal,
+  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal,
 } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
@@ -122,6 +122,36 @@ const fmtHM = (date: Date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit'
 // touchée, et le libellé complet reste visible via l'attribut `title`.
 function shortNatureLabel(nat: { txt: string; cls: string }) {
   return nat.cls === 'nat-mix' ? 'Mixte' : nat.txt;
+}
+
+// Couleurs des « sphères » planétaires (revue design, maquette du
+// 2026-09-28) — un dégradé CSS par planète (teinte + texture en attribut
+// `data-planet`, voir planete.css) plutôt qu'une image : aucun asset photo
+// des 7 astres à livrer/héberger, même rendu circulaire coloré sur tous les
+// écrans/densités. Couleurs INDÉPENDANTES du thème clair/sombre (comme
+// PLANET_NATURE, lib/planete.js) : elles représentent l'astre lui-même, pas
+// l'accent de marque. Le glyphe astrologique (CHALDEAN_EMOJIS) reste affiché
+// À CÔTÉ du nom, inchangé — la sphère s'ajoute, elle ne le remplace pas.
+const PLANET_SPHERE_COLORS: Record<string, [string, string]> = {
+  Soleil: ['#ffe29a', '#ff7b3d'],
+  Lune: ['#f4f6fa', '#9aa4b0'],
+  Mars: ['#ffb199', '#b83c22'],
+  Mercure: ['#d8d4cd', '#7a746b'],
+  Jupiter: ['#f3d9a4', '#b5793a'],
+  Vénus: ['#fff3d1', '#d9b774'],
+  Saturne: ['#f0dfb0', '#b99a5f'],
+};
+
+function PlanetSphere({ planet, kind }: { planet: string; kind: 'hero' | 'grid' }) {
+  const [a, b] = PLANET_SPHERE_COLORS[planet] || ['#cfcfcf', '#7a7a7a'];
+  return (
+    <span
+      className={'planet-sphere ' + kind}
+      data-planet={planet}
+      aria-hidden="true"
+      style={{ ['--sphere-a' as any]: a, ['--sphere-b' as any]: b }}
+    />
+  );
 }
 
 // Précision GPS visée (m) — best-effort : on affine tant que le matériel de
@@ -531,43 +561,71 @@ function HoursScreen({
   return (
     <div className="hours-screen">
       <header className="hours-header">
-        <button type="button" className="hours-back" onClick={onBack} aria-label="Retour au tableau de bord">
-          <ChevronLeft size={22} strokeWidth={2.4} aria-hidden="true" />
-        </button>
-        <div className="hours-header-main">
-          <h1 className="hours-title">Heures planétaires</h1>
-          <p className="hours-meta">
-            <span>{dateStr}</span>
-            <span className="hours-meta-sep" aria-hidden="true">·</span>
-            <span>Régent : {todayPlanetName || '—'}</span>
-            <span className="hours-meta-sep" aria-hidden="true">·</span>
-            <span className="hours-meta-position">
-              <MapPin size={11} strokeWidth={2.4} aria-hidden="true" /> {position}
-            </span>
-          </p>
+        <div className="hours-header-row">
+          <button type="button" className="hours-back" onClick={onBack} aria-label="Retour au tableau de bord">
+            <ChevronLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+          <Globe size={22} strokeWidth={2} className="hours-header-icon" aria-hidden="true" />
+          <div className="hours-header-titles">
+            <h1 className="hours-title">Heures planétaires</h1>
+            <p className="hours-date">{dateStr}</p>
+          </div>
         </div>
-        <PlanetPushToggle lat={lat} lng={lng} compact />
+
+        {/* Trois informations d'un coup d'œil (maquette du 2026-09-28) — le
+            régent du jour et la position étaient auparavant fondus dans une
+            seule ligne de méta-texte ; ici chacun a son icône, comme les
+            notifications juste à côté. */}
+        <div className="hours-info-row">
+          <div className="hours-info-item">
+            <span className="hours-info-icon" aria-hidden="true">
+              {todayPlanetName ? CHALDEAN_EMOJIS[todayPlanetName] : '☿'}
+            </span>
+            <span className="hours-info-text">
+              <span className="hours-info-label">Régent du jour</span>
+              <span className="hours-info-value">{todayPlanetName || '—'}</span>
+            </span>
+          </div>
+          <div className="hours-info-item">
+            <MapPin size={17} strokeWidth={2} className="hours-info-icon" aria-hidden="true" />
+            <span className="hours-info-text">
+              <span className="hours-info-label">Localisation</span>
+              <span className="hours-info-value">{position}</span>
+            </span>
+          </div>
+          <div className="hours-info-item hours-info-notif">
+            <Bell size={17} strokeWidth={2} className="hours-info-icon" aria-hidden="true" />
+            <span className="hours-info-text">
+              <span className="hours-info-label">Notifications</span>
+            </span>
+            <PlanetPushToggle lat={lat} lng={lng} compact />
+          </div>
+        </div>
       </header>
 
       {cur && nature && (
         <section className="hours-now-card" aria-label="Heure planétaire en cours">
-          <div className="hours-now-top">
-            <span className="hours-now-symbol" aria-hidden="true">
-              {CHALDEAN_EMOJIS[cur.planet]}
-            </span>
-            <div className="hours-now-main">
-              <span className="hours-now-planet">{cur.planet}</span>
-              <span className="hours-now-tag">Maintenant</span>
+          <p className="hours-now-eyebrow">Heure actuelle</p>
+          <div className="hours-now-body">
+            <div className="hours-now-left">
+              <PlanetSphere planet={cur.planet} kind="hero" />
+              <div className="hours-now-main">
+                <span className="hours-now-planet">
+                  <span aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span> {cur.planet}
+                </span>
+                <span className="hours-now-tag">Maintenant</span>
+                <span className={'hours-now-badge ' + nature.cls}>● {nature.txt}</span>
+              </div>
             </div>
-            <span className={'hours-now-badge ' + nature.cls}>● {nature.txt}</span>
-          </div>
-          <div className="hours-now-bottom">
-            <span className="hours-now-interval">
-              {fmtHM(cur.start)} — {fmtHM(cur.end)}
-            </span>
-            <div className="hours-now-progress">
-              <div className="hours-now-progress-track">
-                <div className="hours-now-progress-fill" style={{ width: `${progressPct}%` }} />
+            <div className="hours-now-right">
+              <span className="hours-now-interval">
+                {fmtHM(cur.start)} — {fmtHM(cur.end)}
+              </span>
+              <div className="hours-now-progress">
+                <div className="hours-now-progress-track">
+                  <div className="hours-now-progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+                <span className="hours-now-progress-pct">{Math.round(progressPct)}%</span>
               </div>
               <span className="hours-now-progress-label">{remainingMin} min restantes</span>
             </div>
@@ -579,7 +637,11 @@ function HoursScreen({
 
       {/* Bottom nav fixe (remplace l'ancienne pastille Jour/Nuit en plein
           contenu) : bascule uniquement le contenu de la grille, la structure
-          de l'écran ne bouge pas. */}
+          de l'écran ne bouge pas. Piste unique à deux onglets (maquette du
+          2026-09-28), pas deux pastilles séparées : l'onglet actif porte le
+          dégradé plein, l'autre reste en texte discret, séparés d'un simple
+          trait — lecture « interrupteur à deux positions » plutôt que « deux
+          boutons ». */}
       <nav className="hours-bottom-nav" aria-label="Période">
         <button
           type="button"
@@ -590,6 +652,7 @@ function HoursScreen({
           <Sun size={18} strokeWidth={2.2} aria-hidden="true" />
           Jour
         </button>
+        <span className="hours-bottom-nav-sep" aria-hidden="true" />
         <button
           type="button"
           className={'hours-bottom-tab' + (period === 'night' ? ' active' : '')}
@@ -815,34 +878,37 @@ function HourGrid({
                   (scheduled ? ' is-selected' : '')
                 }
               >
-                <div className="hour-card-row">
+                <div className="hour-card-icon-wrap">
+                  <PlanetSphere planet={r.planet} kind="grid" />
                   <span className="hour-card-num">{String(i + 1).padStart(2, '0')}</span>
+                </div>
+                <div className="hour-card-info">
                   <span className="hour-card-planet">
                     <span aria-hidden="true">{r.emoji}</span> {r.planet}
                   </span>
-                  {showBell && (
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={scheduled}
-                      aria-label={`Alarme au début de l'heure de ${r.planet}, ${r.interval}`}
-                      title={scheduled ? 'Alarme activée — toucher pour désactiver' : 'Activer une alarme au début de cette heure'}
-                      className={'hour-card-alarm' + (scheduled ? ' on' : '')}
-                      disabled={busyHourId !== null}
-                      onClick={() => toggleAlarm(r, hourId, scheduled)}
-                    >
-                      {scheduled ? (
-                        <AlarmClockCheck size={15} strokeWidth={2.4} aria-hidden="true" />
-                      ) : (
-                        <AlarmClock size={15} strokeWidth={2} aria-hidden="true" />
-                      )}
-                    </button>
-                  )}
+                  <span className="hour-card-time">{r.interval}</span>
+                  <span className={'hour-card-status ' + r.nat.cls} title={r.nat.txt}>
+                    ● {shortNatureLabel(r.nat)}
+                  </span>
                 </div>
-                <div className="hour-card-time">{r.interval}</div>
-                <div className={'hour-card-status ' + r.nat.cls} title={r.nat.txt}>
-                  ● {shortNatureLabel(r.nat)}
-                </div>
+                {showBell && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={scheduled}
+                    aria-label={`Alarme au début de l'heure de ${r.planet}, ${r.interval}`}
+                    title={scheduled ? 'Alarme activée — toucher pour désactiver' : 'Activer une alarme au début de cette heure'}
+                    className={'hour-card-alarm' + (scheduled ? ' on' : '')}
+                    disabled={busyHourId !== null}
+                    onClick={() => toggleAlarm(r, hourId, scheduled)}
+                  >
+                    {scheduled ? (
+                      <AlarmClockCheck size={14} strokeWidth={2.4} aria-hidden="true" />
+                    ) : (
+                      <AlarmClock size={14} strokeWidth={2} aria-hidden="true" />
+                    )}
+                  </button>
+                )}
                 {showBell && scheduled && (
                   <button
                     type="button"
@@ -851,7 +917,7 @@ function HourGrid({
                     className="hour-card-settings"
                     onClick={() => setSheetRow(r)}
                   >
-                    <SlidersHorizontal size={11} strokeWidth={2.2} aria-hidden="true" />
+                    <SlidersHorizontal size={10} strokeWidth={2.2} aria-hidden="true" />
                   </button>
                 )}
               </li>

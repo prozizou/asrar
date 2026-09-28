@@ -433,10 +433,16 @@
   gap: 10px;
 }
 
-/* ───────── Header compact ───────── */
+/* ───────── Header compact (titre + 3 infos, maquette du 2026-09-28) ───── */
 .hours-header {
   display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hours-header-row {
+  display: flex;
   align-items: center;
   gap: 10px;
 }
@@ -446,8 +452,8 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   margin: 0;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
@@ -457,7 +463,13 @@
   cursor: pointer;
 }
 
-.hours-header-main {
+.hours-header-icon {
+  flex: 0 0 auto;
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--planet-glow));
+}
+
+.hours-header-titles {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -467,36 +479,80 @@
   overflow: hidden;
   color: var(--text-main);
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1.08rem;
   font-weight: 800;
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.hours-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 4px;
+.hours-date {
   margin: 1px 0 0;
-  color: color-mix(in srgb, var(--text-dim) 92%, white 8%);
-  font-size: 0.72rem;
-  line-height: 1.3;
-}
-
-.hours-meta-sep {
-  opacity: 0.45;
-}
-
-.hours-meta-position {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
   overflow: hidden;
+  color: color-mix(in srgb, var(--text-dim) 92%, white 8%);
+  font-size: 0.76rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Trois blocs [icône] [libellé + valeur] à poids égal — remplace l'ancienne
+   ligne de méta-texte (date · régent · position) fondue en une seule ligne
+   grise peu lisible. */
+.hours-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hours-info-item {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hours-info-icon {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.hours-info-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.hours-info-label {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--text-dim) 90%, white 10%);
+  font-size: 0.6rem;
+  letter-spacing: 0.3px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hours-info-value {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Notifications : l'interrupteur (PlanetPushToggle compact) vient à la
+   place d'une valeur texte, aligné à droite de son bloc. */
+.hours-info-notif {
+  justify-content: flex-end;
+}
+
+.hours-info-notif .push-toggle-row.compact {
+  flex: 0 0 auto;
 }
 
 /* ───────── Carte « heure actuelle » ───────── */
@@ -522,26 +578,39 @@
   opacity: 0.85;
 }
 
-.hours-now-top {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+.hours-now-eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
-.hours-now-symbol {
-  flex: 0 0 auto;
-  color: var(--accent);
-  font-size: 1.7rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 8px var(--planet-glow));
+/* Deux colonnes côte à côte (maquette du 2026-09-28) — planète à gauche,
+   horaire/progression à droite — plutôt que tout empilé verticalement :
+   remplace .hours-now-top/-bottom. Repasse en colonne sur un écran étroit
+   (voir le point de rupture plus bas) plutôt que de compresser le texte. */
+.hours-now-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.hours-now-left {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .hours-now-main {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
-  gap: 0;
+  gap: 2px;
 }
 
 .hours-now-planet {
@@ -561,7 +630,7 @@
 }
 
 .hours-now-badge {
-  flex: 0 0 auto;
+  align-self: flex-start;
   padding: 3px 10px;
   border: 1px solid currentColor;
   border-radius: 999px;
@@ -572,26 +641,28 @@
   white-space: nowrap;
 }
 
-.hours-now-bottom {
+.hours-now-right {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  flex: 1 1 160px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 140px;
 }
 
 .hours-now-interval {
-  flex: 0 0 auto;
   color: color-mix(in srgb, var(--text-dim) 92%, white 8%);
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .hours-now-progress {
   display: flex;
-  flex: 1 1 auto;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  gap: 6px;
+  width: 100%;
 }
 
 .hours-now-progress-track {
@@ -610,11 +681,74 @@
   transition: width 1s linear;
 }
 
-.hours-now-progress-label {
+.hours-now-progress-pct {
   flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.hours-now-progress-label {
   color: color-mix(in srgb, var(--text-dim) 94%, white 6%);
   font-size: 0.68rem;
   white-space: nowrap;
+}
+
+/* ───────── Sphère planétaire (dégradé + texture CSS, sans image) ───────── */
+.planet-sphere {
+  --sphere-a: #cfcfcf;
+  --sphere-b: #7a7a7a;
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-image:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.65), transparent 45%),
+    linear-gradient(160deg, var(--sphere-a), var(--sphere-b));
+  box-shadow: inset -3px -4px 8px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.32);
+}
+
+.planet-sphere.grid {
+  width: 34px;
+  height: 34px;
+}
+
+.planet-sphere.hero {
+  width: 46px;
+  height: 46px;
+}
+
+/* Jupiter : bandes horizontales subtiles. */
+.planet-sphere[data-planet='Jupiter'] {
+  background-image:
+    repeating-linear-gradient(4deg, rgba(120, 78, 30, 0.16) 0 3px, transparent 3px 8px),
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6), transparent 45%),
+    linear-gradient(160deg, var(--sphere-a), var(--sphere-b));
+}
+
+/* Saturne : anneau incliné (pseudo-élément elliptique). */
+.planet-sphere[data-planet='Saturne']::after {
+  content: '';
+  position: absolute;
+  left: -26%;
+  right: -26%;
+  top: 42%;
+  height: 16%;
+  border: 2px solid rgba(230, 210, 160, 0.85);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+  pointer-events: none;
+}
+
+/* Lune/Mercure : cratères (petites ombres circulaires). */
+.planet-sphere[data-planet='Lune'],
+.planet-sphere[data-planet='Mercure'] {
+  background-image:
+    radial-gradient(circle at 28% 68%, rgba(0, 0, 0, 0.16) 0 9%, transparent 10%),
+    radial-gradient(circle at 62% 42%, rgba(0, 0, 0, 0.12) 0 7%, transparent 8%),
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(160deg, var(--sphere-a), var(--sphere-b));
 }
 
 /* ───────── Grille compacte des 12 heures (2 × 6) ───────── */
@@ -652,12 +786,11 @@
 .hour-card {
   position: relative;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
   min-width: 0;
-  padding: 6px 9px;
+  padding: 6px 30px 6px 8px;
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 14px;
   background: var(--planet-panel);
@@ -681,23 +814,47 @@
   border-color: color-mix(in srgb, var(--accent) 82%, white 6%);
 }
 
-.hour-card-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
+/* Sphère + numéro en médaillon superposé (coin bas-gauche de la sphère) —
+   maquette du 2026-09-28 : remplace le numéro en texte simple aligné avec
+   le nom. */
+.hour-card-icon-wrap {
+  position: relative;
+  flex: 0 0 auto;
 }
 
 .hour-card-num {
-  flex: 0 0 auto;
-  color: color-mix(in srgb, var(--text-dim) 88%, white 12%);
-  font-size: 0.64rem;
+  position: absolute;
+  left: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--planet-panel-strong);
+  color: var(--text-dim);
+  font-size: 0.58rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
+  box-shadow: 0 0 0 2px var(--planet-panel);
+}
+
+.hour-card.is-now .hour-card-num {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.hour-card-info {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .hour-card-planet {
-  flex: 1 1 auto;
   overflow: hidden;
   color: var(--text-main);
   font-size: 0.82rem;
@@ -726,18 +883,20 @@
   white-space: nowrap;
 }
 
-/* Horloge d'alarme : icône réduite, mais zone tactile ≥ 40px via un
-   padding qui déborde visuellement de l'icône (marge négative égale). */
+/* Horloge d'alarme (coin haut-droit) et réglages (coin bas-droit) — la
+   marge négative égale au padding agrandit la zone tactile (≥ 40px) sans
+   agrandir l'icône visible. */
 .hour-card-alarm {
-  position: relative;
+  position: absolute;
+  top: 2px;
+  right: 2px;
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin: -11px;
-  padding: 11px;
+  width: 16px;
+  height: 16px;
+  margin: -9px;
+  padding: 9px;
   border: 0;
   background: none;
   color: color-mix(in srgb, var(--text-dim) 82%, transparent);
@@ -755,13 +914,13 @@
 
 .hour-card-settings {
   position: absolute;
-  right: 5px;
-  bottom: 5px;
+  right: 4px;
+  bottom: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -776,17 +935,30 @@
   margin: 4px 0 0 !important;
 }
 
-/* ───────── Bottom nav fixe Jour / Nuit ───────── */
+/* ───────── Bottom nav fixe Jour / Nuit ─────────
+   Piste UNIQUE à deux onglets (maquette du 2026-09-28) — pas deux pastilles
+   séparées par un espace : l'onglet actif porte le dégradé plein sur toute
+   sa moitié de piste, l'autre reste en texte discret ; un simple trait
+   sépare les deux, lecture « interrupteur à deux positions ». */
 .hours-bottom-nav {
   display: flex;
   flex: 0 0 auto;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
   margin: 0 -14px;
-  padding: 8px 14px max(8px, env(safe-area-inset-bottom));
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
   border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+.hours-bottom-nav-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 26px;
+  margin: 0 6px;
+  background: color-mix(in srgb, var(--border) 90%, transparent);
 }
 
 .hours-bottom-tab {
@@ -797,9 +969,9 @@
   gap: 7px;
   min-height: 46px;
   padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
   color: var(--text-dim);
   cursor: pointer;
   font-size: 0.88rem;
@@ -825,8 +997,13 @@
   }
 
   .hour-card {
-    padding: 10px 12px;
+    padding: 10px 32px 10px 12px;
     border-radius: 16px;
+  }
+
+  .planet-sphere.grid {
+    width: 38px;
+    height: 38px;
   }
 
   .hour-card-planet {
@@ -1251,8 +1428,14 @@
   }
 
   .hour-card {
-    padding: 5px 7px;
+    padding: 5px 24px 5px 6px;
+    gap: 6px;
     border-radius: 12px;
+  }
+
+  .planet-sphere.grid {
+    width: 26px;
+    height: 26px;
   }
 
   .hour-card-planet {
