@@ -79,6 +79,9 @@ interface Group {
   private?: boolean;
   approved?: boolean;
   sessionAt?: number | null;
+  // Créateur uniquement (pages/api/zikr.js handleList) : demandes d'adhésion
+  // en attente de CE zikr, traitées dès la liste (JoinRequestsPanel).
+  requests?: JoinRequest[];
 }
 
 // Réponse de action="list" (pages/api/zikr.js handleList) — `isAdmin` dit si
@@ -95,6 +98,7 @@ interface JoinRequest {
   name?: string; // nom Google au moment de la demande — absent pour un compte email/mot de passe
   picture?: string;
   phone?: string; // format international, obligatoire à la demande — voir handleJoin
+  at?: number; // date de la demande (epoch ms)
 }
 
 interface Member {
@@ -236,6 +240,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [moderating, setModerating] = useState<string | null>(null); // groupId en cours d'approbation/refus
+  const [deciding, setDeciding] = useState<string | null>(null); // `${groupId}:${uid}` d'une demande d'adhésion en cours
   // Détecte une demande d'adhésion tranchée (acceptée ou refusée) entre deux
   // sondages, pour NOTIFIER l'utilisateur sans qu'il ait besoin de rouvrir le
   // détail du groupe pour s'en apercevoir — comparé au statut du sondage
@@ -283,6 +288,35 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
   const toModerate = isAdmin && groups ? groups.filter((g) => g.approved === false) : [];
   const listed = sortByProgress(isAdmin && groups ? groups.filter((g) => g.approved !== false) : groups || []);
 
+  // Créateur : toutes les demandes d'adhésion de SES zikr, dès la liste (la
+  // plus ancienne d'abord — premier arrivé, premier servi) — avant, il
+  // fallait ouvrir chaque zikr puis ⋮ → Gestion du groupe pour les voir.
+  const joinRequests = (groups || [])
+    .filter((g) => g.status === 'owner')
+    .flatMap((g) => (g.requests || []).map((r) => ({ ...r, group: g })))
+    .sort((a, b) => (a.at || 0) - (b.at || 0));
+
+  const decide = async (g: Group, r: JoinRequest, accept: boolean) => {
+    const key = g.id + ':' + r.uid;
+    const who = chatDisplayName(r.email, r.name);
+    if (!accept && !window.confirm(`Refuser la demande de ${who} pour « ${g.name} » ?`)) return;
+    setDeciding(key);
+    try {
+      if (accept) {
+        await approveMember(g.id, r.uid);
+        notify(`✅ ${who} a rejoint « ${g.name} ».`);
+      } else {
+        await rejectMember(g.id, r.uid);
+        notify(`Demande de ${who} refusée.`);
+      }
+      await load();
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+    } finally {
+      setDeciding(null);
+    }
+  };
+
   const moderate = async (g: Group, approve: boolean) => {
     if (!approve && !window.confirm(`Refuser et supprimer définitivement « ${g.name} » ?`)) return;
     setModerating(g.id);
@@ -328,6 +362,48 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
                 onReject={() => moderate(g, false)}
               />
             ))}
+          </div>
+        </section>
+      )}
+
+      {joinRequests.length > 0 && (
+        <section className="zk-moderation zk-join-requests" aria-label="Demandes d’adhésion à vos zikr">
+          <h2 className="zk-section-title">
+            <Handshake size={16} strokeWidth={2.5} aria-hidden="true" /> Demandes d’adhésion <span className="zk-pill">{joinRequests.length}</span>
+          </h2>
+          <div className="zk-req-list">
+            {joinRequests.map((r) => {
+              const key = r.group.id + ':' + r.uid;
+              const reqName = chatDisplayName(r.email, r.name);
+              const busy = deciding === key;
+              return (
+                <div key={key} className="zk-req">
+                  {r.picture ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- avatar Google, URL dynamique
+                    <img className="zk-req-avatar" src={r.picture} alt="" loading="lazy" />
+                  ) : (
+                    <span className="zk-req-avatar zk-req-avatar-fallback" style={{ background: avatarColorFor(r.uid) }}>
+                      {reqName.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="zk-req-id">
+                    <span className="zk-req-name">{reqName}</span>
+                    <span className="zk-req-group">pour « {r.group.name} »</span>
+                    {r.phone && <span className="zk-req-email">{r.phone}</span>}
+                  </span>
+                  <span className="zk-req-actions">
+                    {r.phone && (
+                      <a className="zk-mini wa" href={waContactUrl(r.phone, r.group.name)} target="_blank" rel="noopener noreferrer"
+                        title={`Contacter ${reqName} par WhatsApp avant d’accepter sa demande`}>
+                        <Phone size={12} strokeWidth={2.5} aria-hidden="true" /> WhatsApp
+                      </a>
+                    )}
+                    <button className="zk-mini ok" disabled={busy} onClick={() => decide(r.group, r, true)}>Accepter</button>
+                    <button className="zk-mini no" disabled={busy} onClick={() => decide(r.group, r, false)}>Refuser</button>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -938,10 +1014,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
-  const doApproveZikr = async () => {
-    try { await approveZikr(groupId); notify('✅ Zikr collectif approuvé — visible dans la liste publique.'); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
-  };
   const doSendMessage = async () => {
     const t = chatText.trim();
     if (!t || chatBusy) return;
@@ -1046,10 +1118,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     try { await excludeMember(groupId, targetUid); notify(`${email} a été retiré du zikr collectif.`); load(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
-  const act = async (fn: (groupId: string, uid: string) => Promise<any>, targetUid: string) => {
-    try { await fn(groupId, targetUid); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
-  };
   const doShare = () => {
     if (!g) return;
     shareLink({
@@ -1137,9 +1205,14 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           </button>
           {isMember && (
             <MoreMenu label="Plus d’actions sur ce zikr collectif">
-              {(g.status === 'owner' || g.isAdmin) && (
+              {g.status === 'owner' && (
                 <button type="button" className="zk-attach-item" onClick={() => setTab('admin')}>
-                  <Shield size={16} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe
+                  <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe
+                </button>
+              )}
+              {g.isAdmin && g.status !== 'owner' && (
+                <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doDelete}>
+                  <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer (administrateur)
                 </button>
               )}
               <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doLeave}>
@@ -1254,11 +1327,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         </>
       )}
 
-      {/* Gestion du groupe — réservée au créateur/admin, ouverte depuis
-          l'icône bouclier de la barre du haut (jamais dans la barre de
-          navigation du bas, pour ne pas encombrer l'expérience de
-          récitation des autres membres). */}
-      {isMember && tab === 'admin' && (g.status === 'owner' || g.isAdmin) && (
+      {/* Gestion du groupe — réservée au CRÉATEUR, ouverte depuis le menu ⋮
+          (jamais dans la barre de navigation du bas). Limitée aux
+          modifications du zikr (demande 2026-09-28) : les demandes
+          d'adhésion se traitent dès la liste (section « Demandes
+          d'adhésion »), l'approbation administrateur aussi (« À valider ») ;
+          la suppression administrateur passe par le menu ⋮. */}
+      {isMember && tab === 'admin' && g.status === 'owner' && (
         <div className="zk-admin-panel">
           <h3><Shield size={15} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe</h3>
 
@@ -1276,66 +1351,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                   onCancel={() => setEditing(false)}
                 />
               )}
-            </div>
-          )}
-
-          {/* File d'approbation : seul le créateur la voit. */}
-          {g.status === 'owner' && (
-            <div className="zk-admin-section">
-              <h4>Demandes d’adhésion {g.pending > 0 && <span className="zk-pill">{g.pending}</span>}</h4>
-              {(!g.requests || g.requests.length === 0) ? (
-                <p className="zk-muted">Aucune demande en attente.</p>
-              ) : (
-                <div className="zk-req-list">
-                  {g.requests.map((r) => {
-                    const reqName = chatDisplayName(r.email, r.name);
-                    return (
-                      <div key={r.uid} className="zk-req">
-                        {r.picture ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- avatar Google, URL dynamique
-                          <img className="zk-req-avatar" src={r.picture} alt="" loading="lazy" />
-                        ) : (
-                          <span className="zk-req-avatar zk-req-avatar-fallback" style={{ background: avatarColorFor(r.uid) }}>
-                            {reqName.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        <span className="zk-req-id">
-                          <span className="zk-req-name">{reqName}</span>
-                          <span className="zk-req-email">{r.email}</span>
-                        </span>
-                        <span className="zk-req-actions">
-                          {r.phone && (
-                            <a className="zk-mini wa" href={waContactUrl(r.phone, g.name)} target="_blank" rel="noopener noreferrer"
-                              title={`Contacter ${reqName} par WhatsApp avant d’accepter sa demande`}>
-                              <Phone size={12} strokeWidth={2.5} aria-hidden="true" /> WhatsApp
-                            </a>
-                          )}
-                          <button className="zk-mini ok" onClick={() => act(approveMember, r.uid)}>Accepter</button>
-                          <button className="zk-mini no" onClick={() => act(rejectMember, r.uid)}>Refuser</button>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Administration (prozizou298@gmail.com ou tout compte
-              admins/{clé}) : approuver pour la liste publique, ou
-              supprimer n'importe quel zikr collectif — voir
-              handleApproveZikr/handleDelete, pages/api/zikr.js. */}
-          {g.isAdmin && (
-            <div className="zk-admin-section zk-admin-section-danger">
-              <h4>Administration ASRAR PRO</h4>
-              {g.approved === false && (
-                <button type="button" className="zk-btn ghost" onClick={doApproveZikr}>
-                  <Check size={16} strokeWidth={2.5} aria-hidden="true" /> Approuver pour la liste publique
-                </button>
-              )}
-              <button type="button" className="zk-btn danger" onClick={doDelete}>
-                <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer ce zikr collectif
-              </button>
             </div>
           )}
 
