@@ -289,6 +289,7 @@ async function handleList(db, res, user) {
       remaining: Math.max(0, target - total),
       membersCount: Number(v.membersCount) || 0,
       ownerEmail: v.ownerEmail || "",
+      ownerName: v.ownerName || "", // affichage seulement (carte « À valider » de l'admin)
       isOwner: v.ownerUid === user.uid,
       createdAt: v.createdAt || 0,
       private: v.private === true,
