@@ -17,7 +17,7 @@
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -127,11 +127,18 @@ export default function AlQalamPage() {
 
   const [inputText, setInputText] = useState('');
   const [repCount, setRepCount] = useState('100');
-  const [fontSize, setFontSize] = useState(28);
+  const [fontSize, setFontSize] = useState(24);
 
   const [baseText, setBaseText] = useState('');
   const [totalMultiplier, setTotalMultiplier] = useState(0);
   const [intercalatedPhrase, setIntercalatedPhrase] = useState('');
+  // Résultat modifiable : le texte COMPLET (toutes les répétitions) s'ouvre
+  // dans une zone éditable ; une fois enregistré, il devient le résultat
+  // (baseText × 1) — copie, partage, Word, PDF, cumul et ornement utilisent
+  // alors le texte modifié. Une nouvelle génération repart de zéro.
+  const [editingResult, setEditingResult] = useState(false);
+  const [resultDraft, setResultDraft] = useState('');
+  const [resultEdited, setResultEdited] = useState(false);
   const [isRasmMode, setIsRasmMode] = useState(false);
 
   const [accumulatedBlocks, setAccumulatedBlocks] = useState<AccBlock[]>([]);
@@ -281,7 +288,7 @@ export default function AlQalamPage() {
     const rc = getPref('repCount');
     if (rc !== null) setRepCount(rc);
     const fs = getPref('fontSize');
-    if (fs !== null) setFontSize(parseInt(fs, 10) || 28);
+    if (fs !== null) setFontSize(parseInt(fs, 10) || 24);
     const dn = getPref('docName');
     if (dn !== null) setDocName(dn);
     const os = parseInt(getPref('ornementScale') || '', 10);
@@ -329,6 +336,37 @@ export default function AlQalamPage() {
       showToast(error instanceof Error && error.message.includes('volumineux') ? error.message : 'Copie indisponible. Sélectionnez le texte ou utilisez l’export dans Outils.', 'error');
     }
   };
+  // ─── Modifier le résultat ───
+  // Au-delà de cette taille, une zone de saisie devient inutilisable sur
+  // téléphone (et la saisie, lente) : on invite plutôt à réduire.
+  const MAX_EDIT_CHARS = 300000;
+  const startEditResult = () => {
+    try {
+      const text = resultText();
+      if (text.length > MAX_EDIT_CHARS) {
+        showToast('Résultat trop long pour être modifié ici. Réduisez le nombre de répétitions.', 'error');
+        return;
+      }
+      setResultDraft(text);
+      setEditingResult(true);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Modification impossible.', 'error');
+    }
+  };
+  const saveEditResult = () => {
+    const text = resultDraft.replace(/\s+$/, '').replace(/^\s+/, '');
+    if (!text) return showToast('Le résultat ne peut pas être vide.', 'error');
+    // Le texte affiché est déjà en Rasm si ce mode est actif : le reconvertir
+    // ne change rien (convertirEnRasm ne transforme jamais deux fois).
+    setBaseText(text);
+    setTotalMultiplier(1);
+    setIntercalatedPhrase('');
+    setEditingResult(false);
+    setResultEdited(true);
+    showToast('Résultat modifié.', 'info');
+  };
+  const cancelEditResult = () => setEditingResult(false);
+
   const shareResult = async () => {
     try {
       const text = resultText();
@@ -453,6 +491,8 @@ export default function AlQalamPage() {
     setBaseText(text);
     setTotalMultiplier(Math.min(count, config.MAX_TOTAL_REPEAT));
     setIntercalatedPhrase('');
+    setEditingResult(false);
+    setResultEdited(false);
   };
 
   // ─── Intercalation (protégé) ───
@@ -506,6 +546,8 @@ export default function AlQalamPage() {
     setBaseText(result);
     setIntercalatedPhrase(phrase);
     setTotalMultiplier(1);
+    setEditingResult(false);
+    setResultEdited(false);
     showToast('Texte combiné généré.', 'info');
   };
 
@@ -527,6 +569,8 @@ export default function AlQalamPage() {
     setBaseText(result);
     setIntercalatedPhrase('');
     setTotalMultiplier(rep);
+    setEditingResult(false);
+    setResultEdited(false);
     showToast('Sourate insérée.', 'info');
   };
 
@@ -1136,15 +1180,29 @@ export default function AlQalamPage() {
         {/* Aperçu */}
         <section className="output-section alq-result" aria-labelledby="alq-result-title">
           <div className="alq-result-header">
-            <h2 id="alq-result-title"><FileText size={22} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
-            {totalMultiplier > 0 && !showOrnement && (
+            <h2 id="alq-result-title"><FileText size={20} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
+            {totalMultiplier > 0 && !showOrnement && !editingResult && (
               <div className="alq-result-actions">
-                <button type="button" onClick={copyResult}><Copy size={17} aria-hidden="true" /> Copier</button>
-                <button type="button" onClick={shareResult}><Share2 size={17} aria-hidden="true" /> Partager</button>
+                <button type="button" onClick={startEditResult} aria-label="Modifier le résultat"><Pencil size={16} aria-hidden="true" /> Modifier</button>
+                <button type="button" onClick={copyResult} aria-label="Copier le résultat"><Copy size={16} aria-hidden="true" /> Copier</button>
+                <button type="button" onClick={shareResult} aria-label="Partager le résultat"><Share2 size={16} aria-hidden="true" /> Partager</button>
               </div>
             )}
           </div>
-          {totalMultiplier > 0 && !showOrnement && <div className="alq-result-badge"><bdi dir="auto">{htmlToPlainText(baseText)}</bdi><span>× {totalMultiplier.toLocaleString('fr-FR')}</span></div>}
+          {/* Une seule ligne de repères : quoi, combien, et l'état (modifié). */}
+          {totalMultiplier > 0 && !showOrnement && (
+            <p className="alq-result-meta" role="status">
+              {resultEdited ? (
+                <span className="alq-result-tag">Texte modifié</span>
+              ) : (
+                <span className="alq-result-badge">
+                  <bdi dir="auto">{htmlToPlainText(baseText)}</bdi>
+                  <span>× {totalMultiplier.toLocaleString('fr-FR')}</span>
+                </span>
+              )}
+              <span className="alq-result-hint">Copie et exports : texte complet</span>
+            </p>
+          )}
           {showOrnement && ornementLetters.length > 0 ? (
             <div className="orne-stage glass-panel">
               <OrneePhrasePiece
@@ -1156,6 +1214,22 @@ export default function AlQalamPage() {
                 scale={ornementScale / 100}
               />
             </div>
+          ) : totalMultiplier > 0 && editingResult ? (
+            <div className="alq-result-edit">
+              <textarea
+                className="output-area alq-result-editor"
+                style={{ fontSize: fontSize + 'px' }}
+                value={resultDraft}
+                onChange={(e) => setResultDraft(e.target.value)}
+                aria-label="Modifier le texte du résultat"
+                dir="rtl"
+                autoFocus
+              />
+              <div className="alq-result-edit-actions">
+                <button type="button" className="alq-edit-cancel" onClick={cancelEditResult}><X size={16} aria-hidden="true" /> Annuler</button>
+                <button type="button" className="alq-edit-save" onClick={saveEditResult}><Check size={16} aria-hidden="true" /> Enregistrer</button>
+              </div>
+            </div>
           ) : totalMultiplier > 0 ? (
             <div
               className="output-area glass-panel"
@@ -1165,10 +1239,6 @@ export default function AlQalamPage() {
               dangerouslySetInnerHTML={{ __html: preview.html }}
             />
           ) : <p className="alq-result-empty">Saisissez votre texte et générez les répétitions pour voir le résultat.</p>}
-          {totalMultiplier > 0 && !showOrnement && <p className="alq-result-status" role="status">
-            {totalMultiplier.toLocaleString('fr-FR')} répétition{totalMultiplier > 1 ? 's' : ''} générée{totalMultiplier > 1 ? 's' : ''}.
-            {' '}L’aperçu peut être limité ; la copie et les exports utilisent le résultat complet.
-          </p>}
         </section>
       </div>
 
