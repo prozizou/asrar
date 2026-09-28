@@ -757,7 +757,7 @@ export default function AlQalamPage() {
                 </span>
                 <ChevronRight className="mode-card-chevron" size={18} strokeWidth={2} aria-hidden="true" />
               </button>
-              <button type="button" className="mode-card" onClick={() => selectWritingMode('rasmique')}>
+              <button type="button" className="mode-card mode-card-wide" onClick={() => selectWritingMode('rasmique')}>
                 <span className="mode-card-icon">
                   <PenTool size={20} strokeWidth={2} aria-hidden="true" />
                 </span>
@@ -1177,7 +1177,8 @@ export default function AlQalamPage() {
           </div>
         )}
 
-        {/* Aperçu */}
+        {/* Aperçu — absent du menu de choix du mode (rien à y montrer) */}
+        {writingMode !== null && (
         <section className="output-section alq-result" aria-labelledby="alq-result-title">
           <div className="alq-result-header">
             <h2 id="alq-result-title"><FileText size={20} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
@@ -1240,6 +1241,7 @@ export default function AlQalamPage() {
             />
           ) : <p className="alq-result-empty">Saisissez votre texte et générez les répétitions pour voir le résultat.</p>}
         </section>
+        )}
       </div>
 
       {/* Popup options Word / PDF — même choix ouverture/fermeture pour les deux formats. */}
