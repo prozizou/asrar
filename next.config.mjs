@@ -77,6 +77,23 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 jours de cache pour l'optimiseur d'images.
   },
 
+  // HarfBuzz (moteur de formes arabes de l'Ornement, lib/alqalamShaper.js)
+  // est livré en module Emscripten « universel » : il contient une branche
+  // Node (`import('module')`, `require('fs')`…) jamais exécutée dans le
+  // navigateur. Côté client, ces modules Node sont déclarés absents pour que
+  // webpack n'essaie pas de les empaqueter. Le .wasm, lui, est émis comme
+  // asset (`new URL('harfbuzz.wasm', import.meta.url)`).
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      config.resolve.fallback = { ...(config.resolve.fallback || {}), module: false, fs: false, path: false, url: false };
+      // Tous les navigateurs ciblés gèrent async/await (le module HarfBuzz
+      // l'utilise au premier niveau, chargé à la demande) : le déclarer évite
+      // un avertissement de compilation sans effet.
+      config.output.environment = { ...(config.output.environment || {}), asyncFunction: true };
+    }
+    return config;
+  },
+
   async headers() {
     return [
       // En-têtes de sécurité : sur toutes les routes.
@@ -85,6 +102,12 @@ const nextConfig = {
       {
         source: '/_next/static/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      // Police calligraphique de l'Ornement (≈ 500 Ko, lib/alqalamShaper.js) :
+      // téléchargée une fois, puis servie depuis le cache.
+      {
+        source: '/fonts/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' }],
       },
       // Assets statiques de l'app (logos, icônes) : cache long + revalidation.
       {
