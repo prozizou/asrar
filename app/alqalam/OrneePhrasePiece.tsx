@@ -57,7 +57,7 @@ const OrneePhrasePiece = forwardRef<HTMLDivElement, OrneePhrasePieceProps>(funct
   return (
     <div ref={ref} className="orne-pages" data-export-ready={!piece.overflow && piece.pages.length > 0}
       data-export-reason={piece.overflowReason || ''}>
-      <p className="orne-format" dir="ltr">A4 paysage · 297 × 210 mm · Marges 0,5 cm</p>
+      <p className="orne-format" dir="ltr">A4 portrait · 210 × 297 mm · Marges 0,5 cm</p>
       {piece.pages.length === 0 ? (
         // N'arrive que sur un débordement 'layout' (un jeton, à lui seul, ne
         // tient dans la largeur de page même au rayon plancher) : aucune
