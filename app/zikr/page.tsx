@@ -26,7 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart, Trophy, Target, Shield, LogOut, Phone,
+  Mic, Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -46,6 +46,7 @@ import {
   normalizePhone,
 } from '@/lib/zikrLogic';
 import { uploadZikrChatMedia } from '@/lib/cloudinary';
+import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone, flagOf } from '@/lib/phoneCountries';
 import { playNotificationBeep } from '@/lib/notifSound';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
@@ -622,24 +623,112 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
 // le contacter par WhatsApp afin de communiquer avec chaque membre »).
 // normalizePhone (lib/zikrLogic.js, partagée avec le serveur qui fait
 // autorité — handleJoin) donne ici un retour immédiat, avant l'envoi.
+//
+// Revue UX 2026-09-28 (priorité 1) : numéro WhatsApp en
+// DEUX champs — indicatif du pays (détecté automatiquement, sans permission
+// ni réseau : fuseau horaire puis langue du navigateur, voir
+// lib/phoneCountries.js detectCountryIso) + numéro local. Remplace le champ
+// unique « format international » (+221770000000) qui obligeait à connaître
+// et taper soi-même l'indicatif. Le numéro final reste validé par
+// normalizePhone (lib/zikrLogic.js), la même règle que le serveur.
 function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boolean }) {
-  const [phone, setPhone] = useState('');
-  const normalized = normalizePhone(phone);
+  const [iso, setIso] = useState(DEFAULT_COUNTRY_ISO);
+  const [local, setLocal] = useState('');
+  const [touched, setTouched] = useState(false);
+  const countryChosen = useRef(false);
+
+  // Détection côté client uniquement (Intl/navigator absents au rendu
+  // serveur) et une seule fois — jamais par-dessus un choix manuel.
+  useEffect(() => {
+    if (countryChosen.current) return;
+    try {
+      setIso(detectCountryIso({
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        languages: navigator.languages || [navigator.language],
+      }));
+    } catch {}
+  }, []);
+
+  const country = countryByIso(iso) || countryByIso(DEFAULT_COUNTRY_ISO)!;
+  const normalized = normalizePhone(composePhone(iso, local));
+  const international = /^\s*(\+|00)/.test(local);
+  const showError = touched && local.trim() !== '' && !normalized;
+  const helpText = showError
+    ? 'Numéro incomplet ou invalide — vérifiez les chiffres saisis.'
+    : international
+      ? 'Numéro international détecté : l’indicatif sélectionné est ignoré.'
+      : normalized
+        ? `Numéro enregistré : ${normalized}`
+        : 'Saisissez votre numéro sans l’indicatif.';
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTouched(true);
+    if (normalized && !busy) onJoin(normalized);
+  };
 
   return (
-    <div className="zk-form">
-      <label className="zk-field">
-        <span>Numéro WhatsApp (format international) <em className="zk-required">obligatoire</em></span>
-        <input type="tel" inputMode="tel" placeholder="+221770000000" value={phone}
-          onChange={(e) => setPhone(e.target.value)} />
-      </label>
-      <p className="zk-preview">
-        Sert uniquement au créateur du groupe pour vous contacter par WhatsApp — jamais visible des autres participants.
-      </p>
-      <button className="zk-btn main" disabled={busy || !normalized} onClick={() => normalized && onJoin(normalized)}>
-        <Handshake size={16} strokeWidth={2.5} aria-hidden="true" /> {busy ? 'Envoi…' : 'Demander à rejoindre'}
-      </button>
-    </div>
+    <section className="zk-card-block zk-join-card" aria-labelledby="zk-join-title">
+      <div className="zk-join-head">
+        <span className="zk-join-icon" aria-hidden="true"><Handshake size={18} strokeWidth={2.2} /></span>
+        <div>
+          <h2 id="zk-join-title">Rejoindre ce zikr collectif</h2>
+          <p>Le créateur valide chaque demande avant votre première récitation.</p>
+        </div>
+      </div>
+
+      <form className="zk-join-form" onSubmit={submit} noValidate>
+        <label className="zk-join-label" htmlFor="zk-join-phone">Numéro WhatsApp</label>
+        <div className={'zk-phone' + (showError ? ' is-invalid' : normalized ? ' is-valid' : '')}>
+          <label className={'zk-phone-country' + (international ? ' is-ignored' : '')}>
+            <span className="zk-phone-flag" aria-hidden="true">{flagOf(country.iso)}</span>
+            <span className="zk-phone-dial" aria-hidden="true">+{country.dial}</span>
+            <ChevronDown size={14} strokeWidth={2.4} aria-hidden="true" />
+            {/* <select> natif transparent par-dessus : liste système du
+                téléphone (défilement, recherche au clavier) et accessibilité
+                gratuites, sous l'apparence compacte « 🇸🇳 +221 ». */}
+            <select
+              value={country.iso}
+              aria-label="Indicatif du pays"
+              onChange={(e) => { countryChosen.current = true; setIso(e.target.value); }}
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.iso} value={c.iso}>{flagOf(c.iso)} {c.name} (+{c.dial})</option>
+              ))}
+            </select>
+          </label>
+          <input
+            id="zk-join-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder={country.iso === 'SN' ? '77 123 45 67' : 'Numéro de téléphone'}
+            value={local}
+            onChange={(e) => setLocal(e.target.value)}
+            onBlur={() => setTouched(true)}
+            aria-invalid={showError}
+            aria-describedby="zk-join-phone-help"
+          />
+          {normalized && <CheckCircle2 className="zk-phone-ok" size={18} strokeWidth={2.4} aria-hidden="true" />}
+        </div>
+        <p id="zk-join-phone-help" className={'zk-phone-help' + (showError ? ' is-error' : '')} aria-live="polite">
+          {helpText}
+        </p>
+
+        <button type="submit" className="zk-btn main zk-join-cta" disabled={busy || !normalized} aria-busy={busy}>
+          {busy ? (
+            <><Loader2 className="zk-spin" size={17} strokeWidth={2.5} aria-hidden="true" /> Envoi de la demande…</>
+          ) : (
+            <><Handshake size={17} strokeWidth={2.5} aria-hidden="true" /> Demander à rejoindre</>
+          )}
+        </button>
+
+        <ul className="zk-reassure">
+          <li><Lock size={13} strokeWidth={2.4} aria-hidden="true" /> Numéro visible uniquement par le créateur du groupe</li>
+          <li><Bell size={13} strokeWidth={2.4} aria-hidden="true" /> Notification dès que votre demande est acceptée</li>
+        </ul>
+      </form>
+    </section>
   );
 }
 
@@ -1071,12 +1160,19 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           <ZikrHero name={g.name} arabic={g.arabic} transliteration={g.transliteration} presetId={g.presetId} />
         ) : (
           <>
+            {/* Hiérarchie (revue UX 2026-09-28, priorité 2) : la FORMULE
+                arabe domine, le nom du groupe passe en titre sobre au-dessus,
+                la translittération en sous-titre discret, puis une ligne de
+                métadonnées à icônes (créateur · participants · en ligne). */}
             <h1>{g.name}</h1>
-            {g.arabic && <div className="zk-phrase-big" dir="rtl">{g.arabic}</div>}
+            {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
             {g.transliteration && <span className="zk-preset-badge">{g.transliteration}</span>}
             <div className="zk-owner">
-              Créé par {chatDisplayName(g.ownerEmail, g.ownerName)} · {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}
-              {g.onlineCount > 0 && <> · <span className="zk-online-text">🟢 {g.onlineCount} en ligne</span></>}
+              <span className="zk-meta-item"><Crown size={12} strokeWidth={2.4} aria-hidden="true" /> {chatDisplayName(g.ownerEmail, g.ownerName)}</span>
+              <span className="zk-meta-item"><Users size={12} strokeWidth={2.4} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
+              {g.onlineCount > 0 && (
+                <span className="zk-meta-item zk-online-text"><span className="zk-meta-online-dot" aria-hidden="true" /> {g.onlineCount} en ligne</span>
+              )}
             </div>
           </>
         )}
@@ -1116,9 +1212,21 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         <>
           <StaticProgress total={g.total} target={g.target} />
           {g.status === 'pending' ? (
-            <div className="zk-join-state"><Clock size={14} strokeWidth={2.5} aria-hidden="true" /> Votre demande est en attente de validation par le créateur.</div>
+            <div className="zk-card-block zk-status-card is-pending" role="status">
+              <span className="zk-status-icon" aria-hidden="true"><Clock size={18} strokeWidth={2.4} /></span>
+              <div>
+                <strong>Demande envoyée</strong>
+                <p>En attente de validation par le créateur. Vous serez notifié dès qu’elle est acceptée — inutile de renvoyer une demande.</p>
+              </div>
+            </div>
           ) : g.full ? (
-            <div className="zk-join-state">Ce zikr collectif est complet — objectif entièrement récité.</div>
+            <div className="zk-card-block zk-status-card is-done" role="status">
+              <span className="zk-status-icon" aria-hidden="true"><Trophy size={18} strokeWidth={2.4} /></span>
+              <div>
+                <strong>Objectif atteint</strong>
+                <p>Ce zikr collectif est complet — l’objectif a été entièrement récité.</p>
+              </div>
+            </div>
           ) : (
             <JoinForm onJoin={doJoin} busy={joinBusy} />
           )}
