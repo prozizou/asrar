@@ -41,6 +41,8 @@ interface OrneePhrasePieceProps {
    *  (typiquement vide pour ouverture/fermeture) — voir composePhrasePages.
    *  Prend le pas sur `phrase`/`letters` quand fourni. */
   segments?: OrnementSegment[];
+  /** Échelle commune du vœu et des lettres gonflées (1 = automatique). */
+  scale?: number;
 }
 
 export interface OrneePhrasePieceHandle {
@@ -96,7 +98,7 @@ function OrnePage({ index, count, label, render }: { index: number; count: numbe
 }
 
 const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProps>(function OrneePhrasePiece(
-  { phrase, letters, innerText, segments },
+  { phrase, letters, innerText, segments, scale = 1 },
   ref
 ) {
   const [shaper, setShaper] = useState<Shaper | null>(null);
@@ -117,8 +119,8 @@ const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProp
   }, []);
 
   const piece = useMemo(
-    () => (shaper ? composePhrasePages({ phrase, letters, innerText, measure: shaper.measure, segments }) : null),
-    [shaper, phrase, letters, innerText, segments]
+    () => (shaper ? composePhrasePages({ phrase, letters, innerText, measure: shaper.measure, segments, scale }) : null),
+    [shaper, phrase, letters, innerText, segments, scale]
   );
 
   // Pages déjà vectorisées, réutilisées par l'export. Remise à zéro dès que
@@ -167,6 +169,15 @@ const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProp
   return (
     <div className="orne-pages">
       <p className="orne-format" dir="ltr">A4 portrait · 210 × 297 mm · Marges 0,5 cm · PDF vectoriel</p>
+      {piece.vowFont > 0 && (
+        <p className="orne-format" dir="ltr">
+          Vœu : corps ≈ {((piece.vowFont * 210) / PHRASE_PIECE.W).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mm
+          {Math.abs(piece.scale - scale) > 0.05 &&
+            (scale > piece.scale
+              ? ` · taille maximale pour la page atteinte (${Math.round(piece.scale * 100)} %)`
+              : ` · taille minimale pour contenir le vœu (${Math.round(piece.scale * 100)} %)`)}
+        </p>
+      )}
       {piece.pages.length === 0 ? (
         // N'arrive que sur un débordement 'layout' (un jeton, à lui seul, ne
         // tient dans la largeur de page même au rayon plancher) : on montre

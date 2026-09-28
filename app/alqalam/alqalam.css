@@ -223,6 +223,13 @@ html[data-theme='light'] .alq-page .highlight { background-color: rgba(255, 215,
   color: var(--text-gray); font-family: var(--font-ui);
 }
 .alq-page .orne-svg { display: block; width: 100%; height: auto; aspect-ratio: 210 / 297; border-radius: 0; background: #fff; box-shadow: 0 2px 10px #0002; flex-shrink: 0; }
+.alq-page .orne-scale { margin-top: 4px; }
+.alq-page .orne-scale-row { display: flex; align-items: center; gap: 10px; }
+.alq-page .orne-scale-btn {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text-main); font: 700 20px/1 var(--font-ui); cursor: pointer;
+}
+.alq-page .orne-scale-btn:disabled { opacity: .4; cursor: default; }
 .alq-page .orne-loading { font-family: var(--font-ui); font-size: 14px; color: var(--text-gray); text-align: center; }
 
 .alq-page .verset-brun { color: var(--text-red); font-family: inherit; font-weight: 700; }
