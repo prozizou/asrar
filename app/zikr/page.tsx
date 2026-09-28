@@ -41,7 +41,7 @@ import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
-  progressPct, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
+  progressPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
   normalizePhone,
 } from '@/lib/zikrLogic';
@@ -78,6 +78,14 @@ interface Group {
   private?: boolean;
   approved?: boolean;
   sessionAt?: number | null;
+}
+
+// Réponse de action="list" (pages/api/zikr.js handleList) — `isAdmin` dit si
+// la liste reçue est la vue administrateur (tous les zikr, y compris ceux en
+// attente de validation).
+interface GroupListData {
+  groups?: Group[];
+  isAdmin?: boolean;
 }
 
 interface JoinRequest {
@@ -223,8 +231,10 @@ export default function ZikrCollectifPage() {
 // ─────────────────────────── LISTE + CRÉATION ───────────────────────────
 function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: (id: string) => void }) {
   const [groups, setGroups] = useState<Group[] | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [moderating, setModerating] = useState<string | null>(null); // groupId en cours d'approbation/refus
   // Détecte une demande d'adhésion tranchée (acceptée ou refusée) entre deux
   // sondages, pour NOTIFIER l'utilisateur sans qu'il ait besoin de rouvrir le
   // détail du groupe pour s'en apercevoir — comparé au statut du sondage
@@ -234,8 +244,9 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
 
   const load = useCallback(async () => {
     try {
-      const d = await listGroups();
+      const d: GroupListData = await listGroups();
       const next: Group[] = d.groups || [];
+      setIsAdmin(!!d.isAdmin);
       const prevStatus = prevStatusRef.current;
       for (const grp of next) {
         const before = prevStatus[grp.id];
@@ -262,6 +273,34 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
     return () => clearInterval(id);
   }, [load]);
 
+  // Administrateur : les zikr en attente de validation (approved === false)
+  // sortent de la liste générale pour une section dédiée EN TÊTE, avec
+  // Approuver/Refuser directement sur la carte — avant, il fallait ouvrir
+  // chaque zikr puis le menu ⋮ → Gestion pour le valider. Pour un non-admin,
+  // son propre zikr en attente reste dans la liste générale (avec l'icône
+  // horloge), comme avant.
+  const toModerate = isAdmin && groups ? groups.filter((g) => g.approved === false) : [];
+  const listed = sortByProgress(isAdmin && groups ? groups.filter((g) => g.approved !== false) : groups || []);
+
+  const moderate = async (g: Group, approve: boolean) => {
+    if (!approve && !window.confirm(`Refuser et supprimer définitivement « ${g.name} » ?`)) return;
+    setModerating(g.id);
+    try {
+      if (approve) {
+        await approveZikr(g.id);
+        notify(`✅ « ${g.name} » approuvé — visible dans la liste publique.`);
+      } else {
+        await deleteGroup(g.id);
+        notify(`« ${g.name} » refusé et supprimé.`);
+      }
+      await load();
+    } catch (e: any) {
+      notify('❌ ' + (e.message || e));
+    } finally {
+      setModerating(null);
+    }
+  };
+
   return (
     <div className="zk-list-page">
       {/* En-tête resserré (revue design, point 1) : un titre + une ligne de
@@ -271,6 +310,26 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
         <h1>Zikr collectif</h1>
         <p>Récitez ensemble pour atteindre un objectif commun.</p>
       </div>
+
+      {toModerate.length > 0 && (
+        <section className="zk-moderation" aria-label="Zikr à valider">
+          <h2 className="zk-section-title">
+            <Shield size={16} strokeWidth={2.5} aria-hidden="true" /> À valider <span className="zk-pill">{toModerate.length}</span>
+          </h2>
+          <div className="zk-list">
+            {toModerate.map((g) => (
+              <PendingZikrCard
+                key={g.id}
+                g={g}
+                busy={moderating === g.id}
+                onOpen={() => onOpen(g.id)}
+                onApprove={() => moderate(g, true)}
+                onReject={() => moderate(g, false)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
         {creating ? (
@@ -288,16 +347,17 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
         <div className="zk-loading"><Spinner /> Chargement…</div>
       ) : error ? (
         <p className="zk-error">{error} <button className="zk-link" onClick={load}>Réessayer</button></p>
-      ) : groups.length === 0 ? (
+      ) : listed.length === 0 ? (
         <p className="zk-empty">Aucun zikr collectif pour l’instant. Soyez le premier à en créer un 🌙</p>
       ) : (
         <>
           {/* Titre de section (revue design, point 4) — sépare clairement la
               création des zikrs déjà en cours, au lieu d'un enchaînement direct
-              sans repère. */}
-          <h2 className="zk-section-title">Zikrs en cours <span className="zk-pill">{groups.length}</span></h2>
+              sans repère. Grille 2 colonnes, du plus avancé au moins avancé
+              (sortByProgress, lib/zikrLogic.js). */}
+          <h2 className="zk-section-title">Zikrs en cours <span className="zk-pill">{listed.length}</span></h2>
           <div className="zk-list">
-            {groups.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
+            {listed.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
           </div>
         </>
       )}
@@ -316,6 +376,42 @@ const CTA_BY_STATUS: Record<GroupStatus, { label: string; active: boolean }> = {
   pending: { label: 'En attente', active: false },
   none: { label: 'Participer', active: true },
 };
+
+// Carte de modération (administrateur) : mêmes infos essentielles qu'une
+// GroupCard + qui l'a créé, et les deux décisions directement sur la carte.
+// « Refuser » supprime le zikr (handleDelete côté serveur, déjà ouvert à
+// l'admin) — il n'existe pas d'état « refusé » distinct.
+function PendingZikrCard({ g, busy, onOpen, onApprove, onReject }: {
+  g: Group;
+  busy: boolean;
+  onOpen: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="zk-card zk-card-pending">
+      <button type="button" className="zk-card-open" onClick={onOpen}>
+        <span className="zk-card-name">
+          {g.private && <Lock size={13} strokeWidth={2.5} aria-label="Zikr privé" />}
+          {g.name}
+        </span>
+        <span className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</span>
+        <span className="zk-card-owner">par {g.ownerName || g.ownerEmail || '—'}</span>
+        <span className="zk-card-progress-row">
+          <span>Objectif {fmt(g.target)}</span>
+        </span>
+      </button>
+      <div className="zk-card-actions">
+        <button type="button" className="zk-mini ok" onClick={onApprove} disabled={busy}>
+          <Check size={13} strokeWidth={2.5} aria-hidden="true" /> Approuver
+        </button>
+        <button type="button" className="zk-mini no" onClick={onReject} disabled={busy}>
+          <X size={13} strokeWidth={2.5} aria-hidden="true" /> Refuser
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   const pct = progressPct(g.total, g.target);

@@ -70,18 +70,53 @@
 .zk-preview strong { color: var(--accent); }
 
 /* ── Liste de groupes ────────────────────────────────────── */
-.zk-list { display: flex; flex-direction: column; gap: 12px; }
+/* Grille 2 colonnes (demande 2026-09-28 : « grille de 2x2 », triée du plus
+   avancé au moins avancé — voir sortByProgress, lib/zikrLogic.js). Chaque
+   carte fait donc ~la moitié de la largeur : contenu resserré ci-dessous
+   (nom et phrase coupés à 2 lignes, ligne participants/CTA qui passe en
+   colonne) plutôt qu'un texte qui déborde. Les cartes d'une même rangée
+   ont la même hauteur (stretch), CTA aligné en bas. */
+.zk-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .zk-card {
-  text-align: left; width: 100%; cursor: pointer; display: flex; flex-direction: column; gap: 8px;
-  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px;
+  text-align: left; width: 100%; min-width: 0; margin: 0; /* neutralise la marge globale des boutons (globals.css) — en grille, elle décalait chaque rangée */
+  cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 14px; padding: 12px;
   color: var(--text-main); font-family: var(--font-ui); transition: border-color 0.15s, transform 0.1s;
 }
 .zk-card:hover { border-color: var(--accent); }
 .zk-card:active { transform: scale(0.995); }
-.zk-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.zk-card-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 1rem; }
-.zk-card-name svg { color: var(--text-dim); flex-shrink: 0; }
-.zk-card-phrase { color: var(--text-muted); font-size: 0.9rem; }
+.zk-card-top { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.zk-card-name {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-weight: 700; font-size: 0.92rem; line-height: 1.25; overflow-wrap: anywhere;
+}
+.zk-card-name svg { color: var(--text-dim); flex-shrink: 0; vertical-align: -1px; margin-right: 4px; }
+.zk-card-phrase {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  color: var(--text-muted); font-size: 0.82rem; line-height: 1.35; overflow-wrap: anywhere;
+}
+/* Pousse barre + chiffres + CTA en bas : cartes d'une rangée alignées même
+   si l'une a un nom sur 1 ligne et l'autre sur 2. */
+.zk-card .zk-bar { margin-top: auto; }
+
+/* Carte « À valider » (administrateur) — pas un <button> global (elle
+   contient deux boutons d'action) : zone cliquable d'ouverture + actions. */
+.zk-moderation { margin-bottom: 18px; }
+.zk-moderation .zk-section-title svg { color: #d9a441; }
+.zk-card-pending { cursor: default; border-color: rgba(217, 164, 65, 0.55); background: rgba(217, 164, 65, 0.07); }
+.zk-card-pending:active { transform: none; }
+.zk-card-open {
+  display: flex; flex-direction: column; gap: 5px; width: 100%; min-width: 0; margin: 0; padding: 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.zk-card-owner {
+  overflow: hidden; color: var(--text-dim); font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Les deux décisions côte à côte si la carte est assez large, sinon l'une
+   sous l'autre (flex-wrap) — jamais un bouton qui déborde de la carte. */
+.zk-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+.zk-card-actions .zk-mini { flex: 1 1 88px; min-height: 36px; margin: 0; padding: 6px 4px; }
+.zk-card-actions .zk-mini:disabled { opacity: 0.55; cursor: progress; }
 
 /* « Créé par vous » (revue design, point 7) : mention discrète à côté du nom
    plutôt qu'un badge « 👑 Créateur » aussi voyant que le titre lui-même. */
@@ -94,12 +129,12 @@
 /* Ligne total/objectif + pourcentage (revue design, point 6) : le
    pourcentage évite d'avoir à calculer mentalement "11 959 / 23 100". */
 .zk-card-progress-row {
-  display: flex; justify-content: space-between; align-items: baseline;
-  font-size: 0.8rem; color: var(--text-dim); margin-top: 6px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 6px;
+  font-size: 0.74rem; color: var(--text-dim); margin-top: 2px; font-variant-numeric: tabular-nums;
 }
 .zk-card-pct { font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
-.zk-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.zk-card-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; }
 .zk-card-members { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--text-dim); }
 .zk-card-members svg { flex-shrink: 0; }
 
