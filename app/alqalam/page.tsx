@@ -1092,8 +1092,8 @@ export default function AlQalamPage() {
                       </div>
                       <p className="orne-hint">
                         Seules les lettres gonflées et le vœu changent de taille ; les lettres et mots voisins
-                        restent inchangés. Les lignes sont justifiées (liaisons allongées) et réparties sur toute la
-                        hauteur de la page.
+                        restent inchangés. Les lignes sont justifiées (liaisons allongées) ; les rangées sont compactes,
+                        séparées par un écart régulier.
                       </p>
                     </div>
 
