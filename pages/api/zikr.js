@@ -43,7 +43,10 @@
 // client Firebase RTDB direct.
 //
 // Body (JSON) : { idToken, action, ... }
-//   action="list"           → liste des zikr collectifs (+ mon statut). Un
+//   action="list"           → liste des zikr collectifs (+ mon statut ; pour
+//                              les zikr dont je suis CRÉATEUR, `requests` =
+//                              demandes d'adhésion en attente, téléphone
+//                              compris — traitées dès la liste). Un
 //                              zikr n'y apparaît, pour un compte qui n'y a
 //                              AUCUN statut (ni créateur, ni membre, ni
 //                              demande en attente), que s'il est PUBLIC
@@ -271,6 +274,19 @@ export default async function handler(req, res) {
 // voit TOUT, sans filtre : cette liste lui sert aussi de file de modération
 // (action="approveZikr"). "get"/"join" restent accessibles par groupId
 // direct (lien de partage) quels que soient ces drapeaux.
+// Demandes d'adhésion en attente d'un groupe (créateur only — contiennent le
+// téléphone, voir handleJoin) : lecture partagée par handleList (vue
+// d'ensemble du créateur), handleGet et handleRequests.
+async function readRequests(db, gid) {
+  const rSnap = await db.ref("zikr_requests/" + gid).once("value");
+  const requests = [];
+  rSnap.forEach((r) => {
+    const v = r.val() || {};
+    requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", phone: v.phone || "", at: v.at || 0 });
+  });
+  return requests;
+}
+
 async function handleList(db, res, user) {
   const admin = await isAdmin(user);
   const snap = await db.ref("zikr_groups").once("value");
@@ -303,9 +319,16 @@ async function handleList(db, res, user) {
   });
 
   // Mon statut (membre / en attente) — lecture ciblée sur MON uid uniquement.
+  // Créateur : on joint aussi les demandes d'adhésion en attente de SES
+  // groupes (jamais ceux des autres), pour qu'il les voie et les traite dès
+  // la liste — sans ouvrir chaque zikr.
   await Promise.all(
     groups.map(async (grp) => {
-      if (grp.isOwner) { grp.status = "owner"; return; }
+      if (grp.isOwner) {
+        grp.status = "owner";
+        grp.requests = await readRequests(db, grp.id);
+        return;
+      }
       const [mSnap, rSnap] = await Promise.all([
         db.ref("zikr_members/" + grp.id + "/" + user.uid).once("value"),
         db.ref("zikr_requests/" + grp.id + "/" + user.uid).once("value"),
@@ -499,12 +522,7 @@ async function handleGet(db, res, user, gid) {
 
   if (isOwner) {
     status = "owner";
-    const rSnap = await db.ref("zikr_requests/" + gid).once("value");
-    const requests = [];
-    rSnap.forEach((r) => {
-      const v = r.val() || {};
-      requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", phone: v.phone || "", at: v.at || 0 });
-    });
+    const requests = await readRequests(db, gid);
     owner.requests = requests;
     owner.pending = requests.length;
 
@@ -624,13 +642,7 @@ async function handleJoin(db, res, user, gid, rawPhone) {
 // ── Créateur : demandes en attente ─────────────────────────────
 async function handleRequests(db, res, user, gid) {
   await assertOwner(db, gid, user);
-  const rSnap = await db.ref("zikr_requests/" + gid).once("value");
-  const requests = [];
-  rSnap.forEach((r) => {
-    const v = r.val() || {};
-    requests.push({ uid: r.key, email: v.email || "", name: v.name || "", picture: v.picture || "", phone: v.phone || "", at: v.at || 0 });
-  });
-  return res.status(200).json({ requests });
+  return res.status(200).json({ requests: await readRequests(db, gid) });
 }
 
 // ── Créateur : accepter une demande ─────────────────────────────
