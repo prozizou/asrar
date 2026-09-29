@@ -596,7 +596,7 @@ html[data-theme="light"] .container.market-page {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 60; /* sous .modal-overlay (100) : une fiche ouverte reste au-dessus */
+  z-index: 60; /* sous .pm-overlay (100) : une fiche ouverte reste au-dessus */
   padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s2) + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--mk-fade) 55%, transparent);
   pointer-events: none;
@@ -626,224 +626,344 @@ html[data-theme="light"] .container.market-page {
 /* La barre de notification globale (.toast) reste au-dessus du bouton. */
 .market-page .toast { bottom: calc(var(--mk-cta-h) + 2 * var(--mk-s2) + env(safe-area-inset-bottom)); }
 
-/* Modale produit */
-.modal-overlay {
-  display: none;
+/* ── Fiche produit (modale) : blanc / violet, vert pour le prix et WhatsApp ──
+   Plein écran sur mobile (feuille qui défile, bouton WhatsApp collé en bas),
+   carte centrée à partir de 600 px. Les couleurs viennent des jetons de
+   .market-page (--mk-card, --mk-violet, --mk-price, --mk-whatsapp) : le mode
+   sombre s'adapte tout seul. Classes `pm-*` — `.modal-*` existe aussi dans le
+   CSS de la bibliothèque. */
+.pm-overlay {
   position: fixed;
   inset: 0;
-  background: var(--mk-modal-bg);
-  backdrop-filter: blur(4px);
   z-index: 100;
+  display: flex;
   align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
-  padding: 20px;
+  overscroll-behavior: contain;
+  background: rgba(20, 12, 40, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
-
-.modal-overlay.open { display: flex; }
-
-.modal-box {
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  border-radius: 20px;
-  padding: 28px;
-  width: 100%;
-  max-width: 550px;
+.pm-sheet {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  min-height: 100%; /* mobile : la feuille remplit l'écran, le bouton reste en bas */
+  background: var(--mk-card);
   color: var(--mk-text);
   font-family: var(--font-ui);
-  margin: auto;
+}
+@media (min-width: 600px) {
+  .pm-overlay { align-items: center; padding: 24px 0; }
+  .pm-sheet { min-height: 0; margin: auto; border-radius: 24px; overflow: clip; box-shadow: 0 20px 60px rgba(20, 12, 40, 0.35); }
 }
 
-.modal-close {
+/* Fermer : pastille ronde posée sur l'image. */
+.pm-close {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  cursor: pointer;
-  font-size: 1.4rem;
-  color: var(--mk-text-dim);
-}
-
-/* Dimensions réelles posées en inline style (voir ProductModal.js) : pas de
-   fill ici, pour que la boîte épouse la hauteur de l'image (jusqu'à 250px)
-   plutôt qu'une hauteur fixe qui laissait une bande vide sous les images
-   plus larges que hautes. */
-.modal-img {
-  display: block;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  background: var(--mk-surface-3);
-}
-
-.vendor-block {
-  display: flex;
-  flex-wrap: wrap;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin: 16px 0;
-  padding: 12px;
-  background: var(--mk-soft-2);
-  border-radius: 12px;
-}
-/* Le bouton passe sur sa propre ligne, pleine largeur, quand la ligne
-   avatar+nom+bouton ne tient plus (nom long, écran étroit) — au lieu de se
-   retrouver écrasé/mal centré à côté du bloc d'infos. */
-.vendor-block .visit-shop-btn { flex: 1 1 auto; text-align: center; }
-@media (max-width: 420px) {
-  .vendor-block { flex-direction: column; align-items: stretch; text-align: center; }
-  .vendor-block-avatar { align-self: center; }
-}
-
-.vendor-block-avatar {
-  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--mk-border);
-  flex-shrink: 0;
-}
-
-.vendor-block-info { flex: 1; }
-
-.vendor-block-name { font-weight: 600; }
-
-.vendor-block-loc { font-size: 0.8rem; color: var(--mk-text-dim); }
-
-.vendor-block-meta { font-size: 0.85rem; color: var(--mk-gold); }
-
-.visit-shop-btn {
-  background: transparent;
-  border: 1px solid var(--mk-gold);
-  color: var(--mk-gold);
-  padding: 6px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.add-to-cart-btn {
-  background: var(--mk-gold);
+  justify-content: center;
   border: none;
-  color: var(--text-on-accent);
-  font-weight: bold;
-  padding: 12px 24px;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-top: 12px;
-  width: 100%;
-}
-
-.contact-btns { display: flex; gap: 12px; margin-top: 12px; }
-
-/* ── Barre sociale (like + commentaires) ── */
-.social-bar { display: flex; gap: 12px; margin-top: 14px; }
-.like-btn, .comment-toggle-btn {
-  flex: 1;
-  background: var(--mk-soft-3);
-  border: 1px solid var(--mk-border);
-  color: var(--mk-text);
-  padding: 10px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.2s, border-color 0.2s;
-}
-.like-btn:hover, .comment-toggle-btn:hover { background: var(--mk-soft-2); }
-.like-btn.liked { border-color: #e0245e; }
-
-.comments-panel { display: none; margin-top: 12px; }
-.comments-panel.open { display: block; }
-.comment-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.m-comment-item { display: flex; gap: 8px; background: var(--mk-soft-3); border: 1px solid var(--mk-border); border-radius: 10px; padding: 8px 12px; }
-.m-comment-avatar {
-  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  overflow: hidden;
-  flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
   border-radius: 50%;
-  background: var(--mk-border);
+  background: rgba(255, 255, 255, 0.92);
+  color: #2b1d4f;
+  box-shadow: 0 2px 10px rgba(20, 12, 40, 0.25);
+  cursor: pointer;
+}
+.pm-close:hover { transform: none; box-shadow: 0 2px 10px rgba(20, 12, 40, 0.25); }
+.pm-close:active { transform: scale(0.94); }
+
+/* Galerie : image principale 4:3 + miniatures de 48 px. */
+.pm-gallery {
+  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-height: 40dvh;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mk-violet) 10%, var(--mk-surface-3, transparent));
+}
+.pm-thumbs {
+  display: flex;
+  gap: var(--mk-s1);
+  padding: 10px 16px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pm-thumbs::-webkit-scrollbar { display: none; }
+.pm-thumb {
+  position: relative; /* next/image (fill) */
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--mk-surface-3, transparent);
+  opacity: 0.7;
+  cursor: pointer;
+  box-shadow: none;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+.pm-thumb:hover { transform: none; box-shadow: none; }
+.pm-thumb.active { border-color: var(--mk-violet); opacity: 1; }
+
+/* Corps : espacements réduits (10 px entre blocs). */
+.pm-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 16px; }
+
+/* Catégorie + titre + prix : un seul bloc serré. */
+.pm-head { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.pm-cat {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-violet) 13%, transparent);
+  color: var(--mk-violet);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.pm-title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--mk-text);
+}
+.pm-price {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--mk-price);
+}
+
+/* Carte boutique horizontale : logo · nom + note/lieu · bouton. */
+.pm-vendor {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--mk-text);
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--mk-card);
+  border: 1px solid var(--mk-card-line);
+  border-radius: var(--mk-radius);
+  box-shadow: var(--mk-card-shadow);
 }
-.m-comment-body { min-width: 0; flex: 1; }
-.m-comment-pseudo { color: var(--mk-gold); font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; word-break: break-all; }
-.m-comment-text { color: var(--mk-text); font-size: 0.9rem; word-break: break-word; }
-.comment-input-row { display: flex; gap: 8px; align-items: flex-end; }
-.comment-input-row textarea {
-  flex: 1;
-  min-width: 0;
-  background: var(--mk-surface-3);
-  border: 1px solid var(--mk-border);
-  border-radius: 22px;
-  color: var(--mk-text);
-  padding: 12px 16px;
-  outline: none;
-  resize: none;
-  font: inherit;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.comment-input-row textarea:focus { border-color: var(--mk-gold); }
-.comment-send {
+.pm-vendor-avatar {
+  position: relative; /* next/image (fill) */
   flex: 0 0 auto;
   width: 44px;
   height: 44px;
+  overflow: hidden;
   border-radius: 50%;
-  background: var(--mk-gold);
-  border: none;
-  color: var(--text-on-accent);
-  font-size: 1.1rem;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s;
+  background: color-mix(in srgb, var(--mk-violet) 13%, var(--mk-card));
+  color: var(--mk-violet);
 }
-.comment-send:active { transform: scale(0.92); }
+.pm-vendor-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pm-vendor-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.pm-vendor-name span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-verified { flex-shrink: 0; color: var(--mk-verified); }
+.pm-vendor-meta { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 0.74rem; color: var(--mk-text-soft); }
+.pm-vendor-meta > span { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.pm-loc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-rating { color: #b45309; font-weight: 700; flex-shrink: 0; }
+html:not([data-theme="light"]) .pm-rating { color: #fbbf24; }
+.pm-vendor-btn {
+  flex: 0 0 auto;
+  width: auto;
+  height: 34px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-violet) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mk-violet) 35%, transparent);
+  color: var(--mk-violet);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+.pm-vendor-btn:hover { transform: none; box-shadow: none; }
+.pm-vendor-btn:active { transform: scale(0.96); }
 
-/* Galerie du produit : miniatures sous l'image principale */
-.m-thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 4px; }
-.m-thumb {
-  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
+/* Description courte : 3 lignes, dépliable. */
+.pm-desc-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.pm-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--mk-text-soft);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.pm-desc.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  width: 60px; height: 60px; flex: 0 0 auto;
-  object-fit: cover; border-radius: 10px; cursor: pointer;
-  border: 2px solid transparent; opacity: 0.7; transition: 0.2s;
 }
-.m-thumb:hover { opacity: 1; }
-.m-thumb.active { border-color: var(--mk-gold); opacity: 1; }
+.pm-more {
+  width: auto;
+  margin: 0;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--mk-violet);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+.pm-more:hover { transform: none; box-shadow: none; }
 
-.whatsapp-btn {
+/* Réactions compactes : pastilles de 36 px de haut, alignées à gauche. */
+.pm-reactions { display: flex; gap: var(--mk-s1); }
+.pm-react {
+  width: auto;
+  height: 36px;
+  margin: 0;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-violet) 8%, transparent);
+  border: 1px solid var(--mk-card-line);
+  color: var(--mk-text-soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.pm-react:hover { transform: none; box-shadow: none; }
+.pm-react:active { transform: scale(0.96); }
+.pm-react.on { color: var(--mk-violet); border-color: color-mix(in srgb, var(--mk-violet) 45%, transparent); }
+.pm-react.liked { color: #e11d48; border-color: color-mix(in srgb, #e11d48 40%, transparent); background: color-mix(in srgb, #e11d48 8%, transparent); }
+
+/* Commentaires (dépliés par la pastille) */
+.pm-comments { display: none; flex-direction: column; gap: var(--mk-s1); }
+.pm-comments.open { display: flex; }
+.pm-comment-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.pm-comment {
+  display: flex;
+  gap: var(--mk-s1);
+  padding: 8px 10px;
+  border: 1px solid var(--mk-card-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mk-violet) 5%, transparent);
+}
+.pm-comment-avatar {
+  position: relative; /* next/image (fill) */
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  overflow: hidden;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--mk-violet) 16%, transparent);
+  color: var(--mk-violet);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.pm-comment-body { min-width: 0; flex: 1; }
+.pm-comment-pseudo { margin-bottom: 1px; color: var(--mk-violet); font-size: 0.74rem; font-weight: 700; overflow-wrap: anywhere; }
+.pm-comment-text { color: var(--mk-text); font-size: 0.88rem; line-height: 1.4; overflow-wrap: anywhere; }
+.pm-comment-input { display: flex; align-items: flex-end; gap: var(--mk-s1); }
+.pm-comment-input textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 120px;
+  padding: 10px 14px;
+  overflow-y: auto;
+  resize: none;
+  outline: none;
+  border: 1px solid var(--mk-card-line);
+  border-radius: 20px;
+  background: var(--mk-card);
+  color: var(--mk-text);
+  font: inherit;
+  font-size: 16px; /* 16 px : pas de zoom au focus sur mobile */
+  line-height: 1.4;
+}
+.pm-comment-input textarea:focus { border-color: var(--mk-violet); }
+.pm-comment-send {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none;
+}
+.pm-comment-send:hover { transform: none; box-shadow: none; }
+.pm-comment-send:active { transform: scale(0.92); }
+
+/* Bouton WhatsApp : collé en bas de la fiche (sticky). margin-top:auto le
+   pousse en bas quand le contenu est court. */
+.pm-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: auto;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--mk-card) 72%, transparent);
+}
+.pm-wa {
+  width: 100%;
+  height: 50px;
+  margin: 0;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 999px;
   background: var(--mk-whatsapp);
   color: #fff;
-  padding: 10px;
-  border-radius: 10px;
-  text-align: center;
-  flex: 1;
-  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--mk-whatsapp) 38%, transparent);
+  transition: transform 0.12s, filter 0.2s;
 }
-
-.email-btn {
-  background: var(--mk-gold);
-  color: var(--text-on-accent);
-  padding: 10px;
-  border-radius: 10px;
-  text-align: center;
-  flex: 1;
-  text-decoration: none;
-}
+.pm-wa:hover { transform: none; }
+.pm-wa:active { transform: scale(0.98); filter: brightness(0.95); }
 
 /* Panier latéral */
 .cart-panel {
