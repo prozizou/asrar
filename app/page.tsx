@@ -26,6 +26,7 @@
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Search, Store, Package, Menu as MenuIcon } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
@@ -263,7 +264,7 @@ export default function Home() {
   const goBackFromShop = useHistoryClose(!!shopVendor, closeVendorShop);
 
   return (
-    <div className="container">
+    <div className="container market-page">
       {shopVendor ? (
         <VendorShop
           vendor={shopVendor}
@@ -274,28 +275,22 @@ export default function Home() {
         />
       ) : (
         <div className="glass-panel">
+          {/* En-tête compact : le titre seul. « Mes commandes » (icône 📦 qui
+              occupait ici le coin droit) est passé dans la navigation basse. */}
           <div className="market-header">
             <h2 className="market-title">Marché ASRAR PRO</h2>
-            {/* Rapatrié depuis /menu : les commandes se passent ici (via WhatsApp,
-                cf. ProductModal), donc les retrouver doit rester à portée de main
-                sur le Marché plutôt que dans le tableau de bord des modules.
-                Icône compacte en haut à droite (revue design, point 6) — le
-                lien texte centré sous le titre ressemblait à un filtre et
-                flottait, isolé, plutôt que de se lire comme une action rapide. */}
-            <Link href="/commandes" className="market-orders-icon" aria-label="Mes commandes" title="Mes commandes">
-              📦
-            </Link>
           </div>
 
           {/* Recherche + catégories (revue design, point 5) : les seuls
               « outils fondamentaux de découverte » qui manquaient pour que
               cet écran se lise comme un vrai marketplace, pas juste une liste. */}
           <div className="market-search-box">
-            <span aria-hidden="true">🔍</span>
+            <Search size={18} strokeWidth={2} aria-hidden="true" />
             <input
               type="search"
               className="market-search-input"
               placeholder="Rechercher un produit..."
+              aria-label="Rechercher un produit"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -416,18 +411,17 @@ export default function Home() {
                 <div className="skeleton" />
               </>
             ) : error ? (
-              <p style={{ color: '#888', textAlign: 'center', padding: 40, width: '100%' }}>
+              <p style={{ color: '#888', textAlign: 'center', padding: 40, gridColumn: '1 / -1' }}>
                 Erreur de chargement des produits.
                 <br />
                 <small>{error}</small>
               </p>
             ) : filtered.length === 0 ? (
-              <p style={{ color: '#888', textAlign: 'center', padding: 40, width: '100%' }}>Aucun produit trouvé.</p>
+              <p style={{ color: '#888', textAlign: 'center', padding: 40, gridColumn: '1 / -1' }}>Aucun produit trouvé.</p>
             ) : (
               <>
               {visibleProducts.map((p) => {
                 const vendor = allVendors.find((v) => v.id === vendorKey(p));
-                const s = popularite[p._key] || { likes: 0, comments: 0 };
                 return (
                   <div key={p._key} className="prod-card" onClick={() => gatedOpenProduct(p._key)}>
                     {p.Image && !imgErrors[p._key] ? (
@@ -442,60 +436,27 @@ export default function Home() {
                         />
                       </div>
                     ) : (
-                      // Placeholder neutre + légende (revue design : le 🔮 seul,
-                      // dans une app à thème mystique, pouvait se lire comme une
-                      // vraie illustration plutôt que comme « image manquante »).
-                      <div className="prod-img-placeholder">
+                      // Placeholder neutre : icône seule (la légende « Image
+                      // indisponible » alourdissait chaque carte sans rien
+                      // apprendre de plus).
+                      <div className="prod-img-placeholder" role="img" aria-label="Image indisponible">
                         <span className="prod-img-placeholder-icon" aria-hidden="true">🖼️</span>
-                        <span className="prod-img-placeholder-label">Image indisponible</span>
                       </div>
                     )}
+                    {/* Carte allégée : titre (2 lignes max), prix bien visible,
+                        nom de la boutique. La catégorie reste accessible par
+                        les filtres au-dessus de la liste, les ❤️/💬 dans la
+                        fiche produit (ProductModal) — plus sur chaque carte. */}
                     <div className="prod-body">
-                      {/* Casse normalisée à l'affichage seulement (revue
-                          design : « titres incohérents, mélangent casse et
-                          styles » — voir displayProductName, lib/market.js).
-                          La donnée brute (p.produit) reste inchangée
-                          partout ailleurs (recherche, WhatsApp, etc.). */}
+                      {/* Casse normalisée à l'affichage seulement (voir
+                          displayProductName, lib/market.js) : la donnée brute
+                          (p.produit) reste inchangée partout ailleurs. */}
                       <div className="prod-name">{displayProductName(p.produit) || 'Produit'}</div>
                       <ProductPrice prix={p.Prix} devise={p.devise} />
-                      {/* Hiérarchie : titre → prix → vendeur → métadonnées
-                          (revue design). Le vendeur passe avant la catégorie/
-                          les stats, qui deviennent des métadonnées de bas de
-                          carte plutôt que de se mêler au prix. */}
                       {vendor && (
                         <div className="prod-vendor-line">
-                          {vendor.avatar && (
-                            <div className="prod-vendor-avatar">
-                              <SmartImage
-                                src={optimImg(vendor.avatar, 80)}
-                                alt=""
-                                fill
-                                sizes="24px"
-                                style={{ objectFit: 'cover' }}
-                                onError={(e: any) => (e.currentTarget.style.display = 'none')}
-                              />
-                            </div>
-                          )}
-                          <span>
-                            {vendor.name} {vendor.verified && <span className="verified-badge">✔ Vérifié</span>}
-                          </span>
-                        </div>
-                      )}
-                      {p.chain && <div className="prod-chain">{p.chain}</div>}
-                      {/* Compteurs masqués quand les deux sont à zéro (revue
-                          design : « ❤️ 0 💬 0 très présents... encombrent
-                          chaque carte sans apporter d'info »). Cœur PLEIN
-                          (pas vide) : ce compteur n'est pas une action au
-                          niveau de la carte (le like réel se fait dans la
-                          fiche produit, ProductModal) — un cœur vide laissait
-                          croire à tort qu'un tap ici « aimerait » le produit
-                          (revue design précédente, point 4). Plein = un
-                          indicateur passé/agrégé, pas une invite à agir. */}
-                      {(s.likes > 0 || s.comments > 0) && (
-                        <div className="prod-stats">
-                          {s.likes > 0 && <>❤️ {formatCount(s.likes)}</>}
-                          {s.likes > 0 && s.comments > 0 && <>&nbsp;&nbsp;</>}
-                          {s.comments > 0 && <>💬 {formatCount(s.comments)}</>}
+                          <span>{vendor.name}</span>
+                          {vendor.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée">✔</span>}
                         </div>
                       )}
                     </div>
@@ -507,20 +468,29 @@ export default function Home() {
             )}
           </div>
 
-          {/* Navigation fixe (revue design, point 12 ; puis retour utilisateur
-              sur la version à 3 items) — un SEUL raccourci, vers le menu
-              principal. « Marché » retiré : cette page EST déjà le Marché
-              (voir l'en-tête du fichier), l'item pointait vers la page déjà
-              affichée — rien ne se passait au tap, ce qui semblait cassé.
-              « Commandes » retiré : déjà à portée de main en haut de page
-              (.market-orders-icon) — le proposer une seconde fois ici était
-              redondant. Il ne reste donc que la vraie destination qui manque
-              depuis cet écran : le menu principal (autres modules, compte,
-              thème...). */}
+          {/* Navigation basse COMPACTE (3 raccourcis, icône + libellé court) à la
+              place de l'ancienne grande barre « Accéder au menu principal » :
+              Marché (page courante — remonte en haut au toucher), Commandes
+              (déplacée ici depuis l'en-tête) et Menu (autres modules, compte,
+              thème…). La page réserve sa hauteur en bas (voir .market-page,
+              marche.css) : aucun produit n'est masqué derrière. */}
           <nav className="market-bottom-nav" aria-label="Navigation principale">
-            <Link href="/menu" className="market-bottom-nav-single">
-              <span aria-hidden="true">☰</span>
-              <span>Accéder au menu principal</span>
+            <button
+              type="button"
+              className="market-nav-item active"
+              aria-current="page"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              <Store size={22} strokeWidth={2} aria-hidden="true" />
+              <span>Marché</span>
+            </button>
+            <Link href="/commandes" className="market-nav-item">
+              <Package size={22} strokeWidth={2} aria-hidden="true" />
+              <span>Commandes</span>
+            </Link>
+            <Link href="/menu" className="market-nav-item">
+              <MenuIcon size={22} strokeWidth={2} aria-hidden="true" />
+              <span>Menu</span>
             </Link>
           </nav>
         </div>

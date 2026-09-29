@@ -147,109 +147,110 @@ h2 {
   color: var(--text-on-accent);
 }
 
-/* En-tête : titre à gauche, raccourci commandes à droite (revue design,
-   point 6) — auparavant centré avec un lien texte qui flottait sous le
-   titre et ressemblait à un filtre plutôt qu'à une action rapide. */
+/* ── Vue mobile compacte : Header → Recherche → Filtres → Boutiques →
+   Produits → Navigation basse ─────────────────────────────────────────────
+   Espacements STANDARDISÉS (jetons ci-dessous) : 8 px entre éléments liés,
+   12 px entre blocs proches, 16 px entre grandes sections et en marge
+   latérale. --mk-nav-h = hauteur de la navigation basse : elle règle aussi
+   le padding bas de la page et la position des notifications. */
+.container.market-page {
+  --mk-s1: 8px;
+  --mk-s2: 12px;
+  --mk-s3: 16px;
+  --mk-gutter: 16px;
+  --mk-nav-h: 56px;
+  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-nav-h) + var(--mk-s3) + env(safe-area-inset-bottom));
+}
+
+/* En-tête : le titre seul, sur une ligne (« Mes commandes » est dans la
+   navigation basse). */
 .market-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 1rem;
+  min-height: 36px;
+  margin: 0 0 var(--mk-s1);
 }
 
 .market-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  line-height: 1.2;
   margin: 0;
   color: var(--mk-text);
 }
 
-/* Icône compacte « Mes commandes » — déplacée depuis le menu d'accueil sur
-   le Marché lui-même (c'est ici que les commandes se passent), en haut à
-   droite plutôt qu'en lien texte centré sous le titre. SEUL accès aux
-   commandes depuis cet écran (retiré de la navigation fixe en bas de page,
-   .market-bottom-nav, qui le proposait une seconde fois — signalé comme
-   redondant). */
-.market-orders-icon {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  font-size: 1.1rem;
-  color: var(--mk-text);
-  text-decoration: none;
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  border-radius: 12px;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.market-orders-icon:hover { color: var(--mk-gold); border-color: var(--mk-gold); }
-
-/* Recherche + catégories (revue design, point 5) — outils de découverte du
-   marketplace, purement client (voir app/page.tsx, matchesSearch()/CHAINS). */
+/* Recherche + catégories — outils de découverte du marketplace, purement
+   client (voir app/page.tsx, matchesSearch()/CHAINS). */
 .market-search-box {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mk-s1);
+  height: 42px;
   background: var(--mk-surface);
   border: 1px solid var(--mk-border);
-  border-radius: 14px;
-  padding: 10px 16px;
-  margin-bottom: 0.85rem;
+  border-radius: 12px;
+  padding: 0 var(--mk-s2);
+  margin-bottom: var(--mk-s2);
   color: var(--mk-text-dim);
 }
+.market-search-box:focus-within { border-color: var(--mk-gold); }
+.market-search-box svg { flex-shrink: 0; }
 
 .market-search-input {
   flex: 1;
   min-width: 0;
+  height: 100%;
   background: transparent;
   border: none;
   outline: none;
   color: var(--mk-text);
-  font-size: 0.95rem;
+  font-size: 16px; /* 16 px : en dessous, iOS zoome la page au focus */
   font-family: inherit;
 }
 
 .market-search-input::placeholder { color: var(--mk-text-faint); }
 
+/* Filtres : UNE seule ligne défilante, sans retour à la ligne ni pastille
+   écrasée. La rangée déborde jusqu'aux bords de l'écran (marges négatives
+   compensées par le padding) : rien n'est coupé net dans la marge, la
+   première pastille reste alignée sur le contenu, et le défilement
+   « s'accroche » (scroll-snap) sur le début d'une pastille. */
 .market-categories {
   display: flex;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: var(--mk-s1);
   overflow-x: auto;
-  padding-bottom: 4px;
-  margin-bottom: 1.4rem;
+  margin: 0 calc(-1 * var(--mk-gutter)) var(--mk-s3);
+  padding: 2px var(--mk-gutter);
+  scroll-padding-inline: var(--mk-gutter);
+  scroll-snap-type: x proximity;
+  overflow-anchor: none;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .market-categories::-webkit-scrollbar { display: none; }
 
 .market-cat-pill {
-  /* width:auto + margin-top:0 : ANNULENT explicitement le bouton générique
+  /* width:auto + margin-top:0 : ANNULENT le bouton générique
      (app/globals.css, `button { width:100%; margin-top:15px; ... }`, pensé
-     pour les gros CTA pleine largeur). Sans ça, chaque pastille — surtout
-     « Tous », la première — hérite de `width:100%` : combiné à
-     `flex:0 0 auto` (flex-shrink:0, aucun rétrécissement autorisé) ci-
-     dessus, la pastille revendique TOUTE la largeur du rang à elle seule.
-     Un très gros bouton plein écran à la place d'une pastille discrète, et
-     les catégories suivantes (Rituels, Livres...) poussées hors champ, à
-     scroller un plein écran à la fois pour les atteindre — signalé.
-     `.vendor-like` y échappait déjà (flex-shrink par défaut absorbe ce
-     width hérité), mais pas ici. */
+     pour les gros CTA pleine largeur) — sans ça une pastille réclamait
+     toute la largeur du rang. */
   flex: 0 0 auto;
   width: auto;
   margin-top: 0;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  scroll-snap-align: start;
   background: var(--mk-surface);
   border: 1px solid var(--mk-border);
   color: var(--mk-text);
-  padding: 7px 16px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 0.82rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .market-cat-pill.active {
@@ -259,71 +260,65 @@ h2 {
   font-weight: 600;
 }
 
-/* Titres de section (« Boutiques populaires », « Produits populaires ») —
-   hiérarchie qui manquait entre les deux zones (revue design, direction
-   recommandée). */
+/* Titres de section (« Boutiques populaires », « Produits populaires »). */
 .market-section-title {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin: 0 0 0.6rem;
+  margin: 0 0 var(--mk-s1);
   color: var(--mk-text);
 }
 
 .vendors-section {
-  margin-bottom: 2rem;
+  margin-bottom: var(--mk-s3);
 }
 
-/* Carrousel horizontal conservé pour les boutiques (revue design : « garder
-   éventuellement le carrousel pour les boutiques »), mais sans indicateur de
-   défilement stylisé façon barre colorée (point 11) — c'était une vraie
-   scrollbar (scrollbar-color) déguisée en indicateur, pas une pagination. La
-   scrollbar native est masquée ; la carte suivante restant légèrement
-   visible en bord d'écran suffit à signaler qu'il y a plus à voir. */
+/* Petit carrousel de boutiques : cartes étroites, bord à bord comme les
+   filtres. La carte suivante dépasse
+   légèrement — c'est ce qui signale qu'il y a plus à voir (pas de barre de
+   défilement). */
 .vendors-scroll {
   display: flex;
-  gap: 10px;
+  gap: var(--mk-s1);
   overflow-x: auto;
-  padding-bottom: 4px;
+  margin: 0 calc(-1 * var(--mk-gutter));
+  padding: 2px var(--mk-gutter) 4px;
+  /* PAS de scroll-snap ici : quand les cartes remplacent les squelettes de
+     chargement, Chrome re-« accrochait » le carrousel et le faisait sauter
+     jusqu'à la dernière carte (mesuré : scrollLeft 446 au lieu de 0). */
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .vendors-scroll::-webkit-scrollbar { display: none; }
 
-/* Carte boutique compacte (revue design, point 2) : logo + nom + catégorie +
-   note + like, plus les ~160px de large × avatar 70px + bouton pleine
-   largeur qui prenaient presque tout l'écran à deux. */
+/* Carte boutique compacte : logo + nom + spécialité + note/like. */
 .vendor-card {
   flex: 0 0 auto;
+  width: 108px;
   background: var(--mk-surface);
   border: 1px solid var(--mk-border);
   border-radius: 14px;
-  padding: 10px;
+  padding: var(--mk-s1);
   text-align: center;
-  width: 128px;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: background 0.2s, transform 0.12s;
   color: var(--mk-text);
 }
-
-.vendor-card:hover {
-  transform: translateY(-3px);
-  background: var(--mk-surface-2);
-}
 .vendor-card:active { transform: scale(0.97); background: var(--mk-surface-2); }
+@media (hover: hover) { .vendor-card:hover { background: var(--mk-surface-2); } }
 
 .vendor-avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  overflow: hidden; /* clippe l'image fill sur le cercle (le border-radius était posé en inline sur l'<img>) */
-  width: 48px;
-  height: 48px;
+  overflow: hidden; /* clippe l'image fill sur le cercle */
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  object-fit: cover;
   background: var(--mk-surface-3);
-  margin: 0 auto 8px;
+  margin: 0 auto 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   color: var(--mk-text);
 }
 
@@ -333,71 +328,66 @@ h2 {
   color: var(--text-on-accent);
   font-size: 0.6rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 1px 7px;
   border-radius: 999px;
   margin-bottom: 4px;
 }
 
 .vendor-name {
   font-weight: 600;
-  font-size: 0.85rem;
-  margin-bottom: 2px;
+  font-size: 0.82rem;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .vendor-specialty {
-  /* --mk-text-soft plutôt que --mk-text-dim (revue design : « contraste
-     secondaire faible ») — reste un cran sous .vendor-name, mais restait
-     limite en thème clair sur le fond du Marché. */
   color: var(--mk-text-soft);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Note + like sur une même ligne (revue design, points 2, 3) — le contenu
-   restant d'une carte boutique une fois resserrée. */
+/* Note + like sur une même ligne. */
 .vendor-meta-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   margin-top: 6px;
   flex-wrap: wrap;
 }
 
-/* Bouton « J'aime » sur la carte boutique — cœur vide/rempli comme action
-   utilisateur (déjà la bonne sémantique, revue design point 4 : c'est un
-   vrai favori, pas une simple statistique). */
+/* Bouton « J'aime » de la carte boutique — cœur vide/rempli : c'est un
+   vrai favori. Compact ; cible tactile étendue par le padding de la carte. */
 .vendor-like {
+  width: auto;
+  margin: 0;
   background: var(--mk-soft-3);
   border: 1px solid var(--mk-border);
   color: var(--mk-text);
   border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 0.72rem;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   transition: border-color 0.2s, background 0.2s;
 }
-.vendor-like:hover { background: var(--mk-soft-2); }
+.vendor-like:hover { background: var(--mk-soft-2); transform: none; box-shadow: none; }
 .vendor-like.liked { border-color: #e0245e; }
 
-/* Grille produit — 2 colonnes sur mobile (revue design, point 1) : c'était
-   un second carrousel horizontal juste sous celui des boutiques, avec des
-   cartes visiblement coupées à droite. Le nombre d'éléments et leur position
-   sont maintenant immédiats (une vraie grille), sans concurrence entre
-   défilement horizontal et vertical. Voir plus bas (≥768px) pour la grille
-   large qui remplace le auto-fill existant, inchangée. */
+/* Grille produit : 2 colonnes UNIFORMES sur mobile (les cartes d'une même
+   rangée ont la même hauteur), écart standard de 12 px. */
 .prod-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mk-s2, 12px);
 }
 
 .prod-card {
@@ -406,133 +396,86 @@ h2 {
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: background 0.2s, transform 0.12s;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
+/* Retour tactile immédiat au toucher (:active), survol seulement pour les
+   appareils à souris — pas de « saut » au premier tap sur mobile. */
+.prod-card:active { transform: scale(0.98); background: var(--mk-surface-2); }
+@media (hover: hover) { .prod-card:hover { background: var(--mk-surface-2); } }
 
-/* Compteurs likes / commentaires sur la carte produit — masqués quand les
-   deux sont à zéro (voir app/page.tsx) : « ❤️ 0 💬 0 » sur chaque carte
-   n'apporte rien et encombre (revue design). --mk-text-soft plutôt que
-   --mk-text-dim : même correctif de contraste que .vendor-specialty. */
-.prod-stats { font-size: 0.76rem; color: var(--mk-text-soft); margin-top: 6px; }
-
-.prod-card:hover { transform: translateY(-4px); background: var(--mk-surface-2); }
-/* :active (pas seulement :hover, qui ne se déclenche pas au toucher) — retour
-   tactile immédiat au tap, pour qu'une carte entièrement cliquable se
-   ressente comme telle sur mobile (revue design : « on ne sait pas
-   immédiatement si toucher la carte ouvre le produit »). */
-.prod-card:active { transform: scale(0.97); background: var(--mk-surface-2); }
-
-/* aspect-ratio plutôt qu'une hauteur fixe en px (revue design, point 7) :
-   object-fit:cover forçait déjà le MÊME cadrage quelle que soit la photo
-   source (un rendu très travaillé à côté d'une photo brute de smartphone),
-   mais sur une hauteur fixe en px — devenue incorrecte maintenant que la
-   largeur de carte varie avec la grille (avant : 220px fixe). aspect-ratio
-   garde un cadrage identique sur toutes les cartes, quelle que soit la
-   largeur réelle de la colonne. */
-.prod-img {
+/* MÊME ratio pour toutes les images (1 / 1) : cadrage identique quelle que
+   soit la photo source ou la largeur de la colonne (object-fit: cover). Le
+   placeholder a exactement le même gabarit — la grille reste régulière. */
+.prod-img,
+.prod-img-placeholder {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
   background: var(--mk-surface-3);
 }
+.prod-img { overflow: hidden; }
 
-/* 🖼️ + texte plutôt que le 🔮 seul (revue design : « peut être interprété
-   comme une fonctionnalité mystique plutôt qu'un placeholder ») — sur une
-   app à thème mystique, une boule de cristal pleine carte ressemblait
-   justement trop à une vraie illustration produit. Icône neutre, en sourdine
-   (opacity), avec sa légende : sans ambiguïté possible sur le fait qu'il
-   manque une image. */
 .prod-img-placeholder {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: var(--mk-surface-3);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   color: var(--mk-text-dim);
 }
+.prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.5; }
 
-.prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.55; }
-.prod-img-placeholder-label { font-size: 0.68rem; }
+.prod-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 10px;
+  color: var(--mk-text);
+}
 
-.prod-body { padding: 10px; flex: 1; color: var(--mk-text); }
-
-/* 2 lignes maximum, ellipsis (revue design, point 8) — un titre plus long
-   ne pousse plus le prix à une hauteur différente d'une carte à l'autre ;
-   min-height réserve la place de 2 lignes même pour un titre court, pour
-   que le prix reste au même niveau vertical partout dans la grille. */
+/* Titre : 2 lignes maximum (ellipsis) ; min-height réserve la place de 2
+   lignes même pour un titre court, pour que le prix reste au même niveau
+   vertical partout dans la grille. */
 .prod-name {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.92rem;
-  margin-bottom: 4px;
+  font-size: 0.88rem;
+  line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.4em;
+  min-height: 2.5em;
 }
 
-/* Montant + devise séparés (voir ProductPrice.js) — la devise plus petite,
-   pour qu'un prix long ne domine plus le nom du produit (revue design,
-   point 9). */
-.prod-price { margin: 4px 0; }
-.prod-price-amount { color: var(--mk-price-green); font-weight: 700; font-size: 1rem; }
-.prod-price-currency { color: var(--mk-price-green); font-weight: 600; font-size: 0.74rem; opacity: 0.85; }
+/* PRIX : l'information la plus visible de la carte — montant gras et grand,
+   devise plus petite à côté (voir ProductPrice.js, aussi utilisé par la
+   vitrine d'un vendeur). */
+.prod-price { margin: 0; line-height: 1.2; }
+.prod-price-amount { color: var(--mk-price-green); font-weight: 800; font-size: 1.15rem; letter-spacing: -0.01em; }
+.prod-price-currency { color: var(--mk-price-green); font-weight: 600; font-size: 0.74rem; opacity: 0.9; }
 
-/* Badge plutôt que texte nu (revue design : « Secret répété sur chaque
-   carte... occupe de l'espace sans expliquer clairement sa fonction ») — la
-   catégorie devient visuellement une étiquette identifiable (comme les
-   pastilles de filtre .market-cat-pill au-dessus de la grille, mais en plus
-   discret : simple lecture, pas une action). */
-.prod-chain {
-  display: inline-block;
-  color: var(--mk-text-soft);
-  background: var(--mk-surface-3);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  margin-top: 2px;
-}
-
+/* Boutique : une seule ligne discrète, tronquée si longue. */
 .prod-vendor-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 0.8rem;
+  gap: 4px;
+  font-size: 0.74rem;
   font-weight: 500;
   color: var(--mk-text-soft);
+  min-width: 0;
 }
-
-/* Une seule ligne quoi qu'il arrive (revue design : « avatar + nom prennent
-   parfois deux lignes » — un nom de boutique long, ex. « 100% ZOULMANIYOU »,
-   repoussait le reste de la carte au lieu de tronquer). */
-.prod-vendor-line span {
+.prod-vendor-line span:first-child {
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.prod-vendor-avatar {
-  position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  overflow: hidden; /* clippe l'image fill sur le cercle */
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--mk-border);
-  flex-shrink: 0;
-}
-
-.verified-badge { color: var(--mk-verified); font-size: 0.7rem; }
+.verified-badge { color: var(--mk-verified); font-size: 0.7rem; flex-shrink: 0; }
 
 /* Modale produit */
 .modal-overlay {
@@ -630,76 +573,64 @@ h2 {
   font-size: 0.8rem;
 }
 
-/* Navigation fixe en bas de la page d'accueil/Marché. Passée à 3 items
-   (revue design, point 12), puis réduite à un SEUL raccourci — « Marché »
-   et « Commandes » (voir app/page.tsx) : redondants sur cette page même
-   (déjà le Marché ; commandes déjà en haut). Scopée à cette page (voir le
-   commentaire dans app/page.tsx) : pas de classe partagée avec d'autres
-   écrans, donc pas de risque de collision ailleurs dans l'app. */
-/* Fond OPAQUE (revue design, retour utilisateur : « la nav basse recouvre
-   les cartes ») — var(--mk-surface) n'est qu'un voile à 10 % d'opacité en
-   thème sombre (glassmorphism, voir app/globals.css) : les cartes du bas de
-   grille se voyaient PAR TRANSPARENCE à travers la barre, donnant
-   l'impression qu'elle « recouvrait » le contenu au lieu de simplement
-   flotter dessus. --mk-bg-deep (déjà utilisé pour les panneaux latéraux
-   opaques ailleurs dans l'app) + un léger flou règlent le fond ; le
-   padding-bottom réservé plus bas (voir .container) règle l'espace. */
+/* Navigation basse COMPACTE : 3 raccourcis (icône 22 px + libellé 11 px) sur
+   une barre de --mk-nav-h (56 px, hors zone de sécurité) — à la place de
+   l'ancienne grande barre à un seul gros bouton. Fond OPAQUE (--mk-bg-deep +
+   léger flou) : sans ça, les cartes du bas se voyaient par transparence à
+   travers la barre. z-index 60 : sous .modal-overlay (100) et .cart-panel
+   (200), une modale ouverte reste au-dessus. Le padding bas de la page
+   (.market-page) réserve exactement cette hauteur : aucun produit masqué. */
 .market-bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 60; /* sous .modal-overlay (100) et .cart-panel (200) : une modale ouverte doit rester au-dessus */
+  z-index: 60;
   display: flex;
+  justify-content: center;
   background: var(--mk-bg-deep);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--mk-border);
-  padding: 6px max(6px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Un seul item désormais — plus d'onglet actif à distinguer des autres
-   (il n'y a plus « des autres ») : une ligne icône+texte, pas la colonne
-   icône-au-dessus-du-texte des items multiples d'avant (qui n'avait de
-   sens que pour aligner plusieurs items côte à côte). */
-.market-bottom-nav-single {
-  flex: 1;
+.market-nav-item {
+  /* Annule le style global `button` (largeur 100 %, marge haute, dégradé,
+     ombre au survol — app/globals.css) pour l'item « Marché », qui est un
+     <button> ; les deux autres sont des <a>. */
+  flex: 1 1 0;
+  max-width: 200px;
+  width: auto;
+  margin: 0;
+  height: var(--mk-nav-h, 56px);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 4px;
-  border-radius: 10px;
-  color: var(--mk-text);
+  gap: 3px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--mk-text-soft);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-family: inherit;
+  font-size: 0.68rem;
   font-weight: 600;
-  transition: background 0.2s;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s, background 0.2s;
 }
+.market-nav-item:hover { transform: none; box-shadow: none; background: transparent; }
+.market-nav-item:active { background: color-mix(in srgb, var(--mk-gold) 14%, transparent); }
+.market-nav-item.active { color: var(--mk-gold); }
 
-.market-bottom-nav-single span:first-child { font-size: 1.15rem; line-height: 1; }
-
-.market-bottom-nav-single:hover { background: color-mix(in srgb, var(--mk-gold) 12%, transparent); }
-.market-bottom-nav-single:active { background: color-mix(in srgb, var(--mk-gold) 16%, transparent); }
-
-/* Place pour ne pas laisser la nav fixe recouvrir la fin de la grille
-   produit ni le bas de .market-search-box/.market-categories en cas de
-   contenu court. 60px = la hauteur réelle de la barre à un seul item
-   (mesurée : ~51px de contenu + marge de sécurité — moins que les 76px
-   d'avant, la ligne icône+texte étant plus basse que l'ancienne colonne
-   icône-au-dessus-du-texte × 3 items) ; env(safe-area-inset-bottom)
-   s'ajoute EN PLUS (pas inclus dans les 60px) car la barre l'ajoute déjà à
-   SON propre padding interne — sans ce complément, la zone réservée était
-   trop courte sur un écran à encoche/barre de gestes, et le bas de la
-   grille restait masqué (revue design, retour utilisateur). */
-.container { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
-
-/* La barre de notification globale (.toast, app/globals.css) reste
-   au-dessus de la nav fixe plutôt que masquée derrière — override propre à
-   cette page, marche.css n'étant chargée qu'ici (même mécanisme que les
-   surcharges .container/.glass-panel déjà en place dans ce fichier). */
-.toast { bottom: calc(60px + env(safe-area-inset-bottom)); }
+/* La barre de notification globale (.toast, app/globals.css) reste au-dessus
+   de la navigation. */
+.market-page .toast { bottom: calc(var(--mk-nav-h) + var(--mk-s2) + env(safe-area-inset-bottom)); }
 
 .add-to-cart-btn {
   background: var(--mk-gold);
@@ -913,14 +844,14 @@ h2 {
 .skeleton {
   background: var(--mk-surface);
   border-radius: 14px;
-  height: 220px; /* proportionné à une carte de la grille 2 colonnes (revue design, point 1), pas la largeur fixe de l'ancien carrousel */
+  aspect-ratio: 3 / 4; /* gabarit d'une carte produit (image 1:1 + corps) */
   animation: pulse 1.5s infinite;
 }
 
 .vendor-skeleton {
   flex: 0 0 auto;
-  width: 128px;
-  height: 130px;
+  width: 108px;
+  height: 104px;
   border-radius: 14px;
   background: var(--mk-surface);
   animation: pulse 1.5s infinite;
@@ -941,5 +872,13 @@ h2 {
   .vendors-scroll {
     flex-wrap: wrap;
     overflow-x: visible;
+  }
+
+  /* Plus de défilement bord à bord : les rangées reprennent la largeur du
+     contenu. */
+  .market-categories,
+  .vendors-scroll {
+    margin-inline: 0;
+    padding-inline: 0;
   }
 }
