@@ -26,11 +26,11 @@
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Search, Store, Package, Menu as MenuIcon } from 'lucide-react';
+import { Search, Package, Heart, MessageCircle, Crown } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
-import { vendorKey, emailVendorKey, safeKey, formatCount, extractVendors, scorePopularite, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
+import { vendorKey, emailVendorKey, safeKey, formatCount, extractVendors, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
@@ -68,13 +68,26 @@ interface PopulariteEntry {
   likes: number;
   comments: number;
   orders?: number;
+  liked?: boolean; // l'utilisateur courant a-t-il mis ce produit en favori ?
 }
+
+// Engagement d'un produit : likes + commentaires — le critère de tri de
+// « Produits populaires » (demandé : « triée par engagement décroissant »).
+const engagement = (pop: Record<string, PopulariteEntry>, key: string) =>
+  (pop[key]?.likes || 0) + (pop[key]?.comments || 0);
+
+// Libellé d'une catégorie (CHAINS, lib/market.js) : première lettre en capitale.
+const chainLabel = (c?: string) => (c ? c.charAt(0).toUpperCase() + c.slice(1) : '');
 
 export default function Home() {
   const { notify, toast } = useToast();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [popularite, setPopularite] = useState<Record<string, PopulariteEntry>>({});
+  // Classement du carrousel : instantané pris au CHARGEMENT de la popularité.
+  // Un favori posé depuis une carte met à jour ses compteurs (popularite) mais
+  // pas ce classement — sinon la carte sauterait ailleurs sous le doigt.
+  const [rankPop, setRankPop] = useState<Record<string, PopulariteEntry>>({});
   const [vendorLikes, setVendorLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
   const [vendorReviews, setVendorReviews] = useState<Record<string, { avg: number; count: number }>>({});
   const [modalProduct, setModalProduct] = useState<any>(null);
@@ -111,15 +124,19 @@ export default function Home() {
   const loadPopularite = useCallback(async (products: Product[], attempt = 0) => {
     try {
       const { likes, comments: coms, orders } = await apiPost('social', { action: 'market-popularity' });
+      const uid = auth.currentUser?.uid;
       const pop: Record<string, PopulariteEntry> = {};
       products.forEach((p) => {
+        const productLikes = likes[p._key] || {};
         pop[p._key] = {
-          likes: Object.keys(likes[p._key] || {}).length,
+          likes: Object.keys(productLikes).length,
           comments: Object.keys(coms[p._key] || {}).length,
           orders: Number(orders[p._key] || 0),
+          liked: !!(uid && productLikes[uid]),
         };
       });
       setPopularite(pop);
+      setRankPop(pop);
     } catch {
       if (attempt < 1) setTimeout(() => loadPopularite(products, attempt + 1), 3000);
     }
@@ -208,6 +225,26 @@ export default function Home() {
     apiPost('social', { cat: 'vendor', key: k, action: 'toggle-like' }).catch(() => loadVendorLikes(allVendors));
   };
 
+  // Favori d'un produit depuis sa carte : même écriture que le cœur de la
+  // fiche produit (ProductModal → useSocial → /api/social toggle-like).
+  // Mise à jour optimiste ; la réponse du serveur fait foi ensuite.
+  const toggleProductLike = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // la carte, elle, ouvre la fiche produit
+    const was = !!popularite[key]?.liked;
+    setPopularite((prev) => {
+      const cur = prev[key] || { likes: 0, comments: 0 };
+      return { ...prev, [key]: { ...cur, liked: !was, likes: Math.max(0, cur.likes + (was ? -1 : 1)) } };
+    });
+    apiPost('social', { cat: 'product', key, action: 'toggle-like' })
+      .then((data: any) =>
+        setPopularite((prev) => ({
+          ...prev,
+          [key]: { ...(prev[key] || { likes: 0, comments: 0 }), liked: !!data.liked, likes: Number(data.likeCount) || 0 },
+        }))
+      )
+      .catch(() => loadPopularite(allProducts));
+  };
+
   // Reconnaît automatiquement « sa » boutique dans la liste des vendeurs :
   // vendorKey() (lib/market.js) vaut le vendorKey calculé côté serveur à
   // partir de l'email (jamais l'email en clair, retiré par /api/list-content) —
@@ -218,17 +255,17 @@ export default function Home() {
     return (!!me.email && v.id === emailVendorKey(me.email)) || v.id === me.uid;
   }, []);
 
-  // Filtrés par recherche + catégorie, puis triés par popularité (achats >
-  // likes > commentaires, puis plus récents à score égal).
+  // Filtrés par recherche + catégorie, puis triés par ENGAGEMENT décroissant
+  // (likes + commentaires), les plus récents d'abord à engagement égal.
   const filtered = useMemo(() => {
     return allProducts
       .filter((p) => matchesSearch(p.produit, search))
       .filter((p) => !category || p.chain === category)
       .sort((a, b) => {
-        const d = scorePopularite(popularite, b._key) - scorePopularite(popularite, a._key);
+        const d = engagement(rankPop, b._key) - engagement(rankPop, a._key);
         return d !== 0 ? d : Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
       });
-  }, [allProducts, popularite, search, category]);
+  }, [allProducts, rankPop, search, category]);
 
   // Rendu progressif : la grille produit ne monte plus toutes ses cartes
   // (chacune avec son image) dans la même frame.
@@ -275,15 +312,19 @@ export default function Home() {
         />
       ) : (
         <div className="glass-panel">
-          {/* En-tête compact : le titre seul. « Mes commandes » (icône 📦 qui
-              occupait ici le coin droit) est passé dans la navigation basse. */}
-          <div className="market-header">
-            <h2 className="market-title">Marché ASRAR PRO</h2>
-          </div>
+          {/* En-tête : titre + sous-titre, et l'icône colis (« Mes commandes »)
+              à droite — seul accès aux commandes depuis cet écran. */}
+          <header className="market-header">
+            <div className="market-heading">
+              <h1 className="market-title">Marché ASRAR PRO</h1>
+              <p className="market-subtitle">Produits spirituels et boutiques de confiance</p>
+            </div>
+            <Link href="/commandes" className="market-orders-icon" aria-label="Mes commandes" title="Mes commandes">
+              <Package size={22} strokeWidth={2} aria-hidden="true" />
+            </Link>
+          </header>
 
-          {/* Recherche + catégories (revue design, point 5) : les seuls
-              « outils fondamentaux de découverte » qui manquaient pour que
-              cet écran se lise comme un vrai marketplace, pas juste une liste. */}
+          {/* Recherche + catégories — purement client (matchesSearch, CHAINS). */}
           <div className="market-search-box">
             <Search size={18} strokeWidth={2} aria-hidden="true" />
             <input
@@ -314,13 +355,13 @@ export default function Home() {
                 className={'market-cat-pill' + (category === c ? ' active' : '')}
                 onClick={() => setCategory(c)}
               >
-                {c.charAt(0).toUpperCase() + c.slice(1)}
+                {chainLabel(c)}
               </button>
             ))}
           </div>
 
-          <div className="vendors-section">
-            <h3 className="market-section-title">Boutiques populaires</h3>
+          <section className="market-section" aria-labelledby="mk-vendors-title">
+            <h2 id="mk-vendors-title" className="market-section-title">Boutiques populaires</h2>
             <div className="vendors-scroll">
               {loading ? (
                 <>
@@ -340,7 +381,7 @@ export default function Home() {
                           src={optimImg(v.avatar, 120)}
                           alt=""
                           fill
-                          sizes="70px"
+                          sizes="48px"
                           style={{ objectFit: 'cover' }}
                           onError={(e: any) => (e.currentTarget.style.display = 'none')}
                         />
@@ -348,151 +389,158 @@ export default function Home() {
                         '🔮'
                       )}
                     </div>
-                    {own && <div className="vendor-you-badge">Votre boutique</div>}
-                    <div className="vendor-name">{v.name}</div>
-                    <div className="vendor-specialty">{v.specialty}</div>
-                    {/* Note + like sur une seule ligne compacte (revue design,
-                        points 2, 3) — logo + nom + catégorie + note + like,
-                        pas plus, au lieu d'empiler chaque info sur sa propre
-                        ligne dans une carte deux fois plus large. Le like
-                        garde son cœur vide/rempli (déjà la bonne sémantique
-                        pour une action favoris, revue design point 4) —
-                        seule la mise en page change ici. */}
-                    <div className="vendor-meta-row">
-                      {(() => {
-                        const r = vendorReviews[safeKey(v.id)];
-                        return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.72rem" numeric /> : null;
-                      })()}
-                      {!own && (
-                        // Pas de <button> ici sur sa propre carte : elle devient un <Link>
-                        // (imbriquer un bouton dans un lien est invalide en HTML), et « aimer
-                        // sa propre boutique » n'a de toute façon pas de sens.
-                        <button
-                          className={'vendor-like' + (l.liked ? ' liked' : '')}
-                          onClick={(e) => toggleVendorLike(v.id, e)}
-                          aria-label="Aimer cette boutique"
-                        >
-                          <span>{l.liked ? '❤️' : '🤍'}</span> <span>{formatCount(l.count)}</span>
-                        </button>
-                      )}
+                    <div className="vendor-info">
+                      {own && <div className="vendor-you-badge">Votre boutique</div>}
+                      <div className="vendor-name">{v.name}</div>
+                      <div className="vendor-specialty">{v.specialty}</div>
+                      <div className="vendor-meta-row">
+                        {(() => {
+                          const r = vendorReviews[safeKey(v.id)];
+                          return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.7rem" numeric /> : null;
+                        })()}
+                        {!own && (
+                          // Pas de <button> sur sa propre carte : elle devient un <Link>
+                          // (bouton dans un lien = HTML invalide), et « aimer sa propre
+                          // boutique » n'a pas de sens.
+                          <button
+                            type="button"
+                            className={'vendor-like' + (l.liked ? ' liked' : '')}
+                            onClick={(e) => toggleVendorLike(v.id, e)}
+                            aria-label={l.liked ? 'Ne plus aimer cette boutique' : 'Aimer cette boutique'}
+                            aria-pressed={l.liked}
+                          >
+                            <Heart size={12} strokeWidth={2.2} fill={l.liked ? 'currentColor' : 'none'} aria-hidden="true" />
+                            <span>{formatCount(l.count)}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </>
                 );
-                // Sa propre boutique est reconnue automatiquement (email/uid) : on
-                // ouvre directement /boutique (gestion + ajout de produits) au lieu
-                // de la vue vitrine en lecture seule des autres vendeurs.
+                // Sa propre boutique ouvre /boutique (gestion) plutôt que la vitrine.
                 return own ? (
-                  <Link key={v.id} href="/boutique" className="vendor-card" style={{ textDecoration: 'none' }}>
+                  <Link key={v.id} href="/boutique" className="vendor-card">
                     {inner}
                   </Link>
                 ) : (
-                  <div key={v.id} className="vendor-card" onClick={() => openVendorShop(v.id)}>
+                  <div key={v.id} className="vendor-card" role="button" tabIndex={0} onClick={() => openVendorShop(v.id)}
+                    onKeyDown={(e) => e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), openVendorShop(v.id))}>
                     {inner}
                   </div>
                 );
               })}
-              {!allVendors.some(isOwnVendor) && (
-                <Link href="/boutique" className="vendor-card" style={{ textDecoration: 'none' }}>
-                  <div className="vendor-avatar">➕</div>
-                  <div className="vendor-name">Avoir une chaîne</div>
-                  <div className="vendor-specialty">Ouvrez votre propre boutique</div>
+              {!loading && !allVendors.some(isOwnVendor) && (
+                <Link href="/boutique" className="vendor-card vendor-card-add">
+                  <div className="vendor-avatar">＋</div>
+                  <div className="vendor-info">
+                    <div className="vendor-name">Ouvrir ma boutique</div>
+                    <div className="vendor-specialty">Vendez vos produits</div>
+                  </div>
                 </Link>
               )}
             </div>
-          </div>
+          </section>
 
-          <h3 className="market-section-title">Produits populaires</h3>
-          <div className="prod-grid">
-            {loading ? (
-              <>
-                <div className="skeleton" />
-                <div className="skeleton" />
-                <div className="skeleton" />
-                <div className="skeleton" />
-              </>
-            ) : error ? (
-              <p style={{ color: '#888', textAlign: 'center', padding: 40, gridColumn: '1 / -1' }}>
-                Erreur de chargement des produits.
-                <br />
-                <small>{error}</small>
-              </p>
-            ) : filtered.length === 0 ? (
-              <p style={{ color: '#888', textAlign: 'center', padding: 40, gridColumn: '1 / -1' }}>Aucun produit trouvé.</p>
-            ) : (
-              <>
-              {visibleProducts.map((p) => {
-                const vendor = allVendors.find((v) => v.id === vendorKey(p));
-                return (
-                  <div key={p._key} className="prod-card" onClick={() => gatedOpenProduct(p._key)}>
-                    {p.Image && !imgErrors[p._key] ? (
-                      <div className="prod-img">
-                        <SmartImage
-                          src={optimImg(p.Image, 400)}
-                          alt={p.produit || ''}
-                          fill
-                          sizes="220px"
-                          style={{ objectFit: 'cover' }}
-                          onError={() => markImgError(p._key)}
-                        />
-                      </div>
-                    ) : (
-                      // Placeholder neutre : icône seule (la légende « Image
-                      // indisponible » alourdissait chaque carte sans rien
-                      // apprendre de plus).
-                      <div className="prod-img-placeholder" role="img" aria-label="Image indisponible">
-                        <span className="prod-img-placeholder-icon" aria-hidden="true">🖼️</span>
-                      </div>
-                    )}
-                    {/* Carte allégée : titre (2 lignes max), prix bien visible,
-                        nom de la boutique. La catégorie reste accessible par
-                        les filtres au-dessus de la liste, les ❤️/💬 dans la
-                        fiche produit (ProductModal) — plus sur chaque carte. */}
-                    <div className="prod-body">
-                      {/* Casse normalisée à l'affichage seulement (voir
-                          displayProductName, lib/market.js) : la donnée brute
-                          (p.produit) reste inchangée partout ailleurs. */}
-                      <div className="prod-name">{displayProductName(p.produit) || 'Produit'}</div>
-                      <ProductPrice prix={p.Prix} devise={p.devise} />
-                      {vendor && (
-                        <div className="prod-vendor-line">
-                          <span>{vendor.name}</span>
-                          {vendor.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée">✔</span>}
+          <section className="market-section" aria-labelledby="mk-products-title">
+            <h2 id="mk-products-title" className="market-section-title">Produits populaires</h2>
+            {/* Carrousel horizontal trié par engagement (likes + commentaires,
+                voir `filtered`) : le premier porte le badge « Plus populaire »
+                dès qu'il a un engagement réel (jamais sur une liste à zéro). */}
+            <div className="prod-scroll">
+              {loading ? (
+                <>
+                  <div className="skeleton" />
+                  <div className="skeleton" />
+                  <div className="skeleton" />
+                </>
+              ) : error ? (
+                <p className="prod-empty">
+                  Erreur de chargement des produits.
+                  <br />
+                  <small>{error}</small>
+                </p>
+              ) : filtered.length === 0 ? (
+                <p className="prod-empty">Aucun produit trouvé.</p>
+              ) : (
+                <>
+                  {visibleProducts.map((p, index) => {
+                    const vendor = allVendors.find((v) => v.id === vendorKey(p));
+                    const s = popularite[p._key] || { likes: 0, comments: 0, liked: false };
+                    const top = index === 0 && engagement(rankPop, p._key) > 0;
+                    const name = displayProductName(p.produit) || 'Produit';
+                    return (
+                      <article
+                        key={p._key}
+                        className="prod-card"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={name}
+                        onClick={() => gatedOpenProduct(p._key)}
+                        // Seulement quand la CARTE a le focus : Entrée sur le cœur
+                        // (bouton enfant) ne doit pas aussi ouvrir la fiche.
+                        onKeyDown={(e) => e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), gatedOpenProduct(p._key))}
+                      >
+                        <div className="prod-media">
+                          {p.Image && !imgErrors[p._key] ? (
+                            <SmartImage
+                              src={optimImg(p.Image, 400)}
+                              alt=""
+                              fill
+                              sizes="180px"
+                              style={{ objectFit: 'cover' }}
+                              onError={() => markImgError(p._key)}
+                            />
+                          ) : (
+                            <span className="prod-img-placeholder" role="img" aria-label="Image indisponible">🖼️</span>
+                          )}
+                          {top && (
+                            <span className="prod-top-badge">
+                              <Crown size={12} strokeWidth={2.4} aria-hidden="true" /> Plus populaire
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className={'prod-fav' + (s.liked ? ' liked' : '')}
+                            onClick={(e) => toggleProductLike(p._key, e)}
+                            aria-label={s.liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                            aria-pressed={!!s.liked}
+                          >
+                            <Heart size={18} strokeWidth={2.2} fill={s.liked ? 'currentColor' : 'none'} aria-hidden="true" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
-              </>
-            )}
-          </div>
+                        <div className="prod-body">
+                          {/* Casse normalisée à l'affichage seulement (displayProductName). */}
+                          <h3 className="prod-name">{name}</h3>
+                          <ProductPrice prix={p.Prix} devise={p.devise} />
+                          <div className="prod-vendor-line">
+                            <span>{vendor?.name || 'Boutique'}</span>
+                            {vendor?.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée">✔</span>}
+                          </div>
+                          <div className="prod-meta">
+                            {p.chain ? <span className="prod-chain">{chainLabel(p.chain)}</span> : <span />}
+                            <span className="prod-stats" aria-label={`${s.likes} j'aime, ${s.comments} commentaires`}>
+                              <span><Heart size={12} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.likes)}</span>
+                              <span><MessageCircle size={12} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.comments)}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                  {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
+                </>
+              )}
+            </div>
+          </section>
 
-          {/* Navigation basse COMPACTE (3 raccourcis, icône + libellé court) à la
-              place de l'ancienne grande barre « Accéder au menu principal » :
-              Marché (page courante — remonte en haut au toucher), Commandes
-              (déplacée ici depuis l'en-tête) et Menu (autres modules, compte,
-              thème…). La page réserve sa hauteur en bas (voir .market-page,
-              marche.css) : aucun produit n'est masqué derrière. */}
-          <nav className="market-bottom-nav" aria-label="Navigation principale">
-            <button
-              type="button"
-              className="market-nav-item active"
-              aria-current="page"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            >
-              <Store size={22} strokeWidth={2} aria-hidden="true" />
-              <span>Marché</span>
-            </button>
-            <Link href="/commandes" className="market-nav-item">
-              <Package size={22} strokeWidth={2} aria-hidden="true" />
-              <span>Commandes</span>
+          {/* Seul appel à l'action en bas de page : un grand bouton qui mène au
+              menu principal (autres modules, compte, thème…). Pas de barre de
+              navigation basse. */}
+          <div className="market-cta">
+            <Link href="/menu" className="market-cta-btn">
+              Commencer
             </Link>
-            <Link href="/menu" className="market-nav-item">
-              <MenuIcon size={22} strokeWidth={2} aria-hidden="true" />
-              <span>Menu</span>
-            </Link>
-          </nav>
+          </div>
         </div>
       )}
 

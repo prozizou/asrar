@@ -147,55 +147,80 @@ h2 {
   color: var(--text-on-accent);
 }
 
-/* ── Vue mobile compacte : Header → Recherche → Filtres → Boutiques →
-   Produits → Navigation basse ─────────────────────────────────────────────
-   Espacements STANDARDISÉS (jetons ci-dessous) : 8 px entre éléments liés,
-   12 px entre blocs proches, 16 px entre grandes sections et en marge
-   latérale. --mk-nav-h = hauteur de la navigation basse : elle règle aussi
-   le padding bas de la page et la position des notifications. */
+/* ── Marché : UI mobile premium (thème sombre violet) ──────────────────────
+   Header → Recherche → Filtres → Boutiques (carrousel) → Produits (carrousel)
+   → bouton « Commencer ». Espacements réguliers (jetons ci-dessous) : 8 px
+   entre éléments liés, 12 px entre blocs proches, 20 px entre sections,
+   16 px de marge latérale. */
 .container.market-page {
   --mk-s1: 8px;
   --mk-s2: 12px;
-  --mk-s3: 16px;
+  --mk-s3: 20px;
   --mk-gutter: 16px;
-  --mk-nav-h: 56px;
-  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-nav-h) + var(--mk-s3) + env(safe-area-inset-bottom));
+  --mk-radius: 16px;
+  --mk-violet: #8b5cf6;
+  --mk-violet-2: #6d28d9;
+  --mk-card: color-mix(in srgb, var(--mk-violet) 7%, var(--mk-bg-deep));
+  --mk-card-line: color-mix(in srgb, var(--mk-violet) 22%, transparent);
+  max-width: 1100px;
+  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s3) + env(safe-area-inset-bottom));
 }
 
-/* En-tête : le titre seul, sur une ligne (« Mes commandes » est dans la
-   navigation basse). */
+/* En-tête : titre + sous-titre à gauche, icône colis à droite. */
 .market-header {
   display: flex;
   align-items: center;
-  min-height: 36px;
-  margin: 0 0 var(--mk-s1);
+  justify-content: space-between;
+  gap: var(--mk-s2);
+  margin: 0 0 var(--mk-s2);
 }
-
+.market-heading { min-width: 0; }
 .market-title {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   line-height: 1.2;
   margin: 0;
   color: var(--mk-text);
 }
+.market-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--mk-text-soft);
+}
+.market-orders-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--mk-violet);
+  background: color-mix(in srgb, var(--mk-violet) 14%, transparent);
+  border: 1px solid var(--mk-card-line);
+  text-decoration: none;
+  transition: background 0.2s, transform 0.12s;
+}
+.market-orders-icon:active { transform: scale(0.95); }
+@media (hover: hover) { .market-orders-icon:hover { background: color-mix(in srgb, var(--mk-violet) 22%, transparent); } }
 
-/* Recherche + catégories — outils de découverte du marketplace, purement
-   client (voir app/page.tsx, matchesSearch()/CHAINS). */
+/* Recherche. */
 .market-search-box {
   display: flex;
   align-items: center;
   gap: var(--mk-s1);
-  height: 42px;
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  border-radius: 12px;
-  padding: 0 var(--mk-s2);
+  height: 46px;
+  background: var(--mk-card);
+  border: 1px solid var(--mk-card-line);
+  border-radius: 14px;
+  padding: 0 14px;
   margin-bottom: var(--mk-s2);
   color: var(--mk-text-dim);
+  transition: border-color 0.2s;
 }
-.market-search-box:focus-within { border-color: var(--mk-gold); }
+.market-search-box:focus-within { border-color: var(--mk-violet); }
 .market-search-box svg { flex-shrink: 0; }
-
 .market-search-input {
   flex: 1;
   min-width: 0;
@@ -204,241 +229,210 @@ h2 {
   border: none;
   outline: none;
   color: var(--mk-text);
-  font-size: 16px; /* 16 px : en dessous, iOS zoome la page au focus */
+  font-size: 16px; /* 16 px : en dessous, Android/iOS zooment la page au focus */
   font-family: inherit;
 }
-
 .market-search-input::placeholder { color: var(--mk-text-faint); }
 
-/* Filtres : UNE seule ligne défilante, sans retour à la ligne ni pastille
-   écrasée. La rangée déborde jusqu'aux bords de l'écran (marges négatives
-   compensées par le padding) : rien n'est coupé net dans la marge, la
-   première pastille reste alignée sur le contenu, et le défilement
-   « s'accroche » (scroll-snap) sur le début d'une pastille. */
-.market-categories {
+/* Défilement horizontal commun (filtres, boutiques, produits) : bord à bord
+   (marges négatives compensées par le padding) — rien n'est coupé net dans
+   la marge, et l'élément suivant qui dépasse signale qu'il y a plus à voir.
+   Pas de barre de défilement ni de scroll-snap (Chrome faisait sauter un
+   carrousel à sa fin quand les cartes remplaçaient les squelettes). */
+.market-categories,
+.vendors-scroll,
+.prod-scroll {
   display: flex;
   flex-wrap: nowrap;
-  gap: var(--mk-s1);
   overflow-x: auto;
-  margin: 0 calc(-1 * var(--mk-gutter)) var(--mk-s3);
-  padding: 2px var(--mk-gutter);
+  margin-inline: calc(-1 * var(--mk-gutter));
+  padding-inline: var(--mk-gutter);
   scroll-padding-inline: var(--mk-gutter);
-  scroll-snap-type: x proximity;
-  overflow-anchor: none;
+  overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
-.market-categories::-webkit-scrollbar { display: none; }
+.market-categories::-webkit-scrollbar,
+.vendors-scroll::-webkit-scrollbar,
+.prod-scroll::-webkit-scrollbar { display: none; }
 
-.market-cat-pill {
-  /* width:auto + margin-top:0 : ANNULENT le bouton générique
-     (app/globals.css, `button { width:100%; margin-top:15px; ... }`, pensé
-     pour les gros CTA pleine largeur) — sans ça une pastille réclamait
-     toute la largeur du rang. */
-  flex: 0 0 auto;
-  width: auto;
-  margin-top: 0;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  scroll-snap-align: start;
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  color: var(--mk-text);
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-}
-
-.market-cat-pill.active {
-  background: var(--mk-gold);
-  border-color: var(--mk-gold);
-  color: var(--text-on-accent);
-  font-weight: 600;
-}
-
-/* Titres de section (« Boutiques populaires », « Produits populaires »). */
-.market-section-title {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 var(--mk-s1);
-  color: var(--mk-text);
-}
-
-.vendors-section {
+/* Filtres. */
+.market-categories {
+  gap: var(--mk-s1);
+  padding-block: 2px;
   margin-bottom: var(--mk-s3);
 }
-
-/* Petit carrousel de boutiques : cartes étroites, bord à bord comme les
-   filtres. La carte suivante dépasse
-   légèrement — c'est ce qui signale qu'il y a plus à voir (pas de barre de
-   défilement). */
-.vendors-scroll {
-  display: flex;
-  gap: var(--mk-s1);
-  overflow-x: auto;
-  margin: 0 calc(-1 * var(--mk-gutter));
-  padding: 2px var(--mk-gutter) 4px;
-  /* PAS de scroll-snap ici : quand les cartes remplacent les squelettes de
-     chargement, Chrome re-« accrochait » le carrousel et le faisait sauter
-     jusqu'à la dernière carte (mesuré : scrollLeft 446 au lieu de 0). */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.vendors-scroll::-webkit-scrollbar { display: none; }
-
-/* Carte boutique compacte : logo + nom + spécialité + note/like. */
-.vendor-card {
+.market-cat-pill {
+  /* width:auto + margin:0 : annulent le bouton générique (app/globals.css,
+     `button { width:100%; margin-top:15px; … }`). */
   flex: 0 0 auto;
-  width: 108px;
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  border-radius: 14px;
-  padding: var(--mk-s1);
-  text-align: center;
+  width: auto;
+  margin: 0;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--mk-card);
+  border: 1px solid var(--mk-card-line);
+  color: var(--mk-text-soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s, transform 0.12s;
+  box-shadow: none;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.market-cat-pill:hover { transform: none; box-shadow: none; }
+.market-cat-pill.active {
+  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Sections. */
+.market-section { margin-bottom: var(--mk-s3); }
+.market-section-title {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 var(--mk-s2);
   color: var(--mk-text);
 }
-.vendor-card:active { transform: scale(0.97); background: var(--mk-surface-2); }
-@media (hover: hover) { .vendor-card:hover { background: var(--mk-surface-2); } }
 
+/* Boutiques populaires : cartes compactes HORIZONTALES (avatar à gauche,
+   nom / spécialité / note + favori à droite), en carrousel. */
+.vendors-scroll { gap: var(--mk-s2); padding-block: 2px 4px; }
+.vendor-card {
+  flex: 0 0 auto;
+  width: 212px;
+  display: flex;
+  align-items: center;
+  gap: var(--mk-s2);
+  padding: var(--mk-s2);
+  background: var(--mk-card);
+  border: 1px solid var(--mk-card-line);
+  border-radius: var(--mk-radius);
+  color: var(--mk-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.12s, border-color 0.2s;
+}
+.vendor-card:active { transform: scale(0.98); }
+@media (hover: hover) { .vendor-card:hover { border-color: color-mix(in srgb, var(--mk-violet) 45%, transparent); } }
 .vendor-avatar {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
-  overflow: hidden; /* clippe l'image fill sur le cercle */
-  width: 44px;
-  height: 44px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: var(--mk-surface-3);
-  margin: 0 auto 6px;
+  background: color-mix(in srgb, var(--mk-violet) 16%, var(--mk-bg-deep));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.3rem;
-  color: var(--mk-text);
+  color: var(--mk-violet);
 }
-
+.vendor-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .vendor-you-badge {
-  display: inline-block;
-  background: var(--mk-gold);
-  color: var(--text-on-accent);
+  align-self: flex-start;
+  background: var(--mk-violet);
+  color: #fff;
   font-size: 0.6rem;
   font-weight: 700;
   padding: 1px 7px;
   border-radius: 999px;
-  margin-bottom: 4px;
 }
-
-.vendor-name {
-  font-weight: 600;
-  font-size: 0.82rem;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+.vendor-name,
 .vendor-specialty {
-  color: var(--mk-text-soft);
-  font-size: 0.7rem;
-  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Note + like sur une même ligne. */
-.vendor-meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-/* Bouton « J'aime » de la carte boutique — cœur vide/rempli : c'est un
-   vrai favori. Compact ; cible tactile étendue par le padding de la carte. */
+.vendor-name { font-weight: 700; font-size: 0.88rem; line-height: 1.25; }
+.vendor-specialty { color: var(--mk-text-soft); font-size: 0.74rem; line-height: 1.3; }
+.vendor-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
 .vendor-like {
   width: auto;
   margin: 0;
-  background: var(--mk-soft-3);
-  border: 1px solid var(--mk-border);
-  color: var(--mk-text);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: border-color 0.2s, background 0.2s;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-violet) 10%, transparent);
+  border: 1px solid var(--mk-card-line);
+  color: var(--mk-text-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
 }
-.vendor-like:hover { background: var(--mk-soft-2); transform: none; box-shadow: none; }
-.vendor-like.liked { border-color: #e0245e; }
+.vendor-like:hover { transform: none; box-shadow: none; }
+.vendor-like.liked { color: #f43f5e; border-color: color-mix(in srgb, #f43f5e 45%, transparent); }
+.vendor-card-add .vendor-avatar { font-size: 1.5rem; }
 
-/* Grille produit : 2 colonnes UNIFORMES sur mobile (les cartes d'une même
-   rangée ont la même hauteur), écart standard de 12 px. */
+/* ── Cartes produit ────────────────────────────────────────────────────────
+   Base partagée avec la vitrine d'un vendeur (VendorShop.js, en grille). */
 .prod-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--mk-s2, 12px);
 }
-
 .prod-card {
-  background: var(--mk-surface);
-  border: 1px solid var(--mk-border);
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.12s;
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--mk-card, var(--mk-surface));
+  border: 1px solid var(--mk-card-line, var(--mk-border));
+  border-radius: var(--mk-radius, 16px);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.2s;
 }
-/* Retour tactile immédiat au toucher (:active), survol seulement pour les
-   appareils à souris — pas de « saut » au premier tap sur mobile. */
-.prod-card:active { transform: scale(0.98); background: var(--mk-surface-2); }
-@media (hover: hover) { .prod-card:hover { background: var(--mk-surface-2); } }
+.prod-card:active { transform: scale(0.98); }
+@media (hover: hover) { .prod-card:hover { border-color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 45%, transparent); } }
 
-/* MÊME ratio pour toutes les images (1 / 1) : cadrage identique quelle que
-   soit la photo source ou la largeur de la colonne (object-fit: cover). Le
-   placeholder a exactement le même gabarit — la grille reste régulière. */
+/* Images : MÊME ratio 1:1 partout (object-fit: cover), placeholder au même
+   gabarit — les cartes restent uniformes. */
 .prod-img,
-.prod-img-placeholder {
+.prod-media {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: var(--mk-surface-3);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-bg-deep));
 }
-.prod-img { overflow: hidden; }
-
 .prod-img-placeholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  font-size: 1.8rem;
   color: var(--mk-text-dim);
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-bg-deep));
 }
-.prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.5; }
+.prod-media .prod-img-placeholder { position: absolute; inset: 0; opacity: 0.6; }
+.prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.55; }
+.prod-img-placeholder-label { font-size: 0.68rem; }
 
 .prod-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
-  padding: 10px;
+  padding: 10px 12px 12px;
   color: var(--mk-text);
 }
-
-/* Titre : 2 lignes maximum (ellipsis) ; min-height réserve la place de 2
-   lignes même pour un titre court, pour que le prix reste au même niveau
-   vertical partout dans la grille. */
+/* Titre : 2 lignes max, hauteur réservée — le prix reste aligné partout. */
 .prod-name {
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.88rem;
@@ -450,32 +444,141 @@ h2 {
   overflow: hidden;
   min-height: 2.5em;
 }
-
-/* PRIX : l'information la plus visible de la carte — montant gras et grand,
-   devise plus petite à côté (voir ProductPrice.js, aussi utilisé par la
-   vitrine d'un vendeur). */
+/* Prix en vert, montant bien visible, devise plus petite (ProductPrice.js). */
 .prod-price { margin: 0; line-height: 1.2; }
-.prod-price-amount { color: var(--mk-price-green); font-weight: 800; font-size: 1.15rem; letter-spacing: -0.01em; }
-.prod-price-currency { color: var(--mk-price-green); font-weight: 600; font-size: 0.74rem; opacity: 0.9; }
+.prod-price-amount { color: var(--mk-price-green); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; }
+.prod-price-currency { color: var(--mk-price-green); font-weight: 700; font-size: 0.72rem; }
 
-/* Boutique : une seule ligne discrète, tronquée si longue. */
 .prod-vendor-line {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.74rem;
+  min-width: 0;
+  font-size: 0.76rem;
   font-weight: 500;
   color: var(--mk-text-soft);
-  min-width: 0;
 }
-.prod-vendor-line span:first-child {
+.prod-vendor-line span:first-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.verified-badge { color: var(--mk-verified); font-size: 0.7rem; flex-shrink: 0; }
+
+/* Pied de carte : catégorie à gauche, likes + commentaires à droite. */
+.prod-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.prod-chain {
   min-width: 0;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 16%, transparent);
+  color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 70%, var(--mk-text));
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+.prod-stats {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--mk-text-soft);
+}
+.prod-stats > span { display: inline-flex; align-items: center; gap: 3px; }
+
+/* Carrousel « Produits populaires » : cartes de largeur FIXE (uniformes),
+   hauteur égale par la rangée flex. */
+.prod-scroll { gap: var(--mk-s2); padding-block: 2px 6px; align-items: stretch; }
+.prod-scroll .prod-card { flex: 0 0 168px; }
+/* Sentinelle du rendu progressif (useProgressiveList) : en fin de carrousel,
+   elle doit garder une largeur pour être observée. */
+.prod-scroll .load-sentinel { flex: 0 0 1px; width: 1px; height: auto; }
+.prod-empty {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: 32px 8px;
+  text-align: center;
+  color: var(--mk-text-soft);
+  font-size: 0.9rem;
 }
 
-.verified-badge { color: var(--mk-verified); font-size: 0.7rem; flex-shrink: 0; }
+/* Badge « Plus populaire » (1er du classement par engagement). */
+.prod-top-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Favori (cœur) sur l'image — cible tactile de 36 px. */
+.prod-fav {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 10, 30, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 0.12s, color 0.2s;
+}
+.prod-fav:hover { transform: none; box-shadow: none; }
+.prod-fav:active { transform: scale(0.9); }
+.prod-fav.liked { color: #f43f5e; }
+
+/* Appel à l'action unique en bas de page : grand bouton violet arrondi. */
+.market-cta {
+  margin-top: var(--mk-s2);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.market-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 520px;
+  height: 54px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
+  color: #fff;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--mk-violet) 40%, transparent);
+  transition: transform 0.12s, filter 0.2s;
+}
+.market-cta-btn:active { transform: scale(0.98); }
+@media (hover: hover) { .market-cta-btn:hover { filter: brightness(1.08); } }
 
 /* Modale produit */
 .modal-overlay {
@@ -572,65 +675,6 @@ h2 {
   cursor: pointer;
   font-size: 0.8rem;
 }
-
-/* Navigation basse COMPACTE : 3 raccourcis (icône 22 px + libellé 11 px) sur
-   une barre de --mk-nav-h (56 px, hors zone de sécurité) — à la place de
-   l'ancienne grande barre à un seul gros bouton. Fond OPAQUE (--mk-bg-deep +
-   léger flou) : sans ça, les cartes du bas se voyaient par transparence à
-   travers la barre. z-index 60 : sous .modal-overlay (100) et .cart-panel
-   (200), une modale ouverte reste au-dessus. Le padding bas de la page
-   (.market-page) réserve exactement cette hauteur : aucun produit masqué. */
-.market-bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 60;
-  display: flex;
-  justify-content: center;
-  background: var(--mk-bg-deep);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--mk-border);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.market-nav-item {
-  /* Annule le style global `button` (largeur 100 %, marge haute, dégradé,
-     ombre au survol — app/globals.css) pour l'item « Marché », qui est un
-     <button> ; les deux autres sont des <a>. */
-  flex: 1 1 0;
-  max-width: 200px;
-  width: auto;
-  margin: 0;
-  height: var(--mk-nav-h, 56px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 0 4px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  color: var(--mk-text-soft);
-  text-decoration: none;
-  font-family: inherit;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.2s, background 0.2s;
-}
-.market-nav-item:hover { transform: none; box-shadow: none; background: transparent; }
-.market-nav-item:active { background: color-mix(in srgb, var(--mk-gold) 14%, transparent); }
-.market-nav-item.active { color: var(--mk-gold); }
-
-/* La barre de notification globale (.toast, app/globals.css) reste au-dessus
-   de la navigation. */
-.market-page .toast { bottom: calc(var(--mk-nav-h) + var(--mk-s2) + env(safe-area-inset-bottom)); }
 
 .add-to-cart-btn {
   background: var(--mk-gold);
@@ -842,18 +886,19 @@ h2 {
 .overlay.show { display: block; }
 
 .skeleton {
-  background: var(--mk-surface);
-  border-radius: 14px;
-  aspect-ratio: 3 / 4; /* gabarit d'une carte produit (image 1:1 + corps) */
+  flex: 0 0 168px;
+  aspect-ratio: 3 / 5;
+  border-radius: var(--mk-radius, 16px);
+  background: var(--mk-card, var(--mk-surface));
   animation: pulse 1.5s infinite;
 }
 
 .vendor-skeleton {
   flex: 0 0 auto;
-  width: 108px;
-  height: 104px;
-  border-radius: 14px;
-  background: var(--mk-surface);
+  width: 212px;
+  height: 74px;
+  border-radius: var(--mk-radius, 16px);
+  background: var(--mk-card, var(--mk-surface));
   animation: pulse 1.5s infinite;
 }
 
@@ -861,24 +906,11 @@ h2 {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.7; }
 }
-/* ───── VERSION DESKTOP : vraie grille responsive (≥768px) ───── */
+/* ───── Écrans plus larges : mêmes carrousels, cartes un peu plus larges ───── */
 @media (min-width: 768px) {
-  /* .prod-grid est déjà une grille 2 colonnes dès le mobile (voir plus haut) —
-     ici, juste plus de colonnes disponibles sur un écran large. */
-  .prod-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
-
-  .vendors-scroll {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
-
-  /* Plus de défilement bord à bord : les rangées reprennent la largeur du
-     contenu. */
-  .market-categories,
-  .vendors-scroll {
-    margin-inline: 0;
-    padding-inline: 0;
-  }
+  .container.market-page { --mk-gutter: 24px; }
+  .prod-scroll .prod-card,
+  .skeleton { flex-basis: 200px; }
+  .vendor-card { width: 240px; }
+  .prod-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
