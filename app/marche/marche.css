@@ -147,23 +147,47 @@ h2 {
   color: var(--text-on-accent);
 }
 
-/* ── Marché : UI mobile premium (thème sombre violet) ──────────────────────
-   Header → Recherche → Filtres → Boutiques (carrousel) → Produits (carrousel)
-   → bouton « Commencer ». Espacements réguliers (jetons ci-dessous) : 8 px
-   entre éléments liés, 12 px entre blocs proches, 20 px entre sections,
-   16 px de marge latérale. */
+/* ── Marché : UI mobile premium (violet, sombre ET clair) ──────────────────
+   Header → Recherche → Filtres → Boutiques (carrousel) → Produits
+   (carrousel) → bouton « Commencer » fixé en bas. Espacements réguliers :
+   8 px entre éléments liés, 12 px entre blocs proches, 20 px entre
+   sections, 16 px de marge latérale. Les couleurs viennent de jetons : le
+   mode clair ne fait que les surcharger (voir plus bas). */
 .container.market-page {
   --mk-s1: 8px;
   --mk-s2: 12px;
   --mk-s3: 20px;
   --mk-gutter: 16px;
   --mk-radius: 16px;
+  --mk-cta-h: 54px;
   --mk-violet: #8b5cf6;
   --mk-violet-2: #6d28d9;
   --mk-card: color-mix(in srgb, var(--mk-violet) 7%, var(--mk-bg-deep));
   --mk-card-line: color-mix(in srgb, var(--mk-violet) 22%, transparent);
+  --mk-card-shadow: none;
+  --mk-price: var(--mk-price-green);
+  --mk-fade: var(--mk-bg-deep);
   max-width: 1100px;
-  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s3) + env(safe-area-inset-bottom));
+  /* Réserve la hauteur du bouton fixé en bas (+ zone de sécurité) : le
+     dernier contenu n'est jamais masqué derrière lui. */
+  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-cta-h) + 2 * var(--mk-s2) + var(--mk-s3) + env(safe-area-inset-bottom));
+}
+
+/* Le panneau qui enveloppe la page ne doit rien dessiner : son ombre globale
+   (app/globals.css, .glass-panel) faisait apparaître un rectangle derrière le
+   contenu, sur lequel les carrousels bord à bord débordaient. */
+.market-page .glass-panel { box-shadow: none !important; }
+
+/* MODE CLAIR premium : cartes blanches, ombre douce, bordure lavande, violet
+   plus profond (contraste sur fond clair), prix en vert foncé lisible. */
+html[data-theme="light"] .container.market-page {
+  --mk-violet: #7c3aed;
+  --mk-violet-2: #5b21b6;
+  --mk-card: #ffffff;
+  --mk-card-line: rgba(124, 58, 237, 0.16);
+  --mk-card-shadow: 0 1px 2px rgba(60, 40, 120, 0.06), 0 6px 18px rgba(60, 40, 120, 0.08);
+  --mk-price: #15803d;
+  --mk-fade: #eef6f4;
 }
 
 /* En-tête : titre + sous-titre à gauche, icône colis à droite. */
@@ -177,14 +201,14 @@ h2 {
 .market-heading { min-width: 0; }
 .market-title {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   line-height: 1.2;
   margin: 0;
   color: var(--mk-text);
 }
 .market-subtitle {
   margin: 2px 0 0;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.35;
   color: var(--mk-text-soft);
 }
@@ -193,27 +217,29 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 14px;
   color: var(--mk-violet);
-  background: color-mix(in srgb, var(--mk-violet) 14%, transparent);
+  background: var(--mk-card);
   border: 1px solid var(--mk-card-line);
+  box-shadow: var(--mk-card-shadow);
   text-decoration: none;
-  transition: background 0.2s, transform 0.12s;
+  transition: transform 0.12s, border-color 0.2s;
 }
 .market-orders-icon:active { transform: scale(0.95); }
-@media (hover: hover) { .market-orders-icon:hover { background: color-mix(in srgb, var(--mk-violet) 22%, transparent); } }
+@media (hover: hover) { .market-orders-icon:hover { border-color: var(--mk-violet); } }
 
 /* Recherche. */
 .market-search-box {
   display: flex;
   align-items: center;
   gap: var(--mk-s1);
-  height: 46px;
+  height: 44px;
   background: var(--mk-card);
   border: 1px solid var(--mk-card-line);
   border-radius: 14px;
+  box-shadow: var(--mk-card-shadow);
   padding: 0 14px;
   margin-bottom: var(--mk-s2);
   color: var(--mk-text-dim);
@@ -235,8 +261,9 @@ h2 {
 .market-search-input::placeholder { color: var(--mk-text-faint); }
 
 /* Défilement horizontal commun (filtres, boutiques, produits) : bord à bord
-   (marges négatives compensées par le padding) — rien n'est coupé net dans
-   la marge, et l'élément suivant qui dépasse signale qu'il y a plus à voir.
+   (marges négatives compensées par le padding). Aux deux extrémités, le
+   contenu S'ESTOMPE sur 12 px (mask) au lieu d'être coupé net — rien n'a
+   l'air tronqué, et le suivant qui dépasse signale qu'il y a plus à voir.
    Pas de barre de défilement ni de scroll-snap (Chrome faisait sauter un
    carrousel à sa fin quand les cartes remplaçaient les squelettes). */
 .market-categories,
@@ -251,14 +278,16 @@ h2 {
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
 }
 .market-categories::-webkit-scrollbar,
 .vendors-scroll::-webkit-scrollbar,
 .prod-scroll::-webkit-scrollbar { display: none; }
 
-/* Filtres. */
+/* Filtres compacts : 32 px de haut, une seule ligne. */
 .market-categories {
-  gap: var(--mk-s1);
+  gap: 6px;
   padding-block: 2px;
   margin-bottom: var(--mk-s3);
 }
@@ -268,15 +297,15 @@ h2 {
   flex: 0 0 auto;
   width: auto;
   margin: 0;
-  height: 36px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 13px;
   border-radius: 999px;
   background: var(--mk-card);
   border: 1px solid var(--mk-card-line);
   color: var(--mk-text-soft);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -294,7 +323,7 @@ h2 {
 .market-section { margin-bottom: var(--mk-s3); }
 .market-section-title {
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1.3;
   margin: 0 0 var(--mk-s2);
@@ -302,22 +331,25 @@ h2 {
 }
 
 /* Boutiques populaires : cartes compactes HORIZONTALES (avatar à gauche,
-   nom / spécialité / note + favori à droite), en carrousel. */
-.vendors-scroll { gap: var(--mk-s2); padding-block: 2px 4px; }
+   nom / spécialité / note + favori à droite), en carrousel. Le padding
+   vertical (compensé par une marge négative) laisse la place de l'ombre :
+   overflow-x coupe aussi en Y, l'ombre était tronquée net sous les cartes. */
+.vendors-scroll { gap: var(--mk-s2); padding-block: 6px 26px; margin-block: -6px -26px; }
 .vendor-card {
   flex: 0 0 auto;
-  width: 212px;
+  width: 204px;
   display: flex;
   align-items: center;
   gap: var(--mk-s2);
-  padding: var(--mk-s2);
+  padding: 10px var(--mk-s2);
   background: var(--mk-card);
   border: 1px solid var(--mk-card-line);
   border-radius: var(--mk-radius);
+  box-shadow: var(--mk-card-shadow);
   color: var(--mk-text);
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s, transform 0.12s, border-color 0.2s;
+  transition: transform 0.12s, border-color 0.2s;
 }
 .vendor-card:active { transform: scale(0.98); }
 @media (hover: hover) { .vendor-card:hover { border-color: color-mix(in srgb, var(--mk-violet) 45%, transparent); } }
@@ -325,14 +357,14 @@ h2 {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   overflow: hidden;
   flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--mk-violet) 16%, var(--mk-bg-deep));
+  background: color-mix(in srgb, var(--mk-violet) 14%, var(--mk-card));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   color: var(--mk-violet);
 }
 .vendor-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
@@ -351,8 +383,8 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.vendor-name { font-weight: 700; font-size: 0.88rem; line-height: 1.25; }
-.vendor-specialty { color: var(--mk-text-soft); font-size: 0.74rem; line-height: 1.3; }
+.vendor-name { font-weight: 700; font-size: 0.86rem; line-height: 1.25; }
+.vendor-specialty { color: var(--mk-text-soft); font-size: 0.72rem; line-height: 1.3; }
 .vendor-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
 .vendor-like {
   width: auto;
@@ -362,17 +394,17 @@ h2 {
   gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--mk-violet) 10%, transparent);
+  background: color-mix(in srgb, var(--mk-violet) 9%, transparent);
   border: 1px solid var(--mk-card-line);
   color: var(--mk-text-soft);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: none;
 }
 .vendor-like:hover { transform: none; box-shadow: none; }
-.vendor-like.liked { color: #f43f5e; border-color: color-mix(in srgb, #f43f5e 45%, transparent); }
-.vendor-card-add .vendor-avatar { font-size: 1.5rem; }
+.vendor-like.liked { color: #e11d48; border-color: color-mix(in srgb, #e11d48 40%, transparent); }
+.vendor-card-add .vendor-avatar { font-size: 1.4rem; }
 
 /* ── Cartes produit ────────────────────────────────────────────────────────
    Base partagée avec la vitrine d'un vendeur (VendorShop.js, en grille). */
@@ -389,6 +421,7 @@ h2 {
   background: var(--mk-card, var(--mk-surface));
   border: 1px solid var(--mk-card-line, var(--mk-border));
   border-radius: var(--mk-radius, 16px);
+  box-shadow: var(--mk-card-shadow, none);
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.12s, border-color 0.2s;
@@ -404,7 +437,7 @@ h2 {
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-bg-deep));
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-surface-3, transparent));
 }
 .prod-img-placeholder {
   width: 100%;
@@ -416,7 +449,7 @@ h2 {
   gap: 4px;
   font-size: 1.8rem;
   color: var(--mk-text-dim);
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-bg-deep));
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-surface-3, transparent));
 }
 .prod-media .prod-img-placeholder { position: absolute; inset: 0; opacity: 0.6; }
 .prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.55; }
@@ -435,7 +468,7 @@ h2 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -444,17 +477,18 @@ h2 {
   overflow: hidden;
   min-height: 2.5em;
 }
-/* Prix en vert, montant bien visible, devise plus petite (ProductPrice.js). */
+/* Prix en vert (foncé en mode clair), montant gras et net, devise plus
+   petite (ProductPrice.js, aussi utilisé par la vitrine d'un vendeur). */
 .prod-price { margin: 0; line-height: 1.2; }
-.prod-price-amount { color: var(--mk-price-green); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; }
-.prod-price-currency { color: var(--mk-price-green); font-weight: 700; font-size: 0.72rem; }
+.prod-price-amount { color: var(--mk-price, var(--mk-price-green)); font-weight: 800; font-size: 1.08rem; letter-spacing: -0.01em; }
+.prod-price-currency { color: var(--mk-price, var(--mk-price-green)); font-weight: 700; font-size: 0.7rem; }
 
 .prod-vendor-line {
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 500;
   color: var(--mk-text-soft);
 }
@@ -477,25 +511,25 @@ h2 {
   white-space: nowrap;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 16%, transparent);
-  color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 70%, var(--mk-text));
-  font-size: 0.66rem;
+  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 14%, transparent);
+  color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 78%, var(--mk-text));
+  font-size: 0.64rem;
   font-weight: 700;
 }
 .prod-stats {
   flex-shrink: 0;
   display: inline-flex;
   gap: 8px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--mk-text-soft);
 }
 .prod-stats > span { display: inline-flex; align-items: center; gap: 3px; }
 
 /* Carrousel « Produits populaires » : cartes de largeur FIXE (uniformes),
-   hauteur égale par la rangée flex. */
-.prod-scroll { gap: var(--mk-s2); padding-block: 2px 6px; align-items: stretch; }
-.prod-scroll .prod-card { flex: 0 0 168px; }
+   hauteur égale par la rangée flex. Padding vertical pour l'ombre. */
+.prod-scroll { gap: var(--mk-s2); padding-block: 6px 26px; margin-block: -6px -26px; align-items: stretch; }
+.prod-scroll .prod-card { flex: 0 0 164px; }
 /* Sentinelle du rendu progressif (useProgressiveList) : en fin de carrousel,
    elle doit garder une largeur pour être observée. */
 .prod-scroll .load-sentinel { flex: 0 0 1px; width: 1px; height: auto; }
@@ -508,7 +542,7 @@ h2 {
   font-size: 0.9rem;
 }
 
-/* Badge « Plus populaire » (1er du classement par engagement). */
+/* Badge « Plus populaire » (1er du classement par engagement) : violet. */
 .prod-top-badge {
   position: absolute;
   top: 8px;
@@ -517,24 +551,24 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: linear-gradient(135deg, var(--mk-violet, #8b5cf6), var(--mk-violet-2, #6d28d9));
   color: #fff;
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.01em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(76, 29, 149, 0.35);
 }
 
-/* Favori (cœur) sur l'image — cible tactile de 36 px. */
+/* Favori (cœur) sur l'image : bouton de 28 px, icône de 15 px — plus discret. */
 .prod-fav {
   position: absolute;
   top: 6px;
   right: 6px;
   z-index: 1;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   margin: 0;
   padding: 0;
   display: inline-flex;
@@ -542,7 +576,7 @@ h2 {
   justify-content: center;
   border-radius: 50%;
   border: none;
-  background: rgba(15, 10, 30, 0.55);
+  background: rgba(20, 12, 40, 0.5);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   color: #fff;
@@ -552,20 +586,29 @@ h2 {
 }
 .prod-fav:hover { transform: none; box-shadow: none; }
 .prod-fav:active { transform: scale(0.9); }
-.prod-fav.liked { color: #f43f5e; }
+.prod-fav.liked { color: #fb7185; }
 
-/* Appel à l'action unique en bas de page : grand bouton violet arrondi. */
+/* Appel à l'action UNIQUE : grand bouton violet arrondi, fixé en bas de
+   l'écran (le padding bas de la page réserve sa hauteur). Le voile dégradé
+   ne capte pas les touchers (pointer-events) : seul le bouton est actif. */
 .market-cta {
-  margin-top: var(--mk-s2);
-  padding-bottom: env(safe-area-inset-bottom);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60; /* sous .modal-overlay (100) : une fiche ouverte reste au-dessus */
+  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s2) + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--mk-fade) 55%, transparent);
+  pointer-events: none;
 }
 .market-cta-btn {
+  pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   max-width: 520px;
-  height: 54px;
+  height: var(--mk-cta-h);
   margin: 0 auto;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
@@ -574,11 +617,14 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--mk-violet) 40%, transparent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mk-violet) 38%, transparent);
   transition: transform 0.12s, filter 0.2s;
 }
 .market-cta-btn:active { transform: scale(0.98); }
 @media (hover: hover) { .market-cta-btn:hover { filter: brightness(1.08); } }
+
+/* La barre de notification globale (.toast) reste au-dessus du bouton. */
+.market-page .toast { bottom: calc(var(--mk-cta-h) + 2 * var(--mk-s2) + env(safe-area-inset-bottom)); }
 
 /* Modale produit */
 .modal-overlay {
@@ -886,19 +932,21 @@ h2 {
 .overlay.show { display: block; }
 
 .skeleton {
-  flex: 0 0 168px;
+  flex: 0 0 164px;
   aspect-ratio: 3 / 5;
   border-radius: var(--mk-radius, 16px);
   background: var(--mk-card, var(--mk-surface));
+  border: 1px solid var(--mk-card-line, transparent);
   animation: pulse 1.5s infinite;
 }
 
 .vendor-skeleton {
   flex: 0 0 auto;
-  width: 212px;
-  height: 74px;
+  width: 204px;
+  height: 68px;
   border-radius: var(--mk-radius, 16px);
   background: var(--mk-card, var(--mk-surface));
+  border: 1px solid var(--mk-card-line, transparent);
   animation: pulse 1.5s infinite;
 }
 
@@ -910,7 +958,8 @@ h2 {
 @media (min-width: 768px) {
   .container.market-page { --mk-gutter: 24px; }
   .prod-scroll .prod-card,
-  .skeleton { flex-basis: 200px; }
-  .vendor-card { width: 240px; }
+  .skeleton { flex-basis: 196px; }
+  .vendor-card,
+  .vendor-skeleton { width: 236px; }
   .prod-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
