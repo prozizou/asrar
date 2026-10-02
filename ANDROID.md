@@ -64,10 +64,10 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 
 ## Notifications push natives
 
-`lib/fcmNative.js` utilise Firebase Cloud Messaging : déposer le
-`google-services.json` du projet Firebase (application Android
-`com.Asrar`) dans `android/app/`. Sans ce fichier l'application
-fonctionne, mais sans push natives.
+`lib/fcmNative.js` utilise Firebase Cloud Messaging avec
+`android/app/google-services.json` (projet `asrar-bc059`, app Android
+`com.Asrar` — configuration publique, versionnée). Sans ce fichier
+l'application fonctionne, mais sans push natives.
 
 ## Icônes / écran de démarrage
 

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "199810893447",
+    "firebase_url": "https://asrar-bc059.firebaseio.com",
+    "project_id": "asrar-bc059",
+    "storage_bucket": "asrar-bc059.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:199810893447:android:e2bcf45ce849a2ac68da22",
+        "android_client_info": {
+          "package_name": "com.Asrar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "199810893447-57em94asq1fapaal5pj2i29ogegkofjc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Asrar",
+            "certificate_hash": "696bc6bee0e525b26084b2e889ea8f202da60c3a"
+          }
+        },
+        {
+          "client_id": "199810893447-273t2o0prru5qf16tt19l2npotgfq0fo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLzPKzbiNYitUz7sv9Ftqm0oF20rA32Zk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "199810893447-273t2o0prru5qf16tt19l2npotgfq0fo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
