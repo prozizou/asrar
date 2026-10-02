@@ -300,6 +300,23 @@ export default function Home() {
   // Backpress Android : ferme la fiche boutique (pas de vraie navigation de page ici).
   const goBackFromShop = useHistoryClose(!!shopVendor, closeVendorShop);
 
+  // Fiche produit : même mécanique (retour Android = fermer la fiche). « Visiter
+  // la boutique » depuis la fiche ferme d'abord la fiche par l'historique,
+  // puis ouvre la boutique une fois le retour traité — sinon l'entrée de la
+  // fiche resterait sous celle de la boutique (un retour « pour rien »).
+  const shopAfterModalRef = useRef<string | null>(null);
+  const closeModal = useCallback(() => {
+    setModalProduct(null);
+    const id = shopAfterModalRef.current;
+    shopAfterModalRef.current = null;
+    if (id) openVendorShop(id);
+  }, [openVendorShop]);
+  const goBackFromModal = useHistoryClose(!!modalProduct, closeModal);
+  const visitShopFromModal = useCallback((id: string) => {
+    shopAfterModalRef.current = id;
+    goBackFromModal();
+  }, [goBackFromModal]);
+
   return (
     <div className="container market-page">
       {shopVendor ? (
@@ -548,8 +565,8 @@ export default function Home() {
         <ProductModal
           product={modalProduct}
           vendor={modalVendor}
-          onClose={() => setModalProduct(null)}
-          onVisitShop={openVendorShop}
+          onClose={goBackFromModal}
+          onVisitShop={visitShopFromModal}
         />
       )}
 
