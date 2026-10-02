@@ -71,7 +71,10 @@ export default function AuthProvider({ children }) {
     if (isNativeApp()) {
       signInWithGoogleNative(auth).catch((e) => {
         setStatus('');
-        setError(translateError(e && e.code));
+        // Message natif ajouté pour le diagnostic (SHA-1 non déclarée,
+        // compte supervisé…) — sinon l'erreur reste opaque sur l'appareil.
+        const base = translateError(e && e.code);
+        setError(e && e.detail ? base + ' (' + e.detail + ')' : base);
       });
       return;
     }
