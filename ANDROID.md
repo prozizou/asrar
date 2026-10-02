@@ -73,3 +73,25 @@ fonctionne, mais sans push natives.
 
 Générés depuis `public/assets/icon-maskable-512.png` et
 `public/assets/icon-512.png` avec `@capacitor/assets`.
+
+## Connexion Google dans l'app
+
+Dans la WebView, la connexion Google Firebase par popup/redirect ne marche
+pas (« Unable to process request due to missing initial state »). L'app
+utilise donc le sélecteur de compte natif Android
+(`@capgo/capacitor-social-login`, `lib/googleNative.js`), puis
+`signInWithCredential` côté Firebase.
+
+À configurer une fois dans Google Cloud Console → API et services →
+Identifiants (projet Firebase `asrar-bc059`) — ou Firebase → Paramètres du
+projet → application Android `com.Asrar` → « Ajouter une empreinte » :
+
+- un client OAuth **Android**, package `com.Asrar`, avec l'empreinte SHA-1
+  de la clé d'importation `prozizou.jks` :
+  `69:6B:C6:BE:E0:E5:25:B2:60:84:B2:E8:89:EA:8F:20:2D:A6:0C:3A`
+- et l'empreinte SHA-1 de la **clé de signature d'application** affichée
+  dans Play Console → Intégrité de l'application (c'est elle qui signe
+  l'app installée depuis le Play Store).
+
+Ce code JS est servi par le site : la correction n'est active dans l'app
+qu'une fois le site redéployé sur www.asrarpro.com.
