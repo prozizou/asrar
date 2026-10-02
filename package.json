@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.lib.json",
     "test:e2e": "playwright test",
-    "cap:sync": "cap sync android"
+    "cap:sync": "cap sync android",
+    "android:apk": "cap sync android && cd android && ./gradlew assembleDebug assembleRelease",
+    "android:aab": "cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
