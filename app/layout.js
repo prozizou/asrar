@@ -96,11 +96,24 @@ export const viewport = {
 // faisait theme.js en tête de chaque page).
 const themeInit = `(function(){try{var t=localStorage.getItem('asrar_theme')||'dark';document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');document.documentElement.style.colorScheme=t==='light'?'light':'dark';}catch(e){}})();`;
 
+// App Android (Capacitor 8) : retire viewport-fit=cover AVANT que Capacitor
+// ne lise la balise viewport (SystemBars, à l'affichage de la page). Avec
+// « cover », les WebView ≥ 140 dessinent la page SOUS la barre de statut et
+// la barre gestuelle, et seules quelques pages (Marché, Zikr, Planète,
+// Asrar) compensaient avec env(safe-area-inset-*) : toutes les autres
+// passaient sous l'heure et les icônes. Sans « cover », Capacitor décale
+// lui-même la WebView entre les barres système — toutes les pages sont
+// protégées d'un coup, et env()/--safe-area-inset-* valent 0 (pas de
+// double marge). window.Capacitor est injecté dès le début du document
+// (addDocumentStartJavaScript). Navigateur et PWA iOS : inchangés.
+const nativeViewport = `(function(){try{var C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return;document.documentElement.classList.add('cap-native');var m=document.querySelectorAll('meta[name=viewport]');for(var i=0;i<m.length;i++){m[i].setAttribute('content',(m[i].getAttribute('content')||'').replace(/,?\\s*viewport-fit=cover/,''));}}catch(e){}})();`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script dangerouslySetInnerHTML={{ __html: nativeViewport }} />
       </head>
       <body>
         <CosmicBackground />

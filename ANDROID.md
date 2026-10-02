@@ -117,3 +117,19 @@ plugin local `AsrarNative` (`AsrarNativePlugin.java`) et n'enregistre les
 push natives que si Firebase est prêt. Pour activer les push : télécharger
 `google-services.json` (Firebase → app Android `com.Asrar`), le placer dans
 `android/app/`, puis reconstruire.
+
+## Barre de statut / safe-area
+
+`app/layout.js` (script `nativeViewport`) retire `viewport-fit=cover` de la
+balise viewport quand la page tourne dans l'app (window.Capacitor natif).
+Capacitor 8 (SystemBars) décale alors la WebView entre la barre de statut et
+la barre gestuelle sur toutes les WebView : aucune page ne passe sous l'heure,
+sans gestion de safe-area page par page. Côté site : actif dès le
+déploiement, sans nouvel APK.
+
+## Bouton retour
+
+Capacitor 8 sans `@capacitor/app` ne gère pas le retour Android (l'app se
+fermait). `MainActivity.java` le gère : historique de la WebView, sinon
+retour à l'accueil, puis double appui pour quitter. **Code natif : nécessite
+un nouvel APK/AAB** (incrémenter `versionCode`).
