@@ -203,10 +203,9 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
               <button
                 type="button"
                 className="pm-vendor-btn"
-                onClick={() => {
-                  onVisitShop(vendor.id);
-                  onClose();
-                }}
+                // Le parent ferme la fiche PUIS ouvre la boutique (ordre géré
+                // avec l'historique, cf. app/page.tsx visitShopFromModal).
+                onClick={() => onVisitShop(vendor.id)}
               >
                 Visiter
               </button>

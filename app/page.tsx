@@ -180,6 +180,13 @@ export default function Home() {
   );
 
   // Boot : charge produits, vendeurs, popularité, likes boutiques, deep link.
+  // Fond violet propre au Marché (marche.css, body.market-body) — retiré en
+  // quittant la page pour ne pas colorer les autres modules.
+  useEffect(() => {
+    document.body.classList.add('market-body');
+    return () => document.body.classList.remove('market-body');
+  }, []);
+
   useEffect(() => {
     if (bootRef.current) return;
     bootRef.current = true;
@@ -299,6 +306,23 @@ export default function Home() {
   const closeVendorShop = useCallback(() => setVendorShopId(null), []);
   // Backpress Android : ferme la fiche boutique (pas de vraie navigation de page ici).
   const goBackFromShop = useHistoryClose(!!shopVendor, closeVendorShop);
+
+  // Fiche produit : même mécanique (retour Android = fermer la fiche). « Visiter
+  // la boutique » depuis la fiche ferme d'abord la fiche par l'historique,
+  // puis ouvre la boutique une fois le retour traité — sinon l'entrée de la
+  // fiche resterait sous celle de la boutique (un retour « pour rien »).
+  const shopAfterModalRef = useRef<string | null>(null);
+  const closeModal = useCallback(() => {
+    setModalProduct(null);
+    const id = shopAfterModalRef.current;
+    shopAfterModalRef.current = null;
+    if (id) openVendorShop(id);
+  }, [openVendorShop]);
+  const goBackFromModal = useHistoryClose(!!modalProduct, closeModal);
+  const visitShopFromModal = useCallback((id: string) => {
+    shopAfterModalRef.current = id;
+    goBackFromModal();
+  }, [goBackFromModal]);
 
   return (
     <div className="container market-page">
@@ -548,8 +572,8 @@ export default function Home() {
         <ProductModal
           product={modalProduct}
           vendor={modalVendor}
-          onClose={() => setModalProduct(null)}
-          onVisitShop={openVendorShop}
+          onClose={goBackFromModal}
+          onVisitShop={visitShopFromModal}
         />
       )}
 
