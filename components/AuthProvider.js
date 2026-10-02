@@ -19,6 +19,7 @@ import { auth } from '@/lib/firebase';
 import { captureRef, claimRef } from '@/lib/share';
 import { ensurePushRegistration } from '@/lib/push';
 import { ensureNativePushRegistration } from '@/lib/fcmNative';
+import { isNativeApp, signInWithGoogleNative, signOutGoogleNative } from '@/lib/googleNative';
 
 const AuthCtx = createContext({ user: null, loading: true, signOut: () => {} });
 export const useAuth = () => useContext(AuthCtx);
@@ -29,6 +30,7 @@ const ERR = {
   'auth/cancelled-popup-request': 'Connexion annulée.',
   'auth/network-request-failed': 'Problème de connexion réseau.',
   'auth/too-many-requests': 'Trop de tentatives. Réessayez plus tard.',
+  'auth/native-google-failed': 'Connexion Google impossible sur cet appareil. Réessayez.',
 };
 const translateError = (code) => ERR[code] || 'Une erreur est survenue. (' + code + ')';
 
@@ -64,6 +66,15 @@ export default function AuthProvider({ children }) {
   function loginGoogle() {
     setError('');
     setStatus('Connexion en cours…');
+    // App Android (Capacitor) : popup/redirect Firebase inutilisables dans
+    // la WebView — sélecteur de compte natif à la place (lib/googleNative.js).
+    if (isNativeApp()) {
+      signInWithGoogleNative(auth).catch((e) => {
+        setStatus('');
+        setError(translateError(e && e.code));
+      });
+      return;
+    }
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     signInWithPopup(auth, provider).catch((e) => {
@@ -84,7 +95,10 @@ export default function AuthProvider({ children }) {
     });
   }
 
-  const signOut = () => fbSignOut(auth);
+  const signOut = () => {
+    signOutGoogleNative();
+    return fbSignOut(auth);
+  };
 
   if (loading) {
     return (
