@@ -120,12 +120,17 @@ push natives que si Firebase est prêt. Pour activer les push : télécharger
 
 ## Barre de statut / safe-area
 
-`app/layout.js` (script `nativeViewport`) retire `viewport-fit=cover` de la
-balise viewport quand la page tourne dans l'app (window.Capacitor natif).
-Capacitor 8 (SystemBars) décale alors la WebView entre la barre de statut et
-la barre gestuelle sur toutes les WebView : aucune page ne passe sous l'heure,
-sans gestion de safe-area page par page. Côté site : actif dès le
-déploiement, sans nouvel APK.
+Gérée en **natif** (APK ≥ 7.9.1) : `MainActivity.applySystemBarInsets()`
+place la WebView entre la barre de statut (heure, réseau, batterie, encoche)
+et la barre de navigation (≡ ○ ↩ / barre gestuelle) avec les insets réels de
+l'appareil — clavier compris — et remet les insets transmis à la page à 0
+(`env(safe-area-inset-*)` = 0, pas de double marge). Capacitor SystemBars
+est désactivé pour les insets (`capacitor.config.ts`), icônes système
+claires sur fond `#0D0819` (`res/values/styles.xml`, `colors.xml`).
+
+Pour les APK plus anciens déjà installés, `app/layout.js` (script
+`nativeViewport`) retire `viewport-fit=cover` dans l'app, ce qui fait
+décaler la WebView par Capacitor — actif dès le déploiement du site.
 
 ## Bouton retour
 

@@ -27,6 +27,15 @@ const config: CapacitorConfig = {
     backgroundColor: '#1a1712',
   },
   plugins: {
+    // Safe-area gérée en NATIF par MainActivity (padding = insets système
+    // réels autour de la WebView, sur toutes les pages et toutes les
+    // versions de WebView) : SystemBars ne doit ni décaler ni laisser la
+    // page passer sous les barres selon viewport-fit. style DARK = icônes
+    // claires, assorties au fond violet foncé des barres (styles.xml).
+    SystemBars: {
+      insetsHandling: 'disable',
+      style: 'DARK',
+    },
     PushNotifications: {
       // Les icônes/canaux réels sont créés en JS (lib/fcmNative.js,
       // PushNotifications.createChannel) plutôt qu'ici : on veut pouvoir en
