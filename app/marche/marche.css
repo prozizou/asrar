@@ -167,17 +167,31 @@ h2 {
   --mk-card-shadow: none;
   --mk-price: var(--mk-price-green);
   --mk-fade: #0d0819;
-  --mk-cta-bar: calc(var(--mk-cta-h) + 2 * var(--mk-s2) + env(safe-area-inset-bottom, 0px));
+  /* Safe-area : APK Capacitor 8 → variables --safe-area-inset-* injectées par
+     SystemBars (fiables sur toutes les WebView Android) ; navigateur/PWA →
+     env(). Sur une WebView < 140, Capacitor décale déjà la WebView et
+     injecte 0 : pas de double marge. */
+  --mk-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --mk-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --mk-cta-bar: calc(var(--mk-cta-h) + 2 * var(--mk-s2) + var(--mk-safe-bottom));
   max-width: 1100px;
   /* Haut : dégage la barre de statut / encoche (viewport-fit=cover, cf.
      app/layout.js). Bas : réserve EXACTEMENT la barre « Commencer » fixée
      (+ zone gestuelle), plus un petit souffle — pas de grand vide. */
-  padding: calc(var(--mk-s2) + env(safe-area-inset-top, 0px)) var(--mk-gutter) calc(var(--mk-cta-bar) + var(--mk-s1));
+  padding: calc(var(--mk-s2) + var(--mk-safe-top)) var(--mk-gutter) calc(var(--mk-cta-bar) + var(--mk-s1));
 }
 
 /* Fond « premium dark violet » propre au Marché (mode sombre seulement) :
-   violet très profond + halo discret en haut. :has() limite l'effet aux
-   pages qui affichent le marché. */
+   violet très profond + halo discret en haut. Classe posée sur <body> par
+   app/page.tsx (pas de :has(), absent des WebView Android < 105). */
+html:not([data-theme="light"]) body.market-body {
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
+    #0d0819;
+  background-attachment: fixed;
+}
+/* Même fond dès le premier rendu (avant l'hydratation) là où :has() existe —
+   règle SÉPARÉE : dans une liste, un :has() inconnu invaliderait tout. */
 html:not([data-theme="light"]) body:has(.container.market-page) {
   background:
     radial-gradient(120% 60% at 50% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
@@ -208,6 +222,7 @@ html[data-theme="light"] .container.market-page {
   --mk-price: #15803d;
   --mk-fade: #f5f3ff;
 }
+html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); background: color-mix(in srgb, var(--mk-fade) 86%, transparent); }
 
 /* En-tête : titre + sous-titre à gauche, icône colis à droite. */
 .market-header {
@@ -644,7 +659,10 @@ html[data-theme="light"] .container.market-page {
   right: 0;
   bottom: 0;
   z-index: 60; /* sous .pm-overlay (100) : une fiche ouverte reste au-dessus */
-  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s2) + env(safe-area-inset-bottom, 0px));
+  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s2) + var(--mk-safe-bottom));
+  /* Repli opaque d'abord : color-mix() n'existe qu'à partir de Chrome 111
+     (WebView Android anciennes) — sans lui la barre devenait transparente. */
+  background: rgba(13, 8, 25, 0.94);
   background: color-mix(in srgb, var(--mk-fade) 86%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);

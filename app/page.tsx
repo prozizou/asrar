@@ -180,6 +180,13 @@ export default function Home() {
   );
 
   // Boot : charge produits, vendeurs, popularité, likes boutiques, deep link.
+  // Fond violet propre au Marché (marche.css, body.market-body) — retiré en
+  // quittant la page pour ne pas colorer les autres modules.
+  useEffect(() => {
+    document.body.classList.add('market-body');
+    return () => document.body.classList.remove('market-body');
+  }, []);
+
   useEffect(() => {
     if (bootRef.current) return;
     bootRef.current = true;
