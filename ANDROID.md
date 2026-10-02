@@ -56,8 +56,8 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- Version actuelle du projet : `versionCode 99` / `versionName "7.8"`
-  (la dernière publiée était 98 / 7.7). Incrémenter `versionCode` à chaque
+- Version actuelle du projet : `versionCode 100` / `versionName "7.9"`
+  (la dernière publiée était 99 / 7.8). Incrémenter `versionCode` à chaque
   envoi.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
