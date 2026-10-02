@@ -11,7 +11,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // lib/fcmNative.js, chargé UNIQUEMENT quand Capacitor.isNativePlatform() est
 // vrai (donc jamais exécuté sur le site web normal).
 const config: CapacitorConfig = {
-  appId: 'com.asrarpro.app',
+  appId: 'com.Asrar',
   appName: 'ASRAR PRO',
   webDir: 'public', // non utilisé pour charger l'app (voir server.url), mais requis par le schéma Capacitor.
   server: {

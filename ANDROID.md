@@ -51,14 +51,22 @@ zipalign -p 4 app-release-unsigned.apk aligned.apk
 apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk aligned.apk
 ```
 
-Avant chaque nouvel envoi sur le Play Store, incrémenter `versionCode`
-(et `versionName`) dans `android/app/build.gradle`.
+## Play Store
+
+- Package publié : **`com.Asrar`** (`applicationId` dans
+  `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
+  jamais le modifier, sinon le Play Store le traite comme une autre app.
+- Version actuelle du projet : `versionCode 99` / `versionName "7.8"`
+  (la dernière publiée était 98 / 7.7). Incrémenter `versionCode` à chaque
+  envoi.
+- L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
+  pour `com.Asrar` dans la Play Console.
 
 ## Notifications push natives
 
 `lib/fcmNative.js` utilise Firebase Cloud Messaging : déposer le
 `google-services.json` du projet Firebase (application Android
-`com.asrarpro.app`) dans `android/app/`. Sans ce fichier l'application
+`com.Asrar`) dans `android/app/`. Sans ce fichier l'application
 fonctionne, mais sans push natives.
 
 ## Icônes / écran de démarrage
