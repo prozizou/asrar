@@ -95,3 +95,13 @@ projet → application Android `com.Asrar` → « Ajouter une empreinte » :
 
 Ce code JS est servi par le site : la correction n'est active dans l'app
 qu'une fois le site redéployé sur www.asrarpro.com.
+
+## Plantage après connexion (push sans google-services.json)
+
+`PushNotifications.register()` plante l'app (exception native relancée par
+Capacitor) si Firebase n'est pas initialisé, c.-à-d. sans
+`android/app/google-services.json`. `lib/fcmNative.js` interroge d'abord le
+plugin local `AsrarNative` (`AsrarNativePlugin.java`) et n'enregistre les
+push natives que si Firebase est prêt. Pour activer les push : télécharger
+`google-services.json` (Firebase → app Android `com.Asrar`), le placer dans
+`android/app/`, puis reconstruire.
