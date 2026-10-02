@@ -93,6 +93,18 @@ projet → application Android `com.Asrar` → « Ajouter une empreinte » :
   dans Play Console → Intégrité de l'application (c'est elle qui signe
   l'app installée depuis le Play Store).
 
+  ⚠️ Sans cette 2e empreinte, l'app installée depuis le Play Store échoue
+  avec « Google Sign-In failed: [16] Account reauth failed » (ou [10] /
+  28444), alors que l'APK signé localement fonctionne. Vérifier dans
+  `android/app/google-services.json` : chaque empreinte déclarée apparaît
+  en `certificate_hash` d'un `oauth_client` de type 1. Aucune
+  recompilation n'est nécessaire après l'ajout (la vérification se fait
+  côté Google), compter quelques minutes de propagation.
+- Écran de consentement OAuth (Google Cloud → API et services → Écran de
+  consentement) : statut de publication **En production** — en mode
+  « Test », seuls les utilisateurs de test peuvent se connecter (même
+  erreur [16] pour tous les autres).
+
 Ce code JS est servi par le site : la correction n'est active dans l'app
 qu'une fois le site redéployé sur www.asrarpro.com.
 
