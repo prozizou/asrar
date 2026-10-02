@@ -56,8 +56,8 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- Version actuelle du projet : `versionCode 100` / `versionName "7.9"`
-  (la dernière publiée était 99 / 7.8). Incrémenter `versionCode` à chaque
+- Version actuelle du projet : `versionCode 101` / `versionName "7.9.1"`
+  (100 / 7.9 déjà envoyée). Incrémenter `versionCode` à chaque
   envoi.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
@@ -93,6 +93,18 @@ projet → application Android `com.Asrar` → « Ajouter une empreinte » :
   dans Play Console → Intégrité de l'application (c'est elle qui signe
   l'app installée depuis le Play Store).
 
+  ⚠️ Sans cette 2e empreinte, l'app installée depuis le Play Store échoue
+  avec « Google Sign-In failed: [16] Account reauth failed » (ou [10] /
+  28444), alors que l'APK signé localement fonctionne. Vérifier dans
+  `android/app/google-services.json` : chaque empreinte déclarée apparaît
+  en `certificate_hash` d'un `oauth_client` de type 1. Aucune
+  recompilation n'est nécessaire après l'ajout (la vérification se fait
+  côté Google), compter quelques minutes de propagation.
+- Écran de consentement OAuth (Google Cloud → API et services → Écran de
+  consentement) : statut de publication **En production** — en mode
+  « Test », seuls les utilisateurs de test peuvent se connecter (même
+  erreur [16] pour tous les autres).
+
 Ce code JS est servi par le site : la correction n'est active dans l'app
 qu'une fois le site redéployé sur www.asrarpro.com.
 
@@ -105,3 +117,34 @@ plugin local `AsrarNative` (`AsrarNativePlugin.java`) et n'enregistre les
 push natives que si Firebase est prêt. Pour activer les push : télécharger
 `google-services.json` (Firebase → app Android `com.Asrar`), le placer dans
 `android/app/`, puis reconstruire.
+
+## Barre de statut / safe-area
+
+Gérée en **natif** (APK ≥ 7.9.1) : `MainActivity.applySystemBarInsets()`
+place la WebView entre la barre de statut (heure, réseau, batterie, encoche)
+et la barre de navigation (≡ ○ ↩ / barre gestuelle) avec les insets réels de
+l'appareil — clavier compris — et remet les insets transmis à la page à 0
+(`env(safe-area-inset-*)` = 0, pas de double marge). Capacitor SystemBars
+est désactivé pour les insets (`capacitor.config.ts`), icônes système
+claires sur fond `#0D0819` (`res/values/styles.xml`, `colors.xml`).
+
+Pour les APK plus anciens déjà installés, `app/layout.js` (script
+`nativeViewport`) retire `viewport-fit=cover` dans l'app, ce qui fait
+décaler la WebView par Capacitor — actif dès le déploiement du site.
+
+## Bouton retour
+
+Capacitor 8 sans `@capacitor/app` ne gère pas le retour Android (l'app se
+fermait). `MainActivity.java` le gère : historique de la WebView, sinon
+retour à l'accueil, puis double appui pour quitter. **Code natif : nécessite
+un nouvel APK/AAB** (incrémenter `versionCode`).
+
+## Localisation (GPS)
+
+Planète et Géomancie utilisent `navigator.geolocation` dans la WebView.
+Capacitor demande la permission à l'exécution, mais seulement si
+`ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` sont déclarées dans
+`AndroidManifest.xml` — sinon refus immédiat sans dialogue (« Accès GPS
+refusé »). Nécessite un nouvel APK/AAB. Play Console : déclarer la
+localisation (approximative et précise, premier plan) dans la section
+« Sécurité des données ».

@@ -228,7 +228,11 @@ export default function PlanetePage() {
         clearTimeout(timeoutId);
         const msg =
           err && err.code === 1
-            ? 'Accès GPS refusé. Autorisez la localisation puis réessayez.'
+            ? // App Android : après un refus, Android ne redemande plus — il
+              // faut passer par les paramètres de l'application.
+              (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()
+                ? 'Accès GPS refusé. Activez la localisation pour ASRAR PRO dans Paramètres > Applications > ASRAR PRO > Autorisations, puis réessayez.'
+                : 'Accès GPS refusé. Autorisez la localisation puis réessayez.')
             : 'Position GPS indisponible. Réessayez en extérieur.';
         setGeo((g) => ({ ...g, ready: false, error: msg }));
       },
