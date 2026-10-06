@@ -36,7 +36,7 @@ on:
         options: [internal, alpha, beta, production]
         default: internal
       upload:
-        description: Envoyer l'AAB sur la Play Console (sinon : artefact seulement)
+        description: "Envoyer l'AAB sur la Play Console (sinon, artefact seulement)"
         type: boolean
         default: false
 
