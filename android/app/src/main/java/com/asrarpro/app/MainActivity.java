@@ -1,17 +1,32 @@
 package com.asrarpro.app;
 
+import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.UpdateAvailability;
 
 public class MainActivity extends BridgeActivity {
 
     // Délai pendant lequel un 2e appui sur retour quitte l'application.
     private static final long EXIT_WINDOW_MS = 2000;
     private long lastBackAt = 0;
+
+    // Mise à jour Google Play (In-App Updates) : vérifiée à l'ouverture et au
+    // retour au premier plan. Ne concerne que l'app native (le site chargé dans
+    // la WebView se met à jour seul, via Vercel). Sans effet hors Play Store.
+    private AppUpdateManager appUpdateManager;
+    // Mise à jour refusée par l'utilisateur : on ne la reproposera pas avant le
+    // prochain lancement de l'app.
+    private boolean updateDeclined = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -58,5 +73,34 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkForPlayUpdate();
+    }
+
+    private void checkForPlayUpdate() {
+        if (updateDeclined) return;
+        if (appUpdateManager == null) {
+            appUpdateManager = AppUpdateManagerFactory.create(this);
+        }
+        appUpdateManager
+            .getAppUpdateInfo()
+            .addOnSuccessListener((AppUpdateInfo info) -> {
+                int availability = info.updateAvailability();
+                boolean pending =
+                    availability == UpdateAvailability.UPDATE_AVAILABLE
+                        || availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS;
+                if (!pending || !info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) return;
+                appUpdateManager
+                    .startUpdateFlow(info, this, AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build())
+                    .addOnSuccessListener((Integer result) -> {
+                        if (result != Activity.RESULT_OK) updateDeclined = true;
+                    });
+            })
+            // Pas installée depuis le Play Store (APK de test…) ou Play indisponible : on ignore.
+            .addOnFailureListener(e -> { });
     }
 }
