@@ -71,10 +71,21 @@ export default function AuthProvider({ children }) {
     if (isNativeApp()) {
       signInWithGoogleNative(auth).catch((e) => {
         setStatus('');
-        // Message natif ajouté pour le diagnostic (SHA-1 non déclarée,
-        // compte supervisé…) — sinon l'erreur reste opaque sur l'appareil.
-        const base = translateError(e && e.code);
-        setError(e && e.detail ? base + ' (' + e.detail + ')' : base);
+        // Le message brut du plugin (long, en anglais) n'est plus affiché :
+        // il part dans la console (Logcat « Capacitor/Console ») et l'écran
+        // ne montre que le code Google entre crochets, ex. « (code 16) ».
+        // [10]/[16]/28444 = configuration Google Cloud (SHA-1 de la clé de
+        // signature Play non déclarée, écran de consentement en mode Test…),
+        // pas une erreur de l'utilisateur — cf. ANDROID.md.
+        const detail = (e && e.detail) || '';
+        if (detail) console.warn('[googleNative]', detail);
+        const m = detail.match(/\[(\d+)\]|\b(28444)\b/);
+        const code = m ? m[1] || m[2] : '';
+        const config = /^(10|16|28444)$/.test(code) || /developer console|reauth/i.test(detail);
+        const base = config
+          ? 'Connexion Google momentanément indisponible dans l\'application. Réessayez plus tard ou connectez-vous sur www.asrarpro.com.'
+          : translateError(e && e.code);
+        setError(code ? base + ' (code ' + code + ')' : base);
       });
       return;
     }

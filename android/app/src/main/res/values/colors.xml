@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Zones système (barre de statut, barre de navigation) — même violet
+         que le fond du Marché (app/marche/marche.css, #0d0819). -->
+    <color name="asrar_system_bars">#0D0819</color>
+</resources>

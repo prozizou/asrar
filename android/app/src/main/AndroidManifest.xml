@@ -32,4 +32,15 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Localisation (Planète, Géomancie : navigator.geolocation dans la
+         WebView). Capacitor (BridgeWebChromeClient) demande ces permissions
+         à l'exécution, mais Android refuse sans afficher de dialogue celles
+         qui ne sont pas déclarées ici → « Accès GPS refusé ». Premier plan
+         uniquement (pas de ACCESS_BACKGROUND_LOCATION). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Ne pas exclure du Play Store les appareils sans GPS matériel. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
 </manifest>
