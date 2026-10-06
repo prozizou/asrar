@@ -23,9 +23,9 @@ android {
         applicationId "com.Asrar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Play Store : dernière version publiée = 99 (7.8). Incrémenter
+        // Play Store : dernière version déjà utilisée = 100. Incrémenter
         // versionCode à CHAQUE envoi (il doit toujours augmenter).
-        versionCode 100
+        versionCode 101
         versionName "7.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
