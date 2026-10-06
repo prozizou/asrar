@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
+import { useHistoryClose } from '@/components/useHistoryClose';
 import SpinnerUntyped from '@/components/Spinner';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import {
@@ -37,11 +38,20 @@ const Spinner = SpinnerUntyped as any;
 type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
 type Mothers = Figure[]; // les 4 Mères
 
-const SHIELD_ROWS = [
-  { indices: [7, 6, 5, 4, 3, 2, 1, 0], cls: 'shield-row w-100' },
-  { indices: [11, 10, 9, 8], cls: 'shield-row w-80' },
-  { indices: [13, 12], cls: 'shield-row w-40' },
-  { indices: [14, 15], cls: 'row-last' },
+// Écu sur une grille de 16 colonnes : chaque maison occupe 2 colonnes (même
+// largeur partout). `col` = colonne de départ, `row` = ligne ; `drop` décale la
+// maison vers le bas (décalage vertical du modèle). Index = numéro de maison - 1.
+const SHIELD_LAYOUT: { idx: number; col: number; row: number; drop?: boolean }[] = [
+  // Ligne 1 : M8 → M1
+  ...[7, 6, 5, 4, 3, 2, 1, 0].map((idx, i) => ({ idx, col: 1 + i * 2, row: 1 })),
+  // Ligne 2 : M12 → M9, chacune centrée sous deux maisons de la ligne 1
+  ...[11, 10, 9, 8].map((idx, i) => ({ idx, col: 2 + i * 4, row: 2 })),
+  // Ligne 3 : M14 à gauche, M13 à droite
+  { idx: 13, col: 4, row: 3 },
+  { idx: 12, col: 12, row: 3 },
+  // Ligne 4 : M15 centre-gauche, M16 à droite et plus bas
+  { idx: 14, col: 6, row: 4 },
+  { idx: 15, col: 11, row: 4, drop: true },
 ];
 
 function MiniFigure({ fig }: { fig: Figure }) {
@@ -72,11 +82,20 @@ export default function GeomanciePage() {
   const [calculating, setCalculating] = useState(false);
   const [fbData, setFbData] = useState<any[]>([]);
   const [activeFig, setActiveFig] = useState<string | null>(null);
+  const [view, setView] = useState<'mothers' | 'ecu'>('mothers');
   const [modalIndex, setModalIndex] = useState<number | null>(null);
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const houses = useMemo<any[]>(() => generateAllHouses(mothers), [mothers]);
+  const backToMothers = useCallback(() => {
+    setView('mothers');
+    setCalculated(false);
+    setActiveFig(null);
+    setModalIndex(null);
+  }, []);
+  const goBackToMothers = useHistoryClose(view === 'ecu', backToMothers);
+
   const synth = calculated ? synthesis(houses) : null;
   const parity = calculated ? checkJudgeParity(houses) : null;
 
@@ -129,6 +148,7 @@ export default function GeomanciePage() {
       if (!fbData || fbData.length === 0) await fetchFirebaseData();
       setCalculated(true);
       setActiveFig(null);
+      setView('ecu');
     } finally {
       setCalculating(false);
     }
@@ -170,115 +190,110 @@ export default function GeomanciePage() {
     }
   };
 
+  const onEcu = view === 'ecu' && calculated;
+
   return (
     <div className="geo-page">
       <div className="app-container">
-        <Link href="/" className="geo-back">
-          ← Retour
-        </Link>
+        {onEcu ? (
+          <button type="button" className="geo-back" onClick={goBackToMothers}>
+            ← Les 4 Mères
+          </button>
+        ) : (
+          <Link href="/" className="geo-back">
+            ← Retour
+          </Link>
+        )}
 
         <header className="header">
-          <span className="eyebrow">Asrar Pro</span>
-          <h1>Géomancie</h1>
+          <span className="eyebrow">Asrar Pro · Géomancie</span>
+          <h1>{onEcu ? 'Écu Géomantique' : 'Les 4 Mères'}</h1>
         </header>
 
-        {/* Les Quatre Mères */}
-        <div className="panel">
-          <h2>Les 4 Mères</h2>
-          <div className="mothers-grid">
-            {mothers.map((fig, mi) => (
-              <div className="mother-card" key={mi}>
-                <div className="mother-label">Mère {mi + 1}</div>
-                <div className="figure-display">
-                  {fig.map((count, ri) => (
-                    <div
-                      className={'dot-row' + (count === 2 ? ' double-row' : '')}
-                      key={ri}
-                      onClick={() => toggleMotherRow(mi, ri)}
-                    >
-                      {Array.from({ length: count }).map((_, d) => (
-                        <span className="dot" key={d} />
-                      ))}
-                    </div>
-                  ))}
+        {!onEcu && (
+          <div className="panel">
+            <div className="mothers-grid">
+              {mothers.map((fig, mi) => (
+                <div className="mother-card" key={mi}>
+                  <div className="mother-label">Mère {mi + 1}</div>
+                  <div className="figure-display">
+                    {fig.map((count, ri) => (
+                      <div
+                        className={'dot-row' + (count === 2 ? ' double-row' : '')}
+                        key={ri}
+                        onClick={() => toggleMotherRow(mi, ri)}
+                      >
+                        {Array.from({ length: count }).map((_, d) => (
+                          <span className="dot" key={d} />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="btn-row">
+              <button className="btn primary" onClick={onCalculate} disabled={calculating}>
+                {calculating ? (
+                  <>
+                    <Spinner /> Calcul…
+                  </>
+                ) : (
+                  "Calculer l'Écu"
+                )}
+              </button>
+              <button className="btn" onClick={onRandom}>
+                Aléatoire
+              </button>
+              <button className="btn" onClick={onReset}>
+                Réinitialiser
+              </button>
+            </div>
+          </div>
+        )}
+
+        {onEcu && (
+          <div className="panel">
+            <div className="shield-grid">
+              {SHIELD_LAYOUT.map(({ idx, col, row, drop }) => (
+                <HouseCell
+                  key={idx}
+                  idx={idx}
+                  fig={houses[idx]}
+                  fbData={fbData}
+                  active={activeFig != null && figToKey(houses[idx]) === activeFig}
+                  onOpen={openHouseModal}
+                  style={{ gridColumn: `${col} / span 2`, gridRow: row, marginTop: drop ? 'var(--drop)' : undefined }}
+                />
+              ))}
+            </div>
+
+            {parity && (
+              <div className="parity-wrap">
+                {parity.even ? (
+                  <span className="parity-badge ok">Parité du Juge : {parity.total} points (paire)</span>
+                ) : (
+                  <span className="parity-badge warn">Anomalie de parité détectée</span>
+                )}
+              </div>
+            )}
+
+            {synth && (
+              <div className="synthesis-container">
+                <div className="synthesis-card" onClick={() => highlightFigure(synth.voeuKey)}>
+                  <h4>Le vœu</h4>
+                  <MiniFigure fig={synth.voeuFig} />
+                  <p>{getCleanName(synth.voeuKey, fbData)}</p>
+                </div>
+                <div className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
+                  <h4>Figure de Repérage</h4>
+                  <MiniFigure fig={synth.repFig} />
+                  <p>{getCleanName(synth.repKey, fbData)}</p>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="btn-row">
-            <button className="btn primary" onClick={onCalculate} disabled={calculating}>
-              {calculating ? (
-                <>
-                  <Spinner /> Calcul…
-                </>
-              ) : (
-                "Calculer l'Écu"
-              )}
-            </button>
-            <button className="btn" onClick={onRandom}>
-              Aléatoire
-            </button>
-            <button className="btn" onClick={onReset}>
-              Réinitialiser
-            </button>
-          </div>
-        </div>
-
-        {/* L'Écu */}
-        <div className="panel">
-          <h2>Écu Géomantique</h2>
-          <div className="shield-container">
-            {calculating ? (
-              <p className="placeholder-text">
-                <Spinner /> Calcul de l'écu en cours…
-              </p>
-            ) : !calculated ? (
-              <p className="placeholder-text">
-                Saisissez les Mères et cliquez sur <strong>Calculer l'Écu</strong>.
-              </p>
-            ) : (
-              SHIELD_ROWS.map((rowDef, ri) => (
-                <div className={rowDef.cls} key={ri}>
-                  {rowDef.indices.map((idx) => (
-                    <HouseCell
-                      key={idx}
-                      idx={idx}
-                      fig={houses[idx]}
-                      fbData={fbData}
-                      active={activeFig != null && figToKey(houses[idx]) === activeFig}
-                      onOpen={openHouseModal}
-                    />
-                  ))}
-                </div>
-              ))
             )}
           </div>
-
-          {parity && (
-            <div className="parity-wrap">
-              {parity.even ? (
-                <span className="parity-badge ok">Parité du Juge : {parity.total} points (paire)</span>
-              ) : (
-                <span className="parity-badge warn">Anomalie de parité détectée</span>
-              )}
-            </div>
-          )}
-
-          {synth && (
-            <div className="synthesis-container">
-              <div className="synthesis-card" onClick={() => highlightFigure(synth.voeuKey)}>
-                <h4>Le vœu</h4>
-                <MiniFigure fig={synth.voeuFig} />
-                <p>{getCleanName(synth.voeuKey, fbData)}</p>
-              </div>
-              <div className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
-                <h4>Figure de Repérage</h4>
-                <MiniFigure fig={synth.repFig} />
-                <p>{getCleanName(synth.repKey, fbData)}</p>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {modalIndex != null && (
@@ -290,14 +305,14 @@ export default function GeomanciePage() {
   );
 }
 
-function HouseCell({ idx, fig, fbData, active, onOpen }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void }) {
+function HouseCell({ idx, fig, fbData, active, onOpen, style }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void; style?: React.CSSProperties }) {
   const cls =
     'house-cell' +
     (idx === 14 ? ' judge-cell' : '') +
     (idx === 15 ? ' sentence-cell' : '') +
     (active ? ' voie-active' : '');
   return (
-    <div className={cls} onClick={() => onOpen(idx)}>
+    <div className={cls} style={style} onClick={() => onOpen(idx)}>
       <div className="house-num">M{idx + 1}</div>
       <MiniFigure fig={fig} />
       <div className="fig-name">{getCleanName(figToKey(fig), fbData)}</div>

@@ -58,6 +58,10 @@ html[data-theme='light'] .geo-page {
 
 .geo-page .geo-back {
   align-self: flex-start;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
   color: var(--text2);
   font-size: 0.875rem;
   text-decoration: none;
@@ -133,16 +137,17 @@ html[data-theme='light'] .geo-page {
 .geo-page .btn.primary:hover { background: var(--gold2); border-color: var(--gold2); }
 html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
 
-/* Écu */
-.geo-page .shield-container { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.geo-page .shield-row { display: flex; gap: 4px; justify-content: center; width: 100%; margin-bottom: 4px; }
-.geo-page .w-100 { width: 100%; }
-.geo-page .w-80 { width: 80%; }
-.geo-page .w-40 { width: 45%; }
-.geo-page .row-last { display: flex; justify-content: center; gap: 4px; width: 100%; }
+/* Écu : grille de 16 colonnes, chaque maison occupe 2 colonnes (voir SHIELD_LAYOUT) */
+.geo-page .shield-grid {
+  --drop: 34px; /* décalage vertical de M16 */
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 10px 0;
+  align-items: start;
+}
 
 .geo-page .house-cell {
-  flex: 1 1 0;
+  margin: 0 2px;
   min-width: 0;
   background: var(--surface2);
   border-radius: 10px;
@@ -156,8 +161,6 @@ html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
 .geo-page .house-cell.voie-active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 22%, transparent); }
 .geo-page .house-cell.judge-cell,
 .geo-page .house-cell.sentence-cell { border-color: color-mix(in srgb, var(--gold) 60%, transparent); }
-.geo-page .house-cell.judge-cell { max-width: 25%; }
-.geo-page .house-cell.sentence-cell { max-width: 25%; }
 .geo-page .house-num { font-size: 0.62rem; color: var(--text2); font-weight: 700; margin-bottom: 3px; }
 .geo-page .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-page .mini-row { display: flex; gap: 3px; justify-content: center; }
@@ -186,7 +189,6 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
 .geo-page .synthesis-card h4 { font-size: 0.8rem; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
 .geo-page .synthesis-card p { font-size: 0.88rem; color: var(--text); margin-top: 8px; font-weight: 700; }
 
-.geo-page .placeholder-text { color: var(--text2); text-align: center; padding: 20px 8px; font-size: 0.9rem; }
 
 /* Modale (rendue hors de .geo-page dans le flux React → styles globaux préfixés) */
 .geo-modal-overlay {
