@@ -1,0 +1,110 @@
+# Construit l'AAB release signé d'ASRAR PRO et, si demandé, l'envoie sur la
+# Play Console.
+#
+# À LANCER SEULEMENT quand la partie NATIVE change (android/, plugins
+# Capacitor, permissions, targetSdk…) : l'app charge https://www.asrarpro.com
+# (capacitor.config.ts), donc une mise à jour du site se déploie via Vercel
+# sans nouvel AAB. Voir ANDROID.md.
+#
+# Déclenchement :
+#   - tag `android-v*` (ex. git tag android-v7.9 && git push --tags) → build +
+#     envoi sur la piste « internal » ;
+#   - manuel (Actions → Android release → Run workflow) : choix de la piste,
+#     envoi activable/désactivable.
+#
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#   ANDROID_KEYSTORE_BASE64    prozizou.jks encodé en base64 (base64 -w0 prozizou.jks)
+#   ANDROID_KEYSTORE_PASSWORD  mot de passe du keystore
+#   ANDROID_KEY_ALIAS          alias de la clé (prozizou)
+#   ANDROID_KEY_PASSWORD       mot de passe de la clé
+#   PLAY_SERVICE_ACCOUNT_JSON  JSON du compte de service Google Play (API
+#                              Android Publisher), droit « Publier » sur com.Asrar
+#
+# Rappel : incrémenter `versionCode` dans android/app/build.gradle AVANT de
+# taguer — Google refuse un versionCode déjà utilisé.
+
+name: Android release
+
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Piste Play Store
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      upload:
+        description: "Envoyer l'AAB sur la Play Console (sinon, artefact seulement)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Dépendances Node
+        run: npm ci
+
+      - name: Keystore de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant : l'AAB ne serait pas signé."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/prozizou.jks
+
+      - name: Build AAB release
+        env:
+          # Chemin relatif au dossier android/ (cf. android/app/build.gradle).
+          ASRAR_KEYSTORE_FILE: prozizou.jks
+          ASRAR_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ASRAR_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ASRAR_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: npm run android:aab
+
+      - name: Nettoyage du keystore
+        if: always()
+        run: rm -f android/prozizou.jks
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asrar-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Envoi sur la Play Console
+        if: github.event_name == 'push' || inputs.upload
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.Asrar
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.track || 'internal' }}
+          status: completed
