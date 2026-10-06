@@ -56,9 +56,10 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- Version actuelle du projet : `versionCode 101` / `versionName "7.9"`
-  (le code 100 est déjà utilisé sur la Play Console). Incrémenter `versionCode` à chaque
-  envoi.
+- `versionName "7.9.2"`. Le `versionCode` envoyé par la CI est calculé
+  automatiquement (`100 + numéro d'exécution du workflow`, variable
+  `ASRAR_VERSION_CODE`) : il augmente à chaque build. Dernière version
+  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 102.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
 
@@ -68,7 +69,7 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 l'envoyer sur la Play Console. À utiliser uniquement quand la partie
 native change (le site, lui, se met à jour via Vercel).
 
-1. Incrémenter `versionCode` dans `android/app/build.gradle`, commit.
+1. (`versionCode` est calculé automatiquement par le workflow.)
 2. `git tag android-v7.9 && git push --tags` → build + envoi sur la piste
    `internal`. Ou : Actions → *Android release* → *Run workflow* (piste et
    envoi au choix ; sans envoi, l'AAB reste téléchargeable comme artefact).
