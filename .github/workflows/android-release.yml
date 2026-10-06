@@ -20,7 +20,7 @@
 #   PLAY_SERVICE_ACCOUNT_JSON  JSON du compte de service Google Play (API
 #                              Android Publisher), droit « Publier » sur com.Asrar
 #
-# versionCode : calculé automatiquement par le workflow (minutes depuis 1970).
+# versionCode : calculé automatiquement par le workflow (100 + numéro d'exécution).
 
 name: Android release
 
@@ -86,8 +86,8 @@ jobs:
           ASRAR_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ASRAR_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # versionCode = minutes depuis 1970 : toujours croissant, jamais déjà utilisé.
-          export ASRAR_VERSION_CODE=$(( $(date +%s) / 60 ))
+          # versionCode = 100 + numéro d'exécution : croissant, au-dessus du 101 déjà publié.
+          export ASRAR_VERSION_CODE=$(( 100 + GITHUB_RUN_NUMBER ))
           echo "versionCode=$ASRAR_VERSION_CODE"
           npm run android:aab
 
