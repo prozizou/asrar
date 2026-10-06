@@ -17,7 +17,6 @@ import './geomancie.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
-import { auth } from '@/lib/firebase';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -37,49 +36,6 @@ const Spinner = SpinnerUntyped as any;
 
 type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
 type Mothers = Figure[]; // les 4 Mères
-
-// Clé de consentement distinct (localStorage, par appareil) — voir shareLocation
-// ci-dessous. Choix explicite du terme "share" plutôt que "geo" seul : couvre
-// aussi une éventuelle extension future (ville déclarée, etc.).
-const GEO_CONSENT_KEY = 'geomancie_share_location';
-
-// Arrondit à ~11 km (1 décimale) — assez pour une carte régionale côté admin,
-// sans jamais transmettre de position précise (revue de sécurité, § géoloc).
-function roundApprox(v: number) {
-  return Math.round(v * 10) / 10;
-}
-
-// Journalise l'usage de la géomancie (suivi admin), avec localisation
-// APPROXIMATIVE et SEULEMENT si l'utilisateur l'a explicitement autorisé
-// (`shareLocation`, coché par défaut à FALSE — voir le bouton dédié dans le
-// panneau). Avant ce correctif, `getCurrentPosition` (position PRÉCISE)
-// était appelé automatiquement à chaque calcul, sans consentement séparé de
-// l'accès général à l'app, puis stocké avec uid+email (pages/api/track.js) —
-// revue de sécurité, point P0.
-function logGeomancie(shareLocation: boolean) {
-  const user = auth.currentUser;
-  if (!user) return;
-  const send = (lat: number | null, lng: number | null) =>
-    user
-      .getIdToken()
-      .then((idToken: string) =>
-        fetch('/api/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken, type: 'geomancie', page: 'geomancie', lat, lng }),
-        })
-      )
-      .catch(() => {});
-  if (shareLocation && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (p) => send(roundApprox(p.coords.latitude), roundApprox(p.coords.longitude)),
-      () => send(null, null),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
-    );
-  } else {
-    send(null, null);
-  }
-}
 
 const SHIELD_ROWS = [
   { indices: [7, 6, 5, 4, 3, 2, 1, 0], cls: 'shield-row w-100' },
@@ -120,25 +76,6 @@ export default function GeomanciePage() {
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Consentement distinct pour la localisation (voir logGeomancie) — lu APRÈS
-  // le premier rendu (localStorage indisponible en SSR), donc décoché par
-  // défaut tant que l'effet n'a pas tourné : jamais activé silencieusement.
-  const [shareLocation, setShareLocation] = useState(false);
-  useEffect(() => {
-    try {
-      setShareLocation(localStorage.getItem(GEO_CONSENT_KEY) === 'true');
-    } catch {}
-  }, []);
-  const toggleShareLocation = () => {
-    setShareLocation((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(GEO_CONSENT_KEY, String(next));
-      } catch {}
-      return next;
-    });
-  };
-
   const houses = useMemo<any[]>(() => generateAllHouses(mothers), [mothers]);
   const synth = calculated ? synthesis(houses) : null;
   const parity = calculated ? checkJudgeParity(houses) : null;
@@ -171,14 +108,14 @@ export default function GeomanciePage() {
     try {
       const res = await apiPost('get-theme');
       setFbData(res.data || []);
-      showToast('✨ Données chargées avec succès !');
+      showToast('Données chargées');
       return res.data || [];
     } catch (error: any) {
       if (error && error.status === 403) {
-        showToast('🔒 Géomancie réservée au forfait 1 An (45 000 FCFA).');
+        showToast('Géomancie réservée au forfait 1 An (45 000 FCFA).');
         openGate('level');
       } else {
-        showToast('❌ Échec du chargement (' + (error.message || 'erreur') + ')');
+        showToast('Échec du chargement (' + (error.message || 'erreur') + ')');
       }
       return null;
     }
@@ -192,7 +129,6 @@ export default function GeomanciePage() {
       if (!fbData || fbData.length === 0) await fetchFirebaseData();
       setCalculated(true);
       setActiveFig(null);
-      logGeomancie(shareLocation);
     } finally {
       setCalculating(false);
     }
@@ -208,7 +144,7 @@ export default function GeomanciePage() {
     setMothers(neutralMothers());
     setCalculated(false);
     setActiveFig(null);
-    showToast('🔄 Thème réinitialisé');
+    showToast('Thème réinitialisé');
   };
 
   const openHouseModal = (idx: number) => {
@@ -227,28 +163,28 @@ export default function GeomanciePage() {
     const name = getCleanName(figKey, fbData);
     if (count > 0) {
       setActiveFig(figKey);
-      showToast(`🔍 ${name} présente dans ${count} maison(s)`);
+      showToast(`${name} présente dans ${count} maison(s)`);
     } else {
       setActiveFig(null);
-      showToast(`❌ ${name} absente de l'écu`);
+      showToast(`${name} absente de l'écu`);
     }
   };
 
   return (
     <div className="geo-page">
       <div className="app-container">
-        <Link href="/" className="btn geo-back">
+        <Link href="/" className="geo-back">
           ← Retour
         </Link>
 
-        <div className="header">
-          <h1>✦ Asrar Pro ✦</h1>
-          <p className="subtitle">Géomancie · L'art divinatoire</p>
-        </div>
+        <header className="header">
+          <span className="eyebrow">Asrar Pro</span>
+          <h1>Géomancie</h1>
+        </header>
 
         {/* Les Quatre Mères */}
         <div className="panel">
-          <h2>🌙 Les Quatre Mères Sacrées</h2>
+          <h2>Les 4 Mères</h2>
           <div className="mothers-grid">
             {mothers.map((fig, mi) => (
               <div className="mother-card" key={mi}>
@@ -269,37 +205,28 @@ export default function GeomanciePage() {
               </div>
             ))}
           </div>
-          <div className="btn-row" style={{ marginTop: 14 }}>
+          <div className="btn-row">
             <button className="btn primary" onClick={onCalculate} disabled={calculating}>
               {calculating ? (
                 <>
                   <Spinner /> Calcul…
                 </>
               ) : (
-                "🔮 Calculer l'Écu"
+                "Calculer l'Écu"
               )}
             </button>
             <button className="btn" onClick={onRandom}>
-              🎲 Aléatoire
+              Aléatoire
             </button>
             <button className="btn" onClick={onReset}>
-              🔄 Réinitialiser
+              Réinitialiser
             </button>
           </div>
-
-          {/* Consentement distinct de la géolocalisation (revue de sécurité) —
-              décoché par défaut ; voir logGeomancie/shareLocation ci-dessus. */}
-          <label className="geo-consent-row">
-            <input type="checkbox" checked={shareLocation} onChange={toggleShareLocation} />
-            <span>
-              📍 Partager ma position approximative (statistiques anonymisées, jamais précise)
-            </span>
-          </label>
         </div>
 
         {/* L'Écu */}
         <div className="panel">
-          <h2>🛡️ L'Écu Géomantique</h2>
+          <h2>Écu Géomantique</h2>
           <div className="shield-container">
             {calculating ? (
               <p className="placeholder-text">
@@ -328,11 +255,11 @@ export default function GeomanciePage() {
           </div>
 
           {parity && (
-            <div style={{ textAlign: 'center' }}>
+            <div className="parity-wrap">
               {parity.even ? (
-                <span className="parity-badge ok">✓ Parité du Juge : {parity.total} points (paire)</span>
+                <span className="parity-badge ok">Parité du Juge : {parity.total} points (paire)</span>
               ) : (
-                <span className="parity-badge warn">⚠ Anomalie de Parité détectée</span>
+                <span className="parity-badge warn">Anomalie de parité détectée</span>
               )}
             </div>
           )}
@@ -340,12 +267,12 @@ export default function GeomanciePage() {
           {synth && (
             <div className="synthesis-container">
               <div className="synthesis-card" onClick={() => highlightFigure(synth.voeuKey)}>
-                <h4>🌟 Le vœu</h4>
+                <h4>Le vœu</h4>
                 <MiniFigure fig={synth.voeuFig} />
                 <p>{getCleanName(synth.voeuKey, fbData)}</p>
               </div>
               <div className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
-                <h4>👁️ Figure de Repérage</h4>
+                <h4>Figure de Repérage</h4>
                 <MiniFigure fig={synth.repFig} />
                 <p>{getCleanName(synth.repKey, fbData)}</p>
               </div>
@@ -387,7 +314,7 @@ function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'b
         <strong>Domaine :</strong> {domaine}
       </p>
       <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
-        {prefix} {interpretation}
+        {prefix ? prefix + ' ' : ''}{interpretation}
       </p>
     </div>
   );
@@ -402,7 +329,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           ×
         </button>
         <h3>
-          🏠 Maison {data.houseIndex + 1} – {data.houseName}
+          Maison {data.houseIndex + 1} – {data.houseName}
         </h3>
         <p style={{ color: 'var(--text2)', fontSize: '0.85rem', marginBottom: 6 }}>
           <strong>Occupante :</strong> {data.title} | <span style={{ color: '#4facfe' }}>بزدح: {data.bzdh}</span>
@@ -420,10 +347,10 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
             </div>
             <ModalBlock
               tone="gold"
-              title="⚖️ Interprétation du Juge"
+              title="Interprétation du Juge"
               domaine={data.data ? data.data.domaine : 'Le verdict final.'}
               interpretation={data.data ? data.data.interpretation : 'Données en cours de chargement...'}
-              prefix="👉"
+              prefix=""
             />
           </>
         )}
@@ -453,10 +380,10 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
             </div>
             <ModalBlock
               tone="gold"
-              title="📜 Interprétation de la Sentence"
+              title="Interprétation de la Sentence"
               domaine={data.data ? data.data.domaine : 'Le point de chute final.'}
               interpretation={data.data ? data.data.interpretation : 'Données en cours de chargement...'}
-              prefix="👉"
+              prefix=""
             />
           </>
         )}
@@ -465,17 +392,17 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           <>
             <ModalBlock
               tone="blue"
-              title={`1️⃣ Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
+              title={`Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
               domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
               interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
-              prefix="👉 Interprétation :"
+              prefix="Interprétation :"
             />
             <ModalBlock
               tone="gold"
-              title={`2️⃣ Secret Final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
+              title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
               domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
               interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
-              prefix="✨ Interprétation :"
+              prefix="Interprétation :"
             />
           </>
         )}

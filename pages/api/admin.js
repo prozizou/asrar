@@ -18,7 +18,7 @@
 //   grant-access {email, days?, level?} · revoke-access {email} · list-access
 //     (grant-access → notification CIBLÉE au compte concerné, si un compte
 //     Firebase Auth existe déjà pour cet e-mail)
-//   list-orders · list-activity · list-geomancie
+//   list-orders · list-activity
 
 const { verifyUser, isAdmin, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
@@ -215,8 +215,6 @@ export default async function handler(req, res) {
 
       case "list-activity":
         return res.json({ items: await readFeed(db, "activity_feed", 150) });
-      case "list-geomancie":
-        return res.json({ items: await readFeed(db, "geomancie_logs", 150) });
 
       // ── Accès abonnés : activation MANUELLE par l'administration (par e-mail) ──
       // grant-access {email, days?, level?}
@@ -332,8 +330,7 @@ async function getStats(db) {
   return {
     visits,
     totals: { products, sellers: sellers.numChildren(), activeSellers, books, formations, secrets: secretCounts },
-    recentActivity: await readFeed(db, "activity_feed", 30),
-    recentGeomancie: await readFeed(db, "geomancie_logs", 30)
+    recentActivity: await readFeed(db, "activity_feed", 30)
   };
 }
 

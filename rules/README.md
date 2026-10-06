@@ -85,7 +85,7 @@ le client** (SDK Firebase modulaire, `firebase/database` importé dans
 
 Tout le reste (`purchased_user`, `allowedUsers`, `admins`, `vip_users`,
 `ratings`, `comments`, `orders_count`, `det_produits`, `db_sirr_*`,
-`almaqtab`, `sellers`, `orders`, `activity_feed`, `geomancie_logs`,
+`almaqtab`, `sellers`, `orders`, `activity_feed`,
 `book_likes`, `book_comments`, `referrals`, `referred`, `purchases`,
 `views`, `analytics`, `zikr_groups`, `zikr_members`, `zikr_requests`…)
 n'est **jamais** lu ni écrit directement par le client dans ce dépôt — d'où
