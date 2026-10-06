@@ -62,6 +62,23 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
 
+## Publication automatique (GitHub Actions)
+
+`.github/workflows/android-release.yml` construit l'AAB signé et peut
+l'envoyer sur la Play Console. À utiliser uniquement quand la partie
+native change (le site, lui, se met à jour via Vercel).
+
+1. Incrémenter `versionCode` dans `android/app/build.gradle`, commit.
+2. `git tag android-v7.9 && git push --tags` → build + envoi sur la piste
+   `internal`. Ou : Actions → *Android release* → *Run workflow* (piste et
+   envoi au choix ; sans envoi, l'AAB reste téléchargeable comme artefact).
+
+Secrets GitHub requis : `ANDROID_KEYSTORE_BASE64` (`base64 -w0 prozizou.jks`),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`,
+`PLAY_SERVICE_ACCOUNT_JSON` (compte de service Google Cloud lié à la Play
+Console, droit « Publier » sur `com.Asrar`). La première version d'une app
+doit être publiée une fois à la main ; ici l'app existe déjà.
+
 ## Notifications push natives
 
 `lib/fcmNative.js` utilise Firebase Cloud Messaging avec
