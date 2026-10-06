@@ -23,9 +23,10 @@ android {
         applicationId "com.Asrar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Play Store : dernière version déjà utilisée = 100. Incrémenter
-        // versionCode à CHAQUE envoi (il doit toujours augmenter).
-        versionCode 101
+        // Play Store : versionCode doit augmenter à CHAQUE envoi. La CI le fournit
+        // via ASRAR_VERSION_CODE (minutes depuis 1970, toujours croissant) ; en
+        // local, repli sur la valeur fixe ci-dessous.
+        versionCode (System.getenv('ASRAR_VERSION_CODE') ?: '101').toInteger()
         versionName "7.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
