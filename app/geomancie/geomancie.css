@@ -137,16 +137,23 @@ html[data-theme='light'] .geo-page {
 .geo-page .btn.primary:hover { background: var(--gold2); border-color: var(--gold2); }
 html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
 
-/* Écu : grille de 16 colonnes, chaque maison occupe 2 colonnes (voir SHIELD_LAYOUT) */
+/* Écu : organigramme sur grille de 16 colonnes (voir SHIELD_LAYOUT) ; les
+   flèches (SVG) sont tracées d'après la position mesurée des cases. */
 .geo-page .shield-grid {
-  --drop: 34px; /* décalage vertical de M16 */
+  position: relative;
   display: grid;
   grid-template-columns: repeat(16, minmax(0, 1fr));
-  gap: 10px 0;
+  gap: 26px 0;
   align-items: start;
+  padding-right: 10px; /* couloir de la flèche M1 → M16 */
 }
+.geo-page .shield-arrows { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.geo-page .shield-arrow { fill: none; stroke: var(--gold); stroke-opacity: 0.55; stroke-width: 1.2; stroke-linejoin: round; }
+.geo-page .shield-arrowhead { fill: var(--gold); fill-opacity: 0.8; }
 
 .geo-page .house-cell {
+  position: relative;
+  z-index: 1;
   margin: 0 2px;
   min-width: 0;
   background: var(--surface2);

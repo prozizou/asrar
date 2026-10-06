@@ -38,20 +38,35 @@ const Spinner = SpinnerUntyped as any;
 type Figure = number[]; // 4 lignes, chacune à 1 ou 2 points
 type Mothers = Figure[]; // les 4 Mères
 
-// Écu sur une grille de 16 colonnes : chaque maison occupe 2 colonnes (même
-// largeur partout). `col` = colonne de départ, `row` = ligne ; `drop` décale la
-// maison vers le bas (décalage vertical du modèle). Index = numéro de maison - 1.
-const SHIELD_LAYOUT: { idx: number; col: number; row: number; drop?: boolean }[] = [
+// Écu en organigramme sur une grille de 16 colonnes : chaque maison occupe 2
+// colonnes (même largeur partout) ; `col` = colonne de départ, `row` = ligne.
+// Chaque maison de rang supérieur est centrée sous ses deux parentes (M9 sous
+// M1+M2, M10 sous M3+M4, M13 sous M9+M10, M15 sous M13+M14…). Index = maison - 1.
+const SHIELD_LAYOUT: { idx: number; col: number; row: number }[] = [
   // Ligne 1 : M8 → M1
   ...[7, 6, 5, 4, 3, 2, 1, 0].map((idx, i) => ({ idx, col: 1 + i * 2, row: 1 })),
-  // Ligne 2 : M12 → M9, chacune centrée sous deux maisons de la ligne 1
+  // Ligne 2 : M12 → M9
   ...[11, 10, 9, 8].map((idx, i) => ({ idx, col: 2 + i * 4, row: 2 })),
   // Ligne 3 : M14 à gauche, M13 à droite
   { idx: 13, col: 4, row: 3 },
   { idx: 12, col: 12, row: 3 },
-  // Ligne 4 : M15 centre-gauche, M16 à droite et plus bas
-  { idx: 14, col: 6, row: 4 },
-  { idx: 15, col: 11, row: 4, drop: true },
+  // Ligne 4 : M15 au centre-gauche, M16 à droite
+  { idx: 14, col: 8, row: 4 },
+  { idx: 15, col: 15, row: 4 },
+];
+
+// Flèches [parente, fille] (index = maison - 1) :
+// M1+M2→M9, M3+M4→M10, M5+M6→M11, M7+M8→M12, M9+M10→M13, M11+M12→M14,
+// M13+M14→M15, M15+M1→M16.
+const SHIELD_EDGES: [number, number][] = [
+  [0, 8], [1, 8],
+  [2, 9], [3, 9],
+  [4, 10], [5, 10],
+  [6, 11], [7, 11],
+  [8, 12], [9, 12],
+  [10, 13], [11, 13],
+  [12, 14], [13, 14],
+  [14, 15], [0, 15],
 ];
 
 function MiniFigure({ fig }: { fig: Figure }) {
@@ -254,19 +269,7 @@ export default function GeomanciePage() {
 
         {onEcu && (
           <div className="panel">
-            <div className="shield-grid">
-              {SHIELD_LAYOUT.map(({ idx, col, row, drop }) => (
-                <HouseCell
-                  key={idx}
-                  idx={idx}
-                  fig={houses[idx]}
-                  fbData={fbData}
-                  active={activeFig != null && figToKey(houses[idx]) === activeFig}
-                  onOpen={openHouseModal}
-                  style={{ gridColumn: `${col} / span 2`, gridRow: row, marginTop: drop ? 'var(--drop)' : undefined }}
-                />
-              ))}
-            </div>
+            <EcuChart houses={houses} fbData={fbData} activeFig={activeFig} onOpen={openHouseModal} />
 
             {parity && (
               <div className="parity-wrap">
@@ -305,14 +308,94 @@ export default function GeomanciePage() {
   );
 }
 
-function HouseCell({ idx, fig, fbData, active, onOpen, style }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void; style?: React.CSSProperties }) {
+function EcuChart({ houses, fbData, activeFig, onOpen }: { houses: any[]; fbData: any[]; activeFig: string | null; onOpen: (idx: number) => void }) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [paths, setPaths] = useState<string[]>([]);
+
+  // Les flèches sont tracées d'après la position réelle des cases (mesurées dans
+  // le DOM) : exactes à toute largeur, recalculées au redimensionnement.
+  const measure = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const g = grid.getBoundingClientRect();
+    const box = (i: number) => {
+      const el = cellRefs.current[i];
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { l: r.left - g.left, r: r.right - g.left, t: r.top - g.top, b: r.bottom - g.top };
+    };
+    const out: string[] = [];
+    for (const [from, to] of SHIELD_EDGES) {
+      const p = box(from);
+      const c = box(to);
+      if (!p || !c) continue;
+      if (from === 14 && to === 15) {
+        // M15 → M16 : horizontale, bord droit de M15 vers bord gauche de M16.
+        const y = (p.t + p.b) / 2;
+        out.push(`M${p.r},${y} H${c.l}`);
+      } else if (from === 0 && to === 15) {
+        // M1 → M16 : contourne l'écu par la droite, entre dans M16 par son bord droit.
+        const xo = p.r + 8;
+        out.push(`M${p.r},${(p.t + p.b) / 2} H${xo} V${(c.t + c.b) / 2} H${c.r}`);
+      } else {
+        // Coude vertical : bas de la parente → couloir → haut de la fille.
+        const x1 = (p.l + p.r) / 2;
+        const x2 = (c.l + c.r) / 2;
+        const ym = (p.b + c.t) / 2;
+        out.push(`M${x1},${p.b} V${ym} H${x2} V${c.t}`);
+      }
+    }
+    setPaths(out);
+  }, []);
+
+  useEffect(() => {
+    measure();
+    const grid = gridRef.current;
+    if (!grid || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(grid);
+    return () => ro.disconnect();
+  }, [measure, houses]);
+
+  return (
+    <div className="shield-grid" ref={gridRef}>
+      <svg className="shield-arrows" aria-hidden="true">
+        <defs>
+          <marker id="geo-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0.5 L7,4 L0,7.5 Z" className="shield-arrowhead" />
+          </marker>
+        </defs>
+        {paths.map((d, i) => (
+          <path key={i} d={d} className="shield-arrow" markerEnd="url(#geo-arrow)" />
+        ))}
+      </svg>
+      {SHIELD_LAYOUT.map(({ idx, col, row }) => (
+        <HouseCell
+          key={idx}
+          idx={idx}
+          fig={houses[idx]}
+          fbData={fbData}
+          active={activeFig != null && figToKey(houses[idx]) === activeFig}
+          onOpen={onOpen}
+          innerRef={(el) => {
+            cellRefs.current[idx] = el;
+          }}
+          style={{ gridColumn: `${col} / span 2`, gridRow: row }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HouseCell({ idx, fig, fbData, active, onOpen, style, innerRef }: { idx: number; fig: Figure; fbData: any[]; active: boolean; onOpen: (idx: number) => void; style?: React.CSSProperties; innerRef?: (el: HTMLDivElement | null) => void }) {
   const cls =
     'house-cell' +
     (idx === 14 ? ' judge-cell' : '') +
     (idx === 15 ? ' sentence-cell' : '') +
     (active ? ' voie-active' : '');
   return (
-    <div className={cls} style={style} onClick={() => onOpen(idx)}>
+    <div className={cls} style={style} ref={innerRef} onClick={() => onOpen(idx)}>
       <div className="house-num">M{idx + 1}</div>
       <MiniFigure fig={fig} />
       <div className="fig-name">{getCleanName(figToKey(fig), fbData)}</div>
