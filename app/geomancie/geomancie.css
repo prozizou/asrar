@@ -99,6 +99,9 @@ html[data-theme='light'] .geo-page {
 .geo-page .mother-label { font-size: 0.7rem; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
 .geo-page .figure-display { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-page .dot-row {
+  background: none;
+  border: 0;
+  color: inherit;
   display: flex;
   gap: 6px;
   cursor: pointer;
@@ -148,17 +151,19 @@ html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
   padding-right: 10px; /* couloir de la flèche M1 → M16 */
 }
 .geo-page .shield-arrows { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.geo-page .shield-arrow { fill: none; stroke: var(--gold); stroke-opacity: 0.55; stroke-width: 1.2; stroke-linejoin: round; }
+.geo-page .shield-arrow { fill: none; stroke: var(--gold); stroke-opacity: 0.55; stroke-width: 1.2; stroke-linejoin: round; transition: stroke-opacity 0.15s, stroke-width 0.15s; animation: geo-in 0.3s ease 0.35s both; }
+.geo-page .shield-arrow.on { stroke-opacity: 1; stroke-width: 1.8; }
+.geo-page .shield-arrow.dim { stroke-opacity: 0.15; }
 .geo-page .shield-arrowhead { fill: var(--gold); fill-opacity: 0.8; }
 
 .geo-page .house-cell {
   position: relative;
   z-index: 1;
-  margin: 0 2px;
+  margin: 0 1px;
   min-width: 0;
   background: var(--surface2);
   border-radius: 10px;
-  padding: 6px 2px 5px;
+  padding: 6px 1px 5px;
   text-align: center;
   cursor: pointer;
   border: 1px solid var(--line);
@@ -172,7 +177,7 @@ html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
 .geo-page .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-page .mini-row { display: flex; gap: 3px; justify-content: center; }
 .geo-page .mini-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
-.geo-page .fig-name { font-size: 0.56rem; color: var(--text); margin-top: 4px; line-height: 1.2; overflow-wrap: anywhere; }
+.geo-page .fig-name { font-size: clamp(0.38rem, 1.75vw, 0.62rem); color: var(--text); margin-top: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .geo-page .bzdh-badge { font-size: 0.52rem; color: var(--text2); margin-top: 3px; }
 
 .geo-page .parity-wrap { display: flex; justify-content: center; margin-top: 14px; }
@@ -184,6 +189,8 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
 
 .geo-page .synthesis-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .geo-page .synthesis-card {
+  font: inherit;
+  color: inherit;
   background: var(--surface2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -267,5 +274,93 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
   .geo-page .panel { padding: 14px 12px; }
   .geo-page .mothers-grid { gap: 6px; }
   .geo-page .mini-dot { width: 5px; height: 5px; }
-  .geo-page .fig-name { font-size: 0.5rem; }
+}
+
+/* ── Écran 1 : étapes, titres de panneau, historique ── */
+.geo-page .stepper { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 18px; }
+.geo-page .step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
+.geo-page .step::after { content: ''; position: absolute; top: 11px; left: calc(50% + 16px); right: calc(-50% + 16px); height: 1px; background: var(--line); transition: background 0.25s; }
+.geo-page .step:last-child::after { display: none; }
+.geo-page .step.done::after { background: var(--gold); }
+.geo-page .step-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--surface2); border: 1px solid var(--line); color: var(--text2);
+  transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.25s;
+}
+.geo-page .step.current .step-dot { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent); }
+.geo-page .step.done .step-dot { background: var(--gold); border-color: var(--gold); color: #1a0f33; transform: scale(1.05); }
+html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
+.geo-page .step-label { font-size: 0.78rem; font-weight: 600; color: var(--text2); margin-top: 4px; transition: color 0.25s; }
+.geo-page .step.current .step-label,
+.geo-page .step.done .step-label { color: var(--text); }
+.geo-page .step-range { font-size: 0.66rem; color: var(--text2); }
+
+.geo-page .panel-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.geo-page .panel-hint { font-size: 0.8rem; color: var(--text2); margin-bottom: 12px; }
+.geo-page .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.geo-page .panel-head + .panel-hint { margin-top: 4px; }
+.geo-page .link-btn { background: none; border: 0; color: var(--gold); font: inherit; font-size: 0.8rem; cursor: pointer; padding: 4px 0; }
+.geo-page .link-btn:hover { color: var(--gold2); text-decoration: underline; }
+
+.geo-page .history-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.geo-page .history-item { display: flex; align-items: stretch; gap: 6px; }
+.geo-page .history-open {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; text-align: left;
+  background: var(--surface2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: inherit; font: inherit; cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform 0.1s;
+}
+.geo-page .history-open:hover { border-color: var(--gold); background: var(--surface3); }
+.geo-page .history-open:active { transform: scale(0.985); }
+.geo-page .history-open:disabled { opacity: 0.6; cursor: default; }
+.geo-page .history-figs { display: flex; gap: 8px; flex-shrink: 0; }
+.geo-page .history-figs .mini-dot { width: 4px; height: 4px; }
+.geo-page .history-figs .mini-figure { gap: 1px; }
+.geo-page .history-figs .mini-row { gap: 2px; }
+.geo-page .history-meta { display: flex; flex-direction: column; min-width: 0; }
+.geo-page .history-judge { font-size: 0.88rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.geo-page .history-when { font-size: 0.72rem; color: var(--text2); }
+.geo-page .history-del {
+  width: 36px; flex-shrink: 0;
+  background: none; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--text2); font-size: 1.1rem; line-height: 1; cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.geo-page .history-del:hover { color: #ff9b8f; border-color: #ff9b8f; }
+
+/* ── Écran 2 : actions, micro-interactions ── */
+.geo-page .actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.geo-page .actions-row .btn:last-child { grid-column: 1 / -1; }
+@media (min-width: 520px) {
+  .geo-page .actions-row { grid-template-columns: repeat(3, 1fr); }
+  .geo-page .actions-row .btn:last-child { grid-column: auto; }
+}
+.geo-page .btn:active:not(:disabled) { transform: scale(0.97); }
+.geo-page .dot-row:active { transform: scale(0.96); }
+.geo-page .dot { transition: transform 0.15s; }
+.geo-page .dot-row:hover .dot { transform: scale(1.12); }
+.geo-page .synthesis-card:active { transform: scale(0.98); }
+.geo-page .house-cell { transition: border-color var(--transition), background var(--transition), transform 0.15s; }
+.geo-page .house-cell:hover { transform: translateY(-2px); }
+.geo-page .house-cell:focus-visible,
+.geo-page .btn:focus-visible,
+.geo-page .dot-row:focus-visible,
+.geo-page .history-open:focus-visible,
+.geo-page .synthesis-card:focus-visible,
+.geo-page .geo-back:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+@keyframes geo-in { from { opacity: 0; } to { opacity: 1; } }
+/* Entrée de l'écu ligne par ligne — opacité seule : la position des cases doit
+   rester exacte pour que les flèches (mesurées) s'alignent. */
+.geo-page .shield-grid .house-cell { animation: geo-in 0.32s ease both; animation-delay: calc((var(--row, 1) - 1) * 70ms); }
+.geo-page .parity-wrap,
+.geo-page .synthesis-container,
+.geo-page .actions-row { animation: geo-in 0.4s ease 0.4s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .geo-page *, .geo-page *::before, .geo-page *::after { animation: none !important; transition: none !important; }
 }
