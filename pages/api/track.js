@@ -1,13 +1,12 @@
 // api/track.js (Vercel) — Journalisation légère pour le tableau de bord admin.
 //
-// Body (JSON) : { idToken, type, page?, lat?, lng?, city?, order? }
+// Body (JSON) : { idToken, type, page?, order? }
 //   type="visit"     → comptage de visite (page) + fil d'activité + connexion
 //                       (uid/e-mail/pays/heure enregistrés dans user_sessions,
 //                       cf. plus bas) — trackVisit() (components/AuthProvider.js)
 //                       n'appelle ce endpoint qu'une fois par session app (juste
 //                       après la résolution onAuthStateChanged, donc à l'inscription
 //                       ET à la connexion), pas à chaque navigation.
-//   type="geomancie" → log géomancie AVEC localisation (lat/lng) + activité
 //   type="order"     → enregistre la commande CÔTÉ ACHETEUR (orders/{uid}) —
 //                       voir api/orders.js pour la relecture (« Mes commandes »)
 //   (autre)          → événement générique dans le fil d'activité
@@ -15,7 +14,6 @@
 // Écrit (Admin SDK, nœuds serveur-only) :
 //   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email, country?, countryCode? }
 //   activity_feed/{pushId}             = { uid, email, type, page, at, country?, countryCode? }
-//   geomancie_logs/{pushId}            = { uid, email, at, lat, lng, city }
 //   orders/{uid}/{pushId}              = { productKey, produit, prix, devise,
 //                                           vendeur, image, at }
 //   user_sessions/{uid}                = { uid, email, country, countryCode,
@@ -52,7 +50,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, type, page, lat, lng, city, productKey, order } = parseBody(req);
+  const { idToken, type, page, productKey, order } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -87,7 +85,7 @@ export default async function handler(req, res) {
     // pays et du flux de connexions récentes côté panneau d'administration.
     // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
     // envoyé une fois par session app par trackVisit()) ; les autres types
-    // d'événements (geomancie, product_view, order…) ne rafraîchissent que
+    // d'événements (product_view, order…) ne rafraîchissent que
     // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
     // moins significative.
     const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
@@ -95,14 +93,6 @@ export default async function handler(req, res) {
       Object.assign(sessionUpdate, { lastLoginAt: now }, countryCode ? { country, countryCode } : {});
     }
     await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
-
-    // 3) Géomancie : log avec localisation si fournie.
-    if (kind === "geomancie") {
-      await db.ref("geomancie_logs").push({
-        uid: user.uid, email: user.email, at: now,
-        lat: coord(lat, -90, 90), lng: coord(lng, -180, 180), city: clean(city, 80)
-      });
-    }
 
     // 4) Vue produit (Marché) : un enregistrement par visiteur, pour les
     // statistiques boutique (api/shop.js action="stats"). Écrit ici (Admin
@@ -149,5 +139,3 @@ function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max |
 // qu'aucune valeur stockée ne puisse porter une XSS vers l'admin.
 function clean(v, max) { return str(v, max).replace(/[<>"'`&]/g, " ").trim(); }
 function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
-// Coordonnée bornée : rejette les valeurs hors [min,max] (protège le dashboard).
-function coord(v, min, max) { const n = parseFloat(v); return (Number.isFinite(n) && n >= min && n <= max) ? n : null; }
