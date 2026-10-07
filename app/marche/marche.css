@@ -159,7 +159,7 @@ h2 {
   --mk-s3: 20px;
   --mk-gutter: 16px;
   --mk-radius: 16px;
-  --mk-cta-h: 50px;
+  --mk-cta-h: 46px;
   --mk-violet: #8b5cf6;
   --mk-violet-2: #6d28d9;
   --mk-card: color-mix(in srgb, var(--mk-violet) 7%, var(--mk-bg-deep));
@@ -173,7 +173,7 @@ h2 {
      injecte 0 : pas de double marge. */
   --mk-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   --mk-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-  --mk-cta-bar: calc(var(--mk-cta-h) + 2 * var(--mk-s2) + var(--mk-safe-bottom));
+  --mk-cta-bar: calc(var(--mk-cta-h) + 2 * var(--mk-s1) + var(--mk-safe-bottom) + 1px);
   max-width: 1100px;
   /* Haut : dégage la barre de statut / encoche (viewport-fit=cover, cf.
      app/layout.js). Bas : réserve EXACTEMENT la barre « Commencer » fixée
@@ -258,9 +258,12 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  flex-direction: column;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  gap: 1px;
+  min-width: 54px;
+  height: 46px;
+  padding: 0 6px;
   border-radius: 12px;
   color: var(--mk-violet);
   background: var(--mk-card);
@@ -269,6 +272,7 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   text-decoration: none;
   transition: transform 0.12s, border-color 0.2s;
 }
+.market-orders-label { font-size: 0.6rem; font-weight: 600; line-height: 1.1; color: var(--mk-text-soft); }
 .market-orders-icon:active { transform: scale(0.95); }
 @media (hover: hover) { .market-orders-icon:hover { border-color: var(--mk-violet); } }
 
@@ -379,6 +383,8 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.3;
+  /* globals.css impose 1px d'espacement à tous les h1-h3 : trop large ici. */
+  letter-spacing: 0.01em;
   margin: 0 0 var(--mk-s2);
   color: var(--mk-text);
 }
@@ -390,7 +396,8 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
 .vendors-scroll { gap: var(--mk-s2); padding-block: 6px 26px; margin-block: -6px -26px; }
 .vendor-card {
   flex: 0 0 auto;
-  width: min(212px, 62vw);
+  /* Plus étroite : on voit qu'il y a d'autres boutiques à faire défiler. */
+  width: min(196px, 56vw);
   height: 72px;
   min-width: 0;
   overflow: hidden;
@@ -444,8 +451,6 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
 .vendor-specialty { color: var(--mk-text-soft); font-size: 0.72rem; line-height: 1.3; }
 .vendor-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: nowrap; min-width: 0; overflow: hidden; }
 .vendor-meta-row > * { flex-shrink: 0; }
-/* Le badge « Votre boutique » remplace la spécialité : la carte garde 3 lignes. */
-.vendor-you-badge + .vendor-name + .vendor-specialty { display: none; }
 .vendor-like {
   width: auto;
   margin: 0;
@@ -523,19 +528,20 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   padding: 10px 12px 12px;
   color: var(--mk-text);
 }
-/* Titre : 2 lignes max, hauteur réservée — le prix reste aligné partout. */
+/* Titre : 2 lignes max ; le prix suit directement le titre (plus de vide),
+   le pied de carte reste collé en bas (.prod-meta { margin-top: auto }). */
 .prod-name {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   line-height: 1.25;
+  letter-spacing: 0; /* globals.css met 1px sur tous les h3 */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.5em;
 }
 /* Prix en vert (foncé en mode clair), montant gras et net, devise plus
    petite (ProductPrice.js, aussi utilisé par la vitrine d'un vendeur). */
@@ -548,11 +554,27 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   align-items: center;
   gap: 4px;
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 500;
-  color: var(--mk-text-soft);
+  color: color-mix(in srgb, var(--mk-text) 80%, transparent);
 }
-.prod-vendor-line span:first-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-vendor-avatar {
+  position: relative;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--mk-violet);
+  background: color-mix(in srgb, var(--mk-violet) 14%, var(--mk-card));
+  border: 1px solid var(--mk-card-line);
+}
+.prod-vendor-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .verified-badge { color: var(--mk-verified); font-size: 0.7rem; flex-shrink: 0; }
 
 /* Pied de carte : catégorie à gauche, likes + commentaires à droite. */
@@ -580,9 +602,9 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   flex-shrink: 0;
   display: inline-flex;
   gap: 8px;
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  color: var(--mk-text-soft);
+  color: color-mix(in srgb, var(--mk-text) 80%, transparent);
 }
 .prod-stats > span { display: inline-flex; align-items: center; gap: 3px; }
 
@@ -592,6 +614,18 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
 /* ≈ 1,8 carte visible : (largeur utile + gouttière droite − 1 espace) / 1,8.
    Le % se rapporte à la boîte de contenu du carrousel (= largeur de page). */
 .prod-scroll .prod-card { flex: 0 0 clamp(150px, calc((100% + var(--mk-gutter) - var(--mk-s2)) / 1.8), 220px); }
+/* « Produits populaires » : grille à 2 colonnes (4 produits visibles d'un coup
+   d'œil), plutôt qu'un carrousel d'1,8 carte. Mêmes cartes (.prod-card). */
+.prod-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mk-s2);
+}
+.prod-list .skeleton { flex: none; width: auto; aspect-ratio: 3 / 4; }
+.prod-list .prod-empty,
+.prod-list .load-sentinel { grid-column: 1 / -1; }
+.prod-list .load-sentinel { height: 1px; }
+
 /* Sentinelle du rendu progressif (useProgressiveList) : en fin de carrousel,
    elle doit garder une largeur pour être observée. */
 .prod-scroll .load-sentinel { flex: 0 0 1px; width: 1px; height: auto; }
@@ -623,14 +657,15 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   box-shadow: 0 2px 8px rgba(76, 29, 149, 0.35);
 }
 
-/* Favori (cœur) sur l'image : bouton de 28 px, icône de 15 px — plus discret. */
+/* Favori (cœur) sur l'image : bouton de 38 px (zone tactile confortable),
+   icône de 18 px. */
 .prod-fav {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   z-index: 1;
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 38px;
   margin: 0;
   padding: 0;
   display: inline-flex;
@@ -650,7 +685,7 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
 .prod-fav:active { transform: scale(0.9); }
 .prod-fav.liked { color: #fb7185; }
 
-/* Appel à l'action UNIQUE : grand bouton violet arrondi, fixé en bas de
+/* Accès au menu : barre fine (bouton « Menu »), fixée en bas de
    l'écran (le padding bas de la page réserve sa hauteur). Le voile dégradé
    ne capte pas les touchers (pointer-events) : seul le bouton est actif. */
 .market-cta {
@@ -659,7 +694,7 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   right: 0;
   bottom: 0;
   z-index: 60; /* sous .pm-overlay (100) : une fiche ouverte reste au-dessus */
-  padding: var(--mk-s2) var(--mk-gutter) calc(var(--mk-s2) + var(--mk-safe-bottom));
+  padding: var(--mk-s1) var(--mk-gutter) calc(var(--mk-s1) + var(--mk-safe-bottom));
   /* Repli opaque d'abord : color-mix() n'existe qu'à partir de Chrome 111
      (WebView Android anciennes) — sans lui la barre devenait transparente. */
   background: rgba(13, 8, 25, 0.94);
@@ -673,6 +708,7 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 100%;
   max-width: 520px;
   height: var(--mk-cta-h);
@@ -680,11 +716,11 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
   border-radius: 999px;
   background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
   color: #fff;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--mk-violet) 38%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mk-violet) 32%, transparent);
   transition: transform 0.12s, filter 0.2s;
 }
 .market-cta-btn:active { transform: scale(0.98); }
@@ -1129,7 +1165,7 @@ html:not([data-theme="light"]) .pm-rating { color: #fbbf24; }
 
 .vendor-skeleton {
   flex: 0 0 auto;
-  width: min(212px, 62vw);
+  width: min(196px, 56vw);
   height: 72px;
   border-radius: var(--mk-radius, 16px);
   background: var(--mk-card, var(--mk-surface));
@@ -1148,5 +1184,6 @@ html:not([data-theme="light"]) .pm-rating { color: #fbbf24; }
   .skeleton { flex-basis: 196px; }
   .vendor-card,
   .vendor-skeleton { width: 236px; }
-  .prod-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .prod-grid,
+  .prod-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
