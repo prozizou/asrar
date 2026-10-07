@@ -329,26 +329,30 @@ export default function GeomanciePage() {
               <h2 className="panel-title">Les 4 Mères</h2>
               <p className="panel-hint">Touchez une ligne pour passer de 1 à 2 points.</p>
               <div className="mothers-grid">
-                {mothers.map((fig, mi) => (
-                  <div className="mother-card" key={mi}>
-                    <div className="mother-label">Mère {mi + 1}</div>
-                    <div className="figure-display">
-                      {fig.map((count, ri) => (
-                        <button
-                          type="button"
-                          className={'dot-row' + (count === 2 ? ' double-row' : '')}
-                          key={ri}
-                          aria-label={`Mère ${mi + 1}, ligne ${ri + 1} : ${count} point${count > 1 ? 's' : ''}`}
-                          onClick={() => toggleMotherRow(mi, ri)}
-                        >
-                          {Array.from({ length: count }).map((_, d) => (
-                            <span className="dot" key={d} />
-                          ))}
-                        </button>
-                      ))}
+                {/* Affichage de droite à gauche : M4 — M3 — M2 — M1 (même sens de lecture que l'écu) */}
+                {[...mothers.keys()].reverse().map((mi) => {
+                  const fig = mothers[mi];
+                  return (
+                    <div className="mother-card" key={mi}>
+                      <div className="mother-label">Mère {mi + 1}</div>
+                      <div className="figure-display">
+                        {fig.map((count, ri) => (
+                          <button
+                            type="button"
+                            className={'dot-row' + (count === 2 ? ' double-row' : '')}
+                            key={ri}
+                            aria-label={`Mère ${mi + 1}, ligne ${ri + 1} : ${count} point${count > 1 ? 's' : ''}`}
+                            onClick={() => toggleMotherRow(mi, ri)}
+                          >
+                            {Array.from({ length: count }).map((_, d) => (
+                              <span className="dot" key={d} />
+                            ))}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="btn-row">
                 <button className="btn primary" onClick={() => onCalculate()} disabled={calculating}>
@@ -399,7 +403,7 @@ export default function GeomanciePage() {
                         aria-label={`Rouvrir l'écu du ${formatWhen(h.at)}`}
                       >
                         <span className="history-figs">
-                          {h.mothers.map((m, i) => (
+                          {[...h.mothers].reverse().map((m, i) => (
                             <MiniFigure fig={m} key={i} />
                           ))}
                         </span>
