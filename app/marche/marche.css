@@ -171,7 +171,7 @@ h2 {
      SystemBars (fiables sur toutes les WebView Android) ; navigateur/PWA →
      env(). Sur une WebView < 140, Capacitor décale déjà la WebView et
      injecte 0 : pas de double marge. */
-  --mk-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --mk-safe-top: 0px; /* déjà appliquée par le body (globals.css) */
   --mk-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --mk-cta-bar: calc(var(--mk-cta-h) + 2 * var(--mk-s1) + var(--mk-safe-bottom) + 1px);
   max-width: 1100px;

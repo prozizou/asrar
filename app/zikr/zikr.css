@@ -951,7 +951,7 @@
        cran-d'oreille/la barre de statut peuvent recouvrir le bouton Retour
        une fois viewport-fit=cover actif (app/layout.js) — safe-area-inset-top
        vaut 0 sur un appareil sans encoche, donc aucun effet ailleurs. */
-    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0;
+    padding: calc(12px + var(--safe-top)) 16px 0;
     overflow: hidden;
   }
   .zk-chat-mode .zk-detail-topbar,

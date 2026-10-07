@@ -180,7 +180,17 @@ html[data-theme="light"] {
     font-family: var(--font-ui);
 }
 
+/* Safe-area (barre d'état / barre gestuelle) — APK Capacitor 8 : variables
+   --safe-area-inset-* injectées par SystemBars ; navigateur/PWA : env().
+   Appliquée UNE fois sur le body : toutes les pages sont dégagées des barres
+   système sans que chaque page n'ait à le gérer. */
+:root {
+    --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
 body {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
     background: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--text-main);
@@ -1716,8 +1726,8 @@ html:not([data-theme="light"]) .menu-item-lock { background: #d9a441; color: #1a
 .container.menu-home {
   --mh-gutter: 20px;
   --mh-radius: 18px;
-  --mh-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  --mh-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --mh-safe-top: 0px; /* déjà appliquée par le body */
+  --mh-safe-bottom: 0px;
   --mh-card: color-mix(in srgb, var(--accent) 9%, #130a25);
   --mh-line: color-mix(in srgb, var(--accent) 26%, transparent);
   --mh-shadow: 0 8px 22px rgba(8, 3, 22, .5);

@@ -427,9 +427,9 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
   overflow: hidden;
-  padding: max(10px, env(safe-area-inset-top)) 14px 0;
+  padding: 10px 14px 0;
   gap: 10px;
 }
 
@@ -989,7 +989,7 @@
 @media (min-height: 700px) {
   .hours-screen {
     gap: 14px;
-    padding-top: max(16px, env(safe-area-inset-top));
+    padding-top: 16px;
   }
 
   .hour-grid {

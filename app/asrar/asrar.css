@@ -65,7 +65,7 @@
   z-index: 40;
   background: var(--asrar-bg-deep);
   border-bottom: 1px solid var(--asrar-border);
-  padding: max(10px, env(safe-area-inset-top)) 12px 12px;
+  padding: calc(10px + var(--safe-top)) 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -842,7 +842,7 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .secret-image-dialog[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .secret-image-dialog::backdrop { background: rgba(0,0,0,.9); }
 .secret-image-dialog > img { display: block; max-width: 100%; max-height: calc(100dvh - 160px); object-fit: contain; }
-.secret-image-dialog .secret-image-close { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 12px; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 8px; border: 1px solid #777; background: #292333; color: #fff; border-radius: 50%; }
+.secret-image-dialog .secret-image-close { position: absolute; top: calc(10px + var(--safe-top)); right: 12px; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 8px; border: 1px solid #777; background: #292333; color: #fff; border-radius: 50%; }
 .secret-detail button:focus-visible, .secret-return:focus-visible { outline: 2px solid var(--asrar-gold); outline-offset: 3px; }
 @media (min-width: 640px) {
   .secret-detail-summary, .secret-instructions { padding: 24px; }
