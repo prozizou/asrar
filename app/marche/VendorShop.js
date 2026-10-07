@@ -48,7 +48,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
           <h2 style={{ margin: 0 }}>
             {vendor.name} {vendor.verified && <span style={{ color: '#4CAF50', fontSize: '1rem' }}>✔ Vérifié</span>}
           </h2>
-          <p style={{ color: '#888', margin: '4px 0' }}>📍 {vendor.location}</p>
+          {vendor.location && <p style={{ color: '#888', margin: '4px 0' }}>📍 {vendor.location}</p>}
           <p style={{ color: 'var(--mk-gold)' }}>{vendor.bio || 'Spécialiste ésotérique'}</p>
         </div>
       </div>
@@ -58,6 +58,10 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
           + texte), calculés à partir des commentaires. Masqué pour le
           propriétaire de la boutique : il ne se note pas lui-même. */}
       <ReviewsSection cat="vendor" itemKey={safeKey(vendor.id)} canReview={!isOwn} title="Avis sur cette boutique" />
+
+      {products.length === 0 && (
+        <p style={{ color: '#888', textAlign: 'center', margin: '28px 16px' }}>Aucun produit pour le moment.</p>
+      )}
 
       <div className="prod-grid">
         {products.map((p) => (
