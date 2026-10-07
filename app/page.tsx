@@ -26,7 +26,7 @@
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Search, Package, Heart, MessageCircle, Crown } from 'lucide-react';
+import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
@@ -274,15 +274,29 @@ export default function Home() {
 
   // Filtrés par recherche + catégorie, puis triés par ENGAGEMENT décroissant
   // (likes + commentaires), les plus récents d'abord à engagement égal.
+  const vendorNames = useMemo(() => {
+    const m: Record<string, string> = {};
+    allVendors.forEach((v) => { m[v.id] = v.name; });
+    return m;
+  }, [allVendors]);
+
   const filtered = useMemo(() => {
     return allProducts
-      .filter((p) => matchesSearch(p.produit, search))
+      // La recherche porte sur le nom du produit OU sur le nom de sa boutique.
+      .filter((p) => matchesSearch(p.produit, search) || matchesSearch(vendorNames[vendorKey(p)] || p.vendeur || '', search))
       .filter((p) => !category || p.chain === category)
       .sort((a, b) => {
         const d = engagement(rankPop, b._key) - engagement(rankPop, a._key);
         return d !== 0 ? d : Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
       });
-  }, [allProducts, rankPop, search, category]);
+  }, [allProducts, rankPop, search, category, vendorNames]);
+
+  // Boutiques : filtrées par la même recherche (nom de boutique).
+  const searching = search.trim() !== '';
+  const visibleVendors = useMemo(
+    () => (searching ? allVendors.filter((v) => matchesSearch(v.name, search)) : allVendors),
+    [allVendors, search, searching]
+  );
 
   // Rendu progressif : la grille produit ne monte plus toutes ses cartes
   // (chacune avec son image) dans la même frame.
@@ -353,7 +367,8 @@ export default function Home() {
               <p className="market-subtitle">Produits spirituels et boutiques de confiance</p>
             </div>
             <Link href="/commandes" className="market-orders-icon" aria-label="Mes commandes" title="Mes commandes">
-              <Package size={22} strokeWidth={2} aria-hidden="true" />
+              <Package size={20} strokeWidth={2} aria-hidden="true" />
+              <span className="market-orders-label">Commandes</span>
             </Link>
           </header>
 
@@ -363,8 +378,8 @@ export default function Home() {
             <input
               type="search"
               className="market-search-input"
-              placeholder="Rechercher un produit..."
-              aria-label="Rechercher un produit"
+              placeholder="Rechercher un produit ou une boutique…"
+              aria-label="Rechercher un produit ou une boutique"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -393,6 +408,7 @@ export default function Home() {
             ))}
           </div>
 
+          {!(searching && visibleVendors.length === 0 && !loading) && (
           <section className="market-section" aria-labelledby="mk-vendors-title">
             <h2 id="mk-vendors-title" className="market-section-title">Boutiques populaires</h2>
             <div className="vendors-scroll">
@@ -403,7 +419,7 @@ export default function Home() {
                   <div className="vendor-skeleton" />
                 </>
               ) : null}
-              {allVendors.map((v) => {
+              {visibleVendors.map((v) => {
                 const l = vendorLikes[safeKey(v.id)] || { count: 0, liked: false };
                 const own = isOwnVendor(v);
                 const inner = (
@@ -464,7 +480,7 @@ export default function Home() {
                   </div>
                 );
               })}
-              {!loading && !allVendors.some(isOwnVendor) && (
+              {!loading && !searching && !allVendors.some(isOwnVendor) && (
                 <Link href="/boutique" className="vendor-card vendor-card-add">
                   <div className="vendor-avatar">＋</div>
                   <div className="vendor-info">
@@ -475,13 +491,14 @@ export default function Home() {
               )}
             </div>
           </section>
+          )}
 
           <section className="market-section" aria-labelledby="mk-products-title">
-            <h2 id="mk-products-title" className="market-section-title">Produits populaires</h2>
-            {/* Carrousel horizontal trié par engagement (likes + commentaires,
+            <h2 id="mk-products-title" className="market-section-title">{searching || category ? 'Résultats' : 'Produits populaires'}</h2>
+            {/* Grille à 2 colonnes triée par engagement (likes + commentaires,
                 voir `filtered`) : le premier porte le badge « Plus populaire »
                 dès qu'il a un engagement réel (jamais sur une liste à zéro). */}
-            <div className="prod-scroll">
+            <div className="prod-list">
               {loading ? (
                 <>
                   <div className="skeleton" />
@@ -586,8 +603,9 @@ export default function Home() {
               menu principal (autres modules, compte, thème…). Pas de barre de
               navigation basse. */}
           <div className="market-cta">
-            <Link href="/menu" className="market-cta-btn">
-              Commencer
+            <Link href="/menu" className="market-cta-btn" aria-label="Ouvrir le menu">
+              <MenuIcon size={20} strokeWidth={2.2} aria-hidden="true" />
+              Menu
             </Link>
           </div>
         </div>
