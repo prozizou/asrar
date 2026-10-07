@@ -373,7 +373,7 @@ html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
    des cartes, figures et textes suivent la largeur de l'écran (vw). */
 @media (max-width: 700px) {
   .geo-page.ecu-view {
-    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    padding: 0; /* safe-areas : body (globals.css) */
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: clip;
