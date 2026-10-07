@@ -64,6 +64,18 @@ interface Vendor {
   [k: string]: any;
 }
 
+// Produits + boutiques. Le nom, le logo et la description d'une boutique viennent
+// du nœud profile_clients (kind « shop ») ; si cette lecture échoue, on retombe
+// sur les champs vendeur* des produits plutôt que de bloquer le Marché.
+async function loadMarket(): Promise<{ products: Product[]; vendors: Vendor[] }> {
+  const [prod, shop] = await Promise.all([
+    apiPost('list-content', { kind: 'product' }),
+    apiPost('list-content', { kind: 'shop' }).catch(() => ({ items: [] })),
+  ]);
+  const products: Product[] = (prod.items || []).map((v: any) => ({ _key: v._key, ...v }));
+  return { products, vendors: extractVendors(products, shop.items || []) };
+}
+
 interface PopulariteEntry {
   likes: number;
   comments: number;
@@ -192,9 +204,7 @@ export default function Home() {
     bootRef.current = true;
     (async () => {
       try {
-        const { items } = await apiPost('list-content', { kind: 'product' });
-        const products: Product[] = (items || []).map((v: any) => ({ _key: v._key, ...v }));
-        const vendors: Vendor[] = extractVendors(products);
+        const { products, vendors } = await loadMarket();
         setAllProducts(products);
         setAllVendors(vendors);
         setLoading(false);
@@ -293,10 +303,9 @@ export default function Home() {
     setVendorShopId(id);
     (async () => {
       try {
-        const { items } = await apiPost('list-content', { kind: 'product' });
-        const products: Product[] = (items || []).map((v: any) => ({ _key: v._key, ...v }));
+        const { products, vendors } = await loadMarket();
         setAllProducts(products);
-        setAllVendors(extractVendors(products));
+        setAllVendors(vendors);
       } catch {
         // Best-effort : la liste déjà chargée (potentiellement périmée) reste affichée.
       }

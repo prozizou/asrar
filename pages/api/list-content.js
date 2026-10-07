@@ -1,13 +1,13 @@
 // api/list-content.js — Renvoie les MÉTADONNÉES d'une liste (titre, image, points…)
 // SANS jamais inclure le contenu payant (sirr / pdf). Auth requise (pas d'abonnement).
 //
-// Body (JSON) : { idToken, kind: "secret"|"book", cat? }
+// Body (JSON) : { idToken, kind: "secret"|"book"|"product"|"shop"|…, cat? }
 //   - kind="secret" exige "cat" parmi les configurations.
 //   - kind="book"   ignore "cat".
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { SOURCES } = require("../../server/sources");
+const { SOURCES, listFields } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { vendorKey } = require("../../lib/market");
@@ -31,17 +31,14 @@ export default async function handler(req, res) {
     const items = [];
     snap.forEach(child => {
       const v = child.val() || {};
-      const meta = { _key: child.key };
-      for (const k of Object.keys(v)) {
-        if (!src.secretFields.includes(k)) meta[k] = v[k]; // on retire le contenu sensible
-      }
+      const meta = { _key: child.key, ...listFields(src, v) }; // contenu sensible retiré
       // Marché : identifiant de boutique STABLE calculé ici, où l'email brut
       // du document est encore disponible (il est retiré ci-dessus par
       // secretFields) — voir emailVendorKey()/vendorKey() dans lib/market.js.
       // Sans ça, le client retombe sur `uid`, qui peut changer d'un produit à
       // l'autre pour le même vendeur (compte recréé) et fait apparaître deux
       // cartes boutique pour la même boutique.
-      if (kind === "product") meta.vendorKey = vendorKey(v);
+      if (kind === "product" || kind === "shop") meta.vendorKey = vendorKey(v);
       // Secrets : courte introduction (~150 caractères) tirée du début du
       // texte payant, pour la carte de liste — le texte complet reste réservé
       // à /api/get-content (abonnés).

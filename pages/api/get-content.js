@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const { idToken, kind, cat, key } = parseBody(req);
   const src = SOURCES[kind];
-  if (!src) return res.status(400).json({ error: "Type de contenu inconnu." });
+  if (!src || src.listOnly) return res.status(400).json({ error: "Type de contenu inconnu." });
   if (src.cats && !src.cats.includes(cat))
     return res.status(400).json({ error: "Configuration inconnue." });
   if (!key) return res.status(400).json({ error: "Élément non précisé." });

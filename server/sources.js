@@ -35,6 +35,19 @@ const SOURCES = {
     privateFields: ["number", "email"],
     authOnly: true
   },
+  // Boutiques (fiches vendeur du Marché) : nœud profile_clients, créé par l'admin.
+  // Source UNIQUE du nom, du logo et de la description affichés pour une boutique
+  // (au lieu des copies vendeur* recopiées dans chaque produit). Liste seulement
+  // (listOnly : refusé par get-content) et uniquement les champs publics listés
+  // ci-dessous — email, téléphone et uid ne sortent jamais du serveur ; le
+  // contact passe par /api/wa. `vendorKey` (calculé par list-content à partir de
+  // l'email) relie la fiche aux produits.
+  shop: {
+    ref: () => "profile_clients",
+    secretFields: [],
+    publicFields: ["profile_name", "img", "description"],
+    listOnly: true
+  },
   // Versets de référence (suggestions numérologie) — lecture seule, aucun champ secret.
   verset: {
     ref: () => "versetRef",
@@ -60,4 +73,18 @@ const SOURCES = {
   }
 };
 
-module.exports = { SOURCES, SECRET_CATS };
+/**
+ * Champs d'un élément exposés par /api/list-content : liste blanche
+ * (`publicFields`) quand la source en déclare une, sinon tout sauf `secretFields`.
+ */
+function listFields(src, value) {
+  const v = value || {};
+  const out = {};
+  for (const k of Object.keys(v)) {
+    const ok = src.publicFields ? src.publicFields.includes(k) : !src.secretFields.includes(k);
+    if (ok) out[k] = v[k];
+  }
+  return out;
+}
+
+module.exports = { SOURCES, SECRET_CATS, listFields };
