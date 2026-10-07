@@ -305,7 +305,7 @@ export default function GeomanciePage() {
   const onEcu = view === 'ecu' && calculated;
 
   return (
-    <div className="geo-page">
+    <div className={'geo-page' + (onEcu ? ' ecu-view' : '')}>
       <div className="app-container">
         {onEcu ? (
           <button type="button" className="geo-back" onClick={goBackHome}>
