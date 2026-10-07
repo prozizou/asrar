@@ -46,7 +46,7 @@ export default function PersonalRows({ allItems }) {
           <h2 className="group-title">Continuer</h2>
           <div className="sub-grid">
             {continueItems.map((it) => (
-              <MenuItemTile key={it.href} href={it.href} icon={it.icon} label={it.label} desc={it.desc} />
+              <MenuItemTile key={it.href} href={it.href} icon={it.icon} label={it.label} desc={it.desc} premium={it.premium} />
             ))}
           </div>
         </section>
@@ -69,6 +69,7 @@ export default function PersonalRows({ allItems }) {
                 icon={it.icon}
                 label={it.label}
                 desc={it.desc}
+                premium={it.premium}
                 favorite
                 onToggleFavorite={onToggleFavorite}
               />

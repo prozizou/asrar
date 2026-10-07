@@ -25,6 +25,9 @@ export interface ModuleTile {
   /** Termes du domaine qui ne figurent pas dans le nom mais par lesquels on
    *  cherche le module (« carré magique » → Hatims, « tourab » → Géomancie). */
   keywords: string[];
+  /** Module d'une famille à accès premium (cadenas sur sa tuile). Renseigné
+   *  automatiquement à partir du `badge` de la famille. */
+  premium?: boolean;
 }
 
 export interface ModuleCategory {
@@ -40,7 +43,7 @@ export interface ModuleCategory {
 const ICON = { size: 26, strokeWidth: 1.75 };
 const CAT_ICON = { size: 22, strokeWidth: 1.75 };
 
-export const CATEGORIES: ModuleCategory[] = [
+const RAW_CATEGORIES: ModuleCategory[] = [
   {
     slug: 'spiritualite',
     title: 'Spiritualité',
@@ -87,6 +90,13 @@ export const CATEGORIES: ModuleCategory[] = [
     ],
   },
 ];
+
+// Chaque module d'une famille à accès premium porte le drapeau `premium` : la
+// tuile affiche alors un cadenas, partout (Favoris, Continuer, page de famille).
+export const CATEGORIES: ModuleCategory[] = RAW_CATEGORIES.map((c) => ({
+  ...c,
+  items: c.items.map((it) => ({ ...it, premium: !!c.badge })),
+}));
 
 /** Tous les modules, à plat — pour la recherche et pour résoudre un href
  *  (favoris/récents) en tuile complète. */

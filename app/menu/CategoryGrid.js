@@ -26,6 +26,7 @@ export default function CategoryGrid({ items }) {
           icon={it.icon}
           label={it.label}
           desc={it.desc}
+          premium={it.premium}
           favorite={favorites.includes(it.href)}
           onToggleFavorite={onToggleFavorite}
         />
