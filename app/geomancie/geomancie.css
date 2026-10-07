@@ -364,3 +364,51 @@ html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   .geo-page *, .geo-page *::before, .geo-page *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── Écu en plein écran sur mobile ──
+   Aucun max-width, aucune marge auto ni padding latéral sur les conteneurs
+   principaux : seules les safe-areas haut/bas sont conservées. L'écu occupe toute
+   la largeur ; la grille garde 10 px de chaque côté (symétriques) : c'est le
+   couloir de la flèche M1 → M16, qui contourne l'écu par la droite. Les tailles
+   des cartes, figures et textes suivent la largeur de l'écran (vw). */
+@media (max-width: 700px) {
+  .geo-page.ecu-view {
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+  .geo-page.ecu-view .app-container { width: 100%; max-width: none; margin: 0; gap: 12px; }
+
+  /* Textes hors écu : un léger retrait pour ne pas coller aux bords de l'écran. */
+  .geo-page.ecu-view .geo-back,
+  .geo-page.ecu-view .header,
+  .geo-page.ecu-view .parity-wrap,
+  .geo-page.ecu-view .synthesis-container,
+  .geo-page.ecu-view .actions-row { padding-inline: 14px; }
+  .geo-page.ecu-view .geo-back { padding-block: 10px 0; }
+  .geo-page.ecu-view .header h1 { font-size: 1.6rem; }
+
+  .geo-page.ecu-view .panel.ecu-panel {
+    width: 100%;
+    padding: 6px 0 16px;
+    border-radius: 0;
+    border-inline: 0;
+    box-shadow: none;
+  }
+
+  .geo-page.ecu-view .shield-grid { padding-inline: 10px; row-gap: 34px; }
+  .geo-page.ecu-view .house-cell { margin: 0 1px; padding: 9px 1px 7px; border-radius: 12px; }
+  .geo-page.ecu-view .house-num { font-size: clamp(0.66rem, 3vw, 0.85rem); margin-bottom: 5px; }
+  .geo-page.ecu-view .mini-figure { gap: 3px; }
+  .geo-page.ecu-view .mini-row { gap: clamp(3px, 0.9vw, 5px); }
+  .geo-page.ecu-view .mini-dot { width: clamp(6px, 2.1vw, 10px); height: clamp(6px, 2.1vw, 10px); }
+  .geo-page.ecu-view .fig-name { font-size: clamp(0.46rem, 2vw, 0.72rem); margin-top: 6px; }
+  .geo-page.ecu-view .bzdh-badge { font-size: clamp(0.5rem, 2.2vw, 0.68rem); margin-top: 4px; }
+
+  .geo-page.ecu-view .synthesis-card { padding: 16px 10px; }
+  .geo-page.ecu-view .synthesis-card h4 { font-size: 0.85rem; }
+  .geo-page.ecu-view .synthesis-card .mini-dot { width: 8px; height: 8px; }
+  .geo-page.ecu-view .synthesis-card p { font-size: 1rem; }
+  .geo-page.ecu-view .parity-badge { font-size: 0.85rem; }
+}
