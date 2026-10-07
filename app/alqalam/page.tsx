@@ -466,6 +466,7 @@ export default function AlQalamPage() {
         showToast(e instanceof Error ? e.message : 'Export impossible.', 'error');
       } finally {
         setProgress(null);
+        setOrnementFrame({ ouv: false, ferm: false });
       }
     }, 60);
     return () => window.clearTimeout(id);
@@ -586,11 +587,8 @@ export default function AlQalamPage() {
       totalMultiplier,
       isRasmMode,
     };
-    setAccumulatedBlocks((prev) => {
-      const next = [...prev, block];
-      showToast(`Ajouté ! (${next.length} bloc(s) en attente)`, 'info');
-      return next;
-    });
+    setAccumulatedBlocks([...accumulatedBlocks, block]);
+    showToast(`Ajouté ! (${accumulatedBlocks.length + 1} bloc(s) en attente)`, 'info');
   };
   const onClearTemp = () => {
     if (accumulatedBlocks.length === 0) return;
@@ -801,7 +799,6 @@ export default function AlQalamPage() {
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setInputText(match);
-                        setBaseText(match);
                         setSuggestions([]);
                       }}
                     >
