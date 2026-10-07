@@ -27,7 +27,7 @@ const SEARCH_ITEMS = ALL_MODULES.map((m) => ({ ...m, category: categoryOf(m.href
 
 export default function MenuPage() {
   return (
-    <div className="container">
+    <div className="container menu-home">
       {/* Réservé au desktop (masqué ≤900px, cf. app/globals.css) — sur
           mobile, le retour se fait par le geste natif du navigateur. */}
       <Link href="/" className="back-btn">

@@ -52,7 +52,7 @@ export default function PersonalRows({ allItems }) {
         </section>
       )}
 
-      <section className="menu-group">
+      <section className="menu-group menu-group-favorites">
         <h2 className="group-title">Favoris</h2>
         {favoriteItems.length === 0 ? (
           /* État vide utile : dit où trouver l'étoile plutôt que de laisser

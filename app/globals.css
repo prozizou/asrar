@@ -1704,3 +1704,129 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   border: 2px solid var(--bg-alt, #fff);
 }
 html:not([data-theme="light"]) .menu-item-lock { background: #d9a441; color: #1a1030; border-color: #1a1030; }
+
+
+/* ═════════ Accueil (/menu) — finitions « Android premium » ═════════
+   Même structure qu'avant (en-tête → recherche → Favoris → Explorer), mêmes
+   modules : seules les cotes et les finitions changent. Marges latérales 20 px,
+   espacements 12–16 px, rayon 18 px, bordures et lueurs discrètes, textes un peu
+   plus petits (descriptions raccourcies dans lib/modulesCatalog.tsx) pour éviter
+   les troncatures. Spécificité `.container.menu-home` : l'emporte sur les
+   `.container { padding }` des media queries (≤ 600 / ≤ 420 px). */
+.container.menu-home {
+  --mh-gutter: 20px;
+  --mh-radius: 18px;
+  --mh-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --mh-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --mh-card: color-mix(in srgb, var(--accent) 9%, #130a25);
+  --mh-line: color-mix(in srgb, var(--accent) 26%, transparent);
+  --mh-shadow: 0 8px 22px rgba(8, 3, 22, .5);
+  /* Haut : sous la barre d'état (edge-to-edge) ; bas : au-dessus de la barre gestuelle. */
+  padding: calc(10px + var(--mh-safe-top)) var(--mh-gutter) calc(24px + var(--mh-safe-bottom));
+}
+html[data-theme="light"] .container.menu-home {
+  --mh-card: #ffffff;
+  --mh-line: var(--border-strong);
+  --mh-shadow: 0 4px 14px rgba(20, 40, 80, .09);
+}
+
+/* En-tête : logo — titre — cloche — avatar, tous centrés sur le même axe. */
+.menu-home .menu-appbar { min-height: 48px; gap: 10px; margin-bottom: 12px; }
+.menu-home .menu-appbar-logo { width: 36px; height: 36px; border-radius: 11px; }
+.menu-home .menu-appbar-title { font-size: 1.1875rem; line-height: 1; letter-spacing: .01em; }
+.menu-home .menu-appbar-bell,
+.menu-home .menu-appbar-profile { width: 40px; height: 40px; }
+.menu-home .menu-appbar-bell svg { width: 22px; height: 22px; }
+.menu-home .menu-appbar .avatar-sm {
+  width: 34px; height: 34px;
+  box-shadow: 0 0 0 1.5px var(--mh-line), 0 0 12px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Recherche plus fine : 40 px, bordure discrète. */
+.menu-home .menu-search-wrap { margin-bottom: 16px; }
+.menu-home .menu-search {
+  min-height: 40px; padding: 0 14px; gap: 10px; border-radius: 14px;
+  background: var(--mh-card); border: 1px solid var(--mh-line);
+}
+.menu-home .menu-search input { padding: 8px 0; font-size: .9rem; }
+.menu-home .menu-search:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+
+/* Libellés de section : plus lisibles (muted au lieu de dim), régulier. */
+.menu-home .menu-group { margin-bottom: 20px; }
+.menu-home .group-title { font-size: .72rem; letter-spacing: .09em; color: var(--text-muted); margin-bottom: 12px; }
+
+/* Cartes (Favoris / Continuer / pages de famille) : une seule recette. */
+.menu-home .sub-grid { gap: 12px; }
+.menu-home .sub-grid .menu-item {
+  min-height: 88px; padding: 12px; gap: 10px;
+  border-radius: var(--mh-radius);
+  background: var(--mh-card); border: 1px solid var(--mh-line); box-shadow: var(--mh-shadow);
+  transition: border-color .18s ease, box-shadow .18s ease, transform 150ms ease;
+}
+.menu-home .sub-grid .menu-item:hover {
+  background: var(--mh-card);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--mh-shadow), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.menu-home .sub-grid .menu-item:active { transform: scale(.97); }
+.menu-home .sub-grid .menu-item-icon { width: 38px; height: 38px; border-radius: 12px; }
+.menu-home .sub-grid .menu-item-icon svg { width: 21px; height: 21px; }
+.menu-home .sub-grid .menu-item h3 { font-size: .9rem; font-weight: 700; padding-right: 16px; }
+.menu-home .sub-grid .menu-item-desc { font-size: .72rem; -webkit-line-clamp: 2; line-clamp: 2; color: var(--text-muted); }
+
+/* Étoile : même taille, même position, partout (zone tactile 40 px). */
+.menu-home .menu-item-fav { top: 3px; right: 3px; width: 40px; height: 40px; }
+.menu-home .menu-item-fav svg { width: 16px; height: 16px; }
+.menu-home .menu-item-fav:active { transform: scale(.88); }
+
+/* Badge premium : pastille dorée de 16 px sur le coin de l'icône, cerclée de la
+   couleur de la carte pour s'en détacher proprement. */
+.menu-home .menu-item .menu-item-lock {
+  right: -5px; bottom: -5px; width: 16px; height: 16px; border: 0;
+  background: linear-gradient(135deg, #f0c564, #c58a1f); color: #2a1a05;
+  box-shadow: 0 0 0 2px var(--mh-card);
+}
+.menu-home .menu-item .menu-item-lock svg { width: 9px; height: 9px; }
+
+/* Carte large « mise en avant » : la dernière tuile impaire des Favoris (pleine
+   largeur, voir la règle « dernière tuile impaire » plus haut) reçoit un liseré
+   et une lueur plus marqués. */
+@media (max-width: 480px) {
+  .menu-home .menu-group-favorites .sub-grid > :last-child:nth-child(odd) .menu-item {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 17%, var(--mh-card)), var(--mh-card) 70%);
+    border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    box-shadow: var(--mh-shadow), 0 0 22px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .menu-home .menu-group-favorites .sub-grid > :last-child:nth-child(odd) .menu-item-icon { width: 42px; height: 42px; }
+  .menu-home .menu-group-favorites .sub-grid > :last-child:nth-child(odd) .menu-item h3 { font-size: .95rem; }
+  .menu-home .menu-group-favorites .sub-grid > :last-child:nth-child(odd) .menu-item-desc { font-size: .76rem; }
+}
+
+/* Explorer : lignes compactes (≈ 60 px), titre / modules / badge bien rangés. */
+.menu-home .family-list { gap: 10px; }
+.menu-home .family-row {
+  min-height: 60px; padding: 10px 14px; gap: 12px;
+  border-radius: var(--mh-radius);
+  background: var(--mh-card); border: 1px solid var(--mh-line); box-shadow: var(--mh-shadow);
+  transition: border-color .18s ease, box-shadow .18s ease, transform 150ms ease;
+}
+.menu-home .family-row:hover {
+  background: var(--mh-card);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--mh-shadow), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.menu-home .family-row:active { transform: scale(.98); }
+.menu-home .family-icon { width: 36px; height: 36px; border-radius: 11px; }
+.menu-home .family-icon svg { width: 20px; height: 20px; }
+.menu-home .family-id { gap: 1px; }
+.menu-home .family-title { font-size: .92rem; line-height: 1.25; gap: 3px 8px; }
+.menu-home .family-badge {
+  font-size: .6rem; line-height: 1.3; padding: 2px 7px; letter-spacing: .02em;
+  color: #e3b24f; background: rgba(217, 164, 65, .14); border: 1px solid rgba(217, 164, 65, .28);
+}
+html[data-theme="light"] .menu-home .family-badge { color: #8a5d12; background: rgba(176, 122, 31, .12); border-color: rgba(176, 122, 31, .3); }
+.menu-home .family-items { font-size: .74rem; color: var(--text-muted); }
+.menu-home .family-row > svg { width: 18px; height: 18px; color: var(--text-muted); }

@@ -49,8 +49,8 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     title: 'Spiritualité',
     icon: <Moon {...CAT_ICON} />,
     items: [
-      { icon: <Users {...ICON} />, label: 'Zikr collectif', desc: 'Réciter un dhikr ensemble, objectif commun', href: '/zikr', keywords: ['dhikr', 'tasbih', 'chapelet', 'groupe', 'hatim'] },
-      { icon: <Wand2 {...ICON} />, label: 'Rouwhanes', desc: "Générer des noms d'anges et un vœu", href: '/rouwhania', keywords: ['anges', 'rouhanya', 'rouwhania', 'voeu'] },
+      { icon: <Users {...ICON} />, label: 'Zikr collectif', desc: 'Dhikr en groupe', href: '/zikr', keywords: ['dhikr', 'tasbih', 'chapelet', 'groupe', 'hatim'] },
+      { icon: <Wand2 {...ICON} />, label: 'Rouwhanes', desc: "Noms d'anges et vœu", href: '/rouwhania', keywords: ['anges', 'rouhanya', 'rouwhania', 'voeu'] },
     ],
   },
   {
@@ -59,9 +59,9 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     icon: <Layers {...CAT_ICON} />,
     badge: 'Accès premium',
     items: [
-      { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Écrire un verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
-      { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Faire un tirage géomantique (Tourab)', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },
-      { icon: <Hash {...ICON} />, label: 'Hatims', desc: 'Carrés numériques (Al Kanzou), export Word', href: '/wafq/carre', keywords: ['carre magique', 'kanzou', 'wafq', 'carres numeriques'] },
+      { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
+      { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Tirage géomantique', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },
+      { icon: <Hash {...ICON} />, label: 'Hatims', desc: 'Carrés numériques', href: '/wafq/carre', keywords: ['carre magique', 'kanzou', 'wafq', 'carres numeriques', 'export word', 'word'] },
       // Wafq (générateur par intention) et Thalsams — masqués temporairement
       // à la demande de l'utilisateur (2026-09-02). Pages /wafq et /thalsams
       // toujours en place ; /wafq garde son lien interne vers Hatims.
@@ -72,8 +72,8 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     title: 'Ressources',
     icon: <BookOpen {...CAT_ICON} />,
     items: [
-      { icon: <BookOpen {...ICON} />, label: 'Bibliothèque', desc: 'Lire des livres et manuscrits', href: '/bibliotheque', keywords: ['livres', 'manuscrits', 'almaqtab', 'lecture'] },
-      { icon: <Scroll {...ICON} />, label: 'Secret Mystique', desc: 'Consulter des secrets et invocations', href: '/asrar', keywords: ['asrar', 'sirr', 'secrets', 'invocations'] },
+      { icon: <BookOpen {...ICON} />, label: 'Bibliothèque', desc: 'Livres et manuscrits', href: '/bibliotheque', keywords: ['livres', 'manuscrits', 'almaqtab', 'lecture'] },
+      { icon: <Scroll {...ICON} />, label: 'Secret Mystique', desc: 'Secrets et invocations', href: '/asrar', keywords: ['asrar', 'sirr', 'secrets', 'invocations'] },
     ],
   },
   {
@@ -81,10 +81,10 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     title: 'Outils',
     icon: <Sparkles {...CAT_ICON} />,
     items: [
-      { icon: <Calculator {...ICON} />, label: 'Abajad', desc: 'Calculer le poids numérique des lettres arabes', href: '/abajad', keywords: ['abjad', 'numerologie', 'lettres', 'poids'] },
-      { icon: <Sparkles {...ICON} />, label: 'Combinaisons', desc: 'Associer les 99 Noms par calcul', href: '/combinaisons', keywords: ['associations', 'calcul', '99 noms'] },
-      { icon: <Globe {...ICON} />, label: 'Planète', desc: "Voir l'heure planétaire du moment", href: '/planete', keywords: ['heure planetaire', 'mars', 'mercure', 'astrologie'] },
-      { icon: <Gift {...ICON} />, label: 'Parrainage', desc: 'Inviter des proches, gagner un abonnement', href: '/parrainage', keywords: ['inviter', 'filleul', 'abonnement', 'referral'] },
+      { icon: <Calculator {...ICON} />, label: 'Abajad', desc: 'Poids numérique des lettres', href: '/abajad', keywords: ['abjad', 'numerologie', 'lettres', 'poids'] },
+      { icon: <Sparkles {...ICON} />, label: 'Combinaisons', desc: 'Les 99 Noms par calcul', href: '/combinaisons', keywords: ['associations', 'calcul', '99 noms'] },
+      { icon: <Globe {...ICON} />, label: 'Planète', desc: 'Heure planétaire du moment', href: '/planete', keywords: ['heure planetaire', 'mars', 'mercure', 'astrologie'] },
+      { icon: <Gift {...ICON} />, label: 'Parrainage', desc: 'Inviter des proches', href: '/parrainage', keywords: ['inviter', 'filleul', 'abonnement', 'referral'] },
       // Tafsir al-Ahlam et Formation mystique — masqués temporairement à la
       // demande de l'utilisateur (2026-09-02), pages toujours en place.
     ],
