@@ -28,14 +28,14 @@
 }
 
 html[data-theme='light'] .cc-page {
-  --gold: #0f766e;
-  --gold-light: #14b8a6;
-  --gold-pale: #e6f5f2;
-  --gold-border: #9fd9d0;
-  --deep: #123a35;
-  --deep2: #1d4f48;
-  --lapis: #0f9b8e;
-  --cream: #eaf6f2;
+  --gold: #1d4ed8;
+  --gold-light: #2563eb;
+  --gold-pale: #e6eefb;
+  --gold-border: #a9c4f2;
+  --deep: #12284f;
+  --deep2: #1d3a74;
+  --lapis: #2f6fe0;
+  --cream: #eaf2fc;
   --ink: #111827;
   --muted: #6b7280;
   --red: #991b1b;

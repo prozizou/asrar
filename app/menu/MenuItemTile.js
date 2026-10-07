@@ -12,16 +12,25 @@
 // étoile n'est rendue. Le bouton est un FRÈRE du lien, jamais un enfant :
 // un bouton dans un <a> n'est ni valide ni utilisable au clavier.
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Star, Lock } from 'lucide-react';
 import { trackRecentModule } from '@/lib/recentModules';
 
-export default function MenuItemTile({ href, icon, label, desc, favorite, onToggleFavorite }) {
+export default function MenuItemTile({ href, icon, label, desc, premium, favorite, onToggleFavorite }) {
   return (
     <div className="menu-item-wrap">
       <Link href={href} className="menu-item" onClick={() => trackRecentModule(href)}>
-        <span className="menu-item-icon" aria-hidden="true">{icon}</span>
-        <h3>{label}</h3>
-        <p className="menu-item-desc">{desc}</p>
+        <span className="menu-item-icon">
+          <span aria-hidden="true" className="menu-item-icon-glyph">{icon}</span>
+          {premium && (
+            <span className="menu-item-lock" role="img" aria-label="Accès premium">
+              <Lock size={9} strokeWidth={3} aria-hidden="true" />
+            </span>
+          )}
+        </span>
+        <div className="menu-item-text">
+          <h3>{label}</h3>
+          <p className="menu-item-desc">{desc}</p>
+        </div>
       </Link>
       {onToggleFavorite && (
         <button

@@ -114,46 +114,47 @@
 }
 
 /* ───────────── html[data-theme="light"] = MODE CLAIR ─────────────
-   Fond doux menthe/lavande à halo turquoise (maquette de référence
-   « CoachPro »), remplace le gris-bleu précédent. */
+   Fond doux bleu/lavande à halo bleu (remplace la menthe/turquoise
+   précédente). */
 html[data-theme="light"] {
-    --bg-gradient:    linear-gradient(135deg, #eaf6f2, #e8eef6, #e6e8f5);
-    --bg-deep:        #eef6f4;
-    --bg-alt:         #f5faf8;
+    --bg-gradient:    linear-gradient(135deg, #eaf2fc, #e8edf8, #e6e8f6);
+    --bg-deep:        #edf3fb;
+    --bg-alt:         #f5f8fd;
     --surface:        rgba(255, 255, 255, 0.8);
     --surface-2:      rgba(255, 255, 255, 0.58);
-    --surface-3:      rgba(20, 60, 55, 0.06);
+    --surface-3:      rgba(20, 40, 80, 0.06);
     --surface-input:  rgba(255, 255, 255, 0.88);
 
-    --border:         rgba(20, 60, 55, 0.12);
-    --border-strong:  rgba(20, 60, 55, 0.24);
-    --border-soft:    rgba(20, 60, 55, 0.08);
+    --border:         rgba(20, 40, 80, 0.14);
+    --border-strong:  rgba(20, 40, 80, 0.26);
+    --border-soft:    rgba(20, 40, 80, 0.09);
 
-    --text-main:      #16302c;
-    --text-muted:     #4a635e;
-    --text-dim:       #647f79;
-    --text-faint:     #86a29c;
+    --text-main:      #15223a;
+    --text-muted:     #41546f;
+    --text-dim:       #54688a;
+    --text-faint:     #7b8fae;
     --text-on-accent: #ffffff;
 
-    /* Turquoise (maquette) — remplace le bleu précédent. */
-    --accent:         #14b8a6;
-    --accent-hover:   #0f766e;
-    --accent-glow:    rgba(20, 184, 166, 0.3);
+    /* Bleu (#2563eb, contraste 5,2:1 sur blanc, texte blanc dessus compris)
+       — remplace le turquoise (#14b8a6, 2,5:1, trop pâle pour du texte). */
+    --accent:         #2563eb;
+    --accent-hover:   #1d4ed8;
+    --accent-glow:    rgba(37, 99, 235, 0.3);
 
-    /* Or / mystique : aligné sur le même turquoise pour une identité
+    /* Or / mystique : aligné sur le même bleu pour une identité
        cohérente dans toute l'app, plutôt qu'un accent doré séparé. */
-    --gold:           #14b8a6;
-    --gold-hover:     #0f766e;
-    --gold-soft:      #2dd4bf;
+    --gold:           #2563eb;
+    --gold-hover:     #1d4ed8;
+    --gold-soft:      #60a5fa;
     --gold-ink:       #fdf7e6;
 
     --success:        #2c9c54;
     --danger:         #b53a37;
 
     --card-bg:        #fffef9;
-    --card-border:    #14b8a6;
+    --card-border:    #2563eb;
     --card-text:      #2d3436;
-    --card-accent:    #e6f5f2;
+    --card-accent:    #e6eefb;
     --card-green-bg:  #e8f8f5;
     --card-green-text:#27ae60;
 
@@ -163,8 +164,8 @@ html[data-theme="light"] {
        les cartes se fondre dans l'arrière-plan — un flou d'ombre plus serré
        (au lieu de plus large) donne un bord net plutôt qu'une simple brume
        sous la carte, sans pour autant l'assombrir. */
-    --glass-border:   rgba(20, 60, 55, 0.22);
-    --glass-shadow:   0 6px 22px rgba(20, 60, 55, 0.16);
+    --glass-border:   rgba(20, 40, 80, 0.22);
+    --glass-shadow:   0 6px 22px rgba(20, 40, 80, 0.16);
 
     /* Fond menthe/lavande déjà clair : un ciel étoilé aussi marqué qu'en
        sombre le ternirait, on le garde en filigrane. */
@@ -1653,3 +1654,53 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
   margin-top: 6px;
 }
+
+
+/* ───────────── Tuiles de module compactes (accueil + pages de famille) ─────────────
+   Revue design : cartes de ~135 px dont l'icône « flottait » selon le nombre
+   de lignes de texte, titres très espacés, orpheline pleine largeur. Ici : tuile
+   HORIZONTALE (icône à gauche, texte à droite), hauteur mini 68 px ; les
+   tuiles d'une même rangée ont la même hauteur et leurs icônes sont donc
+   alignées entre elles. Sélecteur
+   `.sub-grid .menu-item` : plus spécifique que les réglages de .menu-item des
+   media queries (≤ 600 / ≤ 480 px) plus haut, qui restent valables pour les
+   autres usages de .menu-item. */
+.sub-grid .menu-item {
+  flex-direction: row;
+  align-items: center; /* icône et texte centrés ensemble : alignés dans la rangée */
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+  min-height: 68px;
+  padding: 10px;
+}
+.sub-grid .menu-item-icon { width: 36px; height: 36px; border-radius: 11px; }
+.sub-grid .menu-item-icon svg { width: 22px; height: 22px; }
+.menu-item-text { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+/* globals.css impose 1px d'espacement à tous les h3 : trop large pour un titre
+   de tuile. Deux lignes au plus (un titre long ne pousse pas la tuile). */
+.sub-grid .menu-item h3 {
+  font-size: .93rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding-right: 14px; /* dégage l'étoile « favori » posée en absolu */
+}
+.sub-grid .menu-item-desc { -webkit-line-clamp: 1; line-clamp: 1; font-size: .74rem; }
+/* Cadenas : module d'une famille premium — pastille sur le coin de l'icône
+   (jamais dans le titre : pas de retour à la ligne, pas de collision avec
+   l'étoile). Même repère partout : Favoris, Continuer, page de famille. */
+.sub-grid .menu-item-icon { position: relative; }
+.menu-item-icon-glyph { display: flex; align-items: center; justify-content: center; }
+.menu-item-lock {
+  position: absolute; right: -5px; bottom: -5px;
+  width: 17px; height: 17px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #b07a1f; color: #fff;
+  border: 2px solid var(--bg-alt, #fff);
+}
+html:not([data-theme="light"]) .menu-item-lock { background: #d9a441; color: #1a1030; border-color: #1a1030; }
