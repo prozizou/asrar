@@ -30,7 +30,7 @@ import { Search, Package, Heart, MessageCircle, Crown } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, cleanUrl } from '@/lib/share';
-import { vendorKey, emailVendorKey, safeKey, formatCount, extractVendors, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
+import { vendorKey, emailVendorKey, safeKey, formatCount, formatProductCount, extractVendors, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
@@ -415,7 +415,7 @@ export default function Home() {
                           alt=""
                           fill
                           sizes="48px"
-                          style={{ objectFit: 'cover' }}
+                          style={{ objectFit: 'contain' }}
                           onError={(e: any) => (e.currentTarget.style.display = 'none')}
                         />
                       ) : (
@@ -423,10 +423,12 @@ export default function Home() {
                       )}
                     </div>
                     <div className="vendor-info">
-                      {own && <div className="vendor-you-badge">Votre boutique</div>}
                       <div className="vendor-name">{v.name}</div>
-                      <div className="vendor-specialty">{v.specialty}</div>
+                      {/* Donnée réelle (et non un texte par défaut) : nombre de produits,
+                          ou la spécialité quand la boutique en a saisi une. */}
+                      <div className="vendor-specialty">{v.specialty || formatProductCount(v.productCount)}</div>
                       <div className="vendor-meta-row">
+                        {own && <span className="vendor-you-badge">Votre boutique</span>}
                         {(() => {
                           const r = vendorReviews[safeKey(v.id)];
                           return r && r.count > 0 ? <StarRatingDisplay value={r.avg} count={r.count} size="0.7rem" numeric /> : null;
@@ -546,14 +548,28 @@ export default function Home() {
                           <h3 className="prod-name">{name}</h3>
                           <ProductPrice prix={p.Prix} devise={p.devise} />
                           <div className="prod-vendor-line">
-                            <span>{vendor?.name || 'Boutique'}</span>
+                            <span className="prod-vendor-avatar" aria-hidden="true">
+                              {vendor?.avatar ? (
+                                <SmartImage
+                                  src={optimImg(vendor.avatar, 48)}
+                                  alt=""
+                                  fill
+                                  sizes="18px"
+                                  style={{ objectFit: 'contain' }}
+                                  onError={(e: any) => (e.currentTarget.style.display = 'none')}
+                                />
+                              ) : (
+                                (vendor?.name || 'B').charAt(0).toUpperCase()
+                              )}
+                            </span>
+                            <span className="prod-vendor-name">{vendor?.name || 'Boutique'}</span>
                             {vendor?.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée">✔</span>}
                           </div>
                           <div className="prod-meta">
                             {p.chain ? <span className="prod-chain">{chainLabel(p.chain)}</span> : <span />}
                             <span className="prod-stats" aria-label={`${s.likes} j'aime, ${s.comments} commentaires`}>
-                              <span><Heart size={12} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.likes)}</span>
-                              <span><MessageCircle size={12} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.comments)}</span>
+                              <span><Heart size={14} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.likes)}</span>
+                              <span><MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" /> {formatCount(s.comments)}</span>
                             </span>
                           </div>
                         </div>
