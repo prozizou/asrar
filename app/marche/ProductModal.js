@@ -78,7 +78,7 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
     try {
       email = (auth.currentUser && auth.currentUser.email) || '';
     } catch {}
-    const boutique = product.vendeur || 'la boutique';
+    const boutique = (vendor && vendor.name) || product.vendeur || 'la boutique';
     const article = product.produit || 'Article';
     const total = formatPrice(product.Prix, product.devise) || (product.Prix || '') + ' FCFA';
     const msg =
