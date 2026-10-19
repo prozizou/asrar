@@ -1,33 +1,21 @@
 'use client';
-// Module « Planète » — port de planete/planete.html.
-// Horloge sacrée + heures planétaires chaldéennes. La position vient du GPS ;
-// le lever/coucher est calculé localement (NOAA, lib/planete.js) puis affiné
-// via l'API Sunrise-Sunset (avec repli hors-ligne). Toute la logique astro/
-// planétaire est dans lib/planete.js ; ici, l'UI React et les effets (GPS,
-// horloge 1 s, recalcul aux bascules de journée planétaire).
+// Module « Planète » — temporalité mystique et heures planétaires chaldéennes.
+// Lever/coucher calculés localement (NOAA, lib/planete.js) pour la date et la
+// position : GPS, ou ville choisie à la main (lib/places.js, horaires à
+// l'heure locale de la ville). Jour = 12 heures du lever au coucher, nuit =
+// 12 heures du coucher au lever du lendemain.
 //
-// Refonte de hiérarchie (revue design, 10 points) : la page listait une
-// dizaine d'informations à plat, toutes de même poids visuel — l'heure
-// planétaire ACTUELLE (ce que l'utilisateur vient chercher en priorité)
-// était noyée au même niveau que « Jour sacré » ou le lever du soleil.
-// Restructurée en : tableau de bord compact (heure/planète/nature/temps
-// restant) → ligne secondaire (phase du jour) → grille compacte d'infos
-// générales → accès aux heures planétaires → régents de la semaine
-// repliables. Logique GPS/horloge/accès INCHANGÉE — uniquement la
-// présentation.
-//
-// Refonte des 12 heures (revue 2026-09-27, « sans scroll ») : la liste des
-// heures n'est plus ajoutée SOUS le tableau de bord (ce qui empilait dash-
-// card + phase-line + info-grid + 12 lignes, obligeant à défiler) — c'est
-// désormais un ÉCRAN DÉDIÉ plein cadre (HoursScreen), affiché À LA PLACE du
-// tableau de bord une fois les heures calculées. Header compact + carte
-// « heure actuelle » + grille compacte 2×6 se partagent exactement la
-// hauteur utile (flex, la grille absorbe le reste via des lignes en `fr`) :
-// les 12 cartes tiennent donc dans l'écran sans défilement, jour comme nuit
-// (bascule via une bottom nav fixe — remplace l'ancien sélecteur Jour/Nuit en
-// pastille au milieu du contenu). REMPLACE à son tour la timeline verticale
-// (dot + trait reliant les lignes) d'une itération précédente, jugée trop
-// haute pour ce nouvel objectif de tenir sans scroll.
+// Refonte du 2026-10-19 (style Material 3 clair, voir planete.css) :
+//   - tableau de bord compact : horloge, heure planétaire actuelle (régent,
+//     horaires, nature, progression écoulé/restant, heure suivante), période
+//     astronomique active, régent du jour / lever / coucher / position ;
+//   - états distincts : recherche de position, position indisponible,
+//     données astronomiques indisponibles (zone polaire) — jamais de valeurs
+//     inventées ni anciennes présentées comme actuelles ;
+//   - écran des 12 heures (jour OU nuit) DÉRIVÉ de l'horloge, plus figé à
+//     l'ouverture ;
+//   - notifications en une ligne : push web, ou alertes locales programmées
+//     48 h à l'avance dans l'app Android (lib/planetHourChangeNative.js).
 //
 // TypeScript (batch 6/7, cf. tsconfig.json) : Geo/TodaySun/Hours sont des
 // types locaux pour l'état React de cette page — lib/planete.js reste en .js
@@ -40,8 +28,8 @@ import './planete.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  Globe, Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft,
-  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal,
+  Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X,
 } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
@@ -57,7 +45,10 @@ import {
   buildHourList,
   planetaryHourState,
   upcomingPlanetOccurrences,
+  sunEventsAvailable,
 } from '@/lib/planete';
+import { searchPlaces, readSavedPlace, savePlace, clearSavedPlace } from '@/lib/places';
+import { hourChangeSupported, readHourChangeState, enableHourChangeAlerts, disableHourChangeAlerts } from '@/lib/planetHourChangeNative';
 import { isSchedulable, OFFSET_CHOICES, SOUND_CHOICES, DEFAULT_ALARM_PREFS } from '@/lib/planetAlarms';
 import { planetAlarmsSupported, getPendingAlarmIds, scheduleHourAlarm, scheduleRepeatingAlarms, cancelAlarms } from '@/lib/planetAlarmsNative';
 import { getAllPlanetAlarmRecords, savePlanetAlarmRecord, clearPlanetAlarmRecord } from '@/lib/planetAlarmPrefsStore';
@@ -124,34 +115,16 @@ function shortNatureLabel(nat: { txt: string; cls: string }) {
   return nat.cls === 'nat-mix' ? 'Mixte' : nat.txt;
 }
 
-// Couleurs des « sphères » planétaires (revue design, maquette du
-// 2026-09-28) — un dégradé CSS par planète (teinte + texture en attribut
-// `data-planet`, voir planete.css) plutôt qu'une image : aucun asset photo
-// des 7 astres à livrer/héberger, même rendu circulaire coloré sur tous les
-// écrans/densités. Couleurs INDÉPENDANTES du thème clair/sombre (comme
-// PLANET_NATURE, lib/planete.js) : elles représentent l'astre lui-même, pas
-// l'accent de marque. Le glyphe astrologique (CHALDEAN_EMOJIS) reste affiché
-// À CÔTÉ du nom, inchangé — la sphère s'ajoute, elle ne le remplace pas.
-const PLANET_SPHERE_COLORS: Record<string, [string, string]> = {
-  Soleil: ['#ffe29a', '#ff7b3d'],
-  Lune: ['#f4f6fa', '#9aa4b0'],
-  Mars: ['#ffb199', '#b83c22'],
-  Mercure: ['#d8d4cd', '#7a746b'],
-  Jupiter: ['#f3d9a4', '#b5793a'],
-  Vénus: ['#fff3d1', '#d9b774'],
-  Saturne: ['#f0dfb0', '#b99a5f'],
-};
+// Format « 19:31 » dans le fuseau de la position (ville choisie à la main) ou,
+// sans fuseau, à l'heure de l'appareil.
+const hmIn = (date: Date, timeZone?: string | null) =>
+  date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', ...(timeZone ? { timeZone } : {}) });
 
-function PlanetSphere({ planet, kind }: { planet: string; kind: 'hero' | 'grid' }) {
-  const [a, b] = PLANET_SPHERE_COLORS[planet] || ['#cfcfcf', '#7a7a7a'];
-  return (
-    <span
-      className={'planet-sphere ' + kind}
-      data-planet={planet}
-      aria-hidden="true"
-      style={{ ['--sphere-a' as any]: a, ['--sphere-b' as any]: b }}
-    />
-  );
+// « 55 min » / « 1 h 05 » — arrondi au-dessus : « 0 min » laisserait croire
+// que l'heure est finie alors qu'il en reste quelques secondes.
+function remainingLabel(ms: number) {
+  const min = Math.max(1, Math.ceil(ms / 60000));
+  return min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`;
 }
 
 // Précision GPS visée (m) — best-effort : on affine tant que le matériel de
@@ -160,6 +133,22 @@ function PlanetSphere({ planet, kind }: { planet: string; kind: 'hero' | 'grid' 
 // délai, on garde la meilleure lecture obtenue plutôt que d'échouer.
 const GPS_TARGET_ACCURACY_M = 5;
 const GPS_MAX_WAIT_MS = 12000;
+
+// Position : GPS (fuseau de l'appareil) ou ville choisie à la main
+// (lib/places.js — fuseau IANA de la ville, horaires affichés à son heure).
+interface Place {
+  name: string;
+  detail?: string;
+  lat: number;
+  lng: number;
+  timeZone: string | null;
+  source: 'gps' | 'manual';
+  accuracy?: number | null;
+}
+// UN seul état de localisation (revue : plusieurs indicateurs séparés) :
+// en cours, prête, ou en erreur — jamais une ancienne position affichée
+// comme actuelle pendant une nouvelle recherche.
+type LocState = { status: 'locating' } | { status: 'ready'; place: Place } | { status: 'error'; message: string };
 
 export default function PlanetePage() {
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
@@ -171,46 +160,61 @@ export default function PlanetePage() {
   const sunCache = useRef<SunCache>({});
 
   const [now, setNow] = useState(() => new Date());
-  const [geo, setGeo] = useState<Geo>({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
+  const [loc, setLoc] = useState<LocState>({ status: 'locating' });
+  // Journée planétaire calculée pour la position courante + disponibilité
+  // réelle d'un lever/coucher (zone polaire : AUCUNE valeur inventée).
   const [pday, setPday] = useState<any>(null);
-  const [todaySun, setTodaySun] = useState<TodaySun | null>(null);
-  const [hours, setHours] = useState<Hours | null>(null); // { dayName, day[], night[] }
-  const [hoursError, setHoursError] = useState('');
-  const [hoursTab, setHoursTab] = useState<Period>('day'); // période affichée dans HoursScreen
-  const [weekExpanded, setWeekExpanded] = useState(false); // régents : replié par défaut (point 9)
+  const [astroOk, setAstroOk] = useState(true);
+  const [hoursOpen, setHoursOpen] = useState(false);
+  const [hoursTab, setHoursTab] = useState<Period>('day');
+  const [weekExpanded, setWeekExpanded] = useState(false);
+  const [placeSheet, setPlaceSheet] = useState(false);
+  const gpsRun = useRef(0); // invalide une recherche GPS dépassée
 
-  // Recalcule la journée planétaire + le soleil du jour à partir d'une position.
-  const recompute = useCallback((lat: number | null, lng: number | null) => {
-    const p = computePday(new Date(), lat, lng, sunCache.current);
-    setPday(p);
-    setTodaySun({ sunrise: p.today.sunrise, sunset: p.today.sunset });
+  const place = loc.status === 'ready' ? loc.place : null;
+  const tz = place?.timeZone || undefined;
+
+  const recompute = useCallback((p: Place) => {
+    const at = new Date();
+    const zone = p.timeZone || undefined;
+    const ok = sunEventsAvailable(at, p.lat, p.lng, zone);
+    setAstroOk(ok);
+    setPday(ok ? computePday(at, p.lat, p.lng, sunCache.current, zone) : null);
   }, []);
 
+  const applyPlace = useCallback((p: Place) => {
+    sunCache.current = {};
+    setLoc({ status: 'ready', place: p });
+    recompute(p);
+  }, [recompute]);
+
   // Une seule lecture GPS (getCurrentPosition) peut être imprécise au « cold
-  // start » (peu de satellites encore accrochés). On observe plusieurs
-  // lectures (watchPosition) et on garde la plus précise, jusqu'à atteindre
-  // GPS_TARGET_ACCURACY_M ou GPS_MAX_WAIT_MS — sans jamais rester bloqué.
+  // start » : on observe plusieurs lectures (watchPosition) et on garde la
+  // plus précise, jusqu'à GPS_TARGET_ACCURACY_M ou GPS_MAX_WAIT_MS.
   const requestGPS = useCallback(() => {
+    const run = ++gpsRun.current;
+    setPday(null);
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGeo((g) => ({ ...g, ready: false, error: 'Géolocalisation non disponible sur cet appareil.' }));
+      setLoc({ status: 'error', message: 'Géolocalisation indisponible sur cet appareil. Choisissez une ville.' });
       return;
     }
-    setGeo({ lat: null, lng: null, city: '—', accuracy: null, named: false, ready: false, error: null });
+    setLoc({ status: 'locating' });
 
     let best: { lat: number; lng: number; acc: number | null } | null = null;
     let done = false;
     let watchId: number | null = null;
 
     const finalize = async () => {
-      if (done || !best) return;
+      if (done || !best || run !== gpsRun.current) return;
       done = true;
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       clearTimeout(timeoutId);
       const { lat, lng, acc } = best;
-      setGeo({ lat, lng, city: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, accuracy: acc, named: false, ready: true, error: null });
-      recompute(lat, lng); // même source solaire hors-ligne que les notifications
+      applyPlace({ name: `${lat.toFixed(3)}, ${lng.toFixed(3)}`, lat, lng, timeZone: null, source: 'gps', accuracy: acc });
       const city = await reverseGeocode(lat, lng);
-      if (city) setGeo((g) => ({ ...g, city, named: true }));
+      if (city && run === gpsRun.current) {
+        setLoc((l) => (l.status === 'ready' && l.place.source === 'gps' && l.place.lat === lat ? { status: 'ready', place: { ...l.place, name: city } } : l));
+      }
     };
 
     watchId = navigator.geolocation.watchPosition(
@@ -218,315 +222,454 @@ export default function PlanetePage() {
         const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : null;
         if (!best || (acc != null && acc < (best.acc as number))) {
           best = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc };
-          if (acc != null && acc <= GPS_TARGET_ACCURACY_M) finalize(); // précision cible atteinte
+          if (acc != null && acc <= GPS_TARGET_ACCURACY_M) finalize();
         }
       },
       (err) => {
-        if (done) return;
+        if (done || run !== gpsRun.current) return;
         done = true;
         if (watchId != null) navigator.geolocation.clearWatch(watchId);
         clearTimeout(timeoutId);
-        const msg =
-          err && err.code === 1
-            ? 'Accès GPS refusé. Autorisez la localisation puis réessayez.'
-            : 'Position GPS indisponible. Réessayez en extérieur.';
-        setGeo((g) => ({ ...g, ready: false, error: msg }));
+        setLoc({
+          status: 'error',
+          message: err && err.code === 1
+            ? 'Accès à la localisation refusé. Autorisez-le, ou choisissez une ville.'
+            : 'Position introuvable pour le moment. Réessayez, ou choisissez une ville.',
+        });
       },
       { enableHighAccuracy: true, timeout: GPS_MAX_WAIT_MS, maximumAge: 0 }
     );
-
-    // Repli : au-delà du délai max, on garde la meilleure lecture déjà
-    // obtenue plutôt que d'attendre indéfiniment un 5 m rarement atteignable
-    // en intérieur.
     const timeoutId = setTimeout(finalize, GPS_MAX_WAIT_MS);
-  }, [recompute]);
+  }, [applyPlace]);
 
-  // GPS au montage.
+  // Au montage : ville mémorisée (choix manuel) sinon GPS.
   useEffect(() => {
-    requestGPS();
-  }, [requestGPS]);
+    const saved = readSavedPlace();
+    if (saved) applyPlace({ ...saved, source: 'manual' });
+    else requestGPS();
+  }, [applyPlace, requestGPS]);
 
-  // Horloge : tick chaque seconde.
+  // Horloge : tick chaque seconde (heure, progression, temps restant, régent
+  // suivant se mettent à jour sans rechargement).
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Bascule de journée planétaire au passage d'un lever.
+  // Bascule de journée planétaire au passage d'un lever (ou d'un jour civil
+  // en zone sans lever, pour réévaluer la disponibilité).
   useEffect(() => {
-    if (!geo.ready || !pday || !pday.sunrise) return;
-    const ms = now.getTime();
-    if (ms < pday.sunrise.getTime() || ms >= pday.nextSunrise.getTime()) {
-      recompute(geo.lat, geo.lng);
-    }
-  }, [now, geo.ready, geo.lat, geo.lng, pday, recompute]);
-
-  const ready = geo.ready && pday && pday.sunrise;
-  const cur = useMemo(() => (ready ? currentHour(now, pday) : null), [ready, now, pday]);
-  const next = useMemo(() => (ready && cur ? nextHour(pday, cur) : null), [ready, cur, pday]);
-  const phase = ready ? phaseOf(now, todaySun!.sunrise, todaySun!.sunset) : { icon: '🌟', name: 'Chargement...', badge: 'Phase en cours' };
-  const nature = cur ? planetaryHourState(cur, now).nature : null;
-  // Pas de `fraction` pour l'heure SUIVANTE : elle n'a pas encore commencé —
-  // pour Mercure (seule planète dont la nature dépend de l'avancement dans
-  // l'heure), natureOf() retombe alors sur le libellé générique « 1re moitié
-  // favorable · 2de défavorable ».
-  const nextNature = next ? natureOf(next.planet, undefined) : null;
-
-  // Temps restant de l'heure en cours (tableau de bord — point 1). Arrondi
-  // au-dessus (Math.ceil) : « 0 min restantes » donnerait l'impression
-  // trompeuse que l'heure est déjà finie alors qu'il en reste quelques
-  // secondes.
-  const remainingMin = cur ? Math.max(0, Math.ceil((cur.end.getTime() - now.getTime()) / 60000)) : null;
-  const progressPct = cur
-    ? Math.min(100, Math.max(0, ((now.getTime() - cur.start.getTime()) / (cur.end.getTime() - cur.start.getTime())) * 100))
-    : 0;
-
-  const showHours = async () => {
-    const ok = await ensureAccess();
-    if (!ok) return;
-    if (!ready) {
-      setHours(null);
-      setHoursError('Position GPS requise. Autorisez la localisation puis réessayez.');
+    if (!place) return;
+    if (!pday) {
+      if (!astroOk && now.getSeconds() === 0 && now.getMinutes() === 0) recompute(place);
       return;
     }
-    const c = currentHour(new Date(), pday);
-    setHoursError('');
-    setHoursTab(c.isDay ? 'day' : 'night'); // ouvre directement sur la période en cours
-    setHours({
+    const ms = now.getTime();
+    if (ms < pday.sunrise.getTime() || ms >= pday.nextSunrise.getTime()) recompute(place);
+  }, [now, place, pday, astroOk, recompute]);
+
+  const ready = !!(place && pday);
+  const cur = useMemo(() => (ready ? currentHour(now, pday) : null), [ready, now, pday]);
+  const next = useMemo(() => (ready && cur ? nextHour(pday, cur) : null), [ready, cur, pday]);
+  const nature = cur ? planetaryHourState(cur, now).nature : null;
+  const nextNature = next ? natureOf(next.planet, undefined) : null;
+  const elapsedPct = cur
+    ? Math.min(100, Math.max(0, ((now.getTime() - cur.start.getTime()) / (cur.end.getTime() - cur.start.getTime())) * 100))
+    : 0;
+  const phase = ready ? phaseOf(now, pday.today.sunrise, pday.today.sunset) : null;
+
+  // Les 12 + 12 heures sont DÉRIVÉES de l'état courant (plus figées à
+  // l'ouverture) : l'heure « en cours » et les heures passées suivent l'horloge.
+  const curKey = cur ? `${cur.isDay}:${cur.idx}` : '';
+  const hours = useMemo<Hours | null>(() => {
+    if (!hoursOpen || !ready || !cur) return null;
+    return {
       dayName: DAY_PLANETS.names[pday.dayOfWeek],
-      day: buildHourList(pday, c, true),
-      night: buildHourList(pday, c, false),
-    });
+      day: buildHourList(pday, cur, true, tz),
+      night: buildHourList(pday, cur, false, tz),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recalcul à chaque changement d'heure (curKey), pas chaque seconde
+  }, [hoursOpen, ready, pday, curKey, tz]);
+
+  const showHours = async () => {
+    if (!ready || !cur) return;
+    const ok = await ensureAccess();
+    if (!ok) return;
+    setHoursTab(cur.isDay ? 'day' : 'night'); // ouvre sur la période en cours
+    setHoursOpen(true);
   };
 
-  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  // toLocaleDateString('fr-FR', {weekday:'long'…}) rend le jour en minuscule
-  // ("mercredi 2 septembre") — juste la PREMIÈRE lettre en majuscule
-  // (convention française : seul le premier mot d'une date l'est, pas le
-  // mois — text-transform: capitalize en CSS aurait aussi capitalisé
-  // "septembre", à tort).
-  const rawDateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', ...(tz ? { timeZone: tz } : {}) });
+  // Seule la première lettre en majuscule (convention française).
+  const rawDateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', ...(tz ? { timeZone: tz } : {}) });
   const dateStr = rawDateStr.charAt(0).toUpperCase() + rawDateStr.slice(1);
   const activeDay = ready ? pday.dayOfWeek : -1;
   const todayPlanetName = ready ? DAY_PLANETS.planetNames[pday.dayOfWeek] : null;
+  const fmt = (d: Date) => hmIn(d, tz);
 
-  return (
-    <div className="planete-page">
-      {hours ? (
-        // Écran dédié, sans scroll (voir en-tête du fichier) : remplace
-        // ENTIÈREMENT le tableau de bord tant que les heures sont affichées.
+  const placeLabel = place ? place.name : loc.status === 'locating' ? 'Localisation…' : 'Position inconnue';
+
+  if (hours && cur && nature) {
+    return (
+      <div className="planete-page pm">
         <HoursScreen
           hours={hours}
           period={hoursTab}
           onPeriodChange={setHoursTab}
-          onBack={() => setHours(null)}
+          onBack={() => setHoursOpen(false)}
           dateStr={dateStr}
           todayPlanetName={todayPlanetName}
-          position={geo.city}
+          position={placeLabel}
           cur={cur}
           nature={nature}
-          remainingMin={remainingMin}
-          progressPct={progressPct}
-          lat={geo.lat}
-          lng={geo.lng}
+          remaining={remainingLabel(cur.end.getTime() - now.getTime())}
+          elapsedPct={elapsedPct}
+          fmt={fmt}
+          lat={place?.lat ?? null}
+          lng={place?.lng ?? null}
           sunCache={sunCache.current}
         />
-      ) : (
-        <div className="container">
-          <Link href="/" className="back-btn">
-            ← Retour
-          </Link>
+      </div>
+    );
+  }
 
-          {/* Tableau de bord (revue design, point 1) : l'heure planétaire ACTIVE
-              devient l'information dominante — avant, elle n'était qu'une ligne
-              parmi d'autres, au même niveau que le lever du soleil. */}
-          <div className="glass-panel dash-card">
-            <h2 className="dash-title">
-              <Globe size={20} strokeWidth={2} aria-hidden="true" /> Temporalité Mystique
-            </h2>
-            <div className="time-display">{timeStr}</div>
-            <div className="date-display">{dateStr}</div>
+  return (
+    <div className="planete-page pm">
+      <div className="pm-container">
+        <Link href="/" className="back-btn">← Retour</Link>
 
-            {cur && nature ? (
-              <div className="dash-hero">
-                <div className="dash-hero-planet">
-                  <span className="dash-planet-symbol" aria-hidden="true">
-                    {CHALDEAN_EMOJIS[cur.planet]}
-                  </span>
-                  <span className="dash-planet-name">{cur.planet}</span>
-                </div>
-                <div className="dash-hero-interval">
-                  {fmtHM(cur.start)} — {fmtHM(cur.end)}
-                </div>
-                <span className={'dash-nature-badge ' + nature.cls}>● {nature.txt.toUpperCase()}</span>
+        <header className="pm-head">
+          <p className="pm-eyebrow">Temporalité mystique</p>
+          <p className="pm-clock" aria-live="off">{timeStr}</p>
+          <p className="pm-date">{dateStr}</p>
+          <button type="button" className="pm-place-chip" onClick={() => setPlaceSheet(true)} aria-label={`Position : ${placeLabel}. Changer de ville`}>
+            <MapPin size={15} strokeWidth={2.2} aria-hidden="true" /> {placeLabel}
+          </button>
+        </header>
 
-                <div className="dash-progress">
-                  <div className="dash-progress-track">
-                    <div className="dash-progress-fill" style={{ width: `${progressPct}%` }} />
-                  </div>
-                  <span className="dash-progress-label">{remainingMin} min restantes</span>
-                </div>
-
-                {/* Amélioration proposée par l'utilisateur : donner un aperçu de
-                    la SUITE, pas seulement de l'instant présent — l'app connaît
-                    déjà l'intervalle planétaire suivant, sans calcul
-                    supplémentaire (voir lib/planete.js, nextHour()). */}
-                {next && nextNature && (
-                  <p className="dash-next">
-                    Ensuite : {CHALDEAN_EMOJIS[next.planet]} {next.planet} — {nextNature.txt} à {fmtHM(next.start)}
-                  </p>
-                )}
-              </div>
-            ) : geo.error ? (
-              <p className="error-text">{geo.error}</p>
-            ) : (
-              <div className="dash-hero">
-                <Spinner /> <span style={{ marginLeft: 6, color: 'var(--text-dim)' }}>Localisation…</span>
-              </div>
-            )}
-          </div>
-
-          {/* « Jour sacré » (revue design, point 2) : réduit à une ligne
-              secondaire — utile en contexte, mais moins prioritaire que
-              l'heure planétaire active ci-dessus. */}
-          <div className="glass-panel phase-line">
-            <span aria-hidden="true">{phase.icon}</span> {phase.name}
-            <span className="phase-line-sep">•</span>
-            {phase.badge}
-          </div>
-
-          {/* Infos générales en grille compacte (revue design, point 3) —
-              remplace une longue colonne label/valeur empilée (≈50% de hauteur
-              en moins pour la même information). */}
-          <div className="glass-panel">
-            <div className="info-grid">
-              <div className="info-cell">
-                <span className="info-cell-icon" aria-hidden="true">
-                  {todayPlanetName ? CHALDEAN_EMOJIS[todayPlanetName] : '☿'}
-                </span>
-                <span className="info-cell-label">Régent du jour</span>
-                <span className="info-cell-value">
-                  {ready ? (
-                    <>
-                      {todayPlanetName}
-                      {pday.dayOfWeek !== now.getDay() && (
-                        <span className="info-cell-note"> (nuit, avant le lever)</span>
-                      )}
-                    </>
-                  ) : geo.error ? (
-                    '—'
-                  ) : (
-                    <Spinner />
-                  )}
-                </span>
-              </div>
-              <div className="info-cell">
-                <Sunrise size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
-                <span className="info-cell-label">Lever</span>
-                <span className="info-cell-value">{ready ? fmtHM(todaySun!.sunrise) : geo.error ? '—' : <Spinner />}</span>
-              </div>
-              <div className="info-cell">
-                <Sunset size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
-                <span className="info-cell-label">Coucher</span>
-                <span className="info-cell-value">{ready ? fmtHM(todaySun!.sunset) : geo.error ? '—' : <Spinner />}</span>
-              </div>
-              <div className="info-cell">
-                <MapPin size={18} strokeWidth={2} className="info-cell-icon" aria-hidden="true" />
-                <span className="info-cell-label">Position</span>
-                <span className="info-cell-value">
-                  {geo.error ? (
-                    <>
-                      <span style={{ color: '#d9534f' }}>GPS indisponible</span>
-                      <button className="retry-btn" onClick={requestGPS}>
-                        Réessayer
-                      </button>
-                    </>
-                  ) : geo.ready ? (
-                    geo.named ? geo.city : `${geo.city}${geo.accuracy ? ` (±${geo.accuracy} m)` : ''}`
-                  ) : (
-                    <Spinner />
-                  )}
-                </span>
-              </div>
+        {/* États distincts : recherche de position, erreur de position,
+            données astronomiques indisponibles — puis seulement le calcul. */}
+        {loc.status === 'locating' && (
+          <section className="pm-card pm-state" aria-live="polite">
+            <Spinner />
+            <div>
+              <p className="pm-state-title">Recherche de votre position…</p>
+              <p className="pm-state-text">Les heures planétaires dépendent du lever et du coucher du soleil à l’endroit où vous êtes.</p>
             </div>
-          </div>
+            <button type="button" className="pm-btn-text" onClick={() => setPlaceSheet(true)}>Choisir une ville</button>
+          </section>
+        )}
+        {loc.status === 'error' && (
+          <section className="pm-card pm-state is-error" role="alert">
+            <p className="pm-state-title">Position indisponible</p>
+            <p className="pm-state-text">{loc.message}</p>
+            <div className="pm-state-actions">
+              <button type="button" className="pm-btn-tonal" onClick={requestGPS}>Réessayer</button>
+              <button type="button" className="pm-btn-filled" onClick={() => setPlaceSheet(true)}>Choisir une ville</button>
+            </div>
+          </section>
+        )}
+        {place && !astroOk && (
+          <section className="pm-card pm-state is-error" role="alert">
+            <p className="pm-state-title">Données astronomiques indisponibles</p>
+            <p className="pm-state-text">
+              Le soleil ne se lève pas ou ne se couche pas à {place.name} en ce moment (jour ou nuit polaire) : les heures planétaires ne peuvent pas y être calculées.
+            </p>
+            <div className="pm-state-actions">
+              <button type="button" className="pm-btn-filled" onClick={() => setPlaceSheet(true)}>Choisir une autre ville</button>
+            </div>
+          </section>
+        )}
 
-          {/* Accès aux heures planétaires complètes — accès protégé. Le
-              résultat (HoursScreen) remplace ce tableau de bord en entier,
-              voir plus haut : cette carte ne sert donc plus qu'à LANCER le
-              calcul, elle ne montre plus jamais les 12 heures elle-même. */}
-          <div className="glass-panel" style={{ textAlign: 'center' }}>
-            <button className="access-btn" onClick={showHours}>
-              <Sparkles size={17} strokeWidth={2} aria-hidden="true" /> Déterminer les heures planétaires
-            </button>
+        {ready && cur && nature && (
+          <>
+            {/* Heure planétaire actuelle : régent, horaires, nature,
+                progression réelle (écoulé / restant), heure suivante. */}
+            <section className="pm-card pm-now" aria-label="Heure planétaire actuelle">
+              <p className="pm-label">Heure planétaire actuelle</p>
+              <div className="pm-now-row">
+                <span className="pm-glyph lg" aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span>
+                <div className="pm-now-id">
+                  <p className="pm-now-planet">{cur.planet}</p>
+                  <p className="pm-now-time">{fmt(cur.start)} – {fmt(cur.end)}</p>
+                </div>
+                <span className={'pm-chip ' + nature.cls}>{nature.txt}</span>
+              </div>
+              <div
+                className="pm-progress"
+                role="progressbar"
+                aria-label="Avancement de l'heure planétaire"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.floor(elapsedPct)}
+              >
+                <span style={{ width: `${elapsedPct}%` }} />
+              </div>
+              <div className="pm-progress-legend">
+                <span><strong>{remainingLabel(cur.end.getTime() - now.getTime())}</strong> restantes</span>
+                <span>{Math.floor(elapsedPct)} % écoulés</span>
+              </div>
+              {next && nextNature && (
+                <p className="pm-next">
+                  Ensuite : <span aria-hidden="true">{CHALDEAN_EMOJIS[next.planet]}</span> <strong>{next.planet}</strong> à {fmt(next.start)}
+                  <span className={'pm-next-nat ' + nextNature.cls}> · {shortNatureLabel(nextNature)}</span>
+                </p>
+              )}
+            </section>
 
-            {/* Notifications (revue design, point 8) : un interrupteur, pas un
-                second gros bouton turquoise identique au précédent — c'est une
-                préférence, pas l'action principale de la page. Voir
-                PlanetPushToggle.js. */}
-            <PlanetPushToggle lat={geo.lat} lng={geo.lng} />
+            {/* Période astronomique active, bornes comprises. */}
+            <section className="pm-card pm-period">
+              <span className="pm-period-icon" aria-hidden="true">
+                {cur.isDay ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
+              </span>
+              <div className="pm-period-text">
+                <p className="pm-period-title">
+                  {cur.isDay ? 'Période diurne' : 'Période nocturne'}
+                  <span className="pm-period-span">
+                    {cur.isDay ? `${fmt(pday.sunrise)} → ${fmt(pday.sunset)}` : `${fmt(pday.sunset)} → ${fmt(pday.nextSunrise)}`}
+                  </span>
+                </p>
+                {phase && <p className="pm-period-sub">{phase.name} · {phase.badge}</p>}
+              </div>
+            </section>
 
-            {hoursError && <p className="error-text">{hoursError}</p>}
-          </div>
-
-          {/* Régents de la semaine (revue design, point 9) : repliés par
-              défaut — un résumé « aujourd'hui » suffit à la plupart des
-              visites, la liste complète reste à un tap. */}
-          <div className="glass-panel planets-week">
-            <h4>Régents de la semaine</h4>
-            {ready && (
-              <div className="week-today-card">
-                <span className="week-today-label">Aujourd'hui</span>
-                <span className="week-today-day">{DAY_PLANETS.names[activeDay]}</span>
-                <span className="week-today-planet">
-                  {todayPlanetName} <span aria-hidden="true">{CHALDEAN_EMOJIS[todayPlanetName!]}</span>
+            <section className="pm-card pm-grid">
+              <div className="pm-cell">
+                <span className="pm-cell-label">Régent du jour</span>
+                <span className="pm-cell-value">
+                  <span aria-hidden="true">{CHALDEAN_EMOJIS[todayPlanetName!]}</span> {todayPlanetName}
                 </span>
               </div>
-            )}
-            <button
-              type="button"
-              className="week-toggle"
-              onClick={() => setWeekExpanded((v) => !v)}
-              aria-expanded={weekExpanded}
-            >
-              {weekExpanded ? 'Masquer les 7 régents' : 'Voir les 7 régents'}
-              {weekExpanded ? (
-                <ChevronUp size={16} strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
-              )}
-            </button>
-            {weekExpanded && (
-              <div>
-                {DAY_PLANETS.names.map((day: string, i: number) => (
-                  <div className={'day-row' + (i === activeDay ? ' today' : '')} key={i}>
-                    <span className="day-name">
-                      {i === activeDay ? '▶ ' : ''}
-                      {day}
-                    </span>
-                    <span className="day-planet">
-                      {DAY_PLANETS.planetNames[i]} <span aria-hidden="true">{CHALDEAN_EMOJIS[DAY_PLANETS.planetNames[i]]}</span>
-                    </span>
-                  </div>
-                ))}
+              <div className="pm-cell">
+                <span className="pm-cell-label"><Sunrise size={14} strokeWidth={2} aria-hidden="true" /> Lever</span>
+                <span className="pm-cell-value">{fmt(pday.today.sunrise)}</span>
               </div>
-            )}
-          </div>
-        </div>
+              <div className="pm-cell">
+                <span className="pm-cell-label"><Sunset size={14} strokeWidth={2} aria-hidden="true" /> Coucher</span>
+                <span className="pm-cell-value">{fmt(pday.today.sunset)}</span>
+              </div>
+              <div className="pm-cell">
+                <span className="pm-cell-label"><MapPin size={14} strokeWidth={2} aria-hidden="true" /> Position</span>
+                <span className="pm-cell-value pm-cell-place">{place!.name}</span>
+                <button type="button" className="pm-link" onClick={() => setPlaceSheet(true)}>Changer</button>
+              </div>
+              {tz && <p className="pm-tz-note">Horaires à l’heure locale de {place!.name}.</p>}
+            </section>
+
+            <button type="button" className="pm-btn-filled pm-cta" onClick={showHours}>
+              <Sparkles size={18} strokeWidth={2} aria-hidden="true" /> Déterminer les heures planétaires
+            </button>
+          </>
+        )}
+
+        <NotificationsRow place={place} sunCache={sunCache.current} onOpenAlarms={ready ? showHours : undefined} />
+
+        {/* Régents de la semaine : une ligne repliée (aujourd'hui), les 7 à un tap. */}
+        <section className="pm-card pm-week">
+          <button
+            type="button"
+            className="pm-week-toggle"
+            onClick={() => setWeekExpanded((v) => !v)}
+            aria-expanded={weekExpanded}
+          >
+            <span className="pm-week-text">
+              <span className="pm-week-title">Régents de la semaine</span>
+              {ready && (
+                <span className="pm-week-today">
+                  Aujourd’hui · {DAY_PLANETS.names[activeDay]} · {todayPlanetName} {CHALDEAN_EMOJIS[todayPlanetName!]}
+                </span>
+              )}
+            </span>
+            {weekExpanded ? <ChevronUp size={20} strokeWidth={2} aria-hidden="true" /> : <ChevronDown size={20} strokeWidth={2} aria-hidden="true" />}
+          </button>
+          {weekExpanded && (
+            <ul className="pm-week-list">
+              {DAY_PLANETS.names.map((day: string, i: number) => (
+                <li key={day} className={i === activeDay ? 'today' : undefined}>
+                  <span>{day}</span>
+                  <span>
+                    {DAY_PLANETS.planetNames[i]} <span aria-hidden="true">{CHALDEAN_EMOJIS[DAY_PLANETS.planetNames[i]]}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {placeSheet && (
+        <PlaceSheet
+          onClose={() => setPlaceSheet(false)}
+          onPick={(p) => { savePlace(p); applyPlace({ ...p, source: 'manual' }); setPlaceSheet(false); }}
+          onUseGps={() => { clearSavedPlace(); setPlaceSheet(false); requestGPS(); }}
+        />
       )}
     </div>
   );
 }
 
-// Écran des 12 heures — SANS SCROLL (revue 2026-09-27). Layout en colonne
-// flex à hauteur d'écran fixe (100dvh) : header + carte « heure actuelle »
-// prennent leur hauteur naturelle (flex: 0 0 auto), la grille de 12 cartes
-// absorbe TOUT le reste (flex: 1 1 auto, lignes en `fr`) — elle s'adapte donc
-// exactement à l'espace restant plutôt que d'imposer une hauteur de carte
-// fixe, ce qui garantit l'absence de scroll même quand le header prend une
-// ligne de plus (petit écran, texte qui passe à la ligne). La bottom nav
-// Jour/Nuit est fixe en bas d'écran, hors du flux scrollable qui n'existe
-// plus.
+// Choix de la ville : recherche (lib/places.js) ou retour au GPS.
+function PlaceSheet({ onClose, onPick, onUseGps }: {
+  onClose: () => void;
+  onPick: (p: { name: string; detail: string; lat: number; lng: number; timeZone: string | null }) => void;
+  onUseGps: () => void;
+}) {
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ name: string; detail: string; lat: number; lng: number; timeZone: string | null }[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (q.trim().length < 2) { setResults([]); setStatus('idle'); return undefined; }
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      setStatus('loading');
+      try {
+        setResults(await searchPlaces(q, ctrl.signal));
+        setStatus('idle');
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') setStatus('error');
+      }
+    }, 300);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [q]);
+
+  return (
+    <div className="pm-sheet-backdrop" onClick={onClose}>
+      <div className="pm-sheet" role="dialog" aria-modal="true" aria-label="Choisir la ville" onClick={(e) => e.stopPropagation()}>
+        <div className="pm-sheet-head">
+          <h2 className="pm-sheet-title">Choisir la ville</h2>
+          <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Fermer"><X size={20} strokeWidth={2} /></button>
+        </div>
+        <button type="button" className="pm-sheet-gps" onClick={onUseGps}>
+          <LocateFixed size={18} strokeWidth={2} aria-hidden="true" /> Utiliser ma position actuelle (GPS)
+        </button>
+        <label className="pm-search">
+          <Search size={18} strokeWidth={2} aria-hidden="true" />
+          <input
+            type="search"
+            autoFocus
+            placeholder="Rechercher une ville (ex. Matam)"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            aria-label="Rechercher une ville"
+          />
+        </label>
+        <div className="pm-sheet-results" aria-live="polite">
+          {status === 'loading' && <p className="pm-sheet-hint">Recherche…</p>}
+          {status === 'error' && <p className="pm-sheet-hint is-error">Recherche impossible. Vérifiez votre connexion.</p>}
+          {status === 'idle' && q.trim().length >= 2 && results.length === 0 && <p className="pm-sheet-hint">Aucune ville trouvée.</p>}
+          <ul>
+            {results.map((r) => (
+              <li key={`${r.lat},${r.lng}`}>
+                <button type="button" className="pm-sheet-item" onClick={() => onPick(r)}>
+                  <span className="pm-sheet-item-name">{r.name}</span>
+                  <span className="pm-sheet-item-detail">{r.detail}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Notifications : UNE ligne compacte. App Android → alertes LOCALES à chaque
+// changement d'heure (programmées 48 h à l'avance, reçues app fermée,
+// lib/planetHourChangeNative.js). Navigateur → push web (PlanetPushToggle).
+// « Alarmes par heure » ouvre l'écran des heures, où chaque heure se règle.
+function NotificationsRow({ place, sunCache, onOpenAlarms }: {
+  place: Place | null;
+  sunCache: SunCache;
+  onOpenAlarms?: () => void;
+}) {
+  const [mode, setMode] = useState<'checking' | 'native' | 'web' | 'none'>('checking');
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    hourChangeSupported().then((native) => {
+      if (!alive) return;
+      if (native) { setMode('native'); setEnabled(readHourChangeState().enabled); }
+      else setMode(pushSupported() ? 'web' : 'none');
+    });
+    return () => { alive = false; };
+  }, []);
+
+  // Activé : renouvelle la fenêtre de 48 h à chaque visite / changement de position.
+  const lat = place?.lat ?? null;
+  const lng = place?.lng ?? null;
+  const zone = place?.timeZone || null;
+  useEffect(() => {
+    if (mode !== 'native' || !enabled || lat == null || lng == null) return;
+    enableHourChangeAlerts({ lat, lng, cache: sunCache, timeZone: zone }).then((r) => {
+      if (!r.ok && r.error === 'permission') { setEnabled(false); setMsg('Notifications refusées dans les réglages du téléphone.'); }
+    });
+  }, [mode, enabled, lat, lng, zone, sunCache]);
+
+  const toggleNative = async () => {
+    setBusy(true);
+    setMsg('');
+    if (enabled) {
+      await disableHourChangeAlerts();
+      setEnabled(false);
+    } else {
+      const r = await enableHourChangeAlerts({ lat, lng, cache: sunCache, timeZone: zone });
+      if (r.ok) setEnabled(true);
+      else setMsg(r.error === 'permission'
+        ? 'Autorisez les notifications d’ASRAR PRO dans les réglages du téléphone.'
+        : r.error === 'position' ? 'Position requise pour programmer les alertes.' : 'Impossible de programmer les alertes.');
+    }
+    setBusy(false);
+  };
+
+  if (mode === 'checking') return null;
+
+  return (
+    <section className="pm-card pm-notif">
+      <div className="pm-notif-row">
+        <span className="pm-notif-icon" aria-hidden="true"><Bell size={20} strokeWidth={2} /></span>
+        <div className="pm-notif-text">
+          <p className="pm-notif-title">Notifications</p>
+          <p className="pm-notif-sub">
+            {mode === 'none' ? 'Indisponibles sur ce navigateur' : 'Alertes aux changements d’heure'}
+          </p>
+        </div>
+        {mode === 'native' && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-label="Alertes aux changements d’heure planétaire"
+            className={'switch' + (enabled ? ' on' : '')}
+            onClick={toggleNative}
+            disabled={busy}
+          >
+            <span className="switch-knob" />
+          </button>
+        )}
+        {mode === 'web' && <PlanetPushToggle lat={lat} lng={lng} compact />}
+      </div>
+      {msg && <p className="error-text">{msg}</p>}
+      {onOpenAlarms && mode !== 'none' && (
+        <button type="button" className="pm-notif-more" onClick={onOpenAlarms}>
+          Alarmes par heure <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+      )}
+    </section>
+  );
+}
+
+// Écran des 12 heures (jour OU nuit, jamais mélangés) : en-tête, heure en
+// cours compacte, sélecteur Jour/Nuit, grille.
 function HoursScreen({
   hours,
   period,
@@ -537,8 +680,9 @@ function HoursScreen({
   position,
   cur,
   nature,
-  remainingMin,
-  progressPct,
+  remaining,
+  elapsedPct,
+  fmt,
   lat,
   lng,
   sunCache,
@@ -551,118 +695,63 @@ function HoursScreen({
   todayPlanetName: string | null;
   position: string;
   cur: any;
-  nature: { txt: string; cls: string } | null;
-  remainingMin: number | null;
-  progressPct: number;
+  nature: { txt: string; cls: string };
+  remaining: string;
+  elapsedPct: number;
+  fmt: (d: Date) => string;
   lat: number | null;
   lng: number | null;
   sunCache: SunCache;
 }) {
   return (
-    <div className="hours-screen">
-      <header className="hours-header">
-        <div className="hours-header-row">
-          <button type="button" className="hours-back" onClick={onBack} aria-label="Retour au tableau de bord">
-            <ChevronLeft size={20} strokeWidth={2.4} aria-hidden="true" />
-          </button>
-          <Globe size={22} strokeWidth={2} className="hours-header-icon" aria-hidden="true" />
-          <div className="hours-header-titles">
-            <h1 className="hours-title">Heures planétaires</h1>
-            <p className="hours-date">{dateStr}</p>
-          </div>
-        </div>
-
-        {/* Trois informations d'un coup d'œil (maquette du 2026-09-28) — le
-            régent du jour et la position étaient auparavant fondus dans une
-            seule ligne de méta-texte ; ici chacun a son icône, comme les
-            notifications juste à côté. */}
-        <div className="hours-info-row">
-          <div className="hours-info-item">
-            <span className="hours-info-icon" aria-hidden="true">
-              {todayPlanetName ? CHALDEAN_EMOJIS[todayPlanetName] : '☿'}
-            </span>
-            <span className="hours-info-text">
-              <span className="hours-info-label">Régent du jour</span>
-              <span className="hours-info-value">{todayPlanetName || '—'}</span>
-            </span>
-          </div>
-          <div className="hours-info-item">
-            <MapPin size={17} strokeWidth={2} className="hours-info-icon" aria-hidden="true" />
-            <span className="hours-info-text">
-              <span className="hours-info-label">Localisation</span>
-              <span className="hours-info-value">{position}</span>
-            </span>
-          </div>
-          <div className="hours-info-item hours-info-notif">
-            <Bell size={17} strokeWidth={2} className="hours-info-icon" aria-hidden="true" />
-            <span className="hours-info-text">
-              <span className="hours-info-label">Notifications</span>
-            </span>
-            <PlanetPushToggle lat={lat} lng={lng} compact />
-          </div>
+    <div className="pm-container pm-hours">
+      <header className="pm-hours-head">
+        <button type="button" className="pm-icon-btn" onClick={onBack} aria-label="Retour au tableau de bord">
+          <ChevronLeft size={22} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+        <div>
+          <h1 className="pm-hours-title">Heures planétaires</h1>
+          <p className="pm-hours-meta">
+            {dateStr} · {position}
+            {todayPlanetName && <> · Régent : {CHALDEAN_EMOJIS[todayPlanetName]} {todayPlanetName}</>}
+          </p>
         </div>
       </header>
 
-      {cur && nature && (
-        <section className="hours-now-card" aria-label="Heure planétaire en cours">
-          <p className="hours-now-eyebrow">Heure actuelle</p>
-          <div className="hours-now-body">
-            <div className="hours-now-left">
-              <PlanetSphere planet={cur.planet} kind="hero" />
-              <div className="hours-now-main">
-                <span className="hours-now-planet">
-                  <span aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span> {cur.planet}
-                </span>
-                <span className="hours-now-tag">Maintenant</span>
-                <span className={'hours-now-badge ' + nature.cls}>● {nature.txt}</span>
-              </div>
-            </div>
-            <div className="hours-now-right">
-              <span className="hours-now-interval">
-                {fmtHM(cur.start)} — {fmtHM(cur.end)}
-              </span>
-              <div className="hours-now-progress">
-                <div className="hours-now-progress-track">
-                  <div className="hours-now-progress-fill" style={{ width: `${progressPct}%` }} />
-                </div>
-                <span className="hours-now-progress-pct">{Math.round(progressPct)}%</span>
-              </div>
-              <span className="hours-now-progress-label">{remainingMin} min restantes</span>
-            </div>
+      <section className="pm-card pm-now compact" aria-label="Heure planétaire en cours">
+        <div className="pm-now-row">
+          <span className="pm-glyph" aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span>
+          <div className="pm-now-id">
+            <p className="pm-now-planet">{cur.planet}</p>
+            <p className="pm-now-time">{fmt(cur.start)} – {fmt(cur.end)} · {remaining} restantes</p>
           </div>
-        </section>
-      )}
+          <span className={'pm-chip ' + nature.cls}>{shortNatureLabel(nature)}</span>
+        </div>
+        <div className="pm-progress" aria-hidden="true"><span style={{ width: `${elapsedPct}%` }} /></div>
+      </section>
+
+      <div className="pm-segmented" role="tablist" aria-label="Période">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={period === 'day'}
+          className={period === 'day' ? 'active' : undefined}
+          onClick={() => onPeriodChange('day')}
+        >
+          <Sun size={18} strokeWidth={2} aria-hidden="true" /> Jour · 12 heures
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={period === 'night'}
+          className={period === 'night' ? 'active' : undefined}
+          onClick={() => onPeriodChange('night')}
+        >
+          <Moon size={18} strokeWidth={2} aria-hidden="true" /> Nuit · 12 heures
+        </button>
+      </div>
 
       <HourGrid hours={hours} period={period} lat={lat} lng={lng} sunCache={sunCache} />
-
-      {/* Bottom nav fixe (remplace l'ancienne pastille Jour/Nuit en plein
-          contenu) : bascule uniquement le contenu de la grille, la structure
-          de l'écran ne bouge pas. Piste unique à deux onglets (maquette du
-          2026-09-28), pas deux pastilles séparées : l'onglet actif porte le
-          dégradé plein, l'autre reste en texte discret, séparés d'un simple
-          trait — lecture « interrupteur à deux positions » plutôt que « deux
-          boutons ». */}
-      <nav className="hours-bottom-nav" aria-label="Période">
-        <button
-          type="button"
-          className={'hours-bottom-tab' + (period === 'day' ? ' active' : '')}
-          onClick={() => onPeriodChange('day')}
-          aria-pressed={period === 'day'}
-        >
-          <Sun size={18} strokeWidth={2.2} aria-hidden="true" />
-          Jour
-        </button>
-        <span className="hours-bottom-nav-sep" aria-hidden="true" />
-        <button
-          type="button"
-          className={'hours-bottom-tab' + (period === 'night' ? ' active' : '')}
-          onClick={() => onPeriodChange('night')}
-          aria-pressed={period === 'night'}
-        >
-          <Moon size={18} strokeWidth={2.2} aria-hidden="true" />
-          Nuit
-        </button>
-      </nav>
     </div>
   );
 }
@@ -879,13 +968,11 @@ function HourGrid({
                 }
               >
                 <div className="hour-card-icon-wrap">
-                  <PlanetSphere planet={r.planet} kind="grid" />
+                  <span className="pm-glyph" aria-hidden="true">{r.emoji}</span>
                   <span className="hour-card-num">{String(i + 1).padStart(2, '0')}</span>
                 </div>
                 <div className="hour-card-info">
-                  <span className="hour-card-planet">
-                    <span aria-hidden="true">{r.emoji}</span> {r.planet}
-                  </span>
+                  <span className="hour-card-planet">{r.planet}</span>
                   <span className="hour-card-time">{r.interval}</span>
                   <span className={'hour-card-status ' + r.nat.cls} title={r.nat.txt}>
                     ● {shortNatureLabel(r.nat)}
