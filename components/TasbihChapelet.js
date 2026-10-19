@@ -43,7 +43,7 @@ function geometryFor(held) {
     const LOOP_PATH =
       `M ${CX - RX} ${TOP_Y} A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
       `L ${CX + RX} ${BOT_Y} A ${RX} 40 0 0 1 ${CX - RX} ${BOT_Y} Z`;
-    // Brin droit : derrière la main au-dessus de SWAP_Y, devant en dessous.
+    // Brin droit : dans la prise (masqué) au-dessus de SWAP_Y, devant en dessous.
     return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: HELD_BEAD_COUNT, held: true, CX, SWAP_Y: 128 };
   }
   const VIEW_W = 192;
@@ -182,7 +182,13 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         const frac = len - lower;
         const y = ys[lower] + (ys[upper] - ys[lower]) * frac;
 
-        if (y < -BEAD_D || y > VIEW_H + BEAD_D) {
+        // Tenu : le brin droit, au-dessus de SWAP_Y, est DANS la prise (caché
+        // par les doigts) — masqué plutôt que laissé sous l'image, dont le
+        // contour transparent le laissait dépasser au-dessus du dos de la main.
+        // Fondu sur ~28 px autour de SWAP_Y : le grain sort de sous les
+        // doigts au lieu d'apparaître d'un coup.
+        const emerge = held && xs[lower] > CX ? Math.min(1, Math.max(0, (y - (SWAP_Y - 16)) / 28)) : 1;
+        if (emerge === 0 || y < -BEAD_D || y > VIEW_H + BEAD_D) {
           if (bead.style.visibility !== 'hidden') bead.style.visibility = 'hidden';
           continue;
         }
@@ -190,9 +196,12 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         const x = xs[lower] + (xs[upper] - xs[lower]) * frac;
         if (bead.style.visibility) bead.style.visibility = '';
         bead.style.transform = `translate(${x - BEAD_R}px, ${y - BEAD_R}px)`;
-        // Tenu : à droite, le brin passe DERRIÈRE la main tant qu'il est dans la
-        // prise (y < SWAP_Y), puis redevient visible devant elle en dessous.
-        if (held) bead.style.zIndex = x > CX && y < SWAP_Y ? '1' : '3';
+        // Tenu : grains devant la main (brin gauche devant les doigts, brin
+        // droit sous la paume), mais sous le calque du pouce (.tc-hand-thumb).
+        if (held) {
+          bead.style.zIndex = '3';
+          bead.style.opacity = emerge < 1 ? String(emerge) : '';
+        }
       }
     },
     [ensureSamples, BEAD_D, BEAD_R, VIEW_H, beadCount, held, CX, SWAP_Y]

@@ -1187,7 +1187,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, .55), inset 0 -2px 3px rgba(0, 0, 0, .35);
 }
 .tc-hand {
-  position: absolute; left: 36px; top: -4px; width: 272px; height: auto;
+  position: absolute; left: 36px; top: -4px; width: 240px; max-width: none; height: auto;
   pointer-events: none; user-select: none; z-index: 2;
   filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .5));
   -webkit-mask-image: linear-gradient(to right, #000 0 72%, transparent 100%), linear-gradient(to bottom, #000 0 78%, transparent 100%);
