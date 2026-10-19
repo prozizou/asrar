@@ -1238,9 +1238,11 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 arabe domine, le nom du groupe passe en titre sobre au-dessus,
                 la translittération en sous-titre discret, puis une ligne de
                 métadonnées à icônes (créateur · participants · en ligne). */}
-            <h1>{g.name}</h1>
+            {/* Même identité que l'écran Zikr (ZikrHero) en version compacte :
+                légende capitales violettes, formule arabe, translittération. */}
+            <h1 className="zk-hero-caption zk-head-caption">Zikr collectif · {g.name}</h1>
             {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
-            {g.transliteration && <span className="zk-preset-badge">{g.transliteration}</span>}
+            {g.transliteration && <span className="zk-head-translit">{g.transliteration}</span>}
             <div className="zk-owner">
               <span className="zk-meta-item"><Crown size={12} strokeWidth={2.4} aria-hidden="true" /> {chatDisplayName(g.ownerEmail, g.ownerName)}</span>
               <span className="zk-meta-item"><Users size={12} strokeWidth={2.4} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>

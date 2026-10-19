@@ -20,6 +20,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Petite icône des notifications push (barre de statut) : silhouette
+             blanche sur fond transparent. Sans elle, Android reprend l'icône de
+             l'app (opaque) et l'affiche comme un carré blanc. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_asrar" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

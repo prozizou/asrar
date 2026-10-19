@@ -947,3 +947,92 @@
 @media (prefers-reduced-motion: reduce) {
   .zk-spin { animation: none; }
 }
+
+/* ── Refonte Participants / Discussion (même style que l'écran Zikr) ─────────
+   Règles ajoutées EN FIN de fichier : à spécificité égale, elles l'emportent
+   sur les définitions d'origine plus haut, sans toucher à leur logique. */
+
+/* Barre du bas : la règle globale `button:hover` (translateY + halo) restait
+   « collée » après un toucher sur mobile et dessinait un pavé clair. */
+.zk-bottom-nav-item:hover, .zk-bottom-nav-item:active { transform: none; box-shadow: none; background: none; }
+
+/* En-tête compact (Participants / Discussion). */
+/* .zk-detail-head h1 (plus haut, spécificité 0,1,1) imposait couleur grise,
+   largeur 32ch et taille 1rem : sélecteur à deux classes pour reprendre la
+   légende violette de l'écran Zikr, sur deux lignes au besoin. */
+.zk-detail-head .zk-head-caption {
+  margin: 8px auto 2px; max-width: none; font-family: var(--font-ui);
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); white-space: normal; line-height: 1.35;
+}
+.zk-detail-head .zk-phrase-big { font-size: 1.7rem; margin: 0; line-height: 1.45; }
+.zk-head-translit { display: block; font-size: 0.95rem; color: var(--accent); margin: 0 0 6px; }
+
+/* Participants : UNE carte (même gabarit que .zk-zikr-card), lignes séparées
+   par un filet au lieu d'une boîte par membre. */
+.zk-board {
+  max-width: 520px; margin: 4px auto 16px; padding: 16px 14px 6px;
+  background: var(--surface-2); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 22px;
+}
+.zk-board-head { align-items: center; padding: 0 4px; }
+.zk-board-label { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+.zk-board-summary { font-size: 0.88rem; margin-top: 2px; }
+.zk-notify-inactive {
+  min-height: 36px; padding: 6px 14px; border-radius: 999px; margin-top: 0;
+  background: transparent; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent); font-size: 0.8rem; font-weight: 600;
+}
+.zk-notify-inactive:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, transparent); transform: none; box-shadow: none; }
+.zk-board-list { gap: 0; margin-top: 10px; }
+.zk-board-row {
+  min-height: 64px; padding: 10px 6px; gap: 12px; border-radius: 0; background: none;
+  border-top: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
+}
+.zk-board-list > .zk-board-row:first-child { border-top-color: transparent; }
+.zk-board-row.me {
+  box-shadow: none; border-radius: 14px; border-top-color: transparent; padding: 10px 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.zk-board-row.me + .zk-board-row { border-top-color: transparent; }
+.zk-board-avatar { width: 40px; height: 40px; font-size: 1rem; }
+.zk-online-dot { width: 12px; height: 12px; border-color: var(--bg-deep, #120a26); }
+.zk-board-name { font-size: 1rem; }
+.zk-board-email-sub { font-size: 0.8rem; }
+.zk-board-count { font-size: 1.05rem; }
+.zk-board-count-unit { font-size: 0.75rem; }
+.zk-board-today { font-size: 0.78rem; color: #2dd4a0; }
+.zk-board-empty { background: none; }
+
+/* Discussion : bulles sans bordure, coins arrondis, ma bulle en violet
+   ASSOMBRI (texte blanc lisible : l'accent clair seul donnait un contraste
+   insuffisant), barre de saisie alignée sur le reste. */
+.zk-chat-panel { border-top: none; padding-top: 4px; }
+.zk-chat-mode .zk-chat-panel { border-top: none; padding-top: 4px; }
+.zk-chat-list { gap: 12px; }
+.zk-chat-author { font-size: 0.75rem; color: var(--text-muted); }
+.zk-chat-avatar { width: 32px; height: 32px; font-size: 0.85rem; }
+.zk-chat-msg {
+  border: none; border-radius: 18px; padding: 8px 12px;
+  background: color-mix(in srgb, var(--text-main) 7%, var(--card-bg));
+}
+.zk-chat-group:not(.me) .zk-chat-msg:first-of-type { border-top-left-radius: 6px; }
+.zk-chat-group.me .zk-chat-msg { background: color-mix(in srgb, var(--accent) 70%, #000); }
+.zk-chat-group.me .zk-chat-msg:last-child { border-bottom-right-radius: 6px; }
+.zk-chat-group.me .zk-chat-text { color: #fff; }
+.zk-chat-group.me .zk-chat-time.me { color: rgba(255, 255, 255, 0.75); opacity: 1; }
+.zk-chat-text { font-size: 0.95rem; line-height: 1.4; }
+.zk-chat-group.me .zk-audio-bar { background: rgba(255, 255, 255, 0.35); }
+.zk-chat-group.me .zk-audio-bar-fill { background: #fff; }
+.zk-chat-group.me .zk-audio-play { background: rgba(255, 255, 255, 0.22); }
+.zk-chat-group.me .zk-audio-time { color: #fff; }
+.zk-chat-input-row { gap: 8px; align-items: center; }
+.zk-chat-field {
+  border-radius: 24px; min-height: 44px; align-items: center; border-color: transparent;
+  background: color-mix(in srgb, var(--text-main) 7%, var(--card-bg));
+}
+.zk-chat-tool { width: 44px; height: 44px; border-color: transparent; background: color-mix(in srgb, var(--text-main) 7%, var(--card-bg)); }
+.zk-chat-tool:hover { transform: none; box-shadow: none; }
+.zk-chat-field .zk-chat-tool { width: 32px; height: 32px; background: transparent; }
+.zk-chat-send { width: 44px; height: 44px; background: var(--accent); box-shadow: none; }
+.zk-chat-send:hover { transform: none; box-shadow: none; }
