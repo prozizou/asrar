@@ -760,13 +760,14 @@
 .zk-zikr-card {
   background: var(--surface-2); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 22px; padding: 18px; margin-bottom: 14px;
+  max-width: 520px; margin-inline: auto;
 }
 .zk-zikr-card .zk-progress-block { margin-bottom: 0; gap: 10px; }
 .zk-zikr-card .zk-progress-head { font-size: 1.1rem; font-weight: 500; color: var(--text-main); }
 .zk-zikr-card .zk-progress-stats { font-size: clamp(1.5rem, 7vw, 1.9rem); justify-content: center; }
 .zk-zikr-card .zk-bar.big { height: 14px; border-radius: 14px; }
 .zk-zikr-card .zk-progress-meta { font-size: 1rem; color: var(--accent); }
-.zk-zikr-card-counter { padding-bottom: 16px; }
+.zk-zikr-card-counter { padding-bottom: 16px; overflow: hidden; }
 /* Bare (dans .zk-zikr-card, prop `bare` de CollectiveProgress) : plus de
    cadre propre — voir .zk-progress-hero, gardé pour StaticProgress (visiteur
    non-membre), seul cas qui affiche encore la progression SANS chapelet
