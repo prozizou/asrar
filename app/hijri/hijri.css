@@ -44,3 +44,17 @@
   background: var(--surface-2); color: var(--text-main); text-decoration: none; font-size: 0.9rem;
 }
 .hijri-suggestion strong { color: var(--phase-color); white-space: nowrap; font-size: 0.85rem; }
+
+/* Planète du moment + rappels */
+.hijri-planet, .hijri-reminders {
+  margin-top: 16px; padding: 16px 18px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--surface-2);
+}
+.hijri-planet-title, .hijri-reminders-title { margin: 0 0 10px; font-size: 1rem; color: var(--text-main); }
+.hijri-planet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hijri-planet-grid strong { display: block; font-size: 1.15rem; margin-top: 2px; }
+.hijri-planet-label { color: var(--text-dim); font-size: 0.8rem; }
+.hijri-planet-note, .hijri-reminders-text { margin: 10px 0 0; color: var(--text-muted); font-size: 0.85rem; }
+.hijri-planet-link { display: inline-block; margin-top: 8px; min-height: 44px; line-height: 44px; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.hijri-reminders .hijri-retry { margin-top: 10px; }
+.hijri-retry:disabled { opacity: 0.6; cursor: default; }

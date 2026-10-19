@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchHijriToday } from '@/lib/hijri';
 import { phaseOfDay } from '@/lib/hijriPhases';
+import PlanetNow from './PlanetNow';
+import HijriReminders from './HijriReminders';
 
 type HijriToday = Awaited<ReturnType<typeof fetchHijriToday>>;
 
@@ -105,6 +107,8 @@ export default function HijriPage() {
           </ul>
         </section>
       )}
+      {data && !loading && <PlanetNow />}
+      <HijriReminders />
       <p className="hijri-credit">Source : AlAdhan Islamic Calendar API</p>
     </div>
   );
