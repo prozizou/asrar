@@ -41,7 +41,7 @@ import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
-  progressPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
+  progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
   normalizePhone,
 } from '@/lib/zikrLogic';
@@ -173,7 +173,7 @@ const fmt = (n: number) => (Number(n) || 0).toLocaleString('fr-FR');
 // fois la barre visiblement remplie ("52 %"), une décimale en dessous de 1 %
 // (sinon "0 %" laisserait croire qu'aucun grain n'a encore été récité alors
 // que la progression réelle — ex. 1 096/165 000 — reste non nulle).
-const fmtPct = (pct: number) => (pct > 0 && pct < 1 ? pct.toFixed(1) : Math.floor(pct)).toString().replace('.', ',') + ' %';
+const fmtPct = formatPct;
 // Conversion <input type="datetime-local"> (heure LOCALE du navigateur, sans
 // fuseau) ↔ epoch ms : le rappel de session (lib/reminders.js) repose sur un
 // instant absolu, pas sur l'heure affichée telle quelle — d'où la conversion
@@ -1724,9 +1724,9 @@ function BottomNav({ tab, setTab, unreadCount }: {
   unreadCount: number;
 }) {
   const items: { key: 'zikr' | 'participants' | 'discussion'; label: string; icon: JSX.Element }[] = [
-    { key: 'zikr', label: 'Zikr', icon: <Target size={20} strokeWidth={2.5} aria-hidden="true" /> },
-    { key: 'participants', label: 'Participants', icon: <Users size={20} strokeWidth={2.5} aria-hidden="true" /> },
-    { key: 'discussion', label: 'Discussion', icon: <MessageCircle size={20} strokeWidth={2.5} aria-hidden="true" /> },
+    { key: 'zikr', label: 'Zikr', icon: <Target size={24} strokeWidth={2} aria-hidden="true" /> },
+    { key: 'participants', label: 'Participants', icon: <Users size={24} strokeWidth={2} aria-hidden="true" /> },
+    { key: 'discussion', label: 'Discussion', icon: <MessageCircle size={24} strokeWidth={2} aria-hidden="true" /> },
   ];
   return (
     <nav className="zk-bottom-nav" aria-label="Navigation du zikr collectif">

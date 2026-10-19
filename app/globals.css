@@ -1025,8 +1025,8 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    boîte » (revue design), tout en restant cliquable/focusable (juste sans
    son propre relief visuel). */
 .tc-embedded .tc-tapzone {
-  padding: 4px 0 0; border: none; border-radius: 0; background: none;
-  gap: 16px; /* grille 8px — plus d'air autour du grand chapelet/compteur */
+  padding: 0; border: none; border-radius: 0; background: none;
+  gap: 4px; /* carte resserrée : le tasbih garde sa taille, seuls les vides diminuent */
 }
 .tc-embedded .tc-tapzone:hover, .tc-embedded .tc-tapzone:active { background: none; border-color: transparent; }
 .tc-embedded .tc-tapzone:focus-visible { outline-offset: 4px; }
@@ -1122,7 +1122,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    Lueur réduite (revue design : « réduire les effets lumineux et gradients
    décoratifs au profit d'ombres très légères ») — un repère de profondeur
    discret, plus le halo prononcé d'avant. */
-.tc-embedded .tc-counter { font-size: clamp(4rem, 20vw, 5.4rem); font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.tc-embedded .tc-counter { font-size: clamp(3.4rem, 16vw, 4.4rem); font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .tc-embedded .tc-counter-label { font-size: 1.1rem; font-weight: 500; color: var(--text-main); margin-bottom: 0; }
 /* Pulse bref au tap (revue design : « animation subtile du grain ») — retour
    visuel immédiat en plus de la vibration (useTasbih.js) et du défilement du
@@ -1177,15 +1177,21 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 /* Tasbih tenu par une main (Zikr collectif) : la main est un décor posé dans
    une boîte de la taille du tasbih ; les grains y sont intercalés par z-index
    (voir layout(), components/TasbihChapelet.js) — brin gauche devant les
-   doigts, brin droit derrière la paume, pouce par-dessus l'arc. */
+   doigts, brin droit dans la prise puis sous le bout des doigts, pouce et
+   bout des doigts redessinés par-dessus (calques .tc-hand-thumb/-tips). */
 .tc-tasbih { position: relative; display: flex; justify-content: center; }
 .tc-tasbih-held { width: calc(100% + 36px); margin-inline: -18px; overflow: hidden; }
 .tc-held-box { position: relative; flex: none; }
 .tc-held-box .tc-stage-wrap { margin: 0; overflow: visible; }
-.tc-tasbih-held .tc-bead {
-  background: radial-gradient(circle at 36% 30%, #c98450, #7e3d1c 58%, #3f1a0a);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .55), inset 0 -2px 3px rgba(0, 0, 0, .35);
+/* Perles en bois photographiées (trois variantes, alternées pour éviter des
+   sphères identiques) ; ombre portée courte pour les poser sur la peau. */
+.tc-tasbih-held .tc-bead-wood {
+  background: transparent center / 100% 100% no-repeat; box-shadow: 0 2px 3px rgba(20, 8, 2, .55);
+  will-change: transform;
 }
+.tc-tasbih-held .tc-bead-v1 { background-image: url('/assets/tasbih/bead-1.webp'); }
+.tc-tasbih-held .tc-bead-v2 { background-image: url('/assets/tasbih/bead-2.webp'); }
+.tc-tasbih-held .tc-bead-v3 { background-image: url('/assets/tasbih/bead-3.webp'); }
 .tc-hand {
   position: absolute; left: 36px; top: -4px; width: 240px; max-width: none; height: auto;
   pointer-events: none; user-select: none; z-index: 2;
@@ -1200,10 +1206,19 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   z-index: 4; filter: none;
   clip-path: polygon(14% 7%, 34% 2%, 52% 4%, 58% 14%, 52% 25%, 40% 23%, 27% 17%, 15% 15%);
 }
-.tc-tassel {
-  position: absolute; left: 36px; top: 196px; z-index: 3;
-  pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .5));
+/* Calque « bout des doigts » (annulaire, auriculaire) : le brin droit sort de
+   dessous, au lieu d'apparaître posé sur la paume. */
+.tc-hand-tips {
+  z-index: 4; filter: none;
+  clip-path: polygon(28% 46%, 46% 46%, 47.5% 52%, 46% 57%, 42% 59%, 42% 67%, 28% 68%);
 }
+.tc-guru, .tc-tassel {
+  position: absolute; z-index: 5; height: auto; max-width: none;
+  pointer-events: none; user-select: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5));
+}
+.tc-guru { width: 20px; }
+.tc-tassel { width: 42px; z-index: 2; }
 
 /* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────
    Fusionne ce qui était trois zones empilées (bouton Retour desktop à part,

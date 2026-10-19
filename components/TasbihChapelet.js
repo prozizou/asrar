@@ -19,7 +19,10 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 // l'impression que le compteur se réinitialisait).
 const BEAD_COUNT = 100;
 // Tasbih TENU (Zikr collectif) : boucle entièrement visible, donc plus courte.
-const HELD_BEAD_COUNT = 27;
+const HELD_BEAD_COUNT = 25;
+// Écart minimal entre deux touchers comptés : un double déclenchement
+// (rebond tactile, double événement) ne doit jamais compter deux grains.
+const MIN_TAP_GAP_MS = 90;
 
 // Géométrie du fil (voir geometryFor) — gabarit nettement plus grand qu'un
 // arc classique (revue design : « le chapelet ne donne pas la sensation d'un
@@ -29,22 +32,32 @@ const HELD_BEAD_COUNT = 27;
 function geometryFor(held) {
   if (held) {
     // Boucle fermée et VISIBLE, calée sur la main (public/assets/zikr-hand.webp,
-    // voir .tc-hand) : arc du haut sous le pouce, brin gauche devant les
-    // doigts, brin droit derrière la paume puis libre sous la main, et U du
-    // bas. Longueur ≈ 606 px pour 27 grains de 21 px : grains quasi jointifs.
+    // 240 px de large, posée à left 36 / top -4 dans la boîte, voir .tc-hand) :
+    // arc du haut sous le pouce, brin gauche devant les doigts (≈ 10 % de la
+    // largeur de la main), brin droit dans la prise puis ressortant sous le
+    // bout des doigts (≈ 47 %), U du bas libre. Le guru est un élément FIXE
+    // sur le brin gauche, sous les doigts ; les grains passent derrière lui.
+    // Longueur ≈ 600 px pour 25 grains de 20 px : ≈ 4 px de cordon visible
+    // entre deux grains.
     const VIEW_W = 240;
-    const VIEW_H = 250;
-    const BEAD_D = 21;
-    const CX = VIEW_W / 2;
-    const RX = 56;
+    const VIEW_H = 270;
+    const BEAD_D = 20;
+    const CX = 104;
+    const RX = 45;
     const TOP_Y = 38;
     const RY = 14;
-    const BOT_Y = 205;
+    const BOT_Y = 222;
     const LOOP_PATH =
       `M ${CX - RX} ${TOP_Y} A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
-      `L ${CX + RX} ${BOT_Y} A ${RX} 40 0 0 1 ${CX - RX} ${BOT_Y} Z`;
-    // Brin droit : dans la prise (masqué) au-dessus de SWAP_Y, devant en dessous.
-    return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: HELD_BEAD_COUNT, held: true, CX, SWAP_Y: 128 };
+      `L ${CX + RX} ${BOT_Y} A ${RX} 38 0 0 1 ${CX - RX} ${BOT_Y} Z`;
+    return {
+      VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: HELD_BEAD_COUNT, held: true, CX,
+      // Brin droit : masqué dans la prise au-dessus de EMERGE_FROM, fondu
+      // jusqu'à SWAP_Y (sous le bout des doigts, .tc-hand-tips par-dessus).
+      SWAP_Y: 156, EMERGE_FROM: 140,
+      // Guru (public/assets/tasbih/guru.webp, 20 × 56,5 px) centré sur le brin gauche.
+      LEFT_X: CX - RX, GURU_TOP: 178, GURU_BOT: 234,
+    };
   }
   const VIEW_W = 192;
   const VIEW_H = 234;
@@ -76,7 +89,7 @@ function geometryFor(held) {
     `A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
     `L ${CX + RX} ${BOT_R} ` +
     `Q ${CX} ${BOT_R + 80} ${CX - RX} ${BOT_L} Z`;
-  return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: BEAD_COUNT, held: false, CX: VIEW_W / 2, SWAP_Y: 0 };
+  return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: BEAD_COUNT, held: false, CX: VIEW_W / 2, SWAP_Y: 0, EMERGE_FROM: 0, LEFT_X: 0, GURU_TOP: 0, GURU_BOT: 0 };
 }
 
 const TAP_DURATION = 280;
@@ -116,7 +129,8 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : un chapelet
   // hors Zikr collectif (`collectifRestant` omis) resterait `uncapped`.
   const collectifDone = isCollectif && collectifRestant <= 0;
-  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH, beadCount, held, CX, SWAP_Y } = useMemo(() => geometryFor(isCollectif), [isCollectif]);
+  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH, beadCount, held, CX, SWAP_Y, EMERGE_FROM, LEFT_X, GURU_TOP, GURU_BOT } =
+    useMemo(() => geometryFor(isCollectif), [isCollectif]);
   // Réglages (objectif/séries/suggestions/réinitialiser) repliés par défaut
   // (revue design, module Noms d'Allah) : affichés en permanence, ils
   // ajoutaient un rang de « pilules » avant même d'arriver au compteur, et
@@ -139,6 +153,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   const targetRef = useRef(0);
   const rafRef = useRef(0);
   const samplesRef = useRef(null);
+  const lastTapRef = useRef(0);
 
   // Échantillonne le fil une bonne fois pour toutes (un point par pixel). Le
   // tracé ne changeant jamais, cela évite 100 getPointAtLength() par frame sur
@@ -182,13 +197,18 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         const frac = len - lower;
         const y = ys[lower] + (ys[upper] - ys[lower]) * frac;
 
-        // Tenu : le brin droit, au-dessus de SWAP_Y, est DANS la prise (caché
-        // par les doigts) — masqué plutôt que laissé sous l'image, dont le
-        // contour transparent le laissait dépasser au-dessus du dos de la main.
-        // Fondu sur ~28 px autour de SWAP_Y : le grain sort de sous les
-        // doigts au lieu d'apparaître d'un coup.
-        const emerge = held && xs[lower] > CX ? Math.min(1, Math.max(0, (y - (SWAP_Y - 16)) / 28)) : 1;
-        if (emerge === 0 || y < -BEAD_D || y > VIEW_H + BEAD_D) {
+        // Tenu : le brin droit est DANS la prise au-dessus de EMERGE_FROM
+        // (masqué), puis sort en fondu de sous le bout des doigts jusqu'à
+        // SWAP_Y. Sur le brin gauche, un grain qui passe dans le guru (fixe,
+        // par-dessus) est masqué tant qu'il est entièrement couvert.
+        const onRight = held && xs[lower] > CX;
+        const emerge = onRight ? Math.min(1, Math.max(0, (y - EMERGE_FROM) / (SWAP_Y - EMERGE_FROM))) : 1;
+        // Guru : fondu sur 12 px à chaque extrémité (le grain glisse derrière
+        // lui au lieu de dépasser sur ses côtés puis de disparaître d'un coup).
+        const intoGuru = held && !onRight ? Math.min(y - (GURU_TOP - 6), GURU_BOT + 6 - y) : 0;
+        const guruVis = intoGuru <= 0 ? 1 : Math.max(0, 1 - intoGuru / 12);
+        const inGuru = guruVis === 0;
+        if (emerge === 0 || inGuru || y < -BEAD_D || y > VIEW_H + BEAD_D) {
           if (bead.style.visibility !== 'hidden') bead.style.visibility = 'hidden';
           continue;
         }
@@ -200,11 +220,12 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         // droit sous la paume), mais sous le calque du pouce (.tc-hand-thumb).
         if (held) {
           bead.style.zIndex = '3';
-          bead.style.opacity = emerge < 1 ? String(emerge) : '';
+          const vis = emerge * guruVis;
+          bead.style.opacity = vis < 1 ? String(vis) : '';
         }
       }
     },
-    [ensureSamples, BEAD_D, BEAD_R, VIEW_H, beadCount, held, CX, SWAP_Y]
+    [ensureSamples, BEAD_D, BEAD_R, VIEW_H, beadCount, held, CX, SWAP_Y, EMERGE_FROM, GURU_TOP, GURU_BOT]
   );
 
   useEffect(() => {
@@ -219,6 +240,9 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
 
   const handleTap = () => {
     if (collectifDone) return; // objectif du groupe atteint — plus rien à compter
+    const nowMs = performance.now();
+    if (nowMs - lastTapRef.current < MIN_TAP_GAP_MS) return; // rebond / double événement
+    lastTapRef.current = nowMs;
 
     t.tap();
 
@@ -434,7 +458,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
             haut de l'arc et un pompon ferme le brin gauche — pure décoration,
             les grains continuent de circuler sur le même fil. */}
         <div className={'tc-tasbih' + (held ? ' tc-tasbih-held' : '')}>
-          <div className={held ? 'tc-held-box' : 'tc-plain-box'} style={held ? { width: VIEW_W, height: VIEW_H + 60 } : undefined}>
+          <div className={held ? 'tc-held-box' : 'tc-plain-box'} style={held ? { width: VIEW_W, height: GURU_BOT + 102 } : undefined}>
             <div
               aria-hidden
               className="tc-stage-wrap"
@@ -446,8 +470,31 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
                   : { WebkitMaskImage: FADE_MASK, maskImage: FADE_MASK, WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat' }),
               }}
             >
-              <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
-                <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(120,70,30,0.6)" strokeWidth={2} />
+              {/* Cordon : visible entre les grains (z-index 3, sous eux), coupé
+                  là où le brin est dans la prise (brin droit au-dessus de SWAP_Y). */}
+              <svg
+                width={VIEW_W}
+                height={VIEW_H}
+                viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+                className="tc-thread"
+                style={held ? { zIndex: 3 } : undefined}
+              >
+                {held && (
+                  <defs>
+                    <clipPath id={`tc-cord-${id}`}>
+                      <rect x="0" y="0" width={CX} height={VIEW_H} />
+                      <rect x={CX} y={SWAP_Y - 8} width={VIEW_W - CX} height={VIEW_H} />
+                    </clipPath>
+                  </defs>
+                )}
+                <path
+                  ref={pathRef}
+                  d={LOOP_PATH}
+                  fill="none"
+                  stroke={held ? '#2b170c' : 'rgba(165,120,60,0.55)'}
+                  strokeWidth={held ? 2.4 : 2}
+                  clipPath={held ? `url(#tc-cord-${id})` : undefined}
+                />
               </svg>
 
               <div ref={stageRef} className="tc-stage">
@@ -457,7 +504,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
                     ref={(el) => {
                       beadRefs.current[i] = el;
                     }}
-                    className="tc-bead"
+                    className={held ? `tc-bead tc-bead-wood tc-bead-v${(i % 3) + 1}` : 'tc-bead'}
                     style={{ width: BEAD_D, height: BEAD_D }}
                   />
                 ))}
@@ -465,34 +512,37 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
             </div>
             {held && (
               <>
-                {/* Guru + pompon : décor fixe, accroché au bas du brin gauche. */}
-                <svg className="tc-tassel" viewBox="0 0 28 112" width="28" height="112" aria-hidden="true">
-                  <defs>
-                    <linearGradient id={`tc-tassel-${id}`} x1="0" x2="1">
-                      <stop offset="0" stopColor="#3e2418" />
-                      <stop offset="0.5" stopColor="#7a5238" />
-                      <stop offset="1" stopColor="#3e2418" />
-                    </linearGradient>
-                    <radialGradient id={`tc-guru-${id}`} cx="0.35" cy="0.3" r="0.8">
-                      <stop offset="0" stopColor="#c27a47" />
-                      <stop offset="0.6" stopColor="#7a3b1b" />
-                      <stop offset="1" stopColor="#3f1a0a" />
-                    </radialGradient>
-                  </defs>
-                  <path d="M14 0 V10" stroke="#4a2a18" strokeWidth="2" />
-                  <path d="M14 8 C5 14 5 26 10 32 C6 36 7 40 14 41 C21 40 22 36 18 32 C23 26 23 14 14 8 Z" fill={`url(#tc-guru-${id})`} />
-                  <path d="M14 41 V50" stroke="#4a2a18" strokeWidth="2" />
-                  <rect x="9" y="48" width="10" height="9" rx="3" fill="#4a2a18" />
-                  <path d="M5 58 Q14 54 23 58 L26 110 Q14 113 2 110 Z" fill={`url(#tc-tassel-${id})`} />
-                  <path d="M8 60 L7 108 M11 60 L10 111 M14 59 V111 M17 60 L18 111 M20 60 L21 108" stroke="#241108" strokeOpacity=".5" strokeWidth="1" fill="none" />
-                </svg>
-                {/* Main : passe sur la paume, mais sous les grains du brin gauche
-                    (devant les doigts) ; le pouce est redessiné par-dessus pour
-                    que l'arc du haut passe SOUS lui. */}
+                {/* Guru + cordon tressé + pompon : textures détourées d'une photo
+                    de tasbih réel (public/assets/tasbih/), fixes sur le brin gauche,
+                    sous les doigts — les grains passent derrière le guru. */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+                <img
+                  className="tc-guru"
+                  src="/assets/tasbih/guru.webp"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{ left: LEFT_X - 10, top: GURU_TOP }}
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+                <img
+                  className="tc-tassel"
+                  src="/assets/tasbih/tassel.webp"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{ left: LEFT_X - 38, top: GURU_BOT - 3 }}
+                />
+                {/* Main : sous les grains du brin gauche (devant les doigts) ; le
+                    pouce est redessiné par-dessus pour que l'arc du haut passe
+                    SOUS lui (« entre le pouce et l'index »). */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
                 <img className="tc-hand" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
                 {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
                 <img className="tc-hand tc-hand-thumb" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
+                {/* Bout des doigts redessiné par-dessus : le brin droit en ressort. */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+                <img className="tc-hand tc-hand-tips" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
               </>
             )}
           </div>

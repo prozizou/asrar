@@ -767,7 +767,7 @@
 .zk-zikr-card .zk-progress-stats { font-size: clamp(1.5rem, 7vw, 1.9rem); justify-content: center; }
 .zk-zikr-card .zk-bar.big { height: 14px; border-radius: 14px; }
 .zk-zikr-card .zk-progress-meta { font-size: 1rem; color: var(--accent); }
-.zk-zikr-card-counter { padding-bottom: 16px; overflow: hidden; }
+.zk-zikr-card-counter { padding: 12px 18px 12px; overflow: hidden; }
 /* Bare (dans .zk-zikr-card, prop `bare` de CollectiveProgress) : plus de
    cadre propre — voir .zk-progress-hero, gardé pour StaticProgress (visiteur
    non-membre), seul cas qui affiche encore la progression SANS chapelet
@@ -870,42 +870,25 @@
   bottom: 0;
   width: min(640px, 100%);
   z-index: 100;
-  display: flex; justify-content: space-around; align-items: stretch; gap: 4px;
+  display: flex; justify-content: space-around; align-items: stretch;
   height: var(--zk-nav-h);
-  background: linear-gradient(180deg, #1c1040, #130a2c);
-  border-top: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  border-radius: 22px 22px 0 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
+  background: var(--bg-deep, #120a26);
+  border-top: 1px solid var(--glass-border);
+  padding: 0 8px env(safe-area-inset-bottom, 0px);
 }
-/* 3 colonnes de largeur STRICTEMENT identique (flex:1 sur les trois),
-   aucune "capsule" propre à l'onglet actif — seul le halo (voir .active plus
-   bas) change. margin-top:0 annule le bouton générique global
-   (app/globals.css : `button{margin-top:15px}`) qui aurait sinon décalé
-   chaque item vers le bas et déséquilibré la barre. */
+/* 3 onglets de largeur identique ; icône 24 px + libellé. Sélection sobre :
+   seule la couleur passe au violet (pas de halo, de cercle ni de point).
+   margin-top:0 annule le `button{margin-top:15px}` global (app/globals.css). */
 .zk-bottom-nav-item {
-  flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; padding: 4px 4px 6px; margin-top: 0; background: none; border: none; border-radius: 999px; cursor: pointer;
-  color: rgba(255, 255, 255, 0.55); font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700;
-  position: relative; transition: color 0.15s ease, background 0.15s ease;
+  flex: 1; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 4px; margin-top: 0; background: none; border: none; border-radius: 0; cursor: pointer;
+  color: var(--text-dim); font-family: var(--font-ui); font-size: 0.75rem; font-weight: 600;
+  position: relative; transition: color 0.15s ease;
 }
-.zk-bottom-nav-item.active {
-  color: #fff;
-}
-/* Point lumineux sous le libellé actif — dernier repère du design fourni,
-   distinct du halo autour de l'icône. */
-.zk-bottom-nav-item.active::after {
-  content: ''; position: absolute; bottom: 1px; width: 14px; height: 2.5px; border-radius: 3px;
-  background: #fff; box-shadow: 0 0 6px #fff;
-}
+.zk-bottom-nav-item.active { color: var(--accent); }
+.zk-bottom-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 12px; }
 .zk-bottom-nav-icon { position: relative; display: inline-flex; }
-.zk-bottom-nav-icon-circle {
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 50%; transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-.zk-bottom-nav-item.active .zk-bottom-nav-icon-circle {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow), inset 0 0 10px var(--accent-glow);
-}
+.zk-bottom-nav-icon-circle { display: flex; align-items: center; justify-content: center; }
 .zk-bottom-nav-badge {
   position: absolute; top: -5px; right: -9px; min-width: 15px; height: 15px; padding: 0 3px;
   border-radius: 999px; background: #e0607a; color: #fff;
