@@ -5,6 +5,9 @@ import './hijri.css';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchHijriToday } from '@/lib/hijri';
+import { phaseOfDay } from '@/lib/hijriPhases';
+import PlanetNow from './PlanetNow';
+import HijriReminders from './HijriReminders';
 
 type HijriToday = Awaited<ReturnType<typeof fetchHijriToday>>;
 
@@ -30,6 +33,8 @@ export default function HijriPage() {
     load(ctrl.signal);
     return () => ctrl.abort();
   }, [load]);
+
+  const phase = data ? phaseOfDay(data.hijri.day, data.hijri.monthDays) : null;
 
   return (
     <div className="container hijri-page">
@@ -61,6 +66,49 @@ export default function HijriPage() {
           )}
         </section>
       )}
+
+      {data && phase && !loading && (
+        <section className={`hijri-phase hijri-phase-${phase.id}`}>
+          <div className="hijri-phase-head">
+            <span className="hijri-phase-icon" aria-hidden="true">{phase.icon}</span>
+            <div>
+              <h2 className="hijri-phase-title">{phase.title} <span lang="ar">{phase.arabic}</span></h2>
+              <p className="hijri-phase-summary">{phase.summary}</p>
+            </div>
+          </div>
+          {phase.totalDays && (
+            <div
+              className="hijri-gauge"
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={phase.totalDays}
+              aria-valuenow={phase.dayInPhase}
+            >
+              <span style={{ width: `${(phase.dayInPhase / phase.totalDays) * 100}%` }} />
+            </div>
+          )}
+          <p className="hijri-phase-progress">
+            Jour {phase.dayInPhase}{phase.totalDays ? ` sur ${phase.totalDays}` : ''}
+            {phase.daysLeft === null
+              ? ' · jusqu’à la fin du mois'
+              : phase.daysLeft === 0
+                ? ' · dernier jour de la période'
+                : ` · encore ${phase.daysLeft} jour${phase.daysLeft > 1 ? 's' : ''} avant le changement`}
+          </p>
+          <ul className="hijri-suggestions">
+            {phase.suggestions.map((s) => (
+              <li key={s.cta}>
+                <Link href={s.href} className="hijri-suggestion">
+                  <span>{s.label}</span>
+                  <strong>{s.cta} →</strong>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {data && !loading && <PlanetNow />}
+      <HijriReminders />
       <p className="hijri-credit">Source : AlAdhan Islamic Calendar API</p>
     </div>
   );
