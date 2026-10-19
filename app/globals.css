@@ -1174,23 +1174,35 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .tc-embedded .tc-hint::before { content: none; }
 
-/* Tasbih tenu par une main (Zikr collectif) : la main est ancrée au bord
-   droit de la carte, coupée par celui-ci, et s'estompe vers le bas. */
+/* Tasbih tenu par une main (Zikr collectif) : la main est un décor posé dans
+   une boîte de la taille du tasbih ; les grains y sont intercalés par z-index
+   (voir layout(), components/TasbihChapelet.js) — brin gauche devant les
+   doigts, brin droit derrière la paume, pouce par-dessus l'arc. */
 .tc-tasbih { position: relative; display: flex; justify-content: center; }
-.tc-tasbih-held {
-  width: calc(100% + 36px); margin-inline: -18px; height: 252px; overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0 82%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0 82%, transparent 100%);
+.tc-tasbih-held { width: calc(100% + 36px); margin-inline: -18px; overflow: hidden; }
+.tc-held-box { position: relative; flex: none; }
+.tc-held-box .tc-stage-wrap { margin: 0; overflow: visible; }
+.tc-tasbih-held .tc-bead {
+  background: radial-gradient(circle at 36% 30%, #c98450, #7e3d1c 58%, #3f1a0a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .55), inset 0 -2px 3px rgba(0, 0, 0, .35);
 }
-.tc-tasbih-held .tc-stage-wrap { margin: 0; }
 .tc-hand {
-  position: absolute; right: -34px; top: -6px; width: 270px; height: auto;
+  position: absolute; left: 36px; top: -4px; width: 240px; max-width: none; height: auto;
   pointer-events: none; user-select: none; z-index: 2;
   filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .5));
+  -webkit-mask-image: linear-gradient(to right, #000 0 72%, transparent 100%), linear-gradient(to bottom, #000 0 78%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 0 72%, transparent 100%), linear-gradient(to bottom, #000 0 78%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* Calque « pouce » : même image, découpée sur le pouce, au-dessus des grains. */
+.tc-hand-thumb {
+  z-index: 4; filter: none;
+  clip-path: polygon(14% 7%, 34% 2%, 52% 4%, 58% 14%, 52% 25%, 40% 23%, 27% 17%, 15% 15%);
 }
 .tc-tassel {
-  position: absolute; left: calc(50% - 52px - 14px); top: 168px; z-index: 1;
-  pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .45));
+  position: absolute; left: 36px; top: 196px; z-index: 3;
+  pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .5));
 }
 
 /* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────

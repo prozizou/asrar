@@ -18,13 +18,34 @@ import { objSubdivisions } from '@/lib/objSubdivisions';
 // départ, au lieu de boucler au bout de quelques dizaines (ce qui donnait
 // l'impression que le compteur se réinitialisait).
 const BEAD_COUNT = 100;
+// Tasbih TENU (Zikr collectif) : boucle entièrement visible, donc plus courte.
+const HELD_BEAD_COUNT = 27;
 
 // Géométrie du fil (voir geometryFor) — gabarit nettement plus grand qu'un
 // arc classique (revue design : « le chapelet ne donne pas la sensation d'un
 // véritable objet interactif, la zone principale devrait lui être
 // consacrée »). Le fil continue de descendre très bas hors champ (BOT_L/
 // BOT_R) pour porter les 100 grains à un espacement naturel.
-function geometryFor() {
+function geometryFor(held) {
+  if (held) {
+    // Boucle fermée et VISIBLE, calée sur la main (public/assets/zikr-hand.webp,
+    // voir .tc-hand) : arc du haut sous le pouce, brin gauche devant les
+    // doigts, brin droit derrière la paume puis libre sous la main, et U du
+    // bas. Longueur ≈ 606 px pour 27 grains de 21 px : grains quasi jointifs.
+    const VIEW_W = 240;
+    const VIEW_H = 250;
+    const BEAD_D = 21;
+    const CX = VIEW_W / 2;
+    const RX = 56;
+    const TOP_Y = 38;
+    const RY = 14;
+    const BOT_Y = 205;
+    const LOOP_PATH =
+      `M ${CX - RX} ${TOP_Y} A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
+      `L ${CX + RX} ${BOT_Y} A ${RX} 40 0 0 1 ${CX - RX} ${BOT_Y} Z`;
+    // Brin droit : dans la prise (masqué) au-dessus de SWAP_Y, devant en dessous.
+    return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: HELD_BEAD_COUNT, held: true, CX, SWAP_Y: 128 };
+  }
   const VIEW_W = 192;
   const VIEW_H = 234;
   const BEAD_D = 20;
@@ -55,7 +76,7 @@ function geometryFor() {
     `A ${RX} ${RY} 0 0 1 ${CX + RX} ${TOP_Y} ` +
     `L ${CX + RX} ${BOT_R} ` +
     `Q ${CX} ${BOT_R + 80} ${CX - RX} ${BOT_L} Z`;
-  return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH };
+  return { VIEW_W, VIEW_H, BEAD_D, BEAD_R: BEAD_D / 2, LOOP_PATH, beadCount: BEAD_COUNT, held: false, CX: VIEW_W / 2, SWAP_Y: 0 };
 }
 
 const TAP_DURATION = 280;
@@ -95,7 +116,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   // quelque chose à réciter. Ne s'applique qu'au Zikr collectif : un chapelet
   // hors Zikr collectif (`collectifRestant` omis) resterait `uncapped`.
   const collectifDone = isCollectif && collectifRestant <= 0;
-  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH } = useMemo(() => geometryFor(), []);
+  const { VIEW_W, VIEW_H, BEAD_D, BEAD_R, LOOP_PATH, beadCount, held, CX, SWAP_Y } = useMemo(() => geometryFor(isCollectif), [isCollectif]);
   // Réglages (objectif/séries/suggestions/réinitialiser) repliés par défaut
   // (revue design, module Noms d'Allah) : affichés en permanence, ils
   // ajoutaient un rang de « pilules » avant même d'arriver au compteur, et
@@ -147,9 +168,9 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
       const samples = ensureSamples();
       if (!samples) return;
       const { xs, ys, total } = samples;
-      const spacing = total / BEAD_COUNT;
+      const spacing = total / beadCount;
 
-      for (let i = 0; i < BEAD_COUNT; i++) {
+      for (let i = 0; i < beadCount; i++) {
         const bead = beadRefs.current[i];
         if (!bead) continue;
 
@@ -161,7 +182,13 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         const frac = len - lower;
         const y = ys[lower] + (ys[upper] - ys[lower]) * frac;
 
-        if (y < -BEAD_D || y > VIEW_H + BEAD_D) {
+        // Tenu : le brin droit, au-dessus de SWAP_Y, est DANS la prise (caché
+        // par les doigts) — masqué plutôt que laissé sous l'image, dont le
+        // contour transparent le laissait dépasser au-dessus du dos de la main.
+        // Fondu sur ~28 px autour de SWAP_Y : le grain sort de sous les
+        // doigts au lieu d'apparaître d'un coup.
+        const emerge = held && xs[lower] > CX ? Math.min(1, Math.max(0, (y - (SWAP_Y - 16)) / 28)) : 1;
+        if (emerge === 0 || y < -BEAD_D || y > VIEW_H + BEAD_D) {
           if (bead.style.visibility !== 'hidden') bead.style.visibility = 'hidden';
           continue;
         }
@@ -169,9 +196,15 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         const x = xs[lower] + (xs[upper] - xs[lower]) * frac;
         if (bead.style.visibility) bead.style.visibility = '';
         bead.style.transform = `translate(${x - BEAD_R}px, ${y - BEAD_R}px)`;
+        // Tenu : grains devant la main (brin gauche devant les doigts, brin
+        // droit sous la paume), mais sous le calque du pouce (.tc-hand-thumb).
+        if (held) {
+          bead.style.zIndex = '3';
+          bead.style.opacity = emerge < 1 ? String(emerge) : '';
+        }
       }
     },
-    [ensureSamples, BEAD_D, BEAD_R, VIEW_H]
+    [ensureSamples, BEAD_D, BEAD_R, VIEW_H, beadCount, held, CX, SWAP_Y]
   );
 
   useEffect(() => {
@@ -196,7 +229,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
     const samples = ensureSamples();
     if (!samples) return;
     const { total } = samples;
-    const spacing = total / BEAD_COUNT;
+    const spacing = total / beadCount;
 
     // La cible avance d'un cran par tap DANS L'ABSOLU, indépendamment de
     // l'animation en cours : un tap qui en interrompt un autre reprend depuis
@@ -400,55 +433,69 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
             collectif, une main (public/assets/zikr-hand.webp) le tient par le
             haut de l'arc et un pompon ferme le brin gauche — pure décoration,
             les grains continuent de circuler sur le même fil. */}
-        <div className={'tc-tasbih' + (isCollectif ? ' tc-tasbih-held' : '')}>
-          <div
-            aria-hidden
-            className="tc-stage-wrap"
-            style={{
-              width: VIEW_W,
-              height: VIEW_H,
-              WebkitMaskImage: FADE_MASK,
-              maskImage: FADE_MASK,
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-            }}
-          >
-            <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
-              <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(165,120,60,0.55)" strokeWidth={2} />
-            </svg>
-
-            <div ref={stageRef} className="tc-stage">
-              {Array.from({ length: BEAD_COUNT }).map((_, i) => (
-                <div
-                  key={i}
-                  ref={(el) => {
-                    beadRefs.current[i] = el;
-                  }}
-                  className="tc-bead"
-                  style={{ width: BEAD_D, height: BEAD_D }}
-                />
-              ))}
-            </div>
-          </div>
-          {isCollectif && (
-            <>
-              <svg className="tc-tassel" viewBox="0 0 28 78" width="28" height="78" aria-hidden="true">
-                <defs>
-                  <linearGradient id={`tc-tassel-${id}`} x1="0" x2="1">
-                    <stop offset="0" stopColor="#8a5424" />
-                    <stop offset="0.5" stopColor="#d79a55" />
-                    <stop offset="1" stopColor="#8a5424" />
-                  </linearGradient>
-                </defs>
-                <circle cx="14" cy="7" r="6" fill="#c98a45" />
-                <rect x="8" y="12" width="12" height="9" rx="3" fill="#b8793a" />
-                <path d="M6 22 Q14 19 22 22 L25 76 Q14 79 3 76 Z" fill={`url(#tc-tassel-${id})`} />
-                <path d="M9 24 L8 74 M14 24 V77 M19 24 L20 74" stroke="#6b3f17" strokeOpacity=".45" strokeWidth="1" fill="none" />
+        <div className={'tc-tasbih' + (held ? ' tc-tasbih-held' : '')}>
+          <div className={held ? 'tc-held-box' : 'tc-plain-box'} style={held ? { width: VIEW_W, height: VIEW_H + 60 } : undefined}>
+            <div
+              aria-hidden
+              className="tc-stage-wrap"
+              style={{
+                width: VIEW_W,
+                height: VIEW_H,
+                ...(held
+                  ? {}
+                  : { WebkitMaskImage: FADE_MASK, maskImage: FADE_MASK, WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat' }),
+              }}
+            >
+              <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
+                <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(120,70,30,0.6)" strokeWidth={2} />
               </svg>
-              {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
-              <img className="tc-hand" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
-            </>
-          )}
+
+              <div ref={stageRef} className="tc-stage">
+                {Array.from({ length: beadCount }).map((_, i) => (
+                  <div
+                    key={i}
+                    ref={(el) => {
+                      beadRefs.current[i] = el;
+                    }}
+                    className="tc-bead"
+                    style={{ width: BEAD_D, height: BEAD_D }}
+                  />
+                ))}
+              </div>
+            </div>
+            {held && (
+              <>
+                {/* Guru + pompon : décor fixe, accroché au bas du brin gauche. */}
+                <svg className="tc-tassel" viewBox="0 0 28 112" width="28" height="112" aria-hidden="true">
+                  <defs>
+                    <linearGradient id={`tc-tassel-${id}`} x1="0" x2="1">
+                      <stop offset="0" stopColor="#3e2418" />
+                      <stop offset="0.5" stopColor="#7a5238" />
+                      <stop offset="1" stopColor="#3e2418" />
+                    </linearGradient>
+                    <radialGradient id={`tc-guru-${id}`} cx="0.35" cy="0.3" r="0.8">
+                      <stop offset="0" stopColor="#c27a47" />
+                      <stop offset="0.6" stopColor="#7a3b1b" />
+                      <stop offset="1" stopColor="#3f1a0a" />
+                    </radialGradient>
+                  </defs>
+                  <path d="M14 0 V10" stroke="#4a2a18" strokeWidth="2" />
+                  <path d="M14 8 C5 14 5 26 10 32 C6 36 7 40 14 41 C21 40 22 36 18 32 C23 26 23 14 14 8 Z" fill={`url(#tc-guru-${id})`} />
+                  <path d="M14 41 V50" stroke="#4a2a18" strokeWidth="2" />
+                  <rect x="9" y="48" width="10" height="9" rx="3" fill="#4a2a18" />
+                  <path d="M5 58 Q14 54 23 58 L26 110 Q14 113 2 110 Z" fill={`url(#tc-tassel-${id})`} />
+                  <path d="M8 60 L7 108 M11 60 L10 111 M14 59 V111 M17 60 L18 111 M20 60 L21 108" stroke="#241108" strokeOpacity=".5" strokeWidth="1" fill="none" />
+                </svg>
+                {/* Main : passe sur la paume, mais sous les grains du brin gauche
+                    (devant les doigts) ; le pouce est redessiné par-dessus pour
+                    que l'arc du haut passe SOUS lui. */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+                <img className="tc-hand" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
+                {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+                <img className="tc-hand tc-hand-thumb" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
+              </>
+            )}
+          </div>
         </div>
 
         {!collectifDone && (
