@@ -1,11 +1,14 @@
 'use client';
 // Module « Date du jour » — date hijri du jour (API AlAdhan, lib/hijri.js),
-// avec la date grégorienne correspondante et les fêtes éventuelles.
+// date grégorienne correspondante, phase du mois (attraction / repoussement),
+// planète du moment et rappels de début de phase.
 import './hijri.css';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { CalendarDays, ChevronRight } from 'lucide-react';
 import { fetchHijriToday } from '@/lib/hijri';
-import { phaseOfDay } from '@/lib/hijriPhases';
+import { phaseOfDay, PHASE_ATTRACTION } from '@/lib/hijriPhases';
+import Moon from './Moon';
 import PlanetNow from './PlanetNow';
 import HijriReminders from './HijriReminders';
 
@@ -51,14 +54,22 @@ export default function HijriPage() {
       )}
 
       {data && !loading && (
-        <section className="hijri-card" aria-live="polite">
-          <p className="hijri-weekday">{data.hijri.weekdayAr} · {data.hijri.weekdayEn}</p>
-          <p className="hijri-day">{data.hijri.day}</p>
-          <p className="hijri-month" dir="rtl" lang="ar">{data.hijri.monthAr}</p>
-          <p className="hijri-month-en">{data.hijri.monthEn} · {data.hijri.year} H</p>
-          <p className="hijri-greg">
-            {data.gregorian.weekdayEn} {data.gregorian.day} {data.gregorian.monthEn} {data.gregorian.year}
-          </p>
+        <section className="hijri-card hijri-date" aria-live="polite">
+          <span className="hijri-badge"><i aria-hidden="true" />Calendrier islamique</span>
+          <div className="hijri-date-hijri">
+            <p className="hijri-weekday">{data.hijri.weekdayEn} · <span lang="ar">{data.hijri.weekdayAr}</span></p>
+            <p className="hijri-day">{data.hijri.day}</p>
+            <p className="hijri-month" dir="rtl" lang="ar">{data.hijri.monthAr}</p>
+            <p className="hijri-month-en">{data.hijri.monthEn} · {data.hijri.year} H</p>
+          </div>
+          <div className="hijri-date-greg">
+            <CalendarDays size={40} strokeWidth={1.6} aria-hidden="true" />
+            <div>
+              <p className="hijri-greg-day">{data.gregorian.weekdayFr}</p>
+              <p className="hijri-greg-date">{data.gregorian.dateFr}</p>
+              <p className="hijri-greg-sub">Correspondance grégorienne</p>
+            </div>
+          </div>
           {data.hijri.holidays.length > 0 && (
             <ul className="hijri-holidays">
               {data.hijri.holidays.map((h: string) => <li key={h}>{h}</li>)}
@@ -68,45 +79,53 @@ export default function HijriPage() {
       )}
 
       {data && phase && !loading && (
-        <section className={`hijri-phase hijri-phase-${phase.id}`}>
+        <section className={`hijri-card hijri-phase hijri-phase-${phase.id}`}>
           <div className="hijri-phase-head">
-            <span className="hijri-phase-icon" aria-hidden="true">{phase.icon}</span>
-            <div>
-              <h2 className="hijri-phase-title">{phase.title} <span lang="ar">{phase.arabic}</span></h2>
-              <p className="hijri-phase-summary">{phase.summary}</p>
+            <Moon waxing={phase.id === PHASE_ATTRACTION} />
+            <div className="hijri-phase-text">
+              <h2 className="hijri-phase-title">{phase.title}</h2>
+              <p>{phase.range}</p>
+              <p>{phase.tagline}</p>
             </div>
+            <span className="hijri-pill">
+              Jour {phase.dayInPhase}{phase.totalDays ? ` sur ${phase.totalDays}` : ''}
+            </span>
           </div>
-          {phase.totalDays && (
-            <div
-              className="hijri-gauge"
-              role="progressbar"
-              aria-valuemin={1}
-              aria-valuemax={phase.totalDays}
-              aria-valuenow={phase.dayInPhase}
-            >
-              <span style={{ width: `${(phase.dayInPhase / phase.totalDays) * 100}%` }} />
+          {phase.elapsedPct !== null && (
+            <div className="hijri-gauge-row">
+              <div
+                className="hijri-gauge"
+                role="progressbar"
+                aria-label="Avancement de la période"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={phase.elapsedPct}
+              >
+                <span style={{ width: `${phase.elapsedPct}%` }} />
+              </div>
+              <span className="hijri-gauge-pct">{phase.elapsedPct} %</span>
             </div>
           )}
           <p className="hijri-phase-progress">
-            Jour {phase.dayInPhase}{phase.totalDays ? ` sur ${phase.totalDays}` : ''}
             {phase.daysLeft === null
-              ? ' · jusqu’à la fin du mois'
+              ? 'Jusqu’à la fin du mois'
               : phase.daysLeft === 0
-                ? ' · dernier jour de la période'
-                : ` · encore ${phase.daysLeft} jour${phase.daysLeft > 1 ? 's' : ''} avant le changement`}
+                ? 'Dernier jour de la période'
+                : `Encore ${phase.daysLeft} jour${phase.daysLeft > 1 ? 's' : ''} avant le changement de phase`}
           </p>
           <ul className="hijri-suggestions">
             {phase.suggestions.map((s) => (
               <li key={s.cta}>
                 <Link href={s.href} className="hijri-suggestion">
                   <span>{s.label}</span>
-                  <strong>{s.cta} →</strong>
+                  <ChevronRight size={20} aria-hidden="true" />
                 </Link>
               </li>
             ))}
           </ul>
         </section>
       )}
+
       {data && !loading && <PlanetNow />}
       <HijriReminders />
       <p className="hijri-credit">Source : AlAdhan Islamic Calendar API</p>
