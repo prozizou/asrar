@@ -1166,21 +1166,32 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .tc-hint::before { content: '👆'; font-size: .9em; }
 
-/* Zikr collectif : l'invite devient LE bouton d'action — pleine largeur,
-   dégradé violet, icône cerclée + séparateur (clic géré par .tc-tapzone). */
+/* Zikr collectif : simple légende sous le tasbih (toute la zone reste
+   cliquable via .tc-tapzone) — texte discret, sans pilule. */
 .tc-embedded .tc-hint {
-  width: 100%; min-height: 64px; gap: 0; justify-content: flex-start; padding: 0 20px 0 10px;
-  font-size: 1.2rem; font-weight: 600; letter-spacing: 0; color: #fff;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 80%, #4338ca), var(--accent));
-  box-shadow: 0 6px 18px var(--accent-glow);
+  background: none; padding: 0; border-radius: 0; margin-top: 2px;
+  font-size: .95rem; font-weight: 500; letter-spacing: 0; color: var(--accent); text-align: center;
 }
 .tc-embedded .tc-hint::before { content: none; }
-.tc-hint-icon {
-  display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
-  background: rgba(255, 255, 255, .18); flex: none;
+
+/* Tasbih tenu par une main (Zikr collectif) : la main est ancrée au bord
+   droit de la carte, coupée par celui-ci, et s'estompe vers le bas. */
+.tc-tasbih { position: relative; display: flex; justify-content: center; }
+.tc-tasbih-held {
+  width: calc(100% + 36px); margin-inline: -18px; height: 252px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0 82%, transparent 100%);
 }
-.tc-hint-sep { width: 1px; height: 36px; background: rgba(255, 255, 255, .3); margin: 0 18px 0 14px; flex: none; }
-.tc-embedded .tc-tapzone:active .tc-hint { filter: brightness(1.1); }
+.tc-tasbih-held .tc-stage-wrap { margin: 0; }
+.tc-hand {
+  position: absolute; right: -34px; top: -6px; width: 270px; height: auto;
+  pointer-events: none; user-select: none; z-index: 2;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .5));
+}
+.tc-tassel {
+  position: absolute; left: calc(50% - 52px - 14px); top: 168px; z-index: 1;
+  pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .45));
+}
 
 /* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────
    Fusionne ce qui était trois zones empilées (bouton Retour desktop à part,

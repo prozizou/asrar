@@ -11,7 +11,6 @@
 // suivent exactement, y compris dans la courbe de l'arc, et transitent
 // réellement par l'arc pour passer d'un brin à l'autre.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Target } from 'lucide-react';
 import { objSubdivisions } from '@/lib/objSubdivisions';
 
 // Un vrai chapelet complet : 100 grains sur la boucle, visibles ou non. C'est
@@ -397,46 +396,64 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
           </div>
         )}
 
-        {/* Le chapelet : le fil (SVG) puis les grains posés dessus. */}
-        <div
-          aria-hidden
-          className="tc-stage-wrap"
-          style={{
-            width: VIEW_W,
-            height: VIEW_H,
-            WebkitMaskImage: FADE_MASK,
-            maskImage: FADE_MASK,
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-          }}
-        >
-          <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
-            <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(165,120,60,0.55)" strokeWidth={2} />
-          </svg>
+        {/* Le chapelet : le fil (SVG) puis les grains posés dessus. En Zikr
+            collectif, une main (public/assets/zikr-hand.webp) le tient par le
+            haut de l'arc et un pompon ferme le brin gauche — pure décoration,
+            les grains continuent de circuler sur le même fil. */}
+        <div className={'tc-tasbih' + (isCollectif ? ' tc-tasbih-held' : '')}>
+          <div
+            aria-hidden
+            className="tc-stage-wrap"
+            style={{
+              width: VIEW_W,
+              height: VIEW_H,
+              WebkitMaskImage: FADE_MASK,
+              maskImage: FADE_MASK,
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+            }}
+          >
+            <svg width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="tc-thread">
+              <path ref={pathRef} d={LOOP_PATH} fill="none" stroke="rgba(165,120,60,0.55)" strokeWidth={2} />
+            </svg>
 
-          <div ref={stageRef} className="tc-stage">
-            {Array.from({ length: BEAD_COUNT }).map((_, i) => (
-              <div
-                key={i}
-                ref={(el) => {
-                  beadRefs.current[i] = el;
-                }}
-                className="tc-bead"
-                style={{ width: BEAD_D, height: BEAD_D }}
-              />
-            ))}
+            <div ref={stageRef} className="tc-stage">
+              {Array.from({ length: BEAD_COUNT }).map((_, i) => (
+                <div
+                  key={i}
+                  ref={(el) => {
+                    beadRefs.current[i] = el;
+                  }}
+                  className="tc-bead"
+                  style={{ width: BEAD_D, height: BEAD_D }}
+                />
+              ))}
+            </div>
           </div>
+          {isCollectif && (
+            <>
+              <svg className="tc-tassel" viewBox="0 0 28 78" width="28" height="78" aria-hidden="true">
+                <defs>
+                  <linearGradient id={`tc-tassel-${id}`} x1="0" x2="1">
+                    <stop offset="0" stopColor="#8a5424" />
+                    <stop offset="0.5" stopColor="#d79a55" />
+                    <stop offset="1" stopColor="#8a5424" />
+                  </linearGradient>
+                </defs>
+                <circle cx="14" cy="7" r="6" fill="#c98a45" />
+                <rect x="8" y="12" width="12" height="9" rx="3" fill="#b8793a" />
+                <path d="M6 22 Q14 19 22 22 L25 76 Q14 79 3 76 Z" fill={`url(#tc-tassel-${id})`} />
+                <path d="M9 24 L8 74 M14 24 V77 M19 24 L20 74" stroke="#6b3f17" strokeOpacity=".45" strokeWidth="1" fill="none" />
+              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element -- décor statique */}
+              <img className="tc-hand" src="/assets/zikr-hand.webp" alt="" aria-hidden="true" draggable={false} />
+            </>
+          )}
         </div>
 
         {!collectifDone && (
           <p className="tc-hint">
-            {isCollectif && (
-              <>
-                <span className="tc-hint-icon" aria-hidden="true"><Target size={26} strokeWidth={2} /></span>
-                <span className="tc-hint-sep" aria-hidden="true" />
-              </>
-            )}
-            Touchez pour égrainer
+            {isCollectif ? 'Touchez le tasbih ou cette zone pour compter vos récitations' : 'Touchez pour égrainer'}
           </p>
         )}
       </div>
