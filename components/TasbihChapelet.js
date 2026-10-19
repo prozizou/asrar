@@ -11,6 +11,7 @@
 // suivent exactement, y compris dans la courbe de l'arc, et transitent
 // réellement par l'arc pour passer d'un brin à l'autre.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Target } from 'lucide-react';
 import { objSubdivisions } from '@/lib/objSubdivisions';
 
 // Un vrai chapelet complet : 100 grains sur la boucle, visibles ou non. C'est
@@ -427,7 +428,17 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
           </div>
         </div>
 
-        {!collectifDone && <p className="tc-hint">Touchez pour égrainer</p>}
+        {!collectifDone && (
+          <p className="tc-hint">
+            {isCollectif && (
+              <>
+                <span className="tc-hint-icon" aria-hidden="true"><Target size={26} strokeWidth={2} /></span>
+                <span className="tc-hint-sep" aria-hidden="true" />
+              </>
+            )}
+            Touchez pour égrainer
+          </p>
+        )}
       </div>
     </div>
   );

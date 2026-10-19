@@ -180,6 +180,8 @@
 /* Retour aligné à GAUCHE (la règle globale `button { width: 100% }` de
    globals.css l'étirait, ce qui centrait « ← Zikr » dans la barre). */
 .zk-detail-topbar > .zk-link { width: auto; margin: 0; font-weight: 600; }
+.zk-topbar-back { color: var(--text-main); flex: none; }
+.zk-topbar-title { flex: 1; font-size: 1.35rem; font-weight: 700; color: var(--text-main); }
 
 /* Bouton icône seul (Partager, ⋮) — sobre par défaut (revue design : « les
    boutons partage et menu pourraient être plus petits et mieux intégrés »,
@@ -280,39 +282,17 @@
    l'image volontairement fixe (nuit/or), indépendante du thème clair/sombre
    de l'app : c'est l'identité de cet écran précis. */
 .zk-hero-caption {
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-dim); margin: 0 0 6px; text-align: center;
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); margin: 16px 0 6px; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.zk-hero-arch {
-  position: relative;
-  aspect-ratio: 1672 / 941;
-  width: 100%;
-  margin: 0 0 8px;
-  background: url('/assets/zikr-hero-arch.png') no-repeat center / 100% 100%;
-}
-/* Zone de ciel dégagée de l'illustration (sous la lune, au-dessus de la
-   silhouette de mosquée) — bande large pour rester lisible même sur un
-   téléphone étroit ; `overflow: visible` laisse un zikr libre sur deux
-   lignes déborder légèrement plutôt que d'être tronqué. */
-.zk-hero-body {
-  position: absolute; left: 9%; right: 9%; top: 40%; bottom: 12%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; text-align: center; overflow: visible;
-}
+.zk-hero-body { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 6px 0 4px; }
 .zk-hero-arabic {
-  font-size: clamp(0.95rem, 5.5vw, 1.6rem); font-weight: 700; line-height: 1.3; margin: 0 0 4px;
-  color: #fff;
-  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+  font-family: var(--font-ar); font-size: clamp(2rem, 11vw, 3rem); font-weight: 700; line-height: 1.5;
+  color: var(--text-main); margin: 0;
 }
-.zk-hero-meaning {
-  font-size: clamp(0.64rem, 2.6vw, 0.82rem); font-weight: 600; color: #fff; margin: 0 0 2px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
-}
-.zk-hero-translit {
-  font-size: clamp(0.58rem, 2.3vw, 0.72rem); font-weight: 700; letter-spacing: 0.02em; color: #e8c477; margin: 0;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
-}
+.zk-hero-meaning { font-size: clamp(1.1rem, 5vw, 1.45rem); font-weight: 600; color: var(--text-main); margin: 0; }
+.zk-hero-translit { font-size: clamp(1rem, 4.4vw, 1.2rem); font-weight: 500; color: var(--accent); margin: 0; }
 
 /* Trois lignes seulement (revue design : « 16 641 / 15 641 / 1000
    apparaissent plusieurs fois dans une zone assez réduite ») — libellé,
@@ -778,9 +758,15 @@
    qu'un contour dessiné + un halo (design system : « ombres très légères
    plutôt que gradients/effets lumineux décoratifs »). */
 .zk-zikr-card {
-  background: var(--surface-2); box-shadow: 0 1px 3px rgba(0,0,0,.25);
-  border-radius: 16px; padding: 16px 16px 12px; margin-bottom: 16px;
+  background: var(--surface-2); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 22px; padding: 18px; margin-bottom: 14px;
 }
+.zk-zikr-card .zk-progress-block { margin-bottom: 0; gap: 10px; }
+.zk-zikr-card .zk-progress-head { font-size: 1.1rem; font-weight: 500; color: var(--text-main); }
+.zk-zikr-card .zk-progress-stats { font-size: clamp(1.5rem, 7vw, 1.9rem); justify-content: center; }
+.zk-zikr-card .zk-bar.big { height: 14px; border-radius: 14px; }
+.zk-zikr-card .zk-progress-meta { font-size: 1rem; color: var(--accent); }
+.zk-zikr-card-counter { padding-bottom: 16px; }
 /* Bare (dans .zk-zikr-card, prop `bare` de CollectiveProgress) : plus de
    cadre propre — voir .zk-progress-hero, gardé pour StaticProgress (visiteur
    non-membre), seul cas qui affiche encore la progression SANS chapelet
@@ -876,19 +862,19 @@
 /* Hauteur + espace sous la pilule partagés par plusieurs calculs (padding de
    compensation .zk-has-bottom-nav, zone de saisie du chat plein écran plus
    bas) — une seule paire de variables évite qu'ils ne divergent. */
-:root { --zk-nav-h: 64px; --zk-nav-gap: 14px; }
-.zk-has-bottom-nav { padding-bottom: calc(var(--zk-nav-h) + var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px)); }
+:root { --zk-nav-h: calc(68px + env(safe-area-inset-bottom, 0px)); --zk-nav-gap: 0px; }
+.zk-has-bottom-nav { padding-bottom: calc(var(--zk-nav-h) + var(--zk-nav-gap) + 12px); }
 .zk-bottom-nav {
   position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: calc(var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px));
-  width: min(608px, calc(100% - 32px));
+  bottom: 0;
+  width: min(640px, 100%);
   z-index: 100;
   display: flex; justify-content: space-around; align-items: stretch; gap: 4px;
   height: var(--zk-nav-h);
   background: linear-gradient(180deg, #1c1040, #130a2c);
-  border: 1px solid rgba(232, 196, 119, 0.35);
-  border-radius: 999px; padding: 7px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 22px 22px 0 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
 }
 /* 3 colonnes de largeur STRICTEMENT identique (flex:1 sur les trois),
    aucune "capsule" propre à l'onglet actif — seul le halo (voir .active plus
@@ -903,7 +889,6 @@
 }
 .zk-bottom-nav-item.active {
   color: #fff;
-  background: radial-gradient(circle at 50% 30%, var(--accent-glow), transparent 70%);
 }
 /* Point lumineux sous le libellé actif — dernier repère du design fourni,
    distinct du halo autour de l'icône. */
@@ -971,7 +956,7 @@
      .zk-voice-recording, quel que soit l'ordre des règles dans ce fichier. */
   .zk-chat-mode .zk-chat-input-row {
     flex-shrink: 0;
-    padding-bottom: calc(12px + var(--zk-nav-h) + var(--zk-nav-gap) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12px + var(--zk-nav-h) + var(--zk-nav-gap));
   }
 }
 

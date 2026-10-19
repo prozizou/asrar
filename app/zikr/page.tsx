@@ -26,7 +26,7 @@ import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2,
+  Mic, Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/useToast';
@@ -822,12 +822,10 @@ function ZikrHero({ name, arabic, transliteration, presetId }: {
   return (
     <>
       <div className="zk-hero-caption">Zikr collectif · {name}</div>
-      <div className="zk-hero-arch">
-        <div className="zk-hero-body">
-          {arabic && <div className="zk-hero-arabic" dir="rtl">{arabic}</div>}
-          {meaning && <div className="zk-hero-meaning">{meaning}</div>}
-          {transliteration && <div className="zk-hero-translit">{transliteration}</div>}
-        </div>
+      <div className="zk-hero-body">
+        {arabic && <div className="zk-hero-arabic" dir="rtl" lang="ar">{arabic}</div>}
+        {meaning && <div className="zk-hero-meaning">{meaning}</div>}
+        {transliteration && <div className="zk-hero-translit">{transliteration}</div>}
       </div>
     </>
   );
@@ -1197,7 +1195,10 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           modération, approbation/suppression admin) reste réservée au
           créateur/admin, dans ce même menu. */}
       <div className="zk-detail-topbar">
-        <button className="zk-link" onClick={onBack}>← Zikr</button>
+        <button type="button" className="zk-icon-btn zk-topbar-back" onClick={onBack} aria-label="Retour à la liste des zikr">
+          <ArrowLeft size={24} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+        <span className="zk-topbar-title">Zikr</span>
         <span className="zk-topbar-actions">
           <button type="button" className="zk-icon-btn" onClick={doShare}
             title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
@@ -1913,9 +1914,12 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
           meta={`${fmt(g.membersCount)} participant${g.membersCount > 1 ? 's' : ''}`}
           bare
         />
+      </div>
 
-        {/* Réglages masqués : pas de part personnelle en Zikr collectif,
-            l'objectif restant affiché EST celui du groupe entier. */}
+      {/* Deuxième carte : « Vos récitations » + chapelet + bouton d'action.
+          Réglages masqués : pas de part personnelle en Zikr collectif,
+          l'objectif restant affiché EST celui du groupe entier. */}
+      <div className="zk-zikr-card zk-zikr-card-counter">
         <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} myFait={myFait} embedded />
       </div>
     </>

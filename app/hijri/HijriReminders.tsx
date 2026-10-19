@@ -2,6 +2,7 @@
 // Rappels de début de phase (jour hijri 1 et 16) — notifications LOCALES, donc
 // disponibles seulement dans l'application Android (lib/hijriRemindersNative.js).
 import { useEffect, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import {
   hijriRemindersSupported, readReminderState, enableHijriReminders, disableHijriReminders,
 } from '@/lib/hijriRemindersNative';
@@ -51,20 +52,27 @@ export default function HijriReminders() {
 
   if (supported === null) return null;
 
-  return (
-    <section className="hijri-reminders">
-      <h2 className="hijri-reminders-title">Rappels de début de phase</h2>
-      {supported ? (
-        <>
-          <p className="hijri-reminders-text">Une notification à 7 h le 1er (attraction) et le 16 (repoussement) du mois hijri.</p>
-          <button type="button" className="hijri-retry" onClick={toggle} disabled={busy} aria-pressed={enabled}>
-            {enabled ? 'Désactiver les rappels' : 'Activer les rappels'}
-          </button>
-          {msg && <p className="hijri-reminders-text" role="status">{msg}</p>}
-        </>
-      ) : (
-        <p className="hijri-reminders-text">Les rappels sont disponibles dans l’application Android.</p>
-      )}
-    </section>
+  const body = (
+    <>
+      <span className="hijri-reminders-main">
+        <strong>Rappels de début de phase</strong>
+        <span>
+          {!supported
+            ? 'Les rappels sont disponibles dans l’application Android.'
+            : msg || (enabled
+              ? 'Activés : notification à 7 h le 1er et le 16 du mois hijri.'
+              : 'Notification à 7 h le 1er (attraction) et le 16 (repoussement).')}
+        </span>
+      </span>
+      {supported && <ChevronRight size={22} aria-hidden="true" />}
+    </>
+  );
+
+  return supported ? (
+    <button type="button" className="hijri-card hijri-reminders" onClick={toggle} disabled={busy} aria-pressed={enabled}>
+      {body}
+    </button>
+  ) : (
+    <section className="hijri-card hijri-reminders">{body}</section>
   );
 }
