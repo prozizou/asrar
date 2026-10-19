@@ -1122,7 +1122,8 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
    Lueur réduite (revue design : « réduire les effets lumineux et gradients
    décoratifs au profit d'ombres très légères ») — un repère de profondeur
    discret, plus le halo prononcé d'avant. */
-.tc-embedded .tc-counter { font-size: 4.4rem; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.tc-embedded .tc-counter { font-size: clamp(4rem, 20vw, 5.4rem); font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.tc-embedded .tc-counter-label { font-size: 1.1rem; font-weight: 500; color: var(--text-main); margin-bottom: 0; }
 /* Pulse bref au tap (revue design : « animation subtile du grain ») — retour
    visuel immédiat en plus de la vibration (useTasbih.js) et du défilement du
    chapelet. */
@@ -1164,6 +1165,22 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   border-radius: 999px; padding: 6px 16px; margin: 0;
 }
 .tc-hint::before { content: '👆'; font-size: .9em; }
+
+/* Zikr collectif : l'invite devient LE bouton d'action — pleine largeur,
+   dégradé violet, icône cerclée + séparateur (clic géré par .tc-tapzone). */
+.tc-embedded .tc-hint {
+  width: 100%; min-height: 64px; gap: 0; justify-content: flex-start; padding: 0 20px 0 10px;
+  font-size: 1.2rem; font-weight: 600; letter-spacing: 0; color: #fff;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 80%, #4338ca), var(--accent));
+  box-shadow: 0 6px 18px var(--accent-glow);
+}
+.tc-embedded .tc-hint::before { content: none; }
+.tc-hint-icon {
+  display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255, 255, 255, .18); flex: none;
+}
+.tc-hint-sep { width: 1px; height: 36px; background: rgba(255, 255, 255, .3); margin: 0 18px 0 14px; flex: none; }
+.tc-embedded .tc-tapzone:active .tc-hint { filter: brightness(1.1); }
 
 /* ── /menu — app bar compacte (app/menu/UserBar.js) ───────────────────────
    Fusionne ce qui était trois zones empilées (bouton Retour desktop à part,
