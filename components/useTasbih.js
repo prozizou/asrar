@@ -117,7 +117,7 @@ export function useTasbih(id, autoTarget, uncapped = false) {
         badgeTimer.current = setTimeout(() => setNewBadge(null), 3200);
       }
     } else if (c !== 0) {
-      vibrate([18, 12, 24]);
+      vibrate(15); // une seule impulsion brève : vibration discrète
       playBeadSound();
     }
 
