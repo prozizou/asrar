@@ -21,3 +21,26 @@
   border: 1px solid var(--accent); background: transparent; color: var(--text-main); cursor: pointer;
 }
 .hijri-credit { text-align: center; color: var(--text-faint); font-size: 0.8rem; margin-top: 16px; }
+
+/* Phase du mois (attraction / repoussement) */
+.hijri-phase {
+  margin-top: 16px; padding: 18px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--surface);
+  --phase-color: var(--accent);
+}
+.hijri-phase-repoussement { --phase-color: var(--accent-hover); }
+.hijri-phase { border-color: color-mix(in srgb, var(--phase-color) 45%, transparent); }
+.hijri-phase-head { display: flex; gap: 12px; align-items: center; }
+.hijri-phase-icon { font-size: 2.2rem; }
+.hijri-phase-title { margin: 0; font-size: 1.1rem; color: var(--phase-color); }
+.hijri-phase-summary { margin: 2px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+.hijri-gauge { height: 8px; border-radius: 999px; background: var(--surface-3); margin: 14px 0 6px; overflow: hidden; }
+.hijri-gauge span { display: block; height: 100%; background: var(--phase-color); border-radius: inherit; }
+.hijri-phase-progress { margin: 0; color: var(--text-dim); font-size: 0.85rem; }
+.hijri-suggestions { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.hijri-suggestion {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  min-height: 44px; padding: 10px 14px; border-radius: 12px;
+  background: var(--surface-2); color: var(--text-main); text-decoration: none; font-size: 0.9rem;
+}
+.hijri-suggestion strong { color: var(--phase-color); white-space: nowrap; font-size: 0.85rem; }
