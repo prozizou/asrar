@@ -56,7 +56,7 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- `versionName "7.9.2"`. Le `versionCode` envoyé par la CI est calculé
+- `versionName "7.9.3"`. Le `versionCode` envoyé par la CI est calculé
   automatiquement (`100 + numéro d'exécution du workflow`, variable
   `ASRAR_VERSION_CODE`) : il augmente à chaque build. Dernière version
   publiée : 101 (7.9.1). Sans la variable (build local), repli sur 102.

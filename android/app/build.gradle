@@ -30,7 +30,7 @@ android {
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
         // local, repli sur la valeur 102 définie plus haut. Dernière version publiée : 101 (7.9.1).
         versionCode asrarVersionCode
-        versionName "7.9.2"
+        versionName "7.9.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
