@@ -33,6 +33,12 @@ const config: CapacitorConfig = {
       // ajouter/ajuster sans reconstruire l'app native.
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    // Rappels programmés en local (heures planétaires, phases du mois hijri) :
+    // même petite icône que les push (res/drawable-*/ic_stat_asrar.png).
+    LocalNotifications: {
+      smallIcon: 'ic_stat_asrar',
+      iconColor: '#A78BFA',
+    },
   },
 };
 

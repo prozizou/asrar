@@ -88,7 +88,9 @@ self.addEventListener('push', (event) => {
       ? 'Ce créneau est terminé. Ouvrez les heures planétaires pour consulter l’état actuel.'
       : data.body || '',
     icon: '/assets/icon-192.png',
-    badge: '/assets/icon-192.png',
+    // Badge = petite icône de la barre de statut (Android) : silhouette
+    // blanche sur fond transparent, sinon Android affiche un carré blanc.
+    badge: '/assets/badge-96.png',
     tag: data.tag || 'asrar-notification', // remplace une notif du même tag au lieu d'empiler
     data: { url },
   };

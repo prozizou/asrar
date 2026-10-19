@@ -98,7 +98,9 @@ async function sendFcmToUid(db, uid, notif, tag) {
         data: { url: notif.targetUrl || "", type: notif.type || "", tag: tag || "" },
         android: {
           priority: channel.importance >= 4 ? "high" : "normal",
-          notification: { channelId, sound: "asrar_notification.mp3" },
+          // icon : ressource Android de l'app (res/drawable-*/ic_stat_asrar.png) —
+          // silhouette blanche, sinon la barre de statut affiche un carré blanc.
+          notification: { channelId, sound: "asrar_notification.mp3", icon: "ic_stat_asrar", color: "#A78BFA" },
         },
       }).catch(async (e) => {
         const code = e && e.errorInfo && e.errorInfo.code;
