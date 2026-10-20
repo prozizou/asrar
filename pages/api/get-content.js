@@ -4,6 +4,7 @@
 // Body (JSON) : { idToken, kind: "secret"|"book", cat?, key }
 
 const { verifyUser, hasActiveAccess } = require("../../server/access");
+const { consumeAdPass } = require("../../server/adReward");
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
@@ -26,7 +27,9 @@ export default async function handler(req, res) {
 
     // Le Marché (authOnly) ne demande PAS d'abonnement : l'achat = le prix du produit.
     if (!src.authOnly) {
-      const ok = await hasActiveAccess(user);
+      // Sans abonnement : passe à usage unique ouvert par une publicité
+      // récompensée (server/adReward.js), consommé ici.
+      const ok = (await hasActiveAccess(user)) || (await consumeAdPass(user.uid));
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 

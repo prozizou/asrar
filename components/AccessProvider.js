@@ -4,6 +4,7 @@
 // d'abonnement est rendu ici et piloté par un simple état React.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus } from '@/lib/access';
+import { consumeAdCredit, isUnityAdsAvailable } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
@@ -16,14 +17,62 @@ export default function AccessProvider({ children }) {
   const cache = useRef(null); // équivalent de _accessStatus (cache par session)
   const [gateOpen, setGateOpen] = useState(false);
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
+  // Publicité récompensée proposée dans le portail (APK, sans abonnement,
+  // module hors forfait 1 An) — voir lib/unityAds.js.
+  const [gateAdEligible, setGateAdEligible] = useState(false);
   const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
   const [expiresAt, setExpiresAt] = useState(null); // pour SubscriptionExpiryBanner
+  // ensureAccess() en attente de la fermeture du portail : résolu true si une
+  // publicité a débloqué l'utilisation, false si le portail est fermé.
+  const pendingGate = useRef(null);
 
-  const openGate = useCallback((reason) => {
-    setGateReason(reason || null);
-    setGateOpen(true);
+  const settleGate = useCallback((result) => {
+    const resolve = pendingGate.current;
+    pendingGate.current = null;
+    if (resolve) resolve(result);
   }, []);
-  const closeGate = useCallback(() => setGateOpen(false), []);
+
+  const openGate = useCallback((reason, { adEligible = false } = {}) => {
+    settleGate(false);
+    setGateReason(reason || null);
+    setGateAdEligible(adEligible);
+    setGateOpen(true);
+  }, [settleGate]);
+  const closeGate = useCallback(() => {
+    setGateOpen(false);
+    settleGate(false);
+  }, [settleGate]);
+
+  // Utilise un crédit publicitaire (gagné à l'instant ou plus tôt) et met à
+  // jour le cache : l'utilisation est accordée si le serveur l'a consommé.
+  const spendAdCredit = useCallback(async () => {
+    const ok = await consumeAdCredit();
+    if (cache.current) cache.current = { ...cache.current, adCredits: Math.max(0, (cache.current.adCredits || 0) - (ok ? 1 : 0)) };
+    return ok;
+  }, []);
+
+  // Portail : publicité regardée et validée par Unity → l'action demandée
+  // s'exécute (une utilisation). Sans ensureAccess() en attente (portail
+  // ouvert directement par openGate), le crédit reste pour la prochaine.
+  const onAdRewarded = useCallback(async () => {
+    if (!pendingGate.current) {
+      cache.current = null;
+      setGateOpen(false);
+      return true;
+    }
+    const ok = await spendAdCredit();
+    if (ok) {
+      setGateOpen(false);
+      settleGate(true);
+    }
+    return ok;
+  }, [spendAdCredit, settleGate]);
+
+  // Publicité regardée mais rappel Unity pas encore reçu : le crédit arrivera
+  // côté serveur — relire l'accès à la prochaine demande.
+  const onAdPending = useCallback(() => {
+    cache.current = null;
+  }, []);
 
   // Résout l'accès SANS ouvrir le portail (verrouillage passif : cartes « nom
   // seul » tant que l'abonnement n'est pas confirmé). Met à jour `allowed`.
@@ -51,7 +100,10 @@ export default function AccessProvider({ children }) {
   // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
   // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL
   // pour Al Qalam / Géomancie, réservés au forfait 1 An). Sinon ouvre le
-  // portail (avec un motif adapté) et résout false. Résultat mis en cache
+  // portail (avec un motif adapté) et résout à sa fermeture : false, ou true
+  // si une publicité récompensée (APK, sans palier requis) a débloqué cette
+  // utilisation — un crédit déjà gagné est utilisé directement, sans portail.
+  // Résultat mis en cache
   // pour la session — SAUF un timeout réseau (cf. lib/access.js) : sans
   // cette exception, un premier clic malchanceux sur une connexion lente
   // figeait « pas d'accès » pour TOUTE la session (le cache ne se
@@ -71,10 +123,16 @@ export default function AccessProvider({ children }) {
         openGate('network');
         return false;
       }
-      openGate(status.allowed && minLevel ? 'level' : null);
-      return false;
+      // Publicité : jamais pour un palier (forfait 1 An), ni pour un abonné.
+      const adEligible = !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
+      if (adEligible && status.adCredits > 0 && (await spendAdCredit())) return true;
+      const result = new Promise((resolve) => {
+        openGate(status.allowed && minLevel ? 'level' : null, { adEligible });
+        pendingGate.current = resolve;
+      });
+      return result;
     },
-    [user, openGate]
+    [user, openGate, spendAdCredit]
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
@@ -93,7 +151,14 @@ export default function AccessProvider({ children }) {
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
-      <SubscriptionGate open={gateOpen} reason={gateReason} onClose={closeGate} />
+      <SubscriptionGate
+        open={gateOpen}
+        reason={gateReason}
+        adEligible={gateAdEligible}
+        onAdRewarded={onAdRewarded}
+        onAdPending={onAdPending}
+        onClose={closeGate}
+      />
     </AccessCtx.Provider>
   );
 }

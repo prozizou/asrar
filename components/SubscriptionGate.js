@@ -1,13 +1,51 @@
 'use client';
 // Portail « abonnement requis » — port de showSubscriptionGate(), en composant
 // React contrôlé par AccessProvider. Aucune injection de <style>/DOM manuelle.
+//
+// adEligible : alternative « regarder une publicité » (Unity Ads, APK
+// uniquement) — une publicité regardée en entier débloque UNE utilisation
+// (voir lib/unityAds.js, server/adReward.js).
+import { useEffect, useState } from 'react';
 import { SUB_PLANS } from '@/lib/access';
 import { openAccess } from '@/lib/whatsapp';
+import { watchRewardedAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 
-export default function SubscriptionGate({ open, reason, onClose }) {
+const AD_MESSAGES = {
+  no_fill: 'Aucune publicité disponible pour le moment. Réessayez dans quelques minutes.',
+  skipped: "Publicité interrompue : regardez-la jusqu'au bout pour débloquer l'accès.",
+  pending: 'Publicité validée en cours… Réessayez dans un instant : votre accès sera prêt.',
+  error: 'Publicité indisponible pour le moment. Vérifiez votre connexion et réessayez.',
+  unavailable: 'Publicité indisponible sur cet appareil.',
+};
+
+export default function SubscriptionGate({ open, reason, adEligible, onAdRewarded, onAdPending, onClose }) {
   const { user } = useAuth();
+  const [adBusy, setAdBusy] = useState(false);
+  const [adMessage, setAdMessage] = useState('');
+
+  useEffect(() => {
+    if (open) setAdMessage('');
+  }, [open]);
+
   if (!open) return null;
+
+  const watchAd = async () => {
+    if (adBusy) return;
+    setAdBusy(true);
+    setAdMessage('');
+    try {
+      const result = await watchRewardedAd();
+      if (result.ok) {
+        if (!(await onAdRewarded())) setAdMessage(AD_MESSAGES.pending);
+        return;
+      }
+      if (result.reason === 'pending') onAdPending();
+      setAdMessage(AD_MESSAGES[result.reason] || AD_MESSAGES.error);
+    } finally {
+      setAdBusy(false);
+    }
+  };
 
   const request = (planId) => openAccess({ planId, email: user?.email });
 
@@ -52,6 +90,16 @@ export default function SubscriptionGate({ open, reason, onClose }) {
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
             : "Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration."}
         </p>
+        {adEligible && !isLevelGate && (
+          <div className="sg-ad">
+            <button type="button" className="sg-ad-btn" onClick={watchAd} disabled={adBusy}>
+              {adBusy ? 'Publicité en cours…' : '🎬 Regarder une publicité'}
+            </button>
+            <p className="sg-ad-hint">Gratuit : une publicité regardée en entier débloque cette utilisation.</p>
+            {adMessage && <p className="sg-ad-msg" role="status">{adMessage}</p>}
+            <p className="sg-ad-or">ou abonnez-vous</p>
+          </div>
+        )}
         <div className="sg-grid">
           {SUB_PLANS.map((p) => (
             <div

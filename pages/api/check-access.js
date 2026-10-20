@@ -19,11 +19,15 @@
 // que par le SDK RTDB client. La lecture réelle reste côté Admin SDK
 // (server/access.js), donc aucune règle de sécurité RTDB n'est affaiblie.
 //
-// Body (JSON) : { idToken } → { allowed, admin, vip, level, purchase, expiresAt }
-// (même forme que checkAccess() côté client, lib/access.js).
+// Body (JSON) : { idToken } → { allowed, admin, vip, level, purchase, expiresAt,
+// adsEnabled, adCredits } (même forme que checkAccess() côté client,
+// lib/access.js). adsEnabled/adCredits : publicités récompensées Unity Ads,
+// alternative à l'abonnement (server/adReward.js) — crédits lus seulement
+// pour un compte sans accès.
 
 const { verifyUser, getAccessStatus } = require("../../server/access");
 const { setCors, parseBody } = require("../../server/http");
+const { adsEnabled, countAdCredits } = require("../../server/adReward");
 const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
@@ -42,7 +46,9 @@ export default async function handler(req, res) {
     // Infinity n'est pas sérialisable en JSON (devient null) : converti en
     // grand entier fini, comme le fait déjà lib/access.js côté client (999999).
     const level = status.level === Infinity ? 999999 : status.level;
-    return res.status(200).json({ ...status, level });
+    const ads = adsEnabled();
+    const adCredits = ads && !status.allowed ? await countAdCredits(user.uid) : 0;
+    return res.status(200).json({ ...status, level, adsEnabled: ads, adCredits });
   } catch (e) {
     await reportError("check-access", e, { uid: user.uid });
     return res.status(500).json({ error: e.message });

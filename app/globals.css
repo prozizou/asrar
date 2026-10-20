@@ -815,6 +815,20 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
 .sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }
+/* Alternative publicitaire (Unity Ads, APK) : au-dessus des formules. */
+.sg-ad { margin-bottom: 18px; }
+.sg-ad-btn {
+  width: 100%; margin: 0; padding: 14px 18px; border-radius: 14px; cursor: pointer;
+  border: 1px solid #a78bfa; background: rgba(167,139,250,.16); color: #fff;
+  font: 600 1rem var(--font-ui);
+}
+.sg-ad-btn:disabled { opacity: .6; cursor: wait; }
+.sg-ad-hint { margin: 8px 0 0; font-size: .8rem; color: #cfd8dc; }
+.sg-ad-msg { margin: 10px 0 0; font-size: .85rem; color: #fcd34d; }
+.sg-ad-or {
+  margin: 16px 0 0; font-size: .75rem; letter-spacing: 1px; text-transform: uppercase;
+  color: #9aa5b1;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    Bottom sheet de connexion (components/AuthProvider.js LoginScreen)
