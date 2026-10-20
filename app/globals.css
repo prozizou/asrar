@@ -815,6 +815,27 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
 .sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }
+/* Mise à jour obligatoire d'un APK trop ancien (components/NativeUpdateGate.js) :
+   au-dessus de tout, sans bouton de fermeture. */
+.nug-overlay {
+  position: fixed; inset: 0; z-index: 2147483000; display: flex;
+  align-items: center; justify-content: center;
+  padding: calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal));
+  background: rgba(9, 5, 15, .96);
+}
+.nug-box {
+  width: 100%; max-width: 420px; padding: 30px 24px; text-align: center;
+  background: #150c24; border: 1px solid rgba(255,255,255,.2); border-radius: 20px;
+  color: #fff; font-family: var(--font-ui);
+}
+.nug-icon { font-size: 2.4rem; }
+.nug-box h2 { margin: 8px 0; font-weight: 600; }
+.nug-box p { margin: 0 0 20px; color: #cfd8dc; font-size: .95rem; line-height: 1.5; }
+.nug-btn {
+  display: block; padding: 14px 18px; border-radius: 14px; text-decoration: none;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; font-weight: 700;
+}
+
 /* Alternative publicitaire (Unity Ads, APK) : au-dessus des formules. */
 .sg-ad { margin-bottom: 18px; }
 .sg-ad-btn {

@@ -17,6 +17,7 @@ import PwaGate from '@/components/PwaGate';
 import CosmicBackground from '@/components/CosmicBackground';
 import InstallBanner from '@/components/InstallBanner';
 import KeyboardInsets from '@/components/KeyboardInsets';
+import NativeUpdateGate from '@/components/NativeUpdateGate';
 
 // Site public — sert de base aux URLs ABSOLUES des balises Open Graph
 // ci-dessous (metadataBase) : sans ça, Next.js émettrait og:image en chemin
@@ -114,6 +115,8 @@ export default function RootLayout({ children }) {
             sur un lien partagé et n'a pas encore de compte. */}
         <InstallBanner />
         <KeyboardInsets />
+        {/* Hors de PwaGate/Providers : bloque aussi avant connexion. */}
+        <NativeUpdateGate />
         <PwaGate>
           <Providers>{children}</Providers>
         </PwaGate>

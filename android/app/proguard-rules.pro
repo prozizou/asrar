@@ -19,3 +19,19 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── ASRAR PRO (R8 activé en release, voir build.gradle) ─────────────────────
+# Pont WebView ↔ natif de Capacitor : méthodes appelées depuis le JavaScript.
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Le bridge Capacitor lit les annotations des plugins par réflexion
+# (@CapacitorPlugin, @PluginMethod) — les règles fournies par capacitor-android
+# gardent les classes ; on garde aussi les annotations elles-mêmes.
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+
+# Rapports de plantage lisibles (numéros de ligne) dans la Play Console.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
