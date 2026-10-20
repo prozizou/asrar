@@ -27,6 +27,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Enfant direct du body (flex centré) : sans largeur explicite, la page se
+     réduisait à la largeur de son contenu (~78 % de l'écran), bandes vides
+     sur les côtés. */
+  width: 100%;
   padding: 16px;
   min-height: 100vh;
   background: var(--bg);
