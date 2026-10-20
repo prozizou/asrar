@@ -197,25 +197,40 @@ body {
     flex-direction: column;
     align-items: center;
     transition: background 0.4s ease, color 0.3s ease;
+    /* Safe areas centralisées (edge-to-edge Android 15+, encoche, paysage) :
+       le contenu de chaque page démarre sous la barre d'état et s'arrête
+       au-dessus de la barre de navigation, sans toucher aux paddings propres
+       des pages. Les pages qui dégagent déjà ces zones elles-mêmes sont
+       exclues ci-dessous (pas de double marge). */
+    padding: var(--sat) var(--sar) var(--sab) var(--sal);
 }
+/* Haut déjà géré : accueil, marché, secrets (en-tête sticky), écu plein écran. */
+body:has(.menu-home, .market-page, .asrar-page, .geo-page.ecu-view) { padding-top: 0; }
+/* Bas déjà géré : mêmes pages + Planète, Al-Qalam, Zikr (barre de navigation). */
+body:has(.menu-home, .market-page, .asrar-page, .geo-page.ecu-view, .planete-page, .alq-page, .zk-has-bottom-nav) { padding-bottom: 0; }
+
+/* Zone système protégée : bande translucide sous la barre d'état, pour que
+   le contenu qui défile ne passe pas sous l'heure/le réseau/la batterie
+   (hauteur 0 hors Android edge-to-edge / encoche → aucun effet ailleurs). */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--sat);
+    z-index: 8500;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--bg-deep) 82%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+body:has(.menu-home, .market-page, .asrar-page, .geo-page.ecu-view)::before { display: none; }
 
 /* ───────────── Layout primitives ───────────── */
 .container {
     width: 100%;
     max-width: 800px;
-    --ctn-pad: 20px;
-    padding: var(--ctn-pad);
+    padding: 20px;
     margin: 0 auto;
-}
-/* Safe areas centralisées : toutes les pages en .container dégagent la barre
-   d'état/l'encoche (haut), la barre de navigation Android (bas) et les bords
-   en paysage. Exclues : pages qui gèrent déjà leurs insets elles-mêmes
-   (accueil, marché, secrets) — évite toute double marge. */
-.container:not(.menu-home):not(.market-page):not(.asrar-page) {
-    padding-top: calc(var(--ctn-pad) + var(--sat));
-    padding-bottom: calc(var(--ctn-pad) + var(--sab));
-    padding-left: calc(var(--ctn-pad) + var(--sal));
-    padding-right: calc(var(--ctn-pad) + var(--sar));
 }
 
 
@@ -241,7 +256,7 @@ body {
 .toast {
     position: fixed;
     left: 50%;
-    bottom: 24px;
+    bottom: calc(24px + var(--sab));
     transform: translateX(-50%) translateY(16px);
     max-width: min(90vw, 420px);
     background: var(--surface);
@@ -270,7 +285,7 @@ body {
        chaque page a son propre en-tête fixe/sticky en haut, un bandeau
        superposé le cacherait ou masquerait un bouton juste sous lui. */
     position: sticky;
-    top: 0;
+    top: var(--sat);
     z-index: 9000;
     display: flex;
     align-items: center;
@@ -281,6 +296,12 @@ body {
     color: #1a1206;
     font-size: .82rem;
     text-align: center;
+}
+/* Pages qui gèrent elles-mêmes la barre d'état (body sans padding-top) : le
+   bandeau, premier élément en haut, la dégage à leur place. */
+body:has(.menu-home, .market-page, .asrar-page, .geo-page.ecu-view) .expiry-banner {
+    top: 0;
+    padding-top: calc(8px + var(--sat));
 }
 
 .expiry-banner-text { flex: 1; min-width: 0; }
@@ -629,7 +650,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 
 /* ───── Tablettes portrait & grands téléphones (≤ 600px) ───── */
 @media (max-width: 600px) {
-    .container { --ctn-pad: 16px; padding: var(--ctn-pad); }
+    .container { padding: 16px; }
     .glass-panel { padding: 22px 18px; border-radius: 16px; }
     .header { margin-bottom: 22px; }
     .header h1 { font-size: 1.9rem; letter-spacing: .5px; }
@@ -646,7 +667,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 
 /* ───── Téléphones (≤ 420px) ───── */
 @media (max-width: 420px) {
-    .container { --ctn-pad: 12px; padding: var(--ctn-pad); }
+    .container { padding: 12px; }
     .glass-panel { padding: 18px 14px; }
     .header h1 { font-size: 1.65rem; }
 
@@ -687,6 +708,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 }
 .drawer-panel {
   width: min(320px, 86vw); height: 100%; overflow-y: auto;
+  padding: var(--sat) 0 var(--sab) var(--sal);
   background: var(--bg-deep); border-right: 1px solid var(--glass-border);
   box-shadow: 0 0 40px rgba(0, 0, 0, .5);
   display: flex; flex-direction: column;
@@ -742,7 +764,8 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 /* Portail « abonnement requis » (ex-showSubscriptionGate) */
 .sg-overlay {
   position: fixed; inset: 0; z-index: 9999; display: flex;
-  align-items: center; justify-content: center; padding: 20px;
+  align-items: center; justify-content: center;
+  padding: calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal));
   background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
 }
 .sg-box {
@@ -970,7 +993,8 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 /* ── Dialogue « dernier commit » (drawer → Releases) ─────────────────────── */
 .commit-modal-overlay {
   position: fixed; inset: 0; z-index: 10000; display: flex;
-  align-items: center; justify-content: center; padding: 20px;
+  align-items: center; justify-content: center;
+  padding: calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal));
   background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px);
 }
 .commit-modal-box {
@@ -1480,7 +1504,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 .install-banner {
   width: 100%;
   position: sticky;
-  top: 0;
+  top: var(--sat);
   z-index: 8000;
   display: flex;
   flex-direction: column;

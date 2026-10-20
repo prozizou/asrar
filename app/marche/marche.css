@@ -767,7 +767,8 @@ html[data-theme="light"] .market-cta { background: rgba(245, 243, 255, 0.94); ba
 /* Fermer : pastille ronde posée sur l'image. */
 .pm-close {
   position: absolute;
-  top: 10px;
+  /* Mobile : fiche plein écran → la pastille dégage la barre d'état. */
+  top: calc(10px + var(--sat));
   right: 10px;
   z-index: 3;
   width: 36px;

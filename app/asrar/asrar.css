@@ -730,6 +730,12 @@ body.comment-open #asrarViewBtn { display: none !important; }
   width: 100%; height: 100%;
   max-width: 1100px; margin: 0 auto;
 }
+/* Mobile : lecteur plein écran → barre d'outils sous la barre d'état, fin du
+   texte au-dessus de la barre de navigation. */
+@media (max-width: 899px) {
+  .rdr-overlay { padding: var(--sat) var(--sar) 0 var(--sal); }
+  .rdr-body { padding-bottom: calc(60px + var(--sab)); }
+}
 @media (min-width: 900px) {
   .rdr-overlay.open { align-items: center; justify-content: center; padding: 24px; background: var(--asrar-overlay); }
   .rdr-shell {
