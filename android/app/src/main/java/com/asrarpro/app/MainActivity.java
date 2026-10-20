@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
 import android.widget.Toast;
+import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import com.getcapacitor.BridgeActivity;
@@ -40,6 +41,13 @@ public class MainActivity extends BridgeActivity {
         // super.onCreate(), qui crée le bridge.
         registerPlugin(AsrarNativePlugin.class);
         registerPlugin(UnityAdsPlugin.class);
+        // Affichage bord à bord sur TOUTES les versions d'Android (imposé
+        // d'office à partir d'Android 15 par targetSdk 36, recommandé par
+        // Android vitals pour les versions antérieures) — avant
+        // super.onCreate(), qui pose la vue. Les zones système restent
+        // dégagées par le site (safe areas CSS, app/globals.css) à partir des
+        // insets transmis par le plugin SystemBars de Capacitor.
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
 
         // Bouton/geste retour Android. Sans @capacitor/app, Capacitor ne
