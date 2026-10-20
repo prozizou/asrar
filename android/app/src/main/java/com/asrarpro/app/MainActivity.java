@@ -33,6 +33,7 @@ public class MainActivity extends BridgeActivity {
         // Plugin local (voir AsrarNativePlugin) — à enregistrer AVANT
         // super.onCreate(), qui crée le bridge.
         registerPlugin(AsrarNativePlugin.class);
+        registerPlugin(UnityAdsPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Bouton/geste retour Android. Sans @capacitor/app, Capacitor ne

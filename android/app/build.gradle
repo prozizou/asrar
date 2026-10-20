@@ -76,6 +76,8 @@ dependencies {
     implementation "com.google.firebase:firebase-messaging:25.0.1"
     // Mises à jour dans l'app (Play In-App Updates), voir MainActivity.
     implementation "com.google.android.play:app-update:2.1.0"
+    // Publicités récompensées (alternative à l'abonnement), voir UnityAdsPlugin.
+    implementation "com.unity3d.ads:unity-ads:4.19.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
