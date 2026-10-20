@@ -42,4 +42,16 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Localisation (heures planétaires, Date du jour, rappels) : la page
+         appelle navigator.geolocation ; Capacitor (BridgeWebChromeClient)
+         demande alors ces permissions à l'exécution. Non déclarées ici,
+         Android les refusait d'office, sans dialogue → « accès refusé » dans
+         l'APK alors que le site fonctionnait dans le navigateur. COARSE seule
+         suffit si l'utilisateur choisit « position approximative » (Android 12+). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Sans ceci, FINE_LOCATION rend le GPS « requis » et le Play Store masque
+         l'app aux appareils sans GPS : la position réseau suffit. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>
