@@ -1,11 +1,13 @@
 package com.asrarpro.app;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AlertDialog;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -20,13 +22,17 @@ public class MainActivity extends BridgeActivity {
     private static final long EXIT_WINDOW_MS = 2000;
     private long lastBackAt = 0;
 
-    // Mise à jour Google Play (In-App Updates) : vérifiée à l'ouverture et au
-    // retour au premier plan. Ne concerne que l'app native (le site chargé dans
-    // la WebView se met à jour seul, via Vercel). Sans effet hors Play Store.
+    // Mise à jour Google Play (In-App Updates) OBLIGATOIRE : vérifiée à
+    // l'ouverture et à chaque retour au premier plan. Dès qu'une nouvelle
+    // version est disponible sur le Play Store, l'écran de mise à jour Play
+    // s'ouvre ; s'il est annulé, une boîte de dialogue non annulable bloque
+    // l'app (« Mettre à jour » ou « Quitter ») jusqu'à l'installation. Ne
+    // concerne que l'app native (le site chargé dans la WebView se met à jour
+    // seul, via Vercel). Sans effet hors Play Store (APK de test…).
+    private static final String PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.Asrar";
     private AppUpdateManager appUpdateManager;
-    // Mise à jour refusée par l'utilisateur : on ne la reproposera pas avant le
-    // prochain lancement de l'app.
-    private boolean updateDeclined = false;
+    private AlertDialog forceUpdateDialog;
+    private boolean updateFlowRunning = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -79,11 +85,13 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
-        checkForPlayUpdate();
+        checkForPlayUpdate(false);
     }
 
-    private void checkForPlayUpdate() {
-        if (updateDeclined) return;
+    // userRequested : bouton « Mettre à jour » de la boîte de dialogue. Sinon
+    // (retour au premier plan), la boîte déjà affichée reste en place sans
+    // relancer l'écran Play — pas de boucle annuler → relancer.
+    private void checkForPlayUpdate(boolean userRequested) {
         if (appUpdateManager == null) {
             appUpdateManager = AppUpdateManagerFactory.create(this);
         }
@@ -94,14 +102,62 @@ public class MainActivity extends BridgeActivity {
                 boolean pending =
                     availability == UpdateAvailability.UPDATE_AVAILABLE
                         || availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS;
-                if (!pending || !info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) return;
+                if (!pending) {
+                    hideForceUpdateDialog();
+                    return;
+                }
+                if (updateFlowRunning || (isForceUpdateDialogShowing() && !userRequested)) return;
+                if (!info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                    if (userRequested) openPlayStore();
+                    showForceUpdateDialog();
+                    return;
+                }
+                updateFlowRunning = true;
                 appUpdateManager
                     .startUpdateFlow(info, this, AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build())
                     .addOnSuccessListener((Integer result) -> {
-                        if (result != Activity.RESULT_OK) updateDeclined = true;
+                        updateFlowRunning = false;
+                        if (result != Activity.RESULT_OK) showForceUpdateDialog();
+                    })
+                    .addOnFailureListener(e -> {
+                        updateFlowRunning = false;
+                        showForceUpdateDialog();
                     });
             })
-            // Pas installée depuis le Play Store (APK de test…) ou Play indisponible : on ignore.
-            .addOnFailureListener(e -> { });
+            // Pas installée depuis le Play Store (APK de test…) ou Play
+            // indisponible : on ne bloque pas, sauf demande explicite.
+            .addOnFailureListener(e -> {
+                if (userRequested) openPlayStore();
+            });
+    }
+
+    private boolean isForceUpdateDialogShowing() {
+        return forceUpdateDialog != null && forceUpdateDialog.isShowing();
+    }
+
+    private void showForceUpdateDialog() {
+        if (isFinishing() || isForceUpdateDialogShowing()) return;
+        forceUpdateDialog = new AlertDialog.Builder(this)
+            .setTitle("Mise à jour requise")
+            .setMessage("Une nouvelle version d'ASRAR PRO est disponible. Mettez l'application à jour pour continuer à l'utiliser.")
+            .setCancelable(false)
+            .setPositiveButton("Mettre à jour", (d, w) -> checkForPlayUpdate(true))
+            .setNegativeButton("Quitter", (d, w) -> finishAffinity())
+            .create();
+        forceUpdateDialog.setCanceledOnTouchOutside(false);
+        forceUpdateDialog.show();
+    }
+
+    private void hideForceUpdateDialog() {
+        if (isForceUpdateDialogShowing()) forceUpdateDialog.dismiss();
+        forceUpdateDialog = null;
+    }
+
+    private void openPlayStore() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(PLAY_STORE_URL)));
+        } catch (Exception e) {
+            Toast.makeText(this, "Ouvrez le Play Store pour mettre à jour ASRAR PRO.", Toast.LENGTH_LONG).show();
+        }
     }
 }
