@@ -13,6 +13,14 @@
 
 /* ───────────── :root = MODE SOMBRE (valeurs par défaut) ───────────── */
 :root {
+    /* Safe areas (barre d'état, encoche, barre de navigation Android).
+       APK Capacitor 8 → --safe-area-inset-* injectées par SystemBars ;
+       navigateur/PWA → env() (viewport-fit=cover, cf. app/layout.js). */
+    --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+    --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+
     /* Fonds & surfaces — sombre profond à halo violet (maquette de référence),
        remplace le dégradé bleu-sarcelle précédent. */
     --bg-gradient:    linear-gradient(135deg, #0c0713, #180d28, #241639);
@@ -195,8 +203,19 @@ body {
 .container {
     width: 100%;
     max-width: 800px;
-    padding: 20px;
+    --ctn-pad: 20px;
+    padding: var(--ctn-pad);
     margin: 0 auto;
+}
+/* Safe areas centralisées : toutes les pages en .container dégagent la barre
+   d'état/l'encoche (haut), la barre de navigation Android (bas) et les bords
+   en paysage. Exclues : pages qui gèrent déjà leurs insets elles-mêmes
+   (accueil, marché, secrets) — évite toute double marge. */
+.container:not(.menu-home):not(.market-page):not(.asrar-page) {
+    padding-top: calc(var(--ctn-pad) + var(--sat));
+    padding-bottom: calc(var(--ctn-pad) + var(--sab));
+    padding-left: calc(var(--ctn-pad) + var(--sal));
+    padding-right: calc(var(--ctn-pad) + var(--sar));
 }
 
 
@@ -610,7 +629,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 
 /* ───── Tablettes portrait & grands téléphones (≤ 600px) ───── */
 @media (max-width: 600px) {
-    .container { padding: 16px; }
+    .container { --ctn-pad: 16px; padding: var(--ctn-pad); }
     .glass-panel { padding: 22px 18px; border-radius: 16px; }
     .header { margin-bottom: 22px; }
     .header h1 { font-size: 1.9rem; letter-spacing: .5px; }
@@ -627,7 +646,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
 
 /* ───── Téléphones (≤ 420px) ───── */
 @media (max-width: 420px) {
-    .container { padding: 12px; }
+    .container { --ctn-pad: 12px; padding: var(--ctn-pad); }
     .glass-panel { padding: 18px 14px; }
     .header h1 { font-size: 1.65rem; }
 
