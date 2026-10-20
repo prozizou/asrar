@@ -16,6 +16,7 @@ import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
 import CosmicBackground from '@/components/CosmicBackground';
 import InstallBanner from '@/components/InstallBanner';
+import KeyboardInsets from '@/components/KeyboardInsets';
 
 // Site public — sert de base aux URLs ABSOLUES des balises Open Graph
 // ci-dessous (metadataBase) : sans ça, Next.js émettrait og:image en chemin
@@ -90,6 +91,10 @@ export const viewport = {
   // qu'une vraie protection (revue design Zikr : « la barre inférieure doit
   // être parfaitement adaptée aux safe areas Android/iPhone et au mode PWA »).
   viewportFit: 'cover',
+  // Clavier virtuel : la page rétrécit au-dessus du clavier (barres et
+  // feuilles fixées en bas restent visibles) au lieu d'être recouverte —
+  // même comportement que l'APK, où SystemBars redimensionne la WebView.
+  interactiveWidget: 'resizes-content',
 };
 
 // Anti-FOUC : pose data-theme sur <html> AVANT le premier rendu (comme le
@@ -108,6 +113,7 @@ export default function RootLayout({ children }) {
             aussi s'afficher AVANT connexion, pour un visiteur qui arrive
             sur un lien partagé et n'a pas encore de compte. */}
         <InstallBanner />
+        <KeyboardInsets />
         <PwaGate>
           <Providers>{children}</Providers>
         </PwaGate>

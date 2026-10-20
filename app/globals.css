@@ -225,6 +225,14 @@ body::before {
 }
 body:has(.menu-home, .market-page, .asrar-page, .geo-page.ecu-view)::before { display: none; }
 
+/* Clavier ouvert (html.kb-open, components/KeyboardInsets.js) : les barres
+   fixées en bas se masquent pendant la saisie pour laisser au champ actif
+   toute la hauteur restante au-dessus du clavier. */
+html.kb-open .zk-bottom-nav,
+html.kb-open .market-cta,
+html.kb-open .interaction-bar,
+html.kb-open .secret-interactions { display: none; }
+
 /* ───────────── Layout primitives ───────────── */
 .container {
     width: 100%;
