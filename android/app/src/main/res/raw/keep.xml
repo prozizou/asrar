@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ressources gardées malgré shrinkResources (R8, voir build.gradle) : elles
+     ne sont référencées que par leur NOM depuis le JavaScript ou la
+     configuration Capacitor (capacitor.config.ts → LocalNotifications.smallIcon),
+     invisibles pour l'analyse du code. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_asrar" />

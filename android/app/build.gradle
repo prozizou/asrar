@@ -53,8 +53,16 @@ android {
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 (réduction + optimisation + obscurcissement) : exigé par les
+            // normes mémoire Google Play de février 2027 (code DEX optimisé),
+            // et réduit la mémoire occupée par le code. Les plugins Capacitor,
+            // Unity Ads, Firebase et Play fournissent leurs règles ; les
+            // compléments propres à l'app sont dans proguard-rules.pro. La table
+            // de correspondance est incluse dans l'AAB (rapports de plantage
+            // lisibles dans la Play Console).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
