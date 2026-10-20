@@ -27,6 +27,15 @@ const config: CapacitorConfig = {
     backgroundColor: '#1a1712',
   },
   plugins: {
+    // Barres système edge-to-edge (Android 15+) : Capacitor injecte les
+    // --safe-area-inset-* (repris par app/globals.css --sat/--sab…) et
+    // redimensionne la WebView au-dessus du clavier. Le site déclare
+    // viewport-fit=cover (app/layout.js) : l'indiquer d'emblée évite un saut
+    // de mise en page au premier affichage.
+    SystemBars: {
+      insetsHandling: 'css',
+      initialViewportFitValueHint: 'cover',
+    },
     PushNotifications: {
       // Les icônes/canaux réels sont créés en JS (lib/fcmNative.js,
       // PushNotifications.createChannel) plutôt qu'ici : on veut pouvoir en
