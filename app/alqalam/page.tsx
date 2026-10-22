@@ -459,9 +459,11 @@ export default function AlQalamPage() {
       if (!ornementSvgRef.current) return;
       setProgress({ pct: 0, text: 'Préparation du PDF vectoriel…' });
       try {
-        await ornementSvgRef.current.exportPdf(docName.trim() || 'ornement', (pct: number, text: string) =>
+        const saved = await ornementSvgRef.current.exportPdf(docName.trim() || 'ornement', (pct: number, text: string) =>
           setProgress({ pct, text })
         );
+        // App Android : dire où le fichier est allé (sinon rien ne se voit).
+        if (saved) showToast(saved, 'info', 6000);
       } catch (e) {
         showToast(e instanceof Error ? e.message : 'Export impossible.', 'error');
       } finally {

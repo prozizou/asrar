@@ -46,8 +46,11 @@ interface OrneePhrasePieceProps {
 }
 
 export interface OrneePhrasePieceHandle {
-  /** Exporte toutes les pages en PDF vectoriel A4 portrait. */
-  exportPdf: (docName: string, onProgress?: (pct: number, text: string) => void) => Promise<void>;
+  /**
+   * Exporte toutes les pages en PDF vectoriel A4 portrait. Résout le message
+   * à montrer (app Android : où le fichier a été enregistré), ou null.
+   */
+  exportPdf: (docName: string, onProgress?: (pct: number, text: string) => void) => Promise<string | null>;
 }
 
 type Shaper = Awaited<ReturnType<typeof loadShaper>>;
@@ -153,7 +156,7 @@ const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProp
         if (piece.overflowReason === 'pages') throw new Error(`Le texte dépasse ${PHRASE_PIECE.MAX_PAGES} pages. Réduisez les répétitions avant l’export PDF.`);
         if (!piece.pages.length) throw new Error('Un mot est trop large pour une page A4. Raccourcissez-le avant l’export PDF.');
         const { exportOrnementPdf } = await import('@/lib/alqalamPdf');
-        await exportOrnementPdf({ pages: piece.pages, shaper, docName, label, cache, onProgress });
+        return exportOrnementPdf({ pages: piece.pages, shaper, docName, label, cache, onProgress });
       },
     }),
     [piece, shaper, cache, label]
