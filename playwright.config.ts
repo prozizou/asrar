@@ -23,6 +23,7 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 // invalide » — d'où des valeurs factices suffisantes pour les tests d'API
 // qui vérifient un REJET (jamais un accès réel).
 const RUNTIME_ENV = {
+  NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-experimental-require-module', require('./vercel.json').env?.NODE_OPTIONS].filter(Boolean).join(' '),
   FIREBASE_SERVICE_ACCOUNT: '{}',
   FIREBASE_DB_URL: 'https://example.firebaseio.com',
   SITE_URL: BASE_URL,

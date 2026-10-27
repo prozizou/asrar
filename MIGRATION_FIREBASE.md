@@ -3,10 +3,10 @@
 ## Versions et exécution
 
 - Client : `firebase` 13.1.0.
-- Serveur : `firebase-admin` 14.5.0, imports modulaires `app`, `auth`, `database`, `messaging`.
+- Serveur : `firebase-admin` **14.5.0 verrouillé**, imports modulaires `app`, `auth`, `database`, `messaging`.
 - Environnement supporté du projet : Node **24.x** (24.12 minimum), identique à la CI et à `.nvmrc`.
   Vérifier aussi le réglage Node du projet Vercel avant la bascule.
-- Le service worker passe à `v46.13` ; le cache des anciennes ressources est renouvelé.
+- Le service worker passe à `v46.14` ; le cache des anciennes ressources est renouvelé.
 
 `server/grant.js` conserve une petite façade pour les services utilisés par le
 reste du serveur. Elle évite l’ancienne API de namespace supprimée par Admin 14,
@@ -78,3 +78,23 @@ initialisation. Il renvoie la version Node, l’étape et un code d’échec sta
 jamais les identifiants, un chemin absolu ou une stack. Une dépendance absente
 peut être nommée. Il ne lit ni n’écrit dans Firebase et ne garantit pas la
 connectivité à la base ; ce point nécessite une vraie requête authentifiée.
+
+## Cause des erreurs 500 : require(ESM) désactivé
+
+Le diagnostic a renvoyé `ERR_REQUIRE_ESM` à l’import du SDK sur le runtime
+Vercel Node 24.21. La reproduction locale avec
+`node --no-experimental-require-module` échoue dans `jwks-rsa@4.1.0` qui
+charge `jose@6.2.13` (ESM) avec `require()`. Les tests sur Node ordinaire
+réussissaient car cette fonctionnalité y était active par défaut.
+
+`vercel.json` déclare explicitement `NODE_OPTIONS=--experimental-require-module`,
+option du runtime Node 24 nécessaire à cette chaîne de dépendances. Cette
+valeur n’est pas secrète. La présence de l’option doit être conservée à chaque
+déploiement ; elle est vérifiée par `npm run test:runtime` après le build.
+Les tests HTTP démarrent aussi avec la contrainte désactivée puis les options
+Vercel, afin de reproduire cet incident si l’option disparaît. Le diagnostic
+`/api/health` indique `requireEsm` et doit retourner `status: ready` en
+production. Une lecture authentifiée reste nécessaire pour valider la base.
+
+Les versions majeures de `jose` et `jwks-rsa` restent celles demandées par le
+SDK Admin. Aucun remplacement forcé de leur API n’est appliqué.
