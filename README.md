@@ -146,6 +146,8 @@ navigateur et [DEPLOIEMENT_SECURITE.md](DEPLOIEMENT_SECURITE.md) pour la recette
 les presets Cloudinary et les tâches de déploiement indispensables.
 Le job `authenticated` lance les émulateurs sans secrets de production.
 Voir [NOTIFICATIONS.md](NOTIFICATIONS.md) pour la file et son exploitation.
+Voir [COUTS_FIREBASE.md](COUTS_FIREBASE.md) pour les sondages, le cache public,
+les index nécessaires et les mesures de réduction des transferts RTDB.
 
 ## Modules migrés
 

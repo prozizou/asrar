@@ -61,6 +61,8 @@ l'API, lancent deux workers concurrents et vérifient la livraison unique
 ainsi que la relance réservée aux administrateurs.
 Les rappels sont aussi vérifiés avec des crons concurrents, une session
 reprogrammée, un abonnement prolongé et une activation d'accès atomique.
+`firebase-cost.spec.ts` vérifie le badge indexé, la lecture incrémentale des
+messages, l'invalidation du catalogue et l'arrêt des sondages en page masquée.
 
 Le mode émulateur exige `FIREBASE_TEST_MODE=true`, le projet
 `demo-asrar-test` et les ports de boucle locale prévus. Il refuse Vercel et

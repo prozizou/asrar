@@ -4,7 +4,8 @@
     ".write": false,
 
     "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
-    "notifications": { "$uid": { ".indexOn": ["createdAt"] } },
+    "notifications": { "$uid": { ".indexOn": ["createdAt", "read"] } },
+    "zikr_groups": { ".indexOn": ["sessionAt"] },
     "push_subscriptions": { "$uid": { ".indexOn": ["updatedAt"] } },
     "fcm_devices": { "$uid": { ".indexOn": ["updatedAt"] } },
 

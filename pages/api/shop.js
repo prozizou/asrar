@@ -23,6 +23,7 @@ const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { publishAndNotify } = require("../../server/notify");
 const { newProductNotification } = require("../../lib/notifyTemplates");
+const { invalidatePublicCatalog } = require("../../server/publicCatalogCache");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -221,6 +222,11 @@ export default async function handler(req, res) {
   } catch (e) {
     if (!e.statusCode) await reportError("shop", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
+  } finally {
+    if (["save-product", "delete-product", "save-shop"].includes(action)) {
+      invalidatePublicCatalog(db, "det_produits");
+      invalidatePublicCatalog(db, "profile_clients");
+    }
   }
 };
 

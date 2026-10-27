@@ -17,6 +17,8 @@ leur circuit direct existant.
 1. Déployer les règles `rules/database.rules.json`, notamment les index de
    `notification_jobs`, `push_subscriptions` et `fcm_devices`. Ce fichier
    conserve l'interdiction des lectures/écritures privées côté client.
+   Les optimisations de transfert ajoutent les index `notifications/$uid/read`
+   et `zikr_groups/sessionAt` ; voir [COUTS_FIREBASE.md](COUTS_FIREBASE.md).
 2. Configurer `CRON_SECRET` côté serveur et le secret GitHub du même nom ;
    vérifier la variable de dépôt `ASRAR_SITE_URL` si le domaine diffère.
 3. Activer le workflow `Notification queue` et lancer une exécution manuelle.

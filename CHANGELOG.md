@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-10-27 — Réduction des lectures et transferts Firebase
+
+- Arrêt des sondages en arrière-plan/hors ligne, badge non lu indexé,
+  discussion Zikr incrémentale et fenêtre indexée des rappels de session.
+- Cache local de 30 secondes sur les seules métadonnées du catalogue,
+  borné et invalidé par les publications et éditions de l'instance.
+- Mesures sur fixtures et limites documentées dans
+  [COUTS_FIREBASE.md](COUTS_FIREBASE.md). SW `v46.10`.
+
 ## 2026-10-27 — Tests authentifiés et notifications persistantes
 
 - Fiabilisation complémentaire : reprises indépendantes par appareil,

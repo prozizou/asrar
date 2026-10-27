@@ -258,7 +258,7 @@ export default async function handler(req, res) {
       case "shareWish":      return await handleShareWish(db, res, user, gid, body.shared);
       case "amineWish":      return await handleAmineWish(db, res, user, gid, safeKey(body.wishUid));
       case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
-      case "messages":       return await handleMessages(db, res, user, gid);
+      case "messages":       return await handleMessages(db, res, user, gid, body.after);
       case "approveZikr":    return await handleApproveZikr(db, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
     }
@@ -1078,12 +1078,15 @@ async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawM
 // Messages récents (200 derniers — une discussion de groupe reste modeste,
 // pas besoin de pagination complète). Sondée régulièrement par le client
 // tant que le panneau discussion est ouvert (app/zikr/page.tsx).
-async function handleMessages(db, res, user, gid) {
+async function handleMessages(db, res, user, gid, after) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
-  const snap = await db.ref("zikr_chat/" + gid).limitToLast(200).once("value");
+  if (after != null && !isValidKey(after)) return res.status(400).json({ error: "Curseur de discussion invalide." });
+  let query = db.ref("zikr_chat/" + gid).orderByKey();
+  if (after) query = query.startAfter(after);
+  const snap = await query.limitToLast(200).once("value");
   const messages = [];
   snap.forEach((m) => {
     const v = m.val() || {};
@@ -1097,7 +1100,7 @@ async function handleMessages(db, res, user, gid) {
     }
     messages.push(msg);
   });
-  return res.status(200).json({ messages });
+  return res.status(200).json({ messages, incremental: !!after });
 }
 
 // ── Prévient les AUTRES membres qu'un nouveau message a été posté ──

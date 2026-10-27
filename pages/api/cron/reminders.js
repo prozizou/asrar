@@ -9,7 +9,7 @@ const { scheduleNotifications } = require("../../../server/notificationScheduler
 const { mapBounded } = require("../../../server/notificationTransport");
 const { reminderPurchase } = require("../../../server/notificationValidity");
 const {
-  shouldSendSessionReminder, SESSION_GRACE_MS, RENEWAL_GRACE_DAYS,
+  shouldSendSessionReminder, SESSION_GRACE_MS, SESSION_LEAD_MS, RENEWAL_GRACE_DAYS,
   shouldSendRenewalReminder, shouldSendExpiredNotice, daysUntil, renewalWhatsAppUrl,
 } = require("../../../lib/reminders");
 
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
 }
 
 async function queueSessionReminders(db, now, stats) {
-  const snap = await db.ref("zikr_groups").once("value");
+  const snap = await db.ref("zikr_groups").orderByChild("sessionAt")
+    .startAt(now.getTime() - SESSION_GRACE_MS).endAt(now.getTime() + SESSION_LEAD_MS).once("value");
   const groups = [];
   snap.forEach((group) => { groups.push({ gid: group.key, value: group.val() || {} }); });
   await mapBounded(groups, 4, async ({ gid, value: group }) => {

@@ -12,35 +12,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
-import { listNotifications } from '@/lib/notificationsClient';
+import { notificationBadge } from '@/lib/notificationsClient';
+import { startVisiblePolling } from '@/lib/visiblePolling';
 
-const POLL_MS = 12000;
+const POLL_MS = 30000;
 
 export default function NotificationBell() {
   const [unread, setUnread] = useState(0);
 
   const refresh = useCallback(() => {
-    listNotifications().then((d) => setUnread(d.unread || 0)).catch(() => {});
+    return notificationBadge().then((d) => setUnread(d.unread || 0)).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    refresh();
-    const id = setInterval(refresh, POLL_MS);
-
-    // Rafraîchissement IMMÉDIAT quand un push arrive alors que l'app est
-    // ouverte : le service worker (public/sw.js) poste un message à chaque
-    // notification reçue — on ne dépend pas du prochain tour de sondage.
-    let onMessage;
-    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-      onMessage = (e) => { if (e.data && e.data.type === 'asrar-notification') refresh(); };
-      navigator.serviceWorker.addEventListener('message', onMessage);
-    }
-
-    return () => {
-      clearInterval(id);
-      if (onMessage) navigator.serviceWorker.removeEventListener('message', onMessage);
-    };
-  }, [refresh]);
+  useEffect(() => startVisiblePolling(refresh, POLL_MS, { push: true }), [refresh]);
 
   const label = unread > 0 ? `Notifications — ${unread} non lue${unread > 1 ? 's' : ''}` : 'Notifications';
 

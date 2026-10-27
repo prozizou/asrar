@@ -26,6 +26,7 @@ const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { notificationHealth, retryNotification } = require("../../server/notificationAdmin");
+const { invalidatePublicCatalog } = require("../../server/publicCatalogCache");
 const { publishAndNotify } = require("../../server/notify");
 const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
@@ -283,6 +284,10 @@ export default async function handler(req, res) {
   } catch (e) {
     if (!e.statusCode) await reportError("admin", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
+  } finally {
+    const root = { secret: "db_sirr_" + body.cat, book: "almaqtab", formation: "formations", product: "det_produits" };
+    const mutation = typeof action === "string" && /^(save|delete)-(secret|book|formation|product)$/.exec(action);
+    if (mutation) invalidatePublicCatalog(db, root[mutation[2]]);
   }
 };
 

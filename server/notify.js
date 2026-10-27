@@ -3,6 +3,7 @@
 const { enqueueNotification, prepareNotification } = require("./notificationQueue");
 const { scheduleNotifications } = require("./notificationScheduler");
 const { MAX_PER_USER } = require("./notificationStore");
+const { invalidatePublicCatalog } = require("./publicCatalogCache");
 
 function userAudience(uids) {
   return { type: "users", uids: [...new Set(uids)].filter(Boolean).sort() };
@@ -31,6 +32,7 @@ async function publishAndNotify(db, path, record, notif, options) {
   const updates = Object.fromEntries(Object.entries(record).map(([key, value]) => [`${path}/${key}`, value]));
   updates[`notification_jobs/${job.id}`] = job.value;
   await db.ref().update(updates);
+  invalidatePublicCatalog(db, path);
   scheduleNotifications(db);
   return job.id;
 }

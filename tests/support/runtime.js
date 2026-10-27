@@ -15,6 +15,7 @@ export function database(initial = {}) {
   const data = clone(initial);
   let revision = 0, nextId = 0;
   const failures = [];
+  const metrics = { reads: [], readBytes: 0, transactions: 0 };
   const split = (p) => p.split('/').filter(Boolean);
   const read = (p) => {
     let value = data;
@@ -61,12 +62,16 @@ export function database(initial = {}) {
           if (query.first) entries = entries.slice(0, query.first);
           value = Object.fromEntries(entries);
         }
+        const bytes = Buffer.byteLength(JSON.stringify(value));
+        metrics.reads.push({ path: p, query: clone(query), bytes });
+        metrics.readBytes += bytes;
         return snapshot(value, split(p).at(-1));
       },
       set: async (v) => { check(p, 'set'); write(p, v); },
       remove: async () => { check(p, 'remove'); write(p, null); },
       update: async (values) => { check(p, 'update'); for (const [k, v] of Object.entries(values)) write(p + '/' + k, v); },
       transaction: async (fn) => {
+        metrics.transactions++;
         check(p, 'transaction');
         if (fn(null) === undefined) return { committed: false, snapshot: snapshot(null) };
         for (let i = 0; i < 100; i++) {
@@ -94,7 +99,7 @@ export function database(initial = {}) {
       endAt: (v) => ref(p, { ...query, end: v }),
     };
   }
-  return { ref, read, failNext: (p, operation) => failures.push({ path: p, operation }) };
+  return { ref, read, metrics, failNext: (p, operation) => failures.push({ path: p, operation }) };
 }
 
 // Les handlers utilisent require() (hors du mocking ESM de Vitest). Charger
