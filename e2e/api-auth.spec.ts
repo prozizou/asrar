@@ -12,6 +12,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Routes /api — rejet sans identité valide', () => {
+  test('le diagnostic charge le SDK et signale la configuration factice sans fuite', async ({ request }) => {
+    const response = await request.get('/api/health');
+    expect(response.status()).toBe(503);
+    const data = await response.json();
+    expect(data).toMatchObject({ status: 'unavailable', stage: 'firebase_configuration', code: 'FIREBASE_INITIALIZATION_FAILED' });
+    expect(data.stack).toBeUndefined(); expect(data.message).toBeUndefined();
+    expect(response.headers()['cache-control']).toBe('no-store');
+  });
   for (const path of ['account', 'orders']) {
     test(`POST /api/${path} sans identité → 401 sans données`, async ({ request }) => {
       const res = await request.post('/api/' + path, { data: {} });
