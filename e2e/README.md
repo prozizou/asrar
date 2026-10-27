@@ -39,7 +39,7 @@ En local, si Playwright signale une version de navigateur manquante :
 ## Tests avec comptes authentifiés
 
 ```bash
-# Node 22 et Java 21 ; téléchargement initial des émulateurs nécessaire
+# Node 24.12+ et Java 21 ; téléchargement initial des émulateurs nécessaire
 npx playwright install chromium
 npm run test:auth
 ```

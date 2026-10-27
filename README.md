@@ -127,7 +127,7 @@ npm run dev                  # http://localhost:3000
 
 Connectez-vous avec Google (même projet Firebase que la prod).
 
-Utiliser Node **22.x** (`nvm use`) ; Firebase Admin 14 nécessite Node 22 au minimum.
+Utiliser Node **24.x** (24.12 minimum) (`nvm use`) ; les dépendances Firebase du verrou nécessitent Node 24.12 au minimum.
 
 ## Qualité / CI
 
@@ -136,7 +136,7 @@ npm run lint        # ESLint (next/core-web-vitals)
 npm run typecheck    # TypeScript incrémental (checkJs), scopé à lib/
 npm test             # Vitest — logique pure de lib/ (calculs ésotériques, accès…)
 npm run build         # build de production (échoue si lint/types cassent)
-npm run test:auth     # Auth + RTDB locaux, Node 22 / Java 21
+npm run test:auth     # Auth + RTDB locaux, Node 24.12+ / Java 21
 npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
 ```
 

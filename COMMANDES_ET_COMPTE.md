@@ -81,7 +81,7 @@ juridique immuable.
 
 ## Déploiement et recette
 
-Utiliser Node 22 (voir `.nvmrc`) et lire [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).
+Utiliser Node 24.12 minimum (voir `.nvmrc`) et lire [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).
 Comparer les règles actives puis déployer les index versionnés :
 `orders_v2` : `buyerSort`, `sellerSort`, `buyerUid`, `sellerUid`, `at` ;
 `orders/{uid}` : `at` ; `privacy_requests` : `status`.

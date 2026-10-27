@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-10-27 — Alignement du runtime Firebase
+
+- Node 24.x pour Vercel, les postes de développement et les deux suites CI.
+  Les dépendances client Firebase du verrou exigent Node 24.12 minimum ;
+  la seule exigence Node 22 du SDK Admin ne couvrait pas tout le projet.
+- Installation stricte des exigences Node pour bloquer une compilation avec
+  des dépendances non prises en charge. SW `v46.13`.
+
 ## 2026-10-27 — Diagnostic et protection des vocaux Zikr
 
 - Vérification du canal audio avant la demande de micro, erreur persistante

@@ -27,7 +27,7 @@ un projet de préproduction séparé.
 Tester en préproduction : connexion Google popup/redirect et native, compte
 gratuit/abonné/premium, activation/révocation, deux appareils sur le même
 Zikr, conversion de points et reprise après coupure, images et vocaux,
-lecture d'un livre et ouverture Meet. Les SDK Firebase 13 / Admin 14 nécessitent Node 22 ; voir
+lecture d'un livre et ouverture Meet. Les SDK Firebase 13 / Admin 14 nécessitent Node 24.12 minimum ; voir
 [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md). Les fournisseurs Auth doivent émettre
 `email_verified: true` (cas normal de Google).
 
