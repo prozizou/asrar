@@ -17,7 +17,7 @@ test('un canal audio non configuré ne demande pas la permission du micro', asyn
     } });
   });
   await page.getByRole('button', { name: 'Enregistrer un vocal' }).click();
-  await expect(page.getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
+  await expect(page.locator('.zk-chat-panel').getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
   expect(await page.evaluate(() => (window as any).microphoneRequested)).toBe(false);
   await expect(page.getByPlaceholder('Écrire un message…')).toBeEnabled();
 });
@@ -43,7 +43,7 @@ test('un vocal dont l’envoi échoue peut être sauvegardé avant de quitter la
   await expect(send).toBeVisible();
   await page.waitForTimeout(1100);
   await send.click();
-  await expect(page.getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
+  await expect(page.locator('.zk-chat-panel').getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
   const download = page.waitForEvent('download');
   await page.getByRole('link', { name: 'Enregistrer mon vocal' }).click();
   expect((await download).suggestedFilename()).toBe('asrar-vocal.webm');
