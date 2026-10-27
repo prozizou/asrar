@@ -72,3 +72,9 @@ Contrôle après déploiement : un POST JSON vide vers `/api/check-access`,
 `/api/list-content` et `/api/account` doit répondre **401 en JSON**, jamais
 500 en HTML. Cette vérification anonyme ne valide pas les secrets Firebase ;
 compléter avec une connexion et une lecture authentifiées.
+
+Le contrôle GET `/api/health` vérifie séparément l’import du SDK et son
+initialisation. Il renvoie la version Node, l’étape et un code d’échec stable,
+jamais les identifiants, un chemin absolu ou une stack. Une dépendance absente
+peut être nommée. Il ne lit ni n’écrit dans Firebase et ne garantit pas la
+connectivité à la base ; ce point nécessite une vraie requête authentifiée.
