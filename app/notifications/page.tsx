@@ -6,18 +6,16 @@
 // bloquent), donc pas de vrai push serveur→client hors notification
 // navigateur — mais la liste reste à jour SANS recharger la page.
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Scroll, BookOpen, MessageCircle, Check } from 'lucide-react';
-import SpinnerUntyped from '@/components/Spinner';
+import PageHeader from '@/components/PageHeader';
+import ViewState from '@/components/ViewState';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/notificationsClient';
 import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } from '@/lib/push';
 import { NOTIF_TYPES } from '@/lib/notifyTemplates';
 import { startVisiblePolling } from '@/lib/visiblePolling';
 
-const Spinner = SpinnerUntyped as any;
 const POLL_MS = 30000;
-
 const ICON_BY_TYPE = {
   [NOTIF_TYPES.SECRET]: Scroll,
   [NOTIF_TYPES.DOCUMENT]: BookOpen,
@@ -29,6 +27,7 @@ const ICON_BY_TYPE = {
 // chaque ligne pour une info secondaire.
 function formatWhen(ts: number) {
   const d = new Date(ts);
+  if (!Number.isFinite(d.getTime())) return "Date indisponible";
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -39,103 +38,72 @@ function formatWhen(ts: number) {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [items, setItems] = useState<any[] | null>(null); // null = chargement
-  const [unread, setUnread] = useState(0);
-  const [error, setError] = useState('');
-  const [pushState, setPushState] = useState('checking');
-  const [marking, setMarking] = useState(false);
-
-  const load = useCallback(() => {
-    return listNotifications()
-      .then((d) => { setItems(d.items || []); setUnread(d.unread || 0); setError(''); })
-      .catch((e) => setError(e.message || 'Erreur de chargement.'));
+  const [items, setItems] = useState<any[] | null>(null), [unread, setUnread] = useState(0);
+  const [error, setError] = useState(''), [actionError, setActionError] = useState(''), [message, setMessage] = useState('');
+  const [pushState, setPushState] = useState('checking'), [pushBusy, setPushBusy] = useState(false);
+  const [marking, setMarking] = useState(false), [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const load = useCallback(async () => {
+    try { const data = await listNotifications(); setItems(data.items || []); setUnread(data.unread || 0); setError(''); }
+    catch (e: any) { setError(e.message || 'Impossible de charger vos notifications.'); }
   }, []);
-
   useEffect(() => startVisiblePolling(load, POLL_MS, { push: true }), [load]);
-
   useEffect(() => {
     if (!pushSupported()) { setPushState('unsupported'); return; }
     getPushSubscriptionState().then(setPushState);
   }, []);
-
   const enablePush = async () => {
-    try {
-      await subscribeToPushReminders();
-      setPushState('subscribed');
-    } catch {
-      setPushState('denied');
-    }
+    if (pushBusy) return;
+    setPushBusy(true); setActionError('');
+    try { await subscribeToPushReminders(); setPushState('subscribed'); }
+    catch (e: any) {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') setPushState('denied');
+      else setActionError(e.message || 'Les notifications n’ont pas pu être activées. Réessayez.');
+    } finally { setPushBusy(false); }
   };
-
-  const openItem = async (n: any) => {
-    if (!n.read) {
-      setItems((cur) => (cur || []).map((it) => (it.id === n.id ? { ...it, read: true } : it)));
-      setUnread((u) => Math.max(0, u - 1));
-      markNotificationRead(n.id).catch(() => {});
+  const openItem = (notification: any) => {
+    if (!notification.read) {
+      setItems((current) => (current || []).map((item) => item.id === notification.id ? { ...item, read: true } : item));
+      setUnread((count) => Math.max(0, count - 1));
+      markNotificationRead(notification.id).catch(() => {});
     }
-    router.push(n.targetUrl);
+    router.push(notification.targetUrl);
   };
-
   const markAll = async () => {
     if (marking || unread === 0) return;
-    setMarking(true);
-    setItems((cur) => (cur || []).map((it) => ({ ...it, read: true })));
-    setUnread(0);
-    try { await markAllNotificationsRead(); } catch {} finally { setMarking(false); }
+    setMarking(true); setActionError(''); setMessage('');
+    try {
+      await markAllNotificationsRead();
+      await load();
+      setMessage('Vos notifications ont été marquées comme lues.');
+    } catch (e: any) { setActionError(e.message || 'Le marquage n’a pas été enregistré. Réessayez.'); }
+    finally { setMarking(false); }
   };
-
-  return (
-    <div className="container">
-      <Link href="/menu" className="back-btn">← Retour</Link>
-
-      <div className="notif-header">
-        <h1>Notifications</h1>
-        {unread > 0 && (
-          <button type="button" className="notif-markall" onClick={markAll} disabled={marking}>
-            <Check size={14} strokeWidth={2.5} aria-hidden="true" /> Tout marquer comme lu
-          </button>
-        )}
-      </div>
-
-      {pushState === 'unsubscribed' && (
-        <button type="button" className="notif-push-banner" onClick={enablePush}>
-          <Bell size={16} strokeWidth={2.5} aria-hidden="true" />
-          Activer les notifications push pour être averti même hors de l'application
-        </button>
-      )}
-      {pushState === 'denied' && (
-        <p className="notif-push-hint">Notifications push bloquées par le navigateur — autorisez-les dans ses réglages pour ce site.</p>
-      )}
-
-      {items === null ? (
-        <div className="zk-loading"><Spinner /> Chargement…</div>
-      ) : error ? (
-        <p className="zk-error">{error} <button className="zk-link" onClick={load}>Réessayer</button></p>
-      ) : items.length === 0 ? (
-        <p className="notif-empty">Aucune notification pour l'instant.</p>
-      ) : (
-        <ul className="notif-list">
-          {items.map((n) => {
-            const Icon = ICON_BY_TYPE[n.type] || Bell;
-            return (
-              <li key={n.id}>
-                <button type="button" className={'notif-item' + (n.read ? '' : ' unread')} onClick={() => openItem(n)}>
-                  <span className="notif-item-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.75} /></span>
-                  <span className="notif-item-body">
-                    <span className="notif-item-title">{n.title}</span>
-                    {n.body && <span className="notif-item-preview">{n.body}</span>}
-                    <span className="notif-item-meta">
-                      {n.senderName && <span className="notif-item-sender">{n.senderName}</span>}
-                      <span className="notif-item-when">{formatWhen(n.createdAt)}</span>
-                    </span>
-                  </span>
-                  {!n.read && <span className="notif-item-dot" aria-hidden="true" />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
+  const visibleItems = filter === 'unread' ? (items || []).filter((item) => !item.read) : items || [];
+  return <main className="container page-shell notifications-page">
+    <PageHeader eyebrow="Votre activité" title="Notifications" description="Retrouvez les nouvelles publications, les messages et le suivi de vos groupes."
+      actions={unread > 0 && <button type="button" className="view-button view-button-secondary" onClick={markAll} disabled={marking}><Check size={18} aria-hidden="true" />{marking ? 'Marquage en cours…' : 'Tout marquer comme lu'}</button>} />
+    {pushState === 'unsubscribed' && <button type="button" className="notif-push-banner" disabled={pushBusy} onClick={enablePush}><Bell size={18} aria-hidden="true" />{pushBusy ? 'Activation en cours…' : 'Activer les notifications sur cet appareil'}</button>}
+    {pushState === 'denied' && <p className="notif-push-hint">Pour recevoir les notifications sur cet appareil, autorisez-les dans les réglages de votre navigateur.</p>}
+    {actionError && <ViewState kind="error" compact title="Action non confirmée" description={actionError} />}
+    {message && <p role="status" className="view-feedback view-feedback-success">{message}</p>}
+    {error && <ViewState kind="error" title="Notifications indisponibles" description={error} compact={items !== null}
+      action={<button type="button" className="view-button" onClick={() => void load()}>Réessayer</button>} />}
+    {items === null && !error && <ViewState kind="loading" title="Chargement de vos notifications" description="Votre activité sera affichée dans un instant." />}
+    {items !== null && <>
+      <div className="notif-toolbar"><div className="notif-filters" role="group" aria-label="Filtrer les notifications">
+        <button type="button" className="notif-filter" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Toutes <span className="notif-count">{items.length}</span></button>
+        <button type="button" className="notif-filter" aria-pressed={filter === 'unread'} onClick={() => setFilter('unread')}>Non lues <span className="notif-count">{unread}</span></button>
+      </div><p className="notif-summary" aria-live="polite">{unread === 0 ? 'Vous êtes à jour' : `${unread} notification${unread > 1 ? 's' : ''} non lue${unread > 1 ? 's' : ''}`}</p></div>
+      {visibleItems.length === 0 ? <ViewState title={filter === 'unread' ? 'Vous êtes à jour' : 'Votre activité commence ici'} description={filter === 'unread' ? 'Vous avez consulté toutes vos notifications. Retrouvez votre historique dans « Toutes ».' : 'Vos prochaines notifications apparaîtront ici : publications, messages et rappels de vos groupes.'} />
+        : <ul className="notif-list">{visibleItems.map((notification) => {
+          const Icon = ICON_BY_TYPE[notification.type] || Bell;
+          return <li key={notification.id}><button type="button" className={'notif-item' + (notification.read ? '' : ' unread')} onClick={() => openItem(notification)}>
+            <span className="notif-item-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.75} /></span><span className="notif-item-body">
+              <span className="notif-item-title">{notification.title}</span>{notification.body && <span className="notif-item-preview">{notification.body}</span>}
+              <span className="notif-item-meta">{notification.senderName && <span className="notif-item-sender">{notification.senderName}</span>}<span className="notif-item-when">{formatWhen(notification.createdAt)}</span></span>
+            </span>{!notification.read && <><span className="notif-item-dot" aria-hidden="true" /><span className="sr-only">Non lue</span></>}
+          </button></li>;
+        })}</ul>}
+    </>}
+  </main>;
 }

@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import PageHeader from '@/components/PageHeader';
+import ViewState from '@/components/ViewState';
 import { useAuth } from '@/components/AuthProvider';
 import { apiPost } from '@/lib/api';
 import { SUB_PLANS } from '@/lib/plans';
@@ -30,7 +32,7 @@ export default function ComptePage() {
   const act = async (work: () => Promise<void>) => {
     setBusy(true); setError(''); setMessage('');
     try { await work(); }
-    catch (e: any) { setError(e.message || 'Action indisponible. Réessayez.'); setReauth(e.status === 401); }
+    catch (e: any) { setError(e.message || 'Action indisponible. Réessayez.'); setReauth(e.status === 401); if (e.status === 401) setConfirm(false); }
     finally { setBusy(false); }
   };
   const saveSettings = (analytics: boolean, pushEnabled: boolean) => act(async () => {
@@ -52,17 +54,16 @@ export default function ComptePage() {
   const subscription = data?.subscription;
   const plan = SUB_PLANS.find((p) => p.level === subscription?.level);
   const pending = data?.privacyRequest && ['pending', 'processing'].includes(data.privacyRequest.status);
-  return <main className="account-page container">
-    <Link href="/menu" className="back-btn">← Tableau de bord</Link>
-    <header><p className="account-eyebrow">Votre espace personnel</p><h1>Mon compte</h1><p>Votre accès, vos préférences et vos données au même endroit.</p></header>
-    {error && <div role="alert" className="account-error">{error} <button onClick={load} disabled={busy}>Réessayer</button></div>}
+  return <main className="account-page container page-shell">
+    <PageHeader eyebrow="Votre espace personnel" title="Mon compte" description="Votre accès, vos préférences et vos données au même endroit." />
+    {error && <ViewState kind="error" compact title={data ? "Action non confirmée" : "Compte indisponible"} description={error} action={<button className="view-button" onClick={load} disabled={busy}>Réessayer</button>} />}
     {message && <p role="status" className="account-success">{message}</p>}
-    {reauth && <button onClick={signOut}>Se reconnecter pour confirmer mon identité</button>}
-    {!data && !error && <p role="status">Chargement de votre compte…</p>}
+    {reauth && <button className="view-button" onClick={signOut}>Se reconnecter pour confirmer mon identité</button>}
+    {!data && !error && <ViewState kind="loading" title="Chargement de votre compte" description="Nous récupérons votre accès et vos préférences." />}
     {data && <div className="account-grid">
       <section className="account-card" aria-labelledby="account-identity"><h2 id="account-identity">Identité</h2><p>{data.account.email}</p>
         <form onSubmit={(e) => { e.preventDefault(); void act(async () => { await apiPost('account', { action: 'profile', name }); await user?.reload(); await load(); setMessage('Votre nom a été mis à jour.'); }); }}>
-          <label htmlFor="account-name">Nom affiché</label><input id="account-name" value={name} maxLength={80} required onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="account-name">Nom affiché</label><input id="account-name" disabled={busy} value={name} maxLength={80} required onChange={(e) => setName(e.target.value)} />
           <button disabled={busy}>Enregistrer mon nom</button>
         </form><p className="account-muted">Compte créé le {data.account.createdAt ? date(data.account.createdAt) : 'date indisponible'}.</p>
         <button className="account-secondary" onClick={signOut}>Me déconnecter</button>
@@ -98,7 +99,7 @@ export default function ComptePage() {
         </article>)}
       </section>}
     </div>}
-    {confirm && <Modal className="account-modal" label="Demander la suppression du compte" onClose={() => setConfirm(false)}><section className="account-card"><h2>Demander la suppression du compte</h2><p>Cette action enregistre une demande auprès de l’administration. Votre compte n’est pas effacé immédiatement.</p><label htmlFor="confirm-account-email">Saisissez votre adresse e-mail pour confirmer</label><input id="confirm-account-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
-      <button className="account-danger" disabled={busy || email.trim().toLowerCase() !== data.account.email.toLowerCase()} onClick={() => void privacy('delete')}>Envoyer ma demande de suppression</button><button className="account-secondary" onClick={() => setConfirm(false)}>Annuler</button></section></Modal>}
+    {confirm && <Modal className="account-modal" label="Demander la suppression du compte" onClose={() => { if (!busy) setConfirm(false); }}><section className="account-card"><h2>Demander la suppression du compte</h2><p>Cette action enregistre une demande auprès de l’administration. Votre compte n’est pas effacé immédiatement.</p><label htmlFor="confirm-account-email">Saisissez votre adresse e-mail pour confirmer</label><input id="confirm-account-email" disabled={busy} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+      <button className="account-danger" disabled={busy || email.trim().toLowerCase() !== data.account.email.toLowerCase()} onClick={() => void privacy('delete')}>Envoyer ma demande de suppression</button><button className="account-secondary" disabled={busy} onClick={() => setConfirm(false)}>Annuler</button>{error && <p role="alert" className="account-modal-error">{error}</p>}</section></Modal>}
   </main>;
 }

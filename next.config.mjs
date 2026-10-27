@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 import { buildCsp } from './lib/csp.js';
 import { emulatorConfig } from './lib/emulatorConfig.js';
+import { readFileSync } from 'node:fs';
+
+// Le numéro du build reste fidèle au service worker, même sans SW actif.
+const appVersion = readFileSync(new URL('./public/sw.js', import.meta.url), 'utf8').match(/\bSW_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1];
+if (!appVersion) throw new Error('Version du service worker introuvable.');
 
 // L'API vit désormais DANS cette app (pages/api/* + server/*) : plus de proxy
 // externe. On conserve le lien court /s (aperçu Open Graph + redirection +
@@ -58,6 +63,7 @@ const nextConfig = {
   distDir: emulator ? '.next-auth' : '.next',
   ...(emulator ? { typescript: { tsconfigPath: 'tsconfig.auth.json' } } : {}),
   reactStrictMode: true,
+  env: { NEXT_PUBLIC_APP_VERSION: appVersion },
 
   // --- Minification / poids des bundles ---
   // swcMinify (JS/CSS) est actif par défaut sur Next 14 ; on ajoute :

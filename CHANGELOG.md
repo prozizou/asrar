@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-10-27 — Cohérence des vues personnelles et confort mobile
+
+- Rappel d’échéance compact, menu personnel structuré et version de repli
+  cohérente avec le build ; en-têtes et états partagés des vues personnelles.
+- Notifications : reprise après erreur, marquage confirmé et filtre local
+  des non-lues. Contrastes adaptés aux deux thèmes et retour mobile visible.
+- Zikr : safe areas Capacitor, espace de clavier, saisie multilignes et
+  retours audio lisibles. Zoom utilisateur rétabli. SW `v46.15`.
+- Audit et périmètre : [QUALITE_VUES.md](QUALITE_VUES.md).
+
 ## 2026-10-27 — Chargement ESM dans les fonctions Vercel
 
 - Activation explicite de `--experimental-require-module` sur Node 24 pour

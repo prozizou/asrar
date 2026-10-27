@@ -1,1 +1,40 @@
-.account-page{max-width:1040px;padding-bottom:60px}.account-page header{margin:24px 0}.account-page h1{font-size:clamp(2rem,5vw,3rem);margin:8px 0}.account-eyebrow{color:var(--accent);font-size:.85rem;text-transform:uppercase;letter-spacing:.12em}.account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}.account-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:18px;padding:24px;min-width:0}.account-card h2{font-size:1.2rem;margin:0 0 16px}.account-card p{line-height:1.6;overflow-wrap:anywhere}.account-plan{display:block;font-size:1.4rem;color:var(--accent)}.account-card label{display:block;margin:12px 0 6px}.account-card input:not([type=checkbox]),.account-card textarea{width:100%;padding:12px;border:1px solid var(--glass-border);border-radius:9px;background:var(--bg-deep);color:var(--text-main);font:inherit}.account-card button,.account-button,.account-error button{display:inline-block;min-height:44px;padding:11px 15px;margin:8px 8px 0 0;border:1px solid var(--glass-border);border-radius:10px;background:var(--accent);color:var(--bg-deep);font:inherit;font-weight:600;cursor:pointer;text-decoration:none}.account-card .account-secondary{background:transparent;color:var(--text-main)}.account-card .account-danger{background:#7d2236;color:white;border-color:#b84b62}.account-card button:disabled{opacity:.5;cursor:default}.account-toggle{display:flex!important;align-items:center;gap:12px;min-height:44px}.account-toggle input{width:20px;height:20px;flex-shrink:0}.account-muted{color:var(--text-muted);font-size:.9rem}.account-error,.account-success{padding:15px;border:1px solid var(--glass-border);border-radius:10px;margin:16px 0}.account-error{color:#ffb8c3}.account-success{color:#9fe9c0}.account-wide{grid-column:1/-1}.account-request{padding:16px 0;border-top:1px solid var(--glass-border);margin-top:18px}.account-modal{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);padding:20px}.account-modal .account-card{width:min(520px,100%);max-height:90dvh;overflow:auto;background:var(--bg-deep)}
+.account-page { max-width: 1040px; }
+.account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; }
+.account-card { display: flex; flex-direction: column; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px; min-width: 0; }
+.account-card h2 { font-size: 1.15rem; letter-spacing: -.01em; margin: 0 0 4px; }
+.account-card p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.account-plan { display: block; font-size: 1.35rem; color: var(--accent); line-height: 1.35; }
+.account-card form { display: grid; gap: 8px; }
+.account-card label { display: block; margin: 0; font-size: .9rem; font-weight: 600; line-height: 1.5; }
+.account-card input:not([type=checkbox]), .account-card textarea { width: 100%; min-height: 48px; margin: 0; padding: 12px; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--surface-input); color: var(--text-main); font: inherit; font-size: 1rem; }
+.account-card textarea { min-height: 88px; resize: vertical; }
+.account-card button, .account-button { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; width: auto; max-width: 100%; padding: 11px 15px; margin: 0; border: 1px solid transparent; border-radius: 12px; background: var(--accent); color: var(--button-ink); font: inherit; font-size: .95rem; font-weight: 600; line-height: 1.4; cursor: pointer; text-decoration: none; text-align: center; }
+.account-card > button, .account-card > .account-button, .account-card form > button { width: 100%; }
+.account-card button:hover { transform: none; box-shadow: none; filter: brightness(1.05); }
+.account-card .account-secondary { background: var(--surface-2); color: var(--text-main); border-color: var(--glass-border); }
+.account-card .account-danger { background: var(--status-danger-bg); color: var(--status-danger-text); border-color: color-mix(in srgb, var(--status-danger-text) 45%, transparent); }
+.account-card button:disabled { opacity: .5; cursor: default; }
+.account-card .account-toggle { display: flex; align-items: flex-start; gap: 12px; min-height: 52px; padding: 12px; background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 12px; cursor: pointer; }
+.account-toggle input { width: 20px; height: 20px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--accent); }
+.account-muted { color: var(--text-muted); font-size: .9rem; }
+.account-success { padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--status-success-text) 30%, transparent); border-radius: 12px; margin: 16px 0; color: var(--status-success-text); background: var(--status-success-bg); line-height: 1.5; }
+.account-wide { grid-column: 1/-1; }
+.account-request { padding: 16px 0 0; border-top: 1px solid var(--glass-border); margin-top: 4px; overflow-wrap: anywhere; }
+.account-request p { margin-top: 8px; }
+.account-request label { margin: 16px 0 8px; }
+.account-request button { margin: 8px 8px 0 0; }
+.account-modal { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.7); padding: calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal)); }
+.account-modal .account-card { width: min(520px,100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; background: var(--bg-deep); }
+.orders-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.orders-nav [aria-current="page"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.account-card details { color: var(--text-muted); font-size: .9rem; line-height: 1.5; }
+.account-card summary { min-height: 44px; display: list-item; padding: 12px 0; cursor: pointer; }
+.account-card details ol { padding-left: 20px; }
+.account-card details li { margin: 8px 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .account-card { padding: 20px; } }
+
+.order-amount { font-size: 1.45rem; line-height: 1.3; }
+.order-status { display: inline-flex; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--surface-2); font-size: .85rem; line-height: 1.4; }
+.order-status-whatsapp_request, .order-status-confirmed { color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.order-status-paid, .order-status-delivered { color: var(--status-success-text); background: var(--status-success-bg); border-color: color-mix(in srgb, var(--status-success-text) 35%, transparent); }
+.order-status-cancelled, .order-status-legacy_request { color: var(--text-muted); }

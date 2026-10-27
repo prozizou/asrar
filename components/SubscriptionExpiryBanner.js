@@ -53,7 +53,7 @@ export default function SubscriptionExpiryBanner({ expiresAt }) {
           Renouveler sur WhatsApp
         </button>
       </span>
-      <button className="expiry-banner-close" aria-label="Fermer" onClick={dismiss}>
+      <button className="expiry-banner-close" aria-label="Masquer le rappel d’abonnement" onClick={dismiss}>
         ✕
       </button>
     </div>
