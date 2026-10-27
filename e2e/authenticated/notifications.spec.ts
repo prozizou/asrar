@@ -56,3 +56,46 @@ test('seul un administrateur peut voir les échecs et relancer une tâche morte'
   expect((await db.ref(`notification_jobs/${id}/status`).once('value')).val()).toBe('queued');
   expect((await postAs('admin', 'admin', { action: 'retry-notification', jobId: id })).status()).toBe(409);
 });
+
+test('des crons concurrents livrent un seul rappel de session aux membres', async ({ request, postAs }) => {
+  const db = app().database();
+  await db.ref('zikr_groups/reminder-real').set({ name: 'Session fiable', ownerUid: 'fixture-free', sessionAt: Date.now() + 1200000 });
+  await db.ref('zikr_members/reminder-real').set({ 'fixture-free': { joinedAt: Date.now() }, 'fixture-premium': { joinedAt: Date.now() } });
+  const headers = { Authorization: 'Bearer emulator-cron-only' };
+  const prepare = () => request.get('/api/cron/reminders', { headers });
+  for (const result of await Promise.all([prepare(), prepare()])) expect(result.status()).toBe(200);
+  expect((await request.get('/api/cron/notifications', { headers })).status()).toBe(200);
+  for (const role of ['free', 'premium']) {
+    const list = await (await postAs(role, 'notifications', { action: 'list' })).json();
+    expect(list.items.filter((item: any) => item.title === '🔔 Session fiable')).toHaveLength(1);
+  }
+  await prepare();
+  await request.get('/api/cron/notifications', { headers });
+  const list = await (await postAs('free', 'notifications', { action: 'list' })).json();
+  expect(list.items.filter((item: any) => item.title === '🔔 Session fiable')).toHaveLength(1);
+});
+
+test('les rappels obsolètes sont écartés après reprogrammation ou prolongation', async ({ request }) => {
+  const db = app().database(), now = Date.now();
+  await db.ref('zikr_groups/obsolete-real').set({ name: 'Session déplacée', ownerUid: 'fixture-free', sessionAt: now + 1200000 });
+  await db.ref('purchased_user/expired@asrar,test').set({ token: 'fixture-purchase', expiresAt: now + 86400000, level: 15000 });
+  const headers = { Authorization: 'Bearer emulator-cron-only' };
+  expect((await request.get('/api/cron/reminders', { headers })).status()).toBe(200);
+  await db.ref('zikr_groups/obsolete-real/sessionAt').set(now + 86400000);
+  await db.ref('purchased_user/expired@asrar,test/expiresAt').set(now + 30 * 86400000);
+  const drain = await request.get('/api/cron/notifications', { headers });
+  expect(drain.status()).toBe(200);
+  expect((await drain.json()).skipped).toBeGreaterThanOrEqual(2);
+  const own = (await db.ref('notifications/fixture-free').once('value')).val() || {};
+  expect(Object.values(own).some((item: any) => item.title === '🔔 Session déplacée')).toBe(false);
+  const expired = (await db.ref('notifications/fixture-expired').once('value')).val() || {};
+  expect(Object.values(expired).some((item: any) => item.type === 'renewal')).toBe(false);
+});
+
+test('l’activation d’un accès conserve sa notification avec le droit accordé', async ({ postAs, request }) => {
+  expect((await postAs('admin', 'admin', { action: 'grant-access', email: 'free@asrar.test', days: 30, level: 15000 })).status()).toBe(200);
+  expect((await (await postAs('free', 'check-access')).json()).allowed).toBe(true);
+  expect((await request.get('/api/cron/notifications', { headers: { Authorization: 'Bearer emulator-cron-only' } })).status()).toBe(200);
+  const list = await (await postAs('free', 'notifications', { action: 'list' })).json();
+  expect(list.items.filter((item: any) => item.type === 'access')).toHaveLength(1);
+});

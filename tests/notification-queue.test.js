@@ -36,6 +36,18 @@ describe('File persistante : baux, diffusion et reprise', () => {
     expect(afterCrash).not.toBeNull();
     expect(afterCrash.owner).not.toBe(claims.find(Boolean).owner);
   });
+  it('arrête une tâche dont les workers ont été interrompus cinq fois', async () => {
+    const db = database(), load = runtime(db), queue = load('server/notificationQueue.js');
+    const id = await queue.enqueueNotification(db, { type: 'all' }, message, 'repeated-crash');
+    let now = Date.now();
+    for (let i = 0; i < queue.MAX_ATTEMPTS; i++) {
+      expect(await queue.claimJob(db, id, now)).not.toBeNull();
+      now += queue.LEASE_MS + 1;
+    }
+    const stats = await load('server/notificationWorker.js').processNotificationQueue(db, { now: () => now });
+    expect(stats.dead).toBe(1);
+    expect(db.read(`notification_jobs/${id}/lastError/code`)).toBe('REPEATED_INTERRUPTION');
+  });
   it('la diffusion ne lit qu’une page et ne duplique pas les enfants après reprise', async () => {
     const db = database({ user_sessions: Object.fromEntries(Array.from({ length: 45 }, (_, i) => ['user' + String(i).padStart(3, '0'), {}])) });
     const queue = runtime(db)('server/notificationQueue.js');
@@ -140,12 +152,12 @@ describe('File persistante : baux, diffusion et reprise', () => {
     } });
     const queue = load('server/notificationQueue.js'), transport = load('server/notificationTransport.js');
     const job = await queue.claimJob(db, 'delivery');
-    await expect(transport.deliverNotification(db, job)).rejects.toMatchObject({ statusCode: 503 });
+    expect(await transport.deliverNotification(db, job)).toMatchObject({ pending: true, dead: false });
     expect(db.read('notification_jobs/delivery/progress/web/a')).toBe(true);
-    await queue.retryJob(db, job, { statusCode: 503 });
+    await queue.updateOwned(db, job.id, job.owner, (current) => ({ ...current, status: 'queued', availableAt: 0, owner: null }));
     retry = true;
     const next = await queue.claimJob(db, 'delivery', Date.now() + 120000);
-    expect(await transport.deliverNotification(db, next)).toMatchObject({ pending: false });
+    expect(await transport.deliverNotification(db, next, { now: () => Date.now() + 120000 })).toMatchObject({ pending: false });
     expect(sent).toEqual(['a', 'b', 'b']);
     expect(fcm).toEqual(['expired']);
     expect(db.read('push_subscriptions/tester/b')).toBeNull();

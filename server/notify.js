@@ -23,8 +23,8 @@ async function notifyAllUsers(db, notif, options = {}) {
   return id;
 }
 
-// Création de documents à clé fraîche : contenu et tâche partagent une
-// écriture Firebase atomique. Réservé à ces créations, pas aux rééditions.
+// Publication ou activation : modification métier et tâche partagent une
+// écriture Firebase atomique. Chaque nouvel événement reçoit sa propre clé.
 async function publishAndNotify(db, path, record, notif, options) {
   const audience = options.uids ? userAudience(options.uids) : { type: "all" };
   const job = prepareNotification(audience, notif, options.eventId);

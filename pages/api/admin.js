@@ -26,7 +26,7 @@ const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { notificationHealth, retryNotification } = require("../../server/notificationAdmin");
-const { notifyAllUsers, notifyUsers, publishAndNotify } = require("../../server/notify");
+const { publishAndNotify } = require("../../server/notify");
 const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
 const DAY_MS = 86400000;
@@ -179,25 +179,26 @@ export default async function handler(req, res) {
         const cur = (await ref.once("value")).val();
         if (!cur) return res.status(404).json({ error: "Vendeur introuvable." });
         const wasActive = cur.shopActive === true;
-        if (op === "suspend")  await ref.update({ shopActive: false });
-        else if (op === "activate") await ref.update({ shopActive: true });
+        let update;
+        if (op === "suspend") update = { shopActive: false };
+        else if (op === "activate") update = { shopActive: true };
         else if (op === "extend") {
           const days = parseInt(body.days, 10) || 30;
           const base = (typeof cur.expiresAt === "number" && cur.expiresAt > Date.now()) ? cur.expiresAt : Date.now();
-          await ref.update({ shopActive: true, expiresAt: base + days * DAY_MS });
+          update = { shopActive: true, expiresAt: base + days * DAY_MS };
         } else return res.status(400).json({ error: "Opération inconnue." });
 
         // Boutique qui devient (ou redevient, après suspension) disponible —
-        // diffuse à TOUS les utilisateurs connus. Best-effort, jamais bloquant.
+        // L'activation et sa notification sont persistées ensemble.
         if (!wasActive && (op === "activate" || op === "extend")) {
           const shopName = (cur.shop && cur.shop.name) || "Une nouvelle boutique";
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "sellers/" + uid, update, {
             ...newShopNotification({ shopName }),
             senderName: BROADCAST_SENDER,
             targetUrl: "/",
             meta: { uid, tagSuffix: uid },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "seller-action", uid }));
-        }
+          }, { eventId: "shop-activation:" + uid + ":" + db.ref("notification_jobs").push().key });
+        } else await ref.update(update);
         return res.json({ ok: true });
       }
 
@@ -225,27 +226,23 @@ export default async function handler(req, res) {
         const days = parseInt(body.days, 10);
         const until = Number.isFinite(days) && days > 0 ? Date.now() + days * DAY_MS : true;
         const level = parseInt(body.level, 10);
-        await db.ref("allowedUsers/" + emailKey(email)).set({
+        const grant = {
           until,
           level: Number.isFinite(level) && level > 0 ? level : 0
-        });
-        // Notification CIBLÉE (pas de broadcast) au compte concerné —
-        // best-effort, silencieuse si aucun compte Firebase Auth n'existe
-        // encore pour cet e-mail (accès accordé avant la première connexion,
-        // ou faute de frappe côté admin) : jamais bloquant pour la réponse,
-        // même principe que pages/api/cron/reminders.js sendRenewalReminders.
+        };
+        let userRecord;
         try {
-          const userRecord = await app().auth().getUserByEmail(email);
-          await notifyUsers(db, [userRecord.uid], {
+          userRecord = await app().auth().getUserByEmail(email);
+        } catch (error) {
+          if (error.code !== "auth/user-not-found") throw error;
+        }
+        if (userRecord) {
+          await publishAndNotify(db, "allowedUsers/" + emailKey(email), grant, {
             ...accessGrantedNotification(),
             targetUrl: "/",
             meta: { tagSuffix: "access" },
-          });
-        } catch (e) {
-          if (e && e.code !== "auth/user-not-found") {
-            await reportError("admin:notifyUsers", e, { action: "grant-access", email });
-          }
-        }
+          }, { uids: [userRecord.uid], eventId: "access:" + userRecord.uid + ":" + db.ref("notification_jobs").push().key });
+        } else await db.ref("allowedUsers/" + emailKey(email)).set(grant);
         return res.json({ ok: true, email, expiresAt: until === true ? "lifetime" : until, level: level || 0 });
       }
       // revoke-access {email} → retire l'accès manuel ET neutralise un ancien achat.

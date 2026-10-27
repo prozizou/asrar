@@ -24,6 +24,7 @@ function prepareNotification(audience, notif, eventId = crypto.randomUUID()) {
         type: notif.type, title: notif.title, body: notif.body,
         senderName: notif.senderName || null, targetUrl: notif.targetUrl,
         createdAt: now, read: false, ...(notif.meta ? { meta: notif.meta } : {}),
+        ...(Number.isFinite(notif.expiresAt) ? { expiresAt: notif.expiresAt } : {}),
       },
     },
   };
@@ -69,6 +70,19 @@ async function ackDelivery(db, job, channel, key) {
   }));
 }
 
+async function failDevice(db, job, channel, key, error, now) {
+  return updateOwned(db, job.id, job.owner, (current) => {
+    const failures = current.progress?.failures || {};
+    const attempts = (failures[channel]?.[key]?.attempts || 0) + 1;
+    return { ...current, progress: { ...current.progress, failures: {
+      ...failures, [channel]: { ...failures[channel], [key]: {
+        attempts, availableAt: now + Math.min(3600000, 60000 * 2 ** (attempts - 1)),
+        code: String(error?.errorInfo?.code || error?.code || error?.statusCode || "DELIVERY_ERROR").slice(0, 100),
+      } },
+    } } };
+  });
+}
+
 async function expandAudience(db, job, now = Date.now()) {
   let uids, more;
   if (job.audience.type === "all") {
@@ -98,6 +112,7 @@ async function expandAudience(db, job, now = Date.now()) {
     ...(more ? {} : { finishedAt: now }),
     cursor: job.audience.type === "all" ? uids.at(-1) || job.cursor : (Number(job.cursor) || 0) + uids.length,
   }));
+  return { completed: !more };
 }
 
 async function retryJob(db, job, error, now = Date.now()) {
@@ -116,10 +131,11 @@ async function retryDeadJob(db, id) {
   const tx = await db.ref(`notification_jobs/${id}`).transaction((job) => {
     if (!job) return null;
     if (job.status !== "dead") return;
-    return { ...job, status: "queued", availableAt: Date.now(), attempts: 0, finishedAt: null, lastError: null };
+    return { ...job, status: "queued", availableAt: Date.now(), attempts: 0, finishedAt: null, lastError: null,
+      ...(job.progress ? { progress: { ...job.progress, failures: null } } : {}) };
   });
   return !!tx.committed && tx.snapshot.val()?.status === "queued";
 }
 
-module.exports = { prepareNotification, enqueueNotification, claimJob, updateOwned, ackDelivery,
+module.exports = { prepareNotification, enqueueNotification, claimJob, updateOwned, ackDelivery, failDevice,
   expandAudience, retryJob, retryDeadJob, TERMINAL_TIME, MAX_ATTEMPTS, PAGE_SIZE, LEASE_MS };

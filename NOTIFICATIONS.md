@@ -2,13 +2,15 @@
 
 Les nouveaux secrets, livres, produits, validations de Zikr et messages de
 discussion enregistrent leur contenu et leur tâche de notification dans une
-écriture RTDB atomique. Les notifications d'activation d'accès et de boutique
-passent aussi par la file, après la mise à jour métier existante.
+écriture RTDB atomique. Les activations d'accès et de boutique sont elles
+aussi persistées avec leur notification : un échec de mise en file renvoie
+une erreur et ne valide pas l'activation silencieusement.
 
 Le producteur répond après persistance. Sur Vercel, `waitUntil` lance le
 worker après la réponse ; `/api/cron/notifications` reprend les tâches
-interrompues ou en attente. Les rappels horaires de sessions/planètes et les
-alertes de récitation conservent leur circuit direct existant.
+interrompues ou en attente. Les rappels de session et d'abonnement utilisent
+la même file. Les alarmes planétaires et alertes de récitation conservent
+leur circuit direct existant.
 
 ## Mise en service
 
@@ -38,9 +40,16 @@ les autres ; des invocations suivantes résorbent les gros volumes.
 ## Reprise et supervision
 
 Une tâche possède un bail de trois minutes et un propriétaire unique. Un
-worker peut reprendre un bail expiré après une interruption. Les erreurs
-transitoires sont retentées après 1, 2, 4 et 8 minutes ; la cinquième erreur
-place la tâche en `dead`. Les accusés déjà enregistrés restent conservés.
+worker peut reprendre un bail expiré après une interruption. Chaque appareil
+possède ses propres essais : une panne Web ou VAPID ne bloque pas Android,
+ni les autres navigateurs. Les erreurs sont retentées après 1, 2, 4 et
+8 minutes. Après cinq échecs d'un appareil, les appareils restants sont
+traités avant que la tâche soit placée en `dead`. Les pannes de persistance
+suivent aussi une limite de cinq essais par tâche. Cinq interruptions
+successives sans progression empêchent également une boucle de reprise
+indéfinie : le passage suivant classe la tâche en échec pour inspection.
+Les accusés déjà enregistrés restent conservés lors d'une relance manuelle,
+qui remet à zéro uniquement les essais des appareils non acquittés.
 Les abonnements Web 404/410 et jetons FCM invalides sont supprimés.
 
 La notification dans l'application garde un identifiant stable : une
@@ -48,11 +57,26 @@ reprise ne la duplique pas et conserve son état lu. Les accusés par appareil
 évitent les renvois des étapes terminées. Une interruption entre
 l'acceptation par le fournisseur et l'écriture de l'accusé peut toutefois
 entraîner un second push : les fournisseurs ne permettent pas de garantir
-exactement un envoi. Le tag reste stable pour le regroupement Web Push.
+exactement un envoi. Le tag reste stable pour le regroupement Web Push et
+Android. Un abonnement Web réenregistré avec de nouvelles clés pendant
+l'envoi n'est pas supprimé à cause de l'expiration des anciennes clés.
+
+Les rappels sont dédupliqués par session/échéance, même avec deux crons
+concurrents. Les marqueurs `sessionReminderSent`, `renewalReminderForExpiry`
+et `expiredNoticeForExpiry` signifient désormais « mis en file », pas « reçu
+sur téléphone ». Une panne avant persistance ne les valide pas ; une panne
+après persistance conserve la tâche. Le worker vérifie à nouveau l'horaire
+ou l'échéance : une session reprogrammée, un abonnement prolongé ou un
+rappel périmé est écarté. Le stockage chez le fournisseur est limité à la
+durée restante du rappel, et à 24 heures pour les autres notifications.
+`cron_health/reminders` et la réponse du cron utilisent les compteurs
+`sessionQueued`, `renewalQueued`, `expiredQueued`.
 
 L'API administrateur reçoit `{ idToken, action: "notification-jobs" }` et
 retourne le dernier passage du worker, 25 tâches récentes et jusqu'à 25
-échecs définitifs, sans contenu ni jetons d'appareil. Pour relancer après
+échecs définitifs, avec leur nombre d'appareils en échec et sans contenu ni
+jetons d'appareil. Le compteur `skipped` suit les rappels obsolètes écartés.
+Pour relancer après
 correction de la cause : `{ idToken, action: "retry-notification", jobId }`.
 Une tâche encore active refuse la relance avec HTTP 409. Aucun nouveau
 écran d'administration n'est ajouté.

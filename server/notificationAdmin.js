@@ -6,9 +6,11 @@ function summary(snapshot) {
   const jobs = [];
   snapshot.forEach((child) => {
     const value = child.val();
+    const failedDevices = ["web", "fcm"].reduce((count, channel) => count + Object.entries(value.progress?.failures?.[channel] || {})
+      .filter(([key]) => !value.progress?.[channel]?.[key]).length, 0);
     jobs.push({ id: child.key, kind: value.kind, status: value.status,
       attempts: value.attempts || 0, createdAt: value.createdAt,
-      availableAt: value.availableAt, lastError: value.lastError || null });
+      availableAt: value.availableAt, lastError: value.lastError || null, failedDevices });
   });
   return jobs;
 }

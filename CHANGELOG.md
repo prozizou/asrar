@@ -2,6 +2,10 @@
 
 ## 2026-10-27 — Tests authentifiés et notifications persistantes
 
+- Fiabilisation complémentaire : reprises indépendantes par appareil,
+  absence de blocage Android par Web Push/VAPID, déduplication des rappels
+  concurrents, annulation des rappels obsolètes et activations atomiques.
+  Les relances conservent les accusés et l'état lu. SW `v46.9`.
 - Suite Playwright isolée sur les émulateurs Auth/RTDB : rôles, contenus
   protégés, règles Firebase, session navigateur et livraison de notifications.
 - File persistante pour les publications et messages : diffusion par pages,

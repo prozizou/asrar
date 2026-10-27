@@ -1,6 +1,7 @@
-const { claimJob, expandAudience, updateOwned, retryJob, TERMINAL_TIME } = require("./notificationQueue");
+const { claimJob, expandAudience, updateOwned, retryJob, TERMINAL_TIME, MAX_ATTEMPTS } = require("./notificationQueue");
 const { deliverNotification, mapBounded } = require("./notificationTransport");
 const { reportError } = require("./log");
+const { notificationIsCurrent } = require("./notificationValidity");
 
 async function cleanupNotificationJobs(db, now) {
   const cutoff = now - 30 * 86400000;
@@ -21,7 +22,7 @@ async function processNotificationQueue(db, options = {}) {
   const deliver = options.deliver || deliverNotification;
   const deadline = now() + (options.budgetMs || 35000);
   const maxJobs = options.maxJobs || 40;
-  const stats = { processed: 0, completed: 0, retried: 0, dead: 0, busy: 0 };
+  const stats = { processed: 0, completed: 0, retried: 0, dead: 0, busy: 0, skipped: 0 };
   while (stats.processed < maxJobs && now() < deadline) {
     const snap = await db.ref("notification_jobs").orderByChild("availableAt")
       .startAt(0).endAt(now()).limitToFirst(Math.min(4, maxJobs - stats.processed)).once("value");
@@ -34,15 +35,29 @@ async function processNotificationQueue(db, options = {}) {
       if (!job) { stats.busy++; return; }
       stats.processed++;
       try {
-        if (job.kind === "fanout") await expandAudience(db, job, now());
+        if (job.attempts > MAX_ATTEMPTS) {
+          throw Object.assign(new Error("Livraison interrompue trop souvent."), { code: "REPEATED_INTERRUPTION" });
+        }
+        if (!(await notificationIsCurrent(db, job.notification, now()))) {
+          await updateOwned(db, job.id, job.owner, (current) => ({ ...current,
+            status: "completed", owner: null, availableAt: TERMINAL_TIME, finishedAt: now(), skippedReason: "obsolete" }));
+          stats.skipped++;
+          return;
+        }
+        if (job.kind === "fanout") {
+          if ((await expandAudience(db, job, now())).completed) stats.completed++;
+        }
         else if (job.kind === "delivery") {
-          const result = await deliver(db, job);
+          const result = await deliver(db, job, { now });
           await updateOwned(db, job.id, job.owner, (current) => ({
-            ...current, status: result?.pending ? "queued" : "completed", owner: null,
-            availableAt: result?.pending ? now() : TERMINAL_TIME,
+            ...current, status: result?.pending ? "queued" : result?.dead ? "dead" : "completed", owner: null,
+            availableAt: result?.pending ? result.availableAt ?? now() : TERMINAL_TIME,
+            ...(result?.dead ? { lastError: { code: "DEVICE_DELIVERY_FAILED", at: now() } } : {}),
             ...(result?.pending ? { attempts: 0 } : { finishedAt: now() }),
           }));
-          if (!result?.pending) stats.completed++;
+          if (result?.dead) stats.dead++;
+          else if (!result?.pending) stats.completed++;
+          else if (result.availableAt > now()) stats.retried++;
         } else throw Object.assign(new Error("Type de tâche inconnu."), { code: "INVALID_JOB" });
       } catch (error) {
         if (error?.code === "LEASE_LOST") { stats.busy++; return; }
