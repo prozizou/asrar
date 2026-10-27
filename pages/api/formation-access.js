@@ -34,7 +34,7 @@
 const { verifyUser, emailKey } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
-const { setCors, parseBody } = require("../../server/http");
+const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
   const { idToken, action, key } = parseBody(req);
-  if (!key) return res.status(400).json({ error: "Formation non précisée." });
+  if (!isValidKey(key)) return res.status(400).json({ error: "Identifiant de formation invalide." });
   if (action !== "check" && action !== "join")
     return res.status(400).json({ error: "Action inconnue." });
 

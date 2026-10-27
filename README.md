@@ -1,7 +1,7 @@
 # ASRAR PRO
 
 App Next.js (App Router) + React. **La migration est terminée** : tous les
-modules (*Marché*, *Secrets*, *Ma Boutique*, *99 Noms d'Allah*,
+modules (*Marché*, *Secrets*, *Ma Boutique*,
 *Bibliothèque*, *Abajad*, *Parrainage*, *Combinaisons*, *Planète*,
 *Rouwhanes*, *Géomancie*, *Al Qalam*…) sont des routes React sous `app/`,
 reliées par le tableau de bord `/menu` en navigation SPA instantanée. Il
@@ -25,7 +25,7 @@ l'état courant (forces, faiblesses, améliorations).
 ```
 .
 ├─ app/
-│  ├─ layout.js         Coquille racine + init thème anti-FOUC (+ nonce CSP, cf. middleware.js)
+│  ├─ layout.js         Coquille racine + init thème anti-FOUC
 │  ├─ globals.css       Feuille partagée + styles composants
 │  ├─ page.js           Accueil = Marché Mystique (module le plus utilisé, cf. son en-tête de fichier)
 │  ├─ menu/            Tableau de bord (liste des modules) + compte/thème/déconnexion
@@ -86,13 +86,13 @@ l'état courant (forces, faiblesses, améliorations).
    ├─ plans.js     Paliers d'accès (SUB_PLANS/PREMIUM_LEVEL) — source unique
    │                partagée avec server/access.js (plus de duplication à resynchroniser)
    ├─ csp.js       Content-Security-Policy — source unique partagée avec next.config.mjs
-   │                (repli statique) et middleware.js (nonce par requête)
+   │                (en-têtes statiques ; compatibilité Google Auth)
    └─ rateLimit.js Limitation de fréquence en mémoire (par instance, cf. son en-tête)
 ```
 
-`middleware.js` (racine) pose un nonce CSP par requête et l'expose à
-`app/layout.js` — voir son en-tête pour le détail (et le piège identifié :
-Next.js ne fusionne pas deux en-têtes `Content-Security-Policy`).
+La CSP est définie dans `lib/csp.js` et appliquée par `next.config.mjs`.
+Le choix `unsafe-inline` reste documenté dans ce module pour la compatibilité
+Google Auth ; aucun middleware à nonce n'est actif.
 
 ## Backend intégré (app unifiée)
 
@@ -137,10 +137,12 @@ npm run build         # build de production (échoue si lint/types cassent)
 npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
 ```
 
-Les cinq tournent sur chaque push/PR (`.github/workflows/ci.yml`, deux jobs :
-`lint-and-build` puis `e2e`). Voir `ANALYSE.md` pour ce qui reste hors
-périmètre (tests de composants app/, TypeScript sur app/, règles Firebase
-RTDB versionnées…) et `e2e/README.md` pour le périmètre précis des tests E2E.
+Ces contrôles tournent sur les PR et les pushes vers `main` dans le job
+`checks` de `.github/workflows/ci.yml`. Les régressions serveur dans `tests/`
+couvrent aussi les droits authentifiés, doubles appels et reprises après
+panne, avec une base simulée. Voir `e2e/README.md` pour les limites des tests
+navigateur et [DEPLOIEMENT_SECURITE.md](DEPLOIEMENT_SECURITE.md) pour la recette,
+les presets Cloudinary et les tâches de déploiement indispensables.
 
 ## Modules migrés
 

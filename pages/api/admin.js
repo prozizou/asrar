@@ -259,7 +259,10 @@ export default async function handler(req, res) {
         const key = emailKey(email);
         await db.ref("allowedUsers/" + key).remove();
         const pSnap = await db.ref("purchased_user/" + key).once("value");
-        if (pSnap.exists()) await db.ref("purchased_user/" + key + "/expiresAt").set(Date.now() - 1);
+        if (pSnap.exists()) await db.ref("purchased_user/" + key).update({
+          expiresAt: Date.now() - 1,
+          "referralAccess/expiresAt": Date.now() - 1,
+        });
         return res.json({ ok: true, email });
       }
       // list-access → liste des accès accordés manuellement (allowedUsers).

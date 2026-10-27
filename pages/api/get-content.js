@@ -6,8 +6,8 @@
 const { verifyUser, hasActiveAccess } = require("../../server/access");
 const { consumeAdPass } = require("../../server/adReward");
 const { app } = require("../../server/grant");
-const { SOURCES } = require("../../server/sources");
-const { setCors, parseBody } = require("../../server/http");
+const { getSource } = require("../../server/sources");
+const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { reportError } = require("../../server/log");
 
 export default async function handler(req, res) {
@@ -16,35 +16,40 @@ export default async function handler(req, res) {
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
   const { idToken, kind, cat, key } = parseBody(req);
-  const src = SOURCES[kind];
+  const src = getSource(kind);
   if (!src || src.listOnly) return res.status(400).json({ error: "Type de contenu inconnu." });
   if (src.cats && !src.cats.includes(cat))
     return res.status(400).json({ error: "Configuration inconnue." });
-  if (!key) return res.status(400).json({ error: "Élément non précisé." });
+  if (!isValidKey(key)) return res.status(400).json({ error: "Identifiant de contenu invalide." });
 
   try {
     const user = await verifyUser(idToken);
 
     // Le Marché (authOnly) ne demande PAS d'abonnement : l'achat = le prix du produit.
-    if (!src.authOnly) {
+    const hasAccess = src.authOnly || await hasActiveAccess(user);
+    const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
+    const item = snap.val();
+    if (!item || typeof item !== "object" || Array.isArray(item))
+      return res.status(404).json({ error: "Élément introuvable." });
+
+    if (!hasAccess) {
       // Sans abonnement : passe à usage unique ouvert par une publicité
       // récompensée (server/adReward.js), consommé ici.
-      const ok = (await hasActiveAccess(user)) || (await consumeAdPass(user.uid));
+      const ok = await consumeAdPass(user.uid);
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 
-    const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
-    const item = snap.val();
-    if (!item) return res.status(404).json({ error: "Élément introuvable." });
-
-    // Champs privés (coordonnées vendeur) : jamais exposés au navigateur.
-    // Le contact se fait via /api/wa?product=<clé> (redirection côté serveur).
+    // Les produits ont un contrat public explicite : un nouveau champ privé
+    // ou une structure imbriquée ne doit pas sortir automatiquement.
+    const result = src.detailFields
+      ? Object.fromEntries(src.detailFields.filter((field) => Object.prototype.hasOwnProperty.call(item, field)).map((field) => [field, item[field]]))
+      : { ...item };
     if (Array.isArray(src.privateFields) && item && typeof item === "object") {
-      for (const f of src.privateFields) delete item[f];
+      for (const f of src.privateFields) delete result[f];
     }
 
-    item._key = key;
-    return res.status(200).json({ item });
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.status(200).json({ item: { ...result, _key: key } });
   } catch (e) {
     if (!e.statusCode) await reportError("get-content", e, { kind, cat, key });
     return res.status(e.statusCode || 500).json({ error: e.message });

@@ -35,6 +35,8 @@ export default function GlobalError({ error, reset }) {
           <button type="button" onClick={() => reset()}>
             Réessayer
           </button>
+          {/* Rechargement complet nécessaire pour sortir d'un arbre React en erreur. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="back-btn">
             ← Accueil
           </a>

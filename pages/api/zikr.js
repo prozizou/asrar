@@ -181,11 +181,14 @@
 //                                 jointe accompagne (ou remplace) le texte
 
 const webpush = require("web-push");
+const { sendWebPush } = require("../../server/webPush");
 const { verifyUser, isAdmin } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { setCors, parseBody } = require("../../server/http");
+const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const { recordProgress } = require("../../server/zikrProgress");
+const { approveMember } = require("../../server/zikrMembership");
 const { notifyUsers, notifyAllUsers } = require("../../server/notify");
 const { zikrMessageNotification, zikrCollectifNotification } = require("../../lib/notifyTemplates");
 
@@ -194,13 +197,13 @@ const { zikrMessageNotification, zikrCollectifNotification } = require("../../li
 // l'admin qui approuve n'est jamais exposé à toute la base d'utilisateurs).
 const BROADCAST_SENDER = "ASRAR PRO";
 const {
-  normalizeGroupInput, normalizeFait, normalizeRythme, cleanText, utcDateKey, normalizePhone,
+  normalizeGroupInput, cleanText, utcDateKey, normalizePhone,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
   WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount, chatDisplayName,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
-function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }
+function safeKey(v) { return isValidKey(v) ? v : ""; }
 
 // Limites : "list"/"get"/"progress"/"messages" sont fréquents (sondage temps
 // réel + remontée d'avancement + discussion) mais légers → larges ;
@@ -650,26 +653,7 @@ async function handleApprove(db, res, user, gid, uid) {
   await assertOwner(db, gid, user);
   if (!uid) return res.status(400).json({ error: "Compte manquant." });
 
-  const reqSnap = await db.ref("zikr_requests/" + gid + "/" + uid).once("value");
-  if (!reqSnap.exists()) return res.status(404).json({ error: "Demande introuvable (déjà traitée ?)." });
-  const info = reqSnap.val() || {};
-
-  const now = Date.now();
-  // Transaction : deux approbations simultanées de la même demande (double-
-  // clic) ne créent qu'une seule entrée, sans écraser un avancement déjà
-  // enregistré entre-temps.
-  await db.ref("zikr_members/" + gid).transaction((members) => {
-    members = members || {};
-    if (members[uid]) return members; // déjà approuvé
-    members[uid] = {
-      email: info.email || "", name: info.name || "", picture: info.picture || "", phone: info.phone || "",
-      fait: 0, rythme: 0, joinedAt: now, updatedAt: now, lastSeenAt: now,
-    };
-    return members;
-  });
-
-  await db.ref("zikr_requests/" + gid + "/" + uid).remove();
-  await db.ref("zikr_groups/" + gid + "/membersCount").transaction((n) => (n || 0) + 1);
+  await approveMember(db, gid, uid);
   return res.status(200).json({ ok: true });
 }
 
@@ -694,54 +678,13 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
   if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
   const mem = memSnap.val() || {};
 
-  const oldFait = Number(mem.fait) || 0;
   const now = Date.now();
-  // Le compte était-il considéré hors ligne JUSTE AVANT cet appel (avant la
-  // mise à jour de lastSeenAt ci-dessous) ? Sert de déclencheur pour
-  // notifyReciting — une reprise d'activité, pas chaque grain (voir sa
-  // propre doc plus bas).
   const wasOffline = now - (Number(mem.lastSeenAt) || 0) >= ONLINE_WINDOW_MS;
-  // Avancement MONOTONE, SANS PLAFOND (objectif partagé, pas de part
-  // individuelle) : on ne retient jamais une valeur inférieure à celle déjà
-  // enregistrée. Le client envoie un absolu déduit de son compteur local
-  // (localStorage) ; sans ce garde-fou, un appareil neuf (stockage vide), une
-  // navigation privée ou le bouton « réinitialiser » renverrait 0 et ferait
-  // RECULER le total commun — au détriment de tout le groupe.
-  const newFait = Math.max(oldFait, normalizeFait(rawFait));
-  const delta = newFait - oldFait;
-  const rythme = normalizeRythme(rawRythme);
-
-  await memRef.update({ fait: newFait, rythme, updatedAt: now, lastSeenAt: now });
-  let total = Number(g.total) || 0;
-  if (delta !== 0) {
-    // Total CUMULATIF (jamais décrémenté, même quand un membre quitte plus
-    // tard — voir l'en-tête du fichier) : maintenu par transaction (le delta
-    // reste juste même si plusieurs membres avancent en même temps).
-    const totalTx = await db.ref("zikr_groups/" + gid + "/total").transaction((t) => Math.max(0, (t || 0) + delta));
-    total = Number(totalTx.snapshot && totalTx.snapshot.val()) || 0;
+  const result = await recordProgress(db, gid, user.uid, rawFait, rawRythme, now);
+  if (wasOffline && result.fait > (Number(mem.fait) || 0)) {
+    await notifyReciting(db, gid, user.uid, user.email, result.fait).catch(() => {});
   }
-
-  if (delta > 0) {
-    // Total DU JOUR (fenêtre UTC commune à tout le groupe, lib/zikrLogic.js
-    // utcDateKey) : transaction (pas une simple lecture-écriture) — un même
-    // compte ouvert sur deux appareils pourrait sinon faire courir deux
-    // écritures concurrentes qui s'écrasent l'une l'autre.
-    const today = utcDateKey(now);
-    await db.ref("zikr_members/" + gid + "/" + user.uid + "/daily").transaction((cur) =>
-      !cur || cur.date !== today ? { date: today, total: delta } : { date: today, total: (Number(cur.total) || 0) + delta }
-    );
-
-    // Reprise d'activité — best-effort (jamais d'erreur remontée au client
-    // pour un push manqué), mais ATTENDU avant de répondre : une promesse
-    // simplement lancée sans await risquerait d'être interrompue par le
-    // runtime serverless dès la réponse envoyée (pas de worker persistant
-    // entre deux requêtes ici). Sans incidence notable sur la latence de
-    // "progress" : ne se déclenche qu'à la reprise d'activité, jamais à
-    // chaque grain (voir notifyReciting).
-    if (wasOffline) await notifyReciting(db, gid, user.uid, user.email, newFait).catch(() => {});
-  }
-
-  return res.status(200).json({ ok: true, fait: newFait, total });
+  return res.status(200).json({ ok: true, ...result });
 }
 
 // ── Créateur : avertissement privé à un clic ────────────────────
@@ -814,7 +757,7 @@ async function sendPushToUid(db, uid, payload, logTag) {
     const sub = subSnap.val() || {};
     if (!sub.endpoint || !sub.keys) return;
     tasks.push(
-      webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
+      sendWebPush({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) {
           await db.ref("push_subscriptions/" + uid + "/" + key).remove();
         } else {

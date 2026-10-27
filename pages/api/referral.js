@@ -19,21 +19,17 @@
 //   referred/{uidFilleul} = { by, at, credited }     (dédoublonnage)
 //   purchased_user/{cléEmail}                        (récompense = accès 3 mois)
 
-const { verifyUser, emailKey } = require("../../server/access");
+const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 
 // ── Paramètres (source unique de vérité) ─────────────────────
-const POINTS_PER_INVITE  = 10;      // points par filleul inscrit
-const POINTS_FOR_REWARD  = 1000;    // seuil de la récompense (= 100 filleuls)
-const REWARD_DAYS        = 90;      // abonnement offert : 3 mois
-const REWARD_PLAN        = "sub_3m";
-const REWARD_LEVEL       = 15000;   // palier équivalent (cf. getSubscriptionLevel)
+const { claimReferral, POINTS_PER_INVITE } = require("../../server/referralClaim");
+const { redeemReferral, POINTS_FOR_REWARD, REWARD_DAYS } = require("../../server/referralRedemption");
 const MAX_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60 * 1000; // filleul = compte créé récemment
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans I, O, 0, 1 (dictée facile)
 
 export default async function handler(req, res) {
@@ -89,78 +85,28 @@ export default async function handler(req, res) {
         if (!sponsor)            return ok(res, false, "code_inconnu");
         if (sponsor === user.uid) return ok(res, false, "auto_parrainage");
 
-        // Un seul crédit par compte filleul — garanti par la transaction.
-        const rRef = db.ref("referred/" + user.uid);
-        const tx = await rRef.transaction((cur) =>
-          cur === null ? { by: sponsor, at: Date.now(), credited: false } : undefined);
-        if (!tx.committed) return ok(res, false, "deja_parraine");
-
-        // Le compte doit être NOUVEAU (sinon : un ancien membre cliquerait pour un ami).
-        let fresh = false;
-        try {
+        const result = await claimReferral(db, user.uid, sponsor, async () => {
           const u = await app().auth().getUser(user.uid);
           const created = Date.parse(u.metadata && u.metadata.creationTime);
-          fresh = Number.isFinite(created) && (Date.now() - created) < MAX_ACCOUNT_AGE_MS;
-        } catch (e) { fresh = false; }
-
-        if (!fresh) {
-          await rRef.update({ credited: false, reason: "compte_existant" });
-          return ok(res, false, "compte_existant");
-        }
-
-        await db.ref("referrals/" + sponsor + "/points").transaction((p) => (p || 0) + POINTS_PER_INVITE);
-        await db.ref("referrals/" + sponsor + "/invited").transaction((n) => (n || 0) + 1);
-        await db.ref("referrals/" + sponsor + "/lastAt").set(Date.now());
-        await rRef.update({ credited: true, points: POINTS_PER_INVITE });
-
-        return res.status(200).json({ ok: true, credited: true, points: POINTS_PER_INVITE });
+          const age = Date.now() - created;
+          return Number.isFinite(created) && age >= 0 && age < MAX_ACCOUNT_AGE_MS;
+        });
+        return res.status(200).json({ ok: true, ...result });
       }
 
       // ── Convertir les points en abonnement 3 mois ────────────
       case "redeem": {
-        const pRef = db.ref("referrals/" + user.uid + "/points");
-
-        // Débit atomique : impossible de dépenser deux fois les mêmes points.
-        const tx = await pRef.transaction((p) =>
-          (p || 0) >= POINTS_FOR_REWARD ? p - POINTS_FOR_REWARD : undefined);
-        if (!tx.committed) {
-          return res.status(400).json({ error: "Points insuffisants (" + POINTS_FOR_REWARD + " requis)." });
+        if (body.requestId != null && (typeof body.requestId !== "string" ||
+          !/^[A-Za-z0-9_-]{16,80}$/.test(body.requestId))) {
+          return res.status(400).json({ error: "Identifiant de conversion invalide." });
         }
-
         try {
-          const key = emailKey(user.email);
-          const cur = (await db.ref("purchased_user/" + key).once("value")).val() || {};
-
-          if (cur.expiresAt === "lifetime") {
-            await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
-            return res.status(400).json({ error: "Vous disposez déjà d'un accès à vie." });
-          }
-
-          // Prolongation : on repart de l'échéance en cours si elle est future.
-          const base = (typeof cur.expiresAt === "number" && cur.expiresAt > Date.now())
-            ? cur.expiresAt : Date.now();
-          const expiresAt = base + REWARD_DAYS * DAY_MS;
-
-          await db.ref("purchased_user/" + key).update({
-            token:     "REF-" + Date.now().toString(36).toUpperCase(),
-            plan:      REWARD_PLAN,
-            level:     Math.max(REWARD_LEVEL, Number(cur.level) || 0),
-            source:    "referral",
-            uid:       user.uid,
-            at:        Date.now(),
-            expiresAt: expiresAt
-          });
-          await db.ref("purchases/" + user.uid).push({
-            plan: REWARD_PLAN, source: "referral", points: POINTS_FOR_REWARD,
-            at: Date.now(), expiresAt: expiresAt
-          });
-          await db.ref("referrals/" + user.uid + "/rewards").transaction((n) => (n || 0) + 1);
-
-          return res.status(200).json({ ok: true, expiresAt, days: REWARD_DAYS });
+          const result = await redeemReferral(db, user, body.requestId);
+          return res.status(200).json({ ok: true, ...result });
         } catch (e) {
-          await pRef.transaction((p) => (p || 0) + POINTS_FOR_REWARD); // restitution
+          if (e.statusCode) throw e;
           await reportError("referral:redeem", e, { uid: user.uid });
-          return res.status(500).json({ error: "Activation impossible. Vos points ont été restitués." });
+          return res.status(503).json({ error: "Conversion en cours. Réessayez pour terminer l'activation ; vos points restent réservés." });
         }
       }
 

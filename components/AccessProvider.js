@@ -14,7 +14,8 @@ export const useAccess = () => useContext(AccessCtx);
 
 export default function AccessProvider({ children }) {
   const { user } = useAuth();
-  const cache = useRef(null); // équivalent de _accessStatus (cache par session)
+  const cacheAt = useRef(0);
+  const cache = useRef(null); // équivalent de _accessStatus (cache borné à 60 s)
   const [gateOpen, setGateOpen] = useState(false);
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   // Publicité récompensée proposée dans le portail (APK, sans abonnement,
@@ -81,9 +82,13 @@ export default function AccessProvider({ children }) {
       setAllowed(false);
       return false;
     }
-    const status = cache.current || (await checkAccess(user));
+    const cached = Date.now() - cacheAt.current < 60000 ? cache.current : null;
+    const status = cached || (await checkAccess(user));
     // Ne met en cache QUE le résultat d'une lecture réussie — cf. ensureAccess.
-    if (!status.networkTimeout) cache.current = status;
+    if (!status.unavailable) {
+      cache.current = status;
+      if (!cached) cacheAt.current = Date.now();
+    }
     setAllowed(status.allowed);
     setExpiresAt(status.expiresAt ?? null);
     return status.allowed;
@@ -94,6 +99,9 @@ export default function AccessProvider({ children }) {
   // doit s'afficher partout — un seul contrôle par connexion, ici, garantit
   // qu'il ne dépend pas de la page ouverte en premier.
   useEffect(() => {
+    cache.current = null;
+    cacheAt.current = 0;
+    setAllowed(null);
     if (user) refreshAccess().catch(() => {});
   }, [user, refreshAccess]);
 
@@ -103,23 +111,18 @@ export default function AccessProvider({ children }) {
   // portail (avec un motif adapté) et résout à sa fermeture : false, ou true
   // si une publicité récompensée (APK, sans palier requis) a débloqué cette
   // utilisation — un crédit déjà gagné est utilisé directement, sans portail.
-  // Résultat mis en cache
-  // pour la session — SAUF un timeout réseau (cf. lib/access.js) : sans
-  // cette exception, un premier clic malchanceux sur une connexion lente
-  // figeait « pas d'accès » pour TOUTE la session (le cache ne se
-  // réinitialise qu'à un rechargement complet de la page), même une fois la
-  // connexion redevenue bonne — symptôme observé : « ça marche puis plus
-  // rien, il faut vider le cache pour que ça remarche ».
+  // Le cache expire après 60 s. Une panne réseau/serveur n'est jamais mise
+  // en cache comme un refus d'abonnement ; l'utilisateur peut réessayer.
   const ensureAccess = useCallback(
     async (minLevel = 0) => {
       if (!user) return false;
-      let status = cache.current;
+      let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
       if (!status) {
         status = await checkAccess(user);
-        if (!status.networkTimeout) cache.current = status;
+        if (!status.unavailable) { cache.current = status; cacheAt.current = Date.now(); }
       }
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
-      if (status.networkTimeout) {
+      if (status.unavailable) {
         openGate('network');
         return false;
       }

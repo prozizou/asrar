@@ -7,9 +7,11 @@ const { app } = require("./grant");
 // Source unique (partagée avec lib/access.js côté client) : SUPER_ADMIN_EMAIL,
 // PREMIUM_LEVEL et parseAllowed() ne sont plus dupliqués ni à resynchroniser
 // manuellement entre client et serveur — voir lib/plans.js.
-const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL, parseAllowed } = require("../lib/plans");
+const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL } = require("../lib/plans");
 
 // Même super-admin que lib/plans.js (surchargé possible par variable d'env, serveur only).
+const { effectiveAccess } = require("../lib/accessStatus");
+
 const SUPER_ADMIN = (process.env.SUPER_ADMIN_EMAIL || SUPER_ADMIN_EMAIL).toLowerCase();
 
 // DOIT correspondre à emailToKey() du client et emailKey() de grant.js ('.' → ',').
@@ -41,6 +43,7 @@ async function verifyUser(idToken) {
     throw httpError(401, "Session invalide ou expirée. Reconnecte-toi.");
   }
   if (!decoded.email) throw httpError(401, "Compte sans adresse e-mail.");
+  if (decoded.email_verified !== true) throw httpError(403, "Vérifiez votre adresse e-mail avant de continuer.");
   return { uid: decoded.uid, email: decoded.email, picture: decoded.picture || "", name: decoded.name || "" };
 }
 
@@ -52,41 +55,8 @@ async function verifyUser(idToken) {
  * @param {{uid:string, email:string}} user
  * @returns {Promise<boolean>}
  */
-async function hasActiveAccess({ uid, email }) {
-  if (email && email.toLowerCase() === SUPER_ADMIN) return true;
-  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
-  // court-circuite les lectures RTDB ci-dessous sans y toucher.
-  if (FREE_FOR_ALL) return true;
-
-  const db  = app().database();
-  const key = emailKey(email);
-  const now = Date.now();
-
-  const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
-    db.ref("purchased_user/" + key).once("value"),
-    db.ref("allowedUsers/"  + key).once("value"),
-    db.ref("admins/"        + key).once("value"),
-    uid ? db.ref("vip_users/" + uid).once("value")
-        : Promise.resolve({ exists: () => false })
-  ]);
-
-  if (adminSnap.val() === true) return true;
-  if (vipSnap.exists())         return true;
-
-  // — Achat/activation : token présent ET non expiré —
-  const pur = purSnap.val();
-  if (pur && pur.token) {
-    const exp = pur.expiresAt;
-    // exp absent (anciennes entrées) → considéré actif pour ne pas bloquer les acheteurs existants.
-    const active = exp === "lifetime" || exp == null ||
-                   (typeof exp === "number" && exp > now);
-    if (active) return true;
-  }
-
-  // — Grant manuel admin (legacy raw OU objet { until, level }) —
-  if (parseAllowed(allowedSnap.val(), now).active) return true;
-
-  return false;
+async function hasActiveAccess(user) {
+  return (await getAccessStatus(user)).allowed;
 }
 
 /**
@@ -98,41 +68,8 @@ async function hasActiveAccess({ uid, email }) {
  * @param {{uid:string, email:string}} user
  * @returns {Promise<number>}
  */
-async function getAccessLevel({ uid, email }) {
-  if (email && email.toLowerCase() === SUPER_ADMIN) return Infinity;
-  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
-  // débloque aussi les modules premium (Al Qalam, Géomancie), sans toucher
-  // aux lectures RTDB ci-dessous.
-  if (FREE_FOR_ALL) return Infinity;
-
-  const db  = app().database();
-  const key = emailKey(email);
-  const now = Date.now();
-
-  const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
-    db.ref("purchased_user/" + key).once("value"),
-    db.ref("allowedUsers/"  + key).once("value"),
-    db.ref("admins/"        + key).once("value"),
-    uid ? db.ref("vip_users/" + uid).once("value")
-        : Promise.resolve({ exists: () => false })
-  ]);
-
-  if (adminSnap.val() === true) return Infinity;
-  if (vipSnap.exists())         return Infinity;
-
-  let level = 0;
-
-  const pur = purSnap.val();
-  if (pur && pur.token) {
-    const exp = pur.expiresAt;
-    const active = exp === "lifetime" || exp == null || (typeof exp === "number" && exp > now);
-    if (active) level = Math.max(level, Number(pur.level) || 0);
-  }
-
-  const allowedInfo = parseAllowed(allowedSnap.val(), now);
-  if (allowedInfo.active) level = Math.max(level, allowedInfo.level);
-
-  return level;
+async function getAccessLevel(user) {
+  return (await getAccessStatus(user)).level;
 }
 
 /**
@@ -170,7 +107,6 @@ async function getAccessStatus({ uid, email }) {
 
   const db  = app().database();
   const key = emailKey(email);
-  const now = Date.now();
 
   const [purSnap, allowedSnap, adminSnap, vipSnap] = await Promise.all([
     db.ref("purchased_user/" + key).once("value"),
@@ -184,32 +120,11 @@ async function getAccessStatus({ uid, email }) {
   const isVip = vipSnap.exists();
 
   const pur = purSnap.val();
-  const notExpired =
-    !pur ||
-    pur.expiresAt === "lifetime" ||
-    pur.expiresAt == null ||
-    (typeof pur.expiresAt === "number" && pur.expiresAt > now);
-  const hasToken = !!(pur && pur.token) && notExpired;
-
-  const allowedInfo = parseAllowed(allowedSnap.val(), now);
-
-  const allowed = isAdminUser || isVip || hasToken || allowedInfo.active;
-  const level = isAdminUser || isVip
-    ? Infinity
-    : Math.max(allowedInfo.level, hasToken && pur ? Number(pur.level) || 0 : 0);
-
-  // Même calcul d'expiration unifiée que lib/access.js (rappel J-3) — la plus
-  // proche des deux sources d'accès actives.
-  const allowedVal = allowedSnap.val();
-  const allowedNumericUntil =
-    allowedVal && typeof allowedVal === "object" ? allowedVal.until
-    : typeof allowedVal === "number" ? allowedVal
-    : null;
-  const expiryCandidates = [
-    typeof pur?.expiresAt === "number" ? pur.expiresAt : null,
-    typeof allowedNumericUntil === "number" ? allowedNumericUntil : null,
-  ].filter((v) => v != null);
-  const expiresAt = isAdminUser || isVip || !expiryCandidates.length ? null : Math.min(...expiryCandidates);
+  const access = effectiveAccess(pur, allowedSnap.val());
+  const privileged = isAdminUser || isVip;
+  const allowed = privileged || access.allowed;
+  const level = privileged ? Infinity : access.level;
+  const expiresAt = privileged ? null : access.expiresAt;
 
   return { allowed, admin: isAdminUser, vip: isVip, purchase: pur || null, level, expiresAt };
 }

@@ -34,7 +34,10 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, folder, groupId } = parseBody(req);
+  const { idToken, folder, groupId, mediaType = "image" } = parseBody(req);
+  if (mediaType !== "image" && mediaType !== "video") {
+    return res.status(400).json({ error: "Type de fichier non autorisé." });
+  }
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -42,6 +45,9 @@ export default async function handler(req, res) {
 
   const base = String(folder || "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
   const isZikrChat = base === "zikr_chat";
+  if (!isZikrChat && mediaType !== "image") {
+    return res.status(400).json({ error: "Seules les images sont autorisées pour la boutique." });
+  }
   let safeFolder;
 
   if (isZikrChat) {
@@ -88,23 +94,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Cloudinary non configuré (variables d'environnement manquantes)." });
   }
 
-  // NOTE SÉCURITÉ : la signature ne peut pas contraindre `resource_type`
-  // (dans l'URL). Pour un verrouillage complet du format/taille, configurez
-  // côté Cloudinary un « upload preset » SIGNÉ (formats image uniquement,
-  // taille max) et renseignez son nom dans CLOUDINARY_UPLOAD_PRESET — signé
-  // ici et transmis à lib/cloudinary.js. Rien ne change si la variable est
-  // absente (comportement historique conservé).
-  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || "";
+  // Les limites doivent être définies dans un preset signé. Images et
+  // vocaux utilisent des politiques distinctes ; sans preset, aucun upload.
+  const uploadPreset = mediaType === "video"
+    ? process.env.CLOUDINARY_AUDIO_UPLOAD_PRESET
+    : process.env.CLOUDINARY_IMAGE_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET;
+  if (!uploadPreset) {
+    return res.status(503).json({ error: "L'envoi de ce type de fichier est temporairement indisponible." });
+  }
 
   const timestamp = Math.floor(Date.now() / 1000);
   // Paramètres signés triés par ordre alphabétique de clé (exigence Cloudinary).
-  const toSign = uploadPreset
-    ? `folder=${safeFolder}&timestamp=${timestamp}&upload_preset=${uploadPreset}`
-    : `folder=${safeFolder}&timestamp=${timestamp}`;
+  const toSign = `folder=${safeFolder}&timestamp=${timestamp}&upload_preset=${uploadPreset}`;
   const signature = crypto.createHash("sha1").update(toSign + apiSecret).digest("hex");
 
   return res.status(200).json({
     cloudName, apiKey, timestamp, signature, folder: safeFolder,
-    uploadPreset: uploadPreset || undefined,
+    uploadPreset,
   });
 };
