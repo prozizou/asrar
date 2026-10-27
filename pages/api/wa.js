@@ -12,6 +12,7 @@
 //         du vendeur. Les coordonnées des vendeurs ne sont donc plus exposées.
 
 const { app } = require("../../server/grant");
+const crypto = require("node:crypto");
 
 // Clé produit Firebase : alphanumérique + - _ uniquement.
 function safeKey(v) { return String(v == null ? "" : v).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
@@ -24,6 +25,33 @@ function htmlMessage(res, status, msg) {
 }
 
 export default async function handler(req, res) {
+  if (req.method !== "GET") return htmlMessage(res, 405, "Méthode non autorisée.");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  if (req.query?.order) {
+    const id = req.query.order, token = req.query.token;
+    if (typeof id !== "string" || !/^[a-f0-9]{64}$/.test(id) || typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token)) {
+      return htmlMessage(res, 400, "Lien de contact invalide. Revenez à vos demandes.");
+    }
+    try {
+      const ref = app().database().ref("orders_v2/" + id);
+      const order = (await ref.once("value")).val();
+      if (!order?._private?.contactToken || order.status === "cancelled" || order._private.contactUntil < Date.now() ||
+          !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(order._private.contactToken))) {
+        return htmlMessage(res, 403, "Ce lien a expiré. Ouvrez Mes commandes pour recontacter la boutique.");
+      }
+      const at = Date.now();
+      await ref.transaction((current) => {
+        if (!current) return null;
+        if (current._private?.contactToken !== token || current.status === "cancelled" || current._private.contactUntil < at) return;
+        return { ...current, contactOpenedAt: current.contactOpenedAt || at };
+      }).then((result) => { if (!result.committed || !result.snapshot.exists()) throw new Error("Contact changé"); });
+      const message = `Assalamou aleykoum. Je souhaite vérifier la disponibilité de ${order.produit} auprès de ${order.vendeur}.\nPrix affiché : ${order.prix} ${order.devise}.\nRéférence : ${id}.\nMerci de confirmer la disponibilité, le paiement et la livraison. Cette demande ne confirme aucun achat.`;
+      res.statusCode = 302;
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Location", "https://wa.me/" + order._private.phone + "?text=" + encodeURIComponent(message));
+      return res.end();
+    } catch { return htmlMessage(res, 503, "Le contact est temporairement indisponible. Réessayez depuis vos demandes."); }
+  }
   const q = (req.query && typeof req.query.text === "string") ? req.query.text : "";
   const text = q.slice(0, 1500); // garde-fou longueur
 
@@ -36,11 +64,6 @@ export default async function handler(req, res) {
       const db = app().database();
       const snap = await db.ref("det_produits/" + productKey + "/number").once("value");
       number = String(snap.val() || "").replace(/\D/g, "");
-      if (number) {
-        // Compteur de commandes (statistiques boutique) : incrémenté ici,
-        // pas côté client, pour ne dépendre d'aucune règle RTDB d'écriture.
-        db.ref("orders_count/" + productKey).transaction((c) => (c || 0) + 1).catch(() => {});
-      }
     } catch (e) {
       return htmlMessage(res, 500, "Service indisponible, réessayez plus tard.");
     }
@@ -52,8 +75,7 @@ export default async function handler(req, res) {
     number = String(process.env.WHATSAPP_NUMBER || "").replace(/\D/g, "");
     if (!number) {
       return htmlMessage(res, 500,
-        "⚙️ Configuration manquante : définissez la variable d'environnement " +
-        "<b>WHATSAPP_NUMBER</b> dans Vercel (Settings → Environment Variables), puis redéployez.");
+        "Le contact de l'assistance est temporairement indisponible. Réessayez plus tard.");
     }
   }
 

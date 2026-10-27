@@ -12,6 +12,13 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Routes /api — rejet sans identité valide', () => {
+  for (const path of ['account', 'orders']) {
+    test(`POST /api/${path} sans identité → 401 sans données`, async ({ request }) => {
+      const res = await request.post('/api/' + path, { data: {} });
+      expect(res.status()).toBe(401);
+      expect((await res.json()).error).toBeTruthy();
+    });
+  }
   test('POST /api/check-access sans idToken → 401', async ({ request }) => {
     const res = await request.post('/api/check-access', { data: {} });
     expect(res.status()).toBe(401);

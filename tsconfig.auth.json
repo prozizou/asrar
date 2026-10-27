@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["next-env.d.ts", "app/**/*.tsx", "lib/**/*.ts", "types/**/*.d.ts", ".next-auth/types/**/*.ts"],
+  "exclude": ["node_modules", "e2e", "playwright.config.ts", "playwright.auth.config.ts"]
+}

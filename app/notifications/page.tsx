@@ -13,9 +13,10 @@ import SpinnerUntyped from '@/components/Spinner';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/notificationsClient';
 import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } from '@/lib/push';
 import { NOTIF_TYPES } from '@/lib/notifyTemplates';
+import { startVisiblePolling } from '@/lib/visiblePolling';
 
 const Spinner = SpinnerUntyped as any;
-const POLL_MS = 12000;
+const POLL_MS = 30000;
 
 const ICON_BY_TYPE = {
   [NOTIF_TYPES.SECRET]: Scroll,
@@ -45,28 +46,12 @@ export default function NotificationsPage() {
   const [marking, setMarking] = useState(false);
 
   const load = useCallback(() => {
-    listNotifications()
+    return listNotifications()
       .then((d) => { setItems(d.items || []); setUnread(d.unread || 0); setError(''); })
       .catch((e) => setError(e.message || 'Erreur de chargement.'));
   }, []);
 
-  useEffect(() => {
-    load();
-    const id = setInterval(load, POLL_MS);
-
-    // Rafraîchissement immédiat sur push reçu app ouverte (voir public/sw.js
-    // et components/NotificationBell.js).
-    let onMessage: ((e: MessageEvent) => void) | undefined;
-    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-      onMessage = (e: MessageEvent) => { if (e.data && e.data.type === 'asrar-notification') load(); };
-      navigator.serviceWorker.addEventListener('message', onMessage);
-    }
-
-    return () => {
-      clearInterval(id);
-      if (onMessage) navigator.serviceWorker.removeEventListener('message', onMessage);
-    };
-  }, [load]);
+  useEffect(() => startVisiblePolling(load, POLL_MS, { push: true }), [load]);
 
   useEffect(() => {
     if (!pushSupported()) { setPushState('unsupported'); return; }

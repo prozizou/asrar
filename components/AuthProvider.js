@@ -160,7 +160,7 @@ function LoginScreen({ onLogin, status, error }) {
   return (
     <div className="login-screen">
       <div className="login-backdrop" aria-hidden="true" />
-      <div className="login-sheet" role="dialog" aria-modal="true" aria-labelledby="login-sheet-title">
+      <div className="login-sheet" role="region" aria-labelledby="login-sheet-title">
         <span className="login-sheet-handle" aria-hidden="true" />
 
         <div className="login-sheet-header">

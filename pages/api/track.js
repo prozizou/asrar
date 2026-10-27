@@ -1,31 +1,14 @@
 // api/track.js (Vercel) — Journalisation légère pour le tableau de bord admin.
 //
-// Body (JSON) : { idToken, type, page?, order? }
-//   type="visit"     → comptage de visite (page) + fil d'activité + connexion
-//                       (uid/e-mail/pays/heure enregistrés dans user_sessions,
-//                       cf. plus bas) — trackVisit() (components/AuthProvider.js)
-//                       n'appelle ce endpoint qu'une fois par session app (juste
-//                       après la résolution onAuthStateChanged, donc à l'inscription
-//                       ET à la connexion), pas à chaque navigation.
-//   type="order"     → enregistre la commande CÔTÉ ACHETEUR (orders/{uid}) —
-//                       voir api/orders.js pour la relecture (« Mes commandes »)
-//   (autre)          → événement générique dans le fil d'activité
-//
-// Écrit (Admin SDK, nœuds serveur-only) :
-//   analytics/visits/{YYYY-MM-DD}/{uid} = { n, last, email, country?, countryCode? }
-//   activity_feed/{pushId}             = { uid, email, type, page, at, country?, countryCode? }
-//   orders/{uid}/{pushId}              = { productKey, produit, prix, devise,
-//                                           vendeur, image, at }
-//   user_sessions/{uid}                = { uid, email, country, countryCode,
-//                                           lastLoginAt, lastActivityAt } — un
-//                                           seul nœud par utilisateur (merge),
-//                                           lu par le panneau d'administration
-//                                           (répartition par pays, flux de
-//                                           connexions récentes)
+// Body : { idToken, type, page?, productKey? }.
+// Les statistiques de visites, vues et activité exigent account_settings.analytics=true.
+// La dernière session reste une donnée opérationnelle ; le pays est facultatif.
+// L'ancien type « order » est refusé (410) : seule /api/orders crée une demande
+// à partir du produit et du vendeur relus côté serveur.
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { setCors, parseBody, safeUrl } = require("../../server/http");
+const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { resolveCountry } = require("../../lib/countries");
@@ -50,7 +33,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, type, page, productKey, order } = parseBody(req);
+  const { idToken, type, page, productKey } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -66,9 +49,26 @@ export default async function handler(req, res) {
   const date = new Date(now).toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   const safePage = clean(page, 80);
   const kind = clean(type, 24) || "visit";
+  if (kind === "order") return res.status(410).json({ error: "Ouvrez la fiche produit pour créer une demande avec le prix vérifié." });
   const { country, countryCode } = geoFromRequest(req);
 
   try {
+    const analyticsEnabled = (await db.ref("account_settings/" + user.uid + "/analytics").once("value")).val() === true;
+    // 2bis) Session utilisateur (inscription/connexion + dernière activité) —
+    // un seul nœud par utilisateur (merge), source de la répartition par
+    // pays et du flux de connexions récentes côté panneau d'administration.
+    // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
+    // envoyé une fois par session app par trackVisit()) ; les autres types
+    // d'événements (product_view, order…) ne rafraîchissent que
+    // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
+    // moins significative.
+    const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
+    if (kind === "visit") {
+      Object.assign(sessionUpdate, { lastLoginAt: now }, analyticsEnabled && countryCode ? { country, countryCode } : { country: null, countryCode: null });
+    }
+    await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
+    if (!analyticsEnabled) return res.status(200).json({ ok: true });
+
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
     const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
     await vref.child("n").transaction((c) => (c || 0) + 1);
@@ -80,19 +80,7 @@ export default async function handler(req, res) {
       ...(countryCode ? { country, countryCode } : {}),
     });
 
-    // 2bis) Session utilisateur (inscription/connexion + dernière activité) —
-    // un seul nœud par utilisateur (merge), source de la répartition par
-    // pays et du flux de connexions récentes côté panneau d'administration.
-    // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
-    // envoyé une fois par session app par trackVisit()) ; les autres types
-    // d'événements (product_view, order…) ne rafraîchissent que
-    // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
-    // moins significative.
-    const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
-    if (kind === "visit") {
-      Object.assign(sessionUpdate, { lastLoginAt: now }, countryCode ? { country, countryCode } : {});
-    }
-    await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
+
 
     // 4) Vue produit (Marché) : un enregistrement par visiteur, pour les
     // statistiques boutique (api/shop.js action="stats"). Écrit ici (Admin
@@ -101,26 +89,6 @@ export default async function handler(req, res) {
     if (kind === "product_view") {
       const key = safeKey(productKey);
       if (key) await db.ref("views/product/" + key + "/" + user.uid).set(now);
-    }
-
-    // 5) Commande (Marché) : snapshot au moment du clic « Commander via
-    // WhatsApp » — pour que l'acheteur retrouve son historique dans l'app
-    // (rien n'existait avant : la commande ne vivait que dans WhatsApp).
-    // Champs figés (pas une référence live au produit) : un produit modifié/
-    // supprimé plus tard par le vendeur ne doit pas changer l'historique.
-    if (kind === "order" && order && typeof order === "object") {
-      const key = safeKey(order.productKey);
-      if (key) {
-        await db.ref("orders/" + user.uid).push({
-          productKey: key,
-          produit: clean(order.produit, 120),
-          prix: num(order.prix),
-          devise: clean(order.devise, 8) || "FCFA",
-          vendeur: clean(order.vendeur, 80),
-          image: safeUrl(order.image, 500),
-          at: now,
-        });
-      }
     }
 
     return res.status(200).json({ ok: true });
@@ -138,4 +106,3 @@ function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max |
 // les caractères d'évasion HTML (chevrons, quotes, backtick, esperluette) pour
 // qu'aucune valeur stockée ne puisse porter une XSS vers l'admin.
 function clean(v, max) { return str(v, max).replace(/[<>"'`&]/g, " ").trim(); }
-function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }

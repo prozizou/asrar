@@ -1,7 +1,8 @@
 'use client';
 // Modale commentaires d'un livre — port du bloc #commentModal + openComments/
 // renderComments/submitComment de bibliotheque.html.
-import { useEffect, useState } from 'react';
+import Modal from '@/components/Modal';
+import { useState } from 'react';
 
 function fmtDate(t) {
   return t ? new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
@@ -9,13 +10,6 @@ function fmtDate(t) {
 
 export default function CommentModal({ book, comments, loading, error, onClose, onSubmit }) {
   const [text, setText] = useState('');
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   const send = () => {
     const t = text.trim();
@@ -25,11 +19,11 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
   };
 
   return (
-    <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal className="modal-overlay open" onClose={onClose} label={'Commentaires — ' + book.text}>
       <div className="modal-box">
-        <span className="modal-close" onClick={onClose}>
+        <button type="button" aria-label="Fermer les commentaires" className="modal-close" onClick={onClose}>
           ✕
-        </span>
+        </button>
         <h3>Commentaires — {book.text}</h3>
         <div className="cm-list">
           {loading ? (
@@ -51,6 +45,7 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
         </div>
         <div className="cm-form">
           <textarea
+            aria-label="Écrire un commentaire"
             maxLength={500}
             rows={2}
             placeholder="Écrire un commentaire…"
@@ -62,6 +57,6 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

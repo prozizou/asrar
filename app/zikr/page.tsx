@@ -29,6 +29,7 @@ import {
   Mic, Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import { startVisiblePolling } from '@/lib/visiblePolling';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
@@ -45,7 +46,7 @@ import {
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
   normalizePhone,
 } from '@/lib/zikrLogic';
-import { uploadZikrChatMedia } from '@/lib/cloudinary';
+import { uploadZikrChatMedia, checkZikrAudio } from '@/lib/cloudinary';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone, flagOf } from '@/lib/phoneCountries';
 import { playNotificationBeep } from '@/lib/notifSound';
 import {
@@ -199,7 +200,7 @@ const waContactUrl = (phone: string, groupName: string) =>
   '?text=' + encodeURIComponent(`Assalamou aleykoum 🌙 — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
-const LIST_POLL_MS = 6000;  // sondage de la liste (moins fréquent : pas de compteur en direct dessus)
+const LIST_POLL_MS = 15000; // La liste n'affiche pas le compteur en direct.
 
 export default function ZikrCollectifPage() {
   const { user } = useAuth() as any;
@@ -270,14 +271,9 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
     }
   }, [notify]);
 
-  useEffect(() => { load(); }, [load]);
-
   // Sondage régulier : révèle une acceptation/refus de demande même si
   // l'utilisateur reste sur la liste sans jamais rouvrir un groupe.
-  useEffect(() => {
-    const id = setInterval(load, LIST_POLL_MS);
-    return () => clearInterval(id);
-  }, [load]);
+  useEffect(() => startVisiblePolling(load, LIST_POLL_MS), [load]);
 
   // Administrateur : les zikr en attente de validation (approved === false)
   // sortent de la liste générale pour une section dédiée EN TÊTE, avec
@@ -874,6 +870,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const [chatText, setChatText] = useState('');
   const [chatBusy, setChatBusy] = useState(false); // envoi d'un message texte
   const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
+  const [voiceError, setVoiceError] = useState('');
+  const [voiceChecking, setVoiceChecking] = useState(false);
+  const voiceStarting = useRef(false);
+  const [unsentVoice, setUnsentVoice] = useState<Blob | null>(null);
+  const [unsentVoiceUrl, setUnsentVoiceUrl] = useState('');
+  useEffect(() => {
+    if (!unsentVoice) { setUnsentVoiceUrl(''); return; }
+    const url = URL.createObjectURL(unsentVoice); setUnsentVoiceUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [unsentVoice]);
   const chatListRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -883,6 +889,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // jouer le bip et incrémenter le compteur non lus (voir loadMessages) —
   // jamais au tout premier chargement.
   const lastMsgIdRef = useRef<string | null>(null);
+  const chatCursorRef = useRef<{ context: string; after: string | null; fullAt: number; seq: number }>({ context: '', after: null, fullAt: 0, seq: 0 });
 
   // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
   // sondage régulier écraserait une saisie en cours toutes les POLL_MS ms —
@@ -937,15 +944,10 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     }
   }, [groupId, notify, uid]);
 
-  useEffect(() => { load(); }, [load]);
-
   // Sondage régulier de TOUT le détail (membres, présence, demandes,
   // objectif restant) — remplace l'abonnement RTDB temps réel de la
   // référence, faute d'accès direct au client (voir l'en-tête du fichier).
-  useEffect(() => {
-    const id = setInterval(load, POLL_MS);
-    return () => clearInterval(id);
-  }, [load]);
+  useEffect(() => startVisiblePolling(load, POLL_MS), [load]);
 
   // Discussion : sondée en continu tant qu'on est membre — plus seulement
   // quand le panneau est affiché — pour pouvoir signaler les messages non
@@ -958,8 +960,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // notification push serveur (pages/api/zikr.js notifyNewMessage), qui a
   // son propre son (système).
   const loadMessages = useCallback(async () => {
+    const context = `${groupId}:${uid}`;
+    if (chatCursorRef.current.context !== context) {
+      chatCursorRef.current = { context, after: null, fullAt: 0, seq: 0 };
+      lastMsgIdRef.current = null;
+      setMessages([]);
+    }
+    const cursor = chatCursorRef.current;
+    const seq = ++cursor.seq;
+    // Réconciliation complète chaque minute pour prendre en compte les
+    // corrections/suppressions administratives, même après une longue pause.
+    const after = Date.now() - cursor.fullAt < 60000 ? cursor.after : null;
     try {
-      const d = await getMessages(groupId);
+      const d = await getMessages(groupId, after || undefined);
+      if (chatCursorRef.current !== cursor || cursor.seq !== seq) return;
       const list: ChatMessage[] = d.messages || [];
       const last = list[list.length - 1];
       if (last && lastMsgIdRef.current !== null && last.id !== lastMsgIdRef.current && last.uid !== uid) {
@@ -967,8 +981,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         if (tabRef.current !== 'discussion') setUnreadCount((c) => c + 1);
       }
       if (last) lastMsgIdRef.current = last.id;
-      setMessages(list);
-    } catch {
+      if (!d.incremental) { cursor.fullAt = Date.now(); cursor.after = last?.id || null; }
+      else if (last) cursor.after = last.id;
+      setMessages((previous) => d.incremental ? Array.from(new Map([...previous, ...list].map((m) => [m.id, m])).values())
+        .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).slice(-200) : list);
+    } catch (error: any) {
+      if (error.status === 403 && chatCursorRef.current === cursor && cursor.seq === seq) {
+        cursor.after = null; cursor.fullAt = 0;
+        lastMsgIdRef.current = null;
+        setMessages([]);
+      }
       // Sondage best-effort : une lecture ratée ne doit pas casser le panneau.
     }
   }, [groupId, uid]);
@@ -976,9 +998,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const isMemberForPolling = g ? (g.status === 'member' || g.status === 'owner') : false;
   useEffect(() => {
     if (!isMemberForPolling) return undefined;
-    loadMessages();
-    const id = setInterval(loadMessages, POLL_MS);
-    return () => clearInterval(id);
+    return startVisiblePolling(loadMessages, POLL_MS);
   }, [isMemberForPolling, loadMessages]);
 
   useEffect(() => {
@@ -1045,23 +1065,29 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // absent de son API Upload — voir lib/cloudinary.js).
   const onVoiceDone = useCallback(
     async (blob: Blob, duration: number) => {
-      setMediaBusy(true);
+      setMediaBusy(true); setVoiceError('');
       try {
         const url = await uploadZikrChatMedia(blob, groupId, 'video');
         await sendMessage(groupId, '', { type: 'audio', url, duration });
         loadMessages();
       } catch (e: any) {
-        notify('❌ ' + (e.message || e));
+        setUnsentVoice(blob); setVoiceError(e.message || 'Votre vocal n’a pas pu être envoyé.');
       } finally {
         setMediaBusy(false);
       }
     },
-    [groupId, notify, loadMessages]
+    [groupId, loadMessages]
   );
   const voice = useVoiceRecorder(onVoiceDone);
   const doStartVoice = async () => {
-    try { await voice.start(); }
-    catch { notify('❌ Accès au micro refusé ou indisponible.'); }
+    if (voiceStarting.current || mediaBusy || unsentVoice) return;
+    voiceStarting.current = true; setVoiceChecking(true); setVoiceError('');
+    try {
+      await checkZikrAudio(groupId);
+      try { await voice.start(); }
+      catch { setVoiceError('Accès au micro refusé ou indisponible. Vérifiez l’autorisation du microphone.'); }
+    } catch (e: any) { setVoiceError(e.message || 'Impossible de vérifier l’envoi de vocaux. Réessayez.'); }
+    finally { voiceStarting.current = false; setVoiceChecking(false); }
   };
   const doShareWish = async (shared: boolean) => {
     if (shareBusy) return;
@@ -1552,6 +1578,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             )}
           </div>
 
+          {voiceError && <p role="alert" className="zk-muted">{voiceError}</p>}
+          {voiceChecking && <p role="status" className="zk-muted">Vérification de l’envoi de vocaux…</p>}
+          {unsentVoice && <div className="zk-unsent-voice"><p>Votre vocal est conservé dans cette page. Enregistrez-le avant de la quitter.</p>
+            {unsentVoiceUrl && <a className="zk-btn ghost" href={unsentVoiceUrl} download={'asrar-vocal.' + (unsentVoice.type.includes('mp4') ? 'm4a' : unsentVoice.type.includes('ogg') ? 'ogg' : 'webm')}>Enregistrer mon vocal</a>}
+            <button type="button" className="zk-btn ghost" onClick={() => { setUnsentVoice(null); setVoiceError(''); }}>Supprimer le vocal non envoyé</button>
+          </div>}
           {voice.recording ? (
             // Barre d'enregistrement — remplace la ligne de saisie tant que
             // le vocal est en cours (un tap sur le micro relance l'écriture).
@@ -1596,7 +1628,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                   placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
               </div>
-              <button type="button" className="zk-chat-tool" disabled={mediaBusy}
+              <button type="button" className="zk-chat-tool" disabled={mediaBusy || voiceChecking || Boolean(unsentVoice)}
                 onClick={doStartVoice} aria-label="Enregistrer un vocal">
                 <Mic size={17} strokeWidth={2.5} aria-hidden="true" />
               </button>

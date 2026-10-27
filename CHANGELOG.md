@@ -1,5 +1,50 @@
 # CHANGELOG
 
+## 2026-10-27 — Diagnostic et protection des vocaux Zikr
+
+- Vérification du canal audio avant la demande de micro, erreur persistante
+  et récupération du vocal non envoyé par téléchargement. SW `v46.12`.
+- Activation Cloudinary/Vercel décrite dans [AUDIO_ZIKR.md](AUDIO_ZIKR.md) ;
+  le preset signé audio reste obligatoire.
+
+## 2026-10-27 — Commandes, compte et migration Firebase
+
+- Demandes WhatsApp à prix et vendeur vérifiés côté serveur, références de reprise,
+  étapes confirmation/paiement manuel/livraison et historique réservé aux participants.
+- Compte avec échéance, préférences, export borné et demandes de données suivies
+  par l’administration ; la suppression reste un traitement manuel explicite.
+- Dialogues natifs : navigation clavier, Échap et restitution du focus.
+- Firebase 13.1 / Admin 14.5 et Node 22 ; audit de production sans vulnérabilité,
+  sept avis modérés restants dans les outils de développement. SW `v46.11`.
+- Guides : [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) et
+  [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).
+
+## 2026-10-27 — Réduction des lectures et transferts Firebase
+
+- Arrêt des sondages en arrière-plan/hors ligne, badge non lu indexé,
+  discussion Zikr incrémentale et fenêtre indexée des rappels de session.
+- Cache local de 30 secondes sur les seules métadonnées du catalogue,
+  borné et invalidé par les publications et éditions de l'instance.
+- Mesures sur fixtures et limites documentées dans
+  [COUTS_FIREBASE.md](COUTS_FIREBASE.md). SW `v46.10`.
+
+## 2026-10-27 — Tests authentifiés et notifications persistantes
+
+- Fiabilisation complémentaire : reprises indépendantes par appareil,
+  absence de blocage Android par Web Push/VAPID, déduplication des rappels
+  concurrents, annulation des rappels obsolètes et activations atomiques.
+  Les relances conservent les accusés et l'état lu. SW `v46.9`.
+- Suite Playwright isolée sur les émulateurs Auth/RTDB : rôles, contenus
+  protégés, règles Firebase, session navigateur et livraison de notifications.
+- File persistante pour les publications et messages : diffusion par pages,
+  baux concurrents, reprises par appareil et relance des échecs réservée aux
+  administrateurs. Publication et création de tâche atomiques.
+- Correction des itérations Firebase qui tronquaient notifications,
+  commandes, listes administrateur et destinataires des rappels après le
+  premier élément. Le simulateur de tests reproduit désormais ce comportement.
+- Workflow de reprise de la file, contrôles CI authentifiés et guide
+  d'exploitation [NOTIFICATIONS.md](NOTIFICATIONS.md). SW `v46.8`.
+
 ## Session 7 — Liens partageables (deep links) & Parrainage
 
 Deux ajouts, documentés en détail dans **`PARTAGE_ET_PARRAINAGE.md`**.

@@ -20,6 +20,7 @@
 // (forme interne propre à ce module), même principe que dans les batches
 // précédents (#120, #122). useAccess() suit le même traitement (cast) que
 // dans les batches précédents.
+import AccessibleModalUntyped from '@/components/Modal';
 import './combinaisons.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -35,6 +36,8 @@ import {
   searchCombinations,
   splitFr,
 } from '@/lib/combinaisons';
+const AccessibleModal = AccessibleModalUntyped as any;
+
 
 // Résultats par page (revue design, point 8) : 20 par défaut au lieu de 50
 // fixe — 50 restait choisissable, pas retiré, juste plus rarement le
@@ -554,7 +557,7 @@ export default function CombinaisonsPage() {
           continuité entre la liste de résultats et la calculatrice, sans
           quitter la page. */}
       {nameSheet && (
-        <div className="name-sheet-overlay" onClick={() => setNameSheet(null)}>
+        <AccessibleModal className="name-sheet-overlay" onClose={() => setNameSheet(null)} label="Détail de la combinaison">
           <div className="name-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="name-sheet-ar" dir="rtl">
               {nameSheet.display}
@@ -573,7 +576,7 @@ export default function CombinaisonsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleModal>
       )}
 
       {/* Fiche de combinaison (revue design v2, point 3 : « ajouter une
@@ -764,7 +767,7 @@ function ComboSheet({ indices, onClose, onCopy }: { indices: Combo; onClose: () 
   };
 
   return (
-    <div className="name-sheet-overlay" onClick={onClose}>
+    <AccessibleModal className="name-sheet-overlay" onClose={onClose} label="Détail de la combinaison">
       <div className="name-sheet combo-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="combo-sheet-list">
           {names.map((nn: any, i: number) => (
@@ -795,7 +798,7 @@ function ComboSheet({ indices, onClose, onCopy }: { indices: Combo; onClose: () 
           </button>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 }
 

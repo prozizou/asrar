@@ -10,6 +10,8 @@
 // hamburger de ce panneau, l'avatar et un bouton de déconnexion séparé s'y
 // alignaient tous les trois (revue design).
 import { useEffect, useState } from 'react';
+import Modal from './Modal';
+import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import pkg from '@/package.json';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
@@ -63,14 +65,6 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
     getSwVersion().then(setSwVersion);
   }, []);
 
-  // Échap ferme le drawer.
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
-
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
@@ -96,8 +90,8 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
       </button>
 
       {open && (
-        <div className="drawer-overlay" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
-          <div className="drawer-panel" role="dialog" aria-modal="true" aria-label="Menu">
+        <Modal className="drawer-overlay" onClose={() => setOpen(false)} label="Menu">
+          <div className="drawer-panel">
             <div className="drawer-header">
               <h3>Menu</h3>
               <button type="button" className="drawer-close" onClick={() => setOpen(false)} aria-label="Fermer le menu">
@@ -123,13 +117,8 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
                 </button>
               </div>
 
-              <div className="drawer-row drawer-row-static">
-                <span className="drawer-row-label">
-                  <span className="drawer-row-icon">⚙️</span>
-                  Paramètres
-                </span>
-                <span className="drawer-row-hint">Bientôt disponible</span>
-              </div>
+              <Link href="/compte" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}>Mon compte et mes données</Link>
+              <Link href="/commandes" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}>Mes demandes et commandes</Link>
 
               {!standalone &&
                 (installState.canInstall ? (
@@ -182,7 +171,7 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

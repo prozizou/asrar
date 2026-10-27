@@ -1971,3 +1971,14 @@ html[data-theme="light"] .container.menu-home {
 html[data-theme="light"] .menu-home .family-badge { color: #8a5d12; background: rgba(176, 122, 31, .12); border-color: rgba(176, 122, 31, .3); }
 .menu-home .family-items { font-size: .74rem; color: var(--text-muted); }
 .menu-home .family-row > svg { width: 18px; height: 18px; color: var(--text-muted); }
+
+/* Fenêtres natives : Tab reste dans la fenêtre, Échap ferme et le fond est inerte. */
+.app-dialog{position:fixed;inset:0;margin:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;color:inherit;box-sizing:border-box}
+.app-dialog:not([open]){display:none!important}
+.app-dialog::backdrop{background:transparent}
+.app-dialog :focus-visible,.account-page :focus-visible{outline:3px solid var(--accent,#a78bfa);outline-offset:3px}
+button.sg-close,button.modal-close{background:transparent;border:0;color:inherit;font:inherit}
+button.sg-card{font:inherit;color:inherit;cursor:pointer}
+.app-dialog.drawer-overlay{padding:0}
+.app-dialog.sg-overlay{padding:calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal))}
+.asrar-comment-dialog{background:rgba(0,0,0,.6);padding:0}

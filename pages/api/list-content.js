@@ -12,6 +12,7 @@ const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { vendorKey } = require("../../lib/market");
 const { secretIntro } = require("../../lib/secretPresentation");
+const { publicCatalog } = require("../../server/publicCatalogCache");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -27,23 +28,27 @@ export default async function handler(req, res) {
   try {
     await verifyUser(idToken); // identité requise (page réservée aux connectés)
 
-    const snap = await app().database().ref(src.ref(cat)).once("value");
-    const items = [];
-    snap.forEach(child => {
-      const v = child.val() || {};
-      const meta = { _key: child.key, ...listFields(src, v) }; // contenu sensible retiré
-      // Marché : identifiant de boutique STABLE calculé ici, où l'email brut
-      // du document est encore disponible (il est retiré ci-dessus par
-      // secretFields) — voir emailVendorKey()/vendorKey() dans lib/market.js.
-      // Sans ça, le client retombe sur `uid`, qui peut changer d'un produit à
-      // l'autre pour le même vendeur (compte recréé) et fait apparaître deux
-      // cartes boutique pour la même boutique.
-      if (kind === "product" || kind === "shop") meta.vendorKey = vendorKey(v);
-      // Secrets : courte introduction (~150 caractères) tirée du début du
-      // texte payant, pour la carte de liste — le texte complet reste réservé
-      // à /api/get-content (abonnés).
-      if (kind === "secret") meta.intro = secretIntro(v.sirr || v.content);
-      items.push(meta);
+    const db = app().database();
+    const items = await publicCatalog(db, src.ref(cat), async () => {
+      const snap = await db.ref(src.ref(cat)).once("value");
+      const items = [];
+      snap.forEach(child => {
+        const v = child.val() || {};
+        const meta = { _key: child.key, ...listFields(src, v) }; // contenu sensible retiré
+        // Marché : identifiant de boutique STABLE calculé ici, où l'email brut
+        // du document est encore disponible (il est retiré ci-dessus par
+        // secretFields) — voir emailVendorKey()/vendorKey() dans lib/market.js.
+        // Sans ça, le client retombe sur `uid`, qui peut changer d'un produit à
+        // l'autre pour le même vendeur (compte recréé) et fait apparaître deux
+        // cartes boutique pour la même boutique.
+        if (kind === "product" || kind === "shop") meta.vendorKey = vendorKey(v);
+        // Secrets : courte introduction (~150 caractères) tirée du début du
+        // texte payant, pour la carte de liste — le texte complet reste réservé
+        // à /api/get-content (abonnés).
+        if (kind === "secret") meta.intro = secretIntro(v.sirr || v.content);
+        items.push(meta);
+      });
+      return items;
     });
 
     return res.status(200).json({ items });

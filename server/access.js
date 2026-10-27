@@ -34,11 +34,11 @@ function httpError(status, message) {
  * claim Google), le client retombe alors sur la partie locale de l'email.
  * @returns {Promise<{uid:string, email:string, picture?:string, name?:string}>}
  */
-async function verifyUser(idToken) {
+async function verifyUser(idToken, checkRevoked = false) {
   if (!idToken) throw httpError(401, "Authentification requise.");
   let decoded;
   try {
-    decoded = await app().auth().verifyIdToken(idToken);
+    decoded = await app().auth().verifyIdToken(idToken, checkRevoked);
   } catch (e) {
     throw httpError(401, "Session invalide ou expirée. Reconnecte-toi.");
   }

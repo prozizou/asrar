@@ -3,6 +3,15 @@
     ".read": false,
     ".write": false,
 
+    "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
+    "notifications": { "$uid": { ".indexOn": ["createdAt", "read"] } },
+    "zikr_groups": { ".indexOn": ["sessionAt"] },
+    "orders_v2": { ".indexOn": ["buyerSort", "sellerSort", "sellerUid", "buyerUid", "at"] },
+    "privacy_requests": { ".indexOn": ["status"] },
+    "orders": { "$uid": { ".indexOn": ["at"] } },
+    "push_subscriptions": { "$uid": { ".indexOn": ["updatedAt"] } },
+    "fcm_devices": { "$uid": { ".indexOn": ["updatedAt"] } },
+
     "sourate": { ".read": "auth != null" },
     "versetRef": { ".read": "auth != null" },
     "data": {

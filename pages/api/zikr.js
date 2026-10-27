@@ -189,7 +189,7 @@ const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { recordProgress } = require("../../server/zikrProgress");
 const { approveMember } = require("../../server/zikrMembership");
-const { notifyUsers, notifyAllUsers } = require("../../server/notify");
+const { publishAndNotify } = require("../../server/notify");
 const { zikrMessageNotification, zikrCollectifNotification } = require("../../lib/notifyTemplates");
 
 // Nom d'expéditeur affiché pour la diffusion "nouveau Zikr collectif" (même
@@ -258,7 +258,7 @@ export default async function handler(req, res) {
       case "shareWish":      return await handleShareWish(db, res, user, gid, body.shared);
       case "amineWish":      return await handleAmineWish(db, res, user, gid, safeKey(body.wishUid));
       case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
-      case "messages":       return await handleMessages(db, res, user, gid);
+      case "messages":       return await handleMessages(db, res, user, gid, body.after);
       case "approveZikr":    return await handleApproveZikr(db, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
     }
@@ -933,17 +933,11 @@ async function handleApproveZikr(db, res, user, gid) {
   // Déjà approuvé (rappel idempotent, ou legacy où `approved` absent compte
   // comme déjà public — voir handleList) : jamais de second envoi.
   const alreadyApproved = g.approved !== false;
-  await db.ref("zikr_groups/" + gid + "/approved").set(true);
-
   if (!alreadyApproved) {
-    // Diffusion à TOUS les utilisateurs connus, même ceux qui n'y participent
-    // pas — best-effort, jamais bloquant pour la réponse à l'admin.
-    await notifyAllUsers(db, {
-      ...zikrCollectifNotification({ groupName: g.name }),
-      senderName: BROADCAST_SENDER,
-      targetUrl: "/zikr?item=" + gid,
-      meta: { gid, tagSuffix: gid },
-    }).catch((e) => reportError("zikr:notifyAllUsers", e, { action: "approveZikr", gid }));
+    await publishAndNotify(db, "zikr_groups/" + gid, { approved: true }, {
+      ...zikrCollectifNotification({ groupName: g.name }), senderName: BROADCAST_SENDER,
+      targetUrl: "/zikr?item=" + gid, meta: { gid, tagSuffix: gid },
+    }, { eventId: "zikr-approved:" + gid });
   }
 
   return res.status(200).json({ ok: true });
@@ -1077,22 +1071,22 @@ async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawM
   }
 
   const ref = db.ref("zikr_chat/" + gid).push();
-  await ref.set(msg);
-  // Best-effort : le message reste enregistré ci-dessus même si VAPID est
-  // mal configuré ou qu'un envoi push échoue — jamais bloquant pour l'auteur.
-  await notifyNewMessage(db, gid, user.uid, user.email, user.name, text, !!mediaUrl).catch(() => {});
+  await notifyNewMessage(db, gid, user.uid, user.email, user.name, text, !!mediaUrl, ref.key, msg);
   return res.status(200).json({ ok: true, id: ref.key });
 }
 
 // Messages récents (200 derniers — une discussion de groupe reste modeste,
 // pas besoin de pagination complète). Sondée régulièrement par le client
 // tant que le panneau discussion est ouvert (app/zikr/page.tsx).
-async function handleMessages(db, res, user, gid) {
+async function handleMessages(db, res, user, gid, after) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
-  const snap = await db.ref("zikr_chat/" + gid).limitToLast(200).once("value");
+  if (after != null && !isValidKey(after)) return res.status(400).json({ error: "Curseur de discussion invalide." });
+  let query = db.ref("zikr_chat/" + gid).orderByKey();
+  if (after) query = query.startAfter(after);
+  const snap = await query.limitToLast(200).once("value");
   const messages = [];
   snap.forEach((m) => {
     const v = m.val() || {};
@@ -1106,7 +1100,7 @@ async function handleMessages(db, res, user, gid) {
     }
     messages.push(msg);
   });
-  return res.status(200).json({ messages });
+  return res.status(200).json({ messages, incremental: !!after });
 }
 
 // ── Prévient les AUTRES membres qu'un nouveau message a été posté ──
@@ -1119,7 +1113,7 @@ async function handleMessages(db, res, user, gid) {
 // (contraste avec notifyReciting) : un message reste un événement ponctuel
 // et voulu par son auteur, pas un signal répété automatiquement comme la
 // reprise d'activité.
-async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayName, text, hasMedia) {
+async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayName, text, hasMedia, messageId, message) {
   const [nameSnap, membersSnap] = await Promise.all([
     db.ref("zikr_groups/" + gid + "/name").once("value"),
     db.ref("zikr_members/" + gid).once("value"),
@@ -1130,12 +1124,12 @@ async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayNa
 
   const targets = [];
   membersSnap.forEach((m) => { if (m.key !== senderUid) targets.push(m.key); });
-  await notifyUsers(db, targets, {
+  await publishAndNotify(db, "zikr_chat/" + gid + "/" + messageId, message, {
     ...notif,
     senderName,
     targetUrl: '/zikr?item=' + gid,
     meta: { gid, groupName, tagSuffix: gid },
-  });
+  }, { uids: targets, eventId: 'zikr-message:' + gid + ':' + messageId });
 }
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur

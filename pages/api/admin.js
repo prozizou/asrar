@@ -25,7 +25,10 @@ const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
-const { notifyAllUsers, notifyUsers } = require("../../server/notify");
+const { notificationHealth, retryNotification } = require("../../server/notificationAdmin");
+const { invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const { publicOrder } = require("../../server/orderStore");
+const { publishAndNotify } = require("../../server/notify");
 const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
 const DAY_MS = 86400000;
@@ -57,6 +60,11 @@ export default async function handler(req, res) {
 
   try {
     switch (action) {
+      case "notification-jobs": return res.json(await notificationHealth(db));
+      case "retry-notification": {
+        const result = await retryNotification(db, body.jobId);
+        return res.status(result.status).json(result.error ? { error: result.error } : { ok: true });
+      }
       case "stats":          return res.json(await getStats(db));
 
       case "list-secrets": {
@@ -72,21 +80,14 @@ export default async function handler(req, res) {
         const isNew = !body.key; // édition d'un Secret existant → jamais renotifié
         const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
         const key = body.key || db.ref("db_sirr_" + cat).push().key;
-        await db.ref("db_sirr_" + cat + "/" + key).update(rec);
         if (isNew) {
-          // Diffusion à tous les utilisateurs connus (aucune fonctionnalité
-          // d'envoi ciblé pour ce module — voir server/notify.js
-          // notifyAllUsers). Attendue (pas fire-and-forget) : une fonction
-          // serverless peut être gelée dès la réponse envoyée, un envoi non
-          // attendu risquerait de ne jamais aboutir ; le .catch() évite pour
-          // autant qu'un échec de diffusion fasse échouer la publication.
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "db_sirr_" + cat + "/" + key, rec, {
             ...secretNotification({ senderName: BROADCAST_SENDER, preview: faida }),
             senderName: BROADCAST_SENDER,
             targetUrl: "/asrar?item=" + key + "&cat=" + cat,
             meta: { cat, key, tagSuffix: cat + ":" + key },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-secret", key }));
-        }
+          }, { eventId: "secret:" + cat + ":" + key });
+        } else await db.ref("db_sirr_" + cat + "/" + key).update(rec);
         return res.json({ ok: true, key });
       }
       case "delete-secret": {
@@ -106,16 +107,13 @@ export default async function handler(req, res) {
           img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
         const key = body.key || db.ref("almaqtab").push().key;
-        await db.ref("almaqtab/" + key).update(rec);
         if (isNew) {
-          // Même diffusion broadcast que save-secret ci-dessus.
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "almaqtab/" + key, rec, {
             ...documentNotification({ senderName: BROADCAST_SENDER, preview: titre }),
-            senderName: BROADCAST_SENDER,
-            targetUrl: "/bibliotheque?item=" + key,
+            senderName: BROADCAST_SENDER, targetUrl: "/bibliotheque?item=" + key,
             meta: { key, tagSuffix: key },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-book", key }));
-        }
+          }, { eventId: "book:" + key });
+        } else await db.ref("almaqtab/" + key).update(rec);
         return res.json({ ok: true, key });
       }
       case "delete-book": {
@@ -183,32 +181,33 @@ export default async function handler(req, res) {
         const cur = (await ref.once("value")).val();
         if (!cur) return res.status(404).json({ error: "Vendeur introuvable." });
         const wasActive = cur.shopActive === true;
-        if (op === "suspend")  await ref.update({ shopActive: false });
-        else if (op === "activate") await ref.update({ shopActive: true });
+        let update;
+        if (op === "suspend") update = { shopActive: false };
+        else if (op === "activate") update = { shopActive: true };
         else if (op === "extend") {
           const days = parseInt(body.days, 10) || 30;
           const base = (typeof cur.expiresAt === "number" && cur.expiresAt > Date.now()) ? cur.expiresAt : Date.now();
-          await ref.update({ shopActive: true, expiresAt: base + days * DAY_MS });
+          update = { shopActive: true, expiresAt: base + days * DAY_MS };
         } else return res.status(400).json({ error: "Opération inconnue." });
 
         // Boutique qui devient (ou redevient, après suspension) disponible —
-        // diffuse à TOUS les utilisateurs connus. Best-effort, jamais bloquant.
+        // L'activation et sa notification sont persistées ensemble.
         if (!wasActive && (op === "activate" || op === "extend")) {
           const shopName = (cur.shop && cur.shop.name) || "Une nouvelle boutique";
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "sellers/" + uid, update, {
             ...newShopNotification({ shopName }),
             senderName: BROADCAST_SENDER,
             targetUrl: "/",
             meta: { uid, tagSuffix: uid },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "seller-action", uid }));
-        }
+          }, { eventId: "shop-activation:" + uid + ":" + db.ref("notification_jobs").push().key });
+        } else await ref.update(update);
         return res.json({ ok: true });
       }
 
       case "list-orders": {
-        const snap = await db.ref("orders").once("value");
+        const snap = await db.ref("orders_v2").orderByChild("at").limitToLast(200).once("value");
         const out = [];
-        snap.forEach((u) => u.forEach((o) => out.push({ _uid: u.key, _key: o.key, ...(o.val() || {}) })));
+        snap.forEach((order) => { out.push(publicOrder(order.key, order.val())); });
         out.sort((a, b) => (b.at || 0) - (a.at || 0));
         return res.json({ items: out.slice(0, 200) });
       }
@@ -229,27 +228,23 @@ export default async function handler(req, res) {
         const days = parseInt(body.days, 10);
         const until = Number.isFinite(days) && days > 0 ? Date.now() + days * DAY_MS : true;
         const level = parseInt(body.level, 10);
-        await db.ref("allowedUsers/" + emailKey(email)).set({
+        const grant = {
           until,
           level: Number.isFinite(level) && level > 0 ? level : 0
-        });
-        // Notification CIBLÉE (pas de broadcast) au compte concerné —
-        // best-effort, silencieuse si aucun compte Firebase Auth n'existe
-        // encore pour cet e-mail (accès accordé avant la première connexion,
-        // ou faute de frappe côté admin) : jamais bloquant pour la réponse,
-        // même principe que pages/api/cron/reminders.js sendRenewalReminders.
+        };
+        let userRecord;
         try {
-          const userRecord = await app().auth().getUserByEmail(email);
-          await notifyUsers(db, [userRecord.uid], {
+          userRecord = await app().auth().getUserByEmail(email);
+        } catch (error) {
+          if (error.code !== "auth/user-not-found") throw error;
+        }
+        if (userRecord) {
+          await publishAndNotify(db, "allowedUsers/" + emailKey(email), grant, {
             ...accessGrantedNotification(),
             targetUrl: "/",
             meta: { tagSuffix: "access" },
-          });
-        } catch (e) {
-          if (e && e.code !== "auth/user-not-found") {
-            await reportError("admin:notifyUsers", e, { action: "grant-access", email });
-          }
-        }
+          }, { uids: [userRecord.uid], eventId: "access:" + userRecord.uid + ":" + db.ref("notification_jobs").push().key });
+        } else await db.ref("allowedUsers/" + emailKey(email)).set(grant);
         return res.json({ ok: true, email, expiresAt: until === true ? "lifetime" : until, level: level || 0 });
       }
       // revoke-access {email} → retire l'accès manuel ET neutralise un ancien achat.
@@ -290,6 +285,10 @@ export default async function handler(req, res) {
   } catch (e) {
     if (!e.statusCode) await reportError("admin", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
+  } finally {
+    const root = { secret: "db_sirr_" + body.cat, book: "almaqtab", formation: "formations", product: "det_produits" };
+    const mutation = typeof action === "string" && /^(save|delete)-(secret|book|formation|product)$/.exec(action);
+    if (mutation) invalidatePublicCatalog(db, root[mutation[2]]);
   }
 };
 
@@ -339,7 +338,7 @@ async function getStats(db) {
 
 function uniqUsers(snaps) {
   const set = new Set();
-  snaps.forEach((s) => s.forEach((c) => set.add(c.key)));
+  snaps.forEach((s) => { s.forEach((c) => { set.add(c.key); }); });
   return set.size;
 }
 async function countChildren(db, path) {
@@ -348,13 +347,13 @@ async function countChildren(db, path) {
 async function readAll(db, path) {
   const snap = await db.ref(path).once("value");
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
   return out;
 }
 async function readFeed(db, path, n) {
   const snap = await db.ref(path).orderByChild("at").limitToLast(n).once("value");
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
   return out.reverse(); // plus récent d'abord
 }
 

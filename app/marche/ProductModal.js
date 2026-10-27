@@ -13,6 +13,9 @@ import { apiPost } from '@/lib/api';
 import { formatPrice, displayProductName } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
+import Modal from '@/components/Modal';
+import { reserveExternalWindow } from '@/lib/externalWindow';
+import { formatOrderPrice } from '@/lib/orderStatus';
 import { share as shareLink } from '@/lib/share';
 import { useProductSocial } from '@/components/useProductSocial';
 
@@ -32,14 +35,6 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
   const listRef = useRef(null);
 
   const { liked, likeCount, comments, toggleLike, postComment } = useProductSocial(product._key);
-
-  // Bloque le scroll de l'arrière-plan tant que la modale est ouverte.
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -71,36 +66,30 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
     shareLink({ kind: 'product', key: product._key, title: nom, text: '🛒 ' + nom + ' — Marché Mystique sur ASRAR PRO' });
   };
 
-  // Commande : message pré-rempli envoyé au vendeur. Son numéro reste côté
-  // serveur (/api/wa le lit d'après la clé produit puis redirige).
-  const order = () => {
-    let email = '';
+  const requestRef = useRef({ productKey: product._key, id: null, orderId: null });
+  const [ordering, setOrdering] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  const [verifiedRequest, setVerifiedRequest] = useState(null);
+  const order = async () => {
+    if (ordering) return;
+    const destination = reserveExternalWindow();
+    if (!destination) { setOrderError('Autorisez l’ouverture d’une nouvelle fenêtre pour contacter la boutique.'); return; }
+    setOrdering(true); setOrderError('');
     try {
-      email = (auth.currentUser && auth.currentUser.email) || '';
-    } catch {}
-    const boutique = (vendor && vendor.name) || product.vendeur || 'la boutique';
-    const article = product.produit || 'Article';
-    const total = formatPrice(product.Prix, product.devise) || (product.Prix || '') + ' FCFA';
-    const msg =
-      `Assalamou aleykoum 🌙\nJe souhaite passer une commande sur le Marché (${boutique}).\n\n` +
-      `• Compte (e-mail) : ${email}\n• Articles :\n   - ${article}\n• Total : ${total}\n\n` +
-      `Merci de me confirmer la disponibilité et les modalités de paiement.`;
-    // Le comptage AGRÉGÉ de commande se fait côté serveur (api/wa.js) ; ceci
-    // est un enregistrement SÉPARÉ, propre à cet acheteur (« Mes commandes »,
-    // app/commandes) — best-effort, ne doit jamais retarder/bloquer l'ouverture
-    // de WhatsApp (fire-and-forget, aucun await avant window.open).
-    apiPost('track', {
-      type: 'order',
-      order: {
-        productKey: product._key,
-        produit: article,
-        prix: product.Prix,
-        devise: product.devise,
-        vendeur: boutique,
-        image: mainImg || product.Image || '',
-      },
-    }).catch(() => {});
-    window.open('/api/wa?product=' + encodeURIComponent(product._key) + '&text=' + encodeURIComponent(msg), '_blank', 'noopener');
+      if (requestRef.current.productKey !== product._key) requestRef.current = { productKey: product._key, id: null, orderId: null };
+      const request = requestRef.current;
+      let result;
+      if (request.orderId) result = await apiPost('orders', { action: 'contact', orderId: request.orderId });
+      else {
+        request.id ||= crypto.randomUUID();
+        result = await apiPost('orders', { action: 'create', productKey: product._key, requestId: request.id });
+        request.orderId = result.order._key;
+        setVerifiedRequest(result.order);
+      }
+      destination.navigate(result.contactUrl);
+    } catch (error) {
+      destination.close(); setOrderError(error.message || 'La demande n’a pas pu être préparée. Réessayez.');
+    } finally { setOrdering(false); }
   };
 
   const description = String(product.description || '').trim();
@@ -108,11 +97,11 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
   const descLong = description.length > 130;
   const category = product.chain ? product.chain.charAt(0).toUpperCase() + product.chain.slice(1) : '';
   const rating = Number(vendor && vendor.rating) > 0 ? Number(vendor.rating).toFixed(1) : '';
-  const price = formatPrice(product.Prix, product.devise);
+  const price = verifiedRequest ? formatOrderPrice(verifiedRequest.prix, verifiedRequest.devise) : formatPrice(product.Prix, product.devise);
 
   return (
-    <div className="pm-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="pm-sheet" role="dialog" aria-modal="true" aria-label={product.produit || 'Produit'}>
+    <Modal className="pm-overlay" onClose={onClose} label={product.produit || 'Produit'}>
+      <div className="pm-sheet">
         <button type="button" className="pm-close" onClick={onClose} aria-label="Fermer">
           <X size={18} strokeWidth={2.4} aria-hidden="true" />
         </button>
@@ -285,12 +274,15 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
         {/* Bouton WhatsApp FIXÉ en bas de la fiche (sticky) : reste à portée de
             pouce pendant qu'on lit la description ou les commentaires. */}
         <div className="pm-cta">
-          <button type="button" className="pm-wa" onClick={order}>
+          {orderError && <p role="alert">{orderError}</p>}
+          {verifiedRequest && <p role="status">Demande enregistrée au prix vérifié : {formatOrderPrice(verifiedRequest.prix, verifiedRequest.devise)}.</p>}
+          <p>Une demande WhatsApp ne confirme ni l’achat ni le paiement.</p>
+          <button type="button" className="pm-wa" onClick={order} disabled={ordering}>
             <MessageCircle size={20} strokeWidth={2.2} aria-hidden="true" />
-            Commander via WhatsApp
+            {ordering ? 'Préparation…' : 'Demander via WhatsApp'}
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -39,12 +39,17 @@ export default async function handler(req, res) {
   const base = db.ref("notifications/" + user.uid);
 
   try {
+    if (action === "badge") {
+      // Inclut aussi les anciennes notifications sans champ read (null).
+      const unread = await base.orderByChild("read").endAt(false).limitToFirst(MAX_PER_USER).once("value");
+      return res.status(200).json({ unread: unread.numChildren() });
+    }
     if (action === "list") {
       // Le badge est dérivé des mêmes documents que la liste (200 maximum),
       // sans compteur séparé susceptible de diverger après une panne/purge.
       const listSnap = await base.orderByChild("createdAt").limitToLast(MAX_PER_USER).once("value");
       const items = [];
-      listSnap.forEach((c) => items.push({ id: c.key, ...c.val() }));
+      listSnap.forEach((c) => { items.push({ id: c.key, ...c.val() }); });
       items.reverse(); // limitToLast renvoie du plus ancien au plus récent → on veut l'inverse
       return res.status(200).json({ items: items.slice(0, LIST_LIMIT), unread: items.filter((item) => item.read !== true).length });
     }

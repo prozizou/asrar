@@ -42,3 +42,26 @@ it('emploie un preset audio distinct pour les vocaux d’un membre', async () =>
   expect(result.body.uploadPreset).toBe('bounded-audio');
   expect(result.body.folder).toBe('zikr_chat/g1/tester');
 });
+
+it('détecte le preset audio manquant avant de demander le micro, sans exposer de signature', async () => {
+  vi.stubEnv('CLOUDINARY_UPLOAD_PRESET', 'images-only');
+  const handler = runtime(database({ zikr_members: { g1: { tester: {} } } }))('pages/api/cloudinary-sign.js').default;
+  const check = await invoke(handler, { action: 'check', folder: 'zikr_chat', groupId: 'g1', mediaType: 'video' });
+  expect(check.code).toBe(200);
+  expect(check.body).toMatchObject({ available: false, code: 'UPLOAD_NOT_CONFIGURED' });
+  expect(check.body.signature).toBeUndefined();
+  const sign = await invoke(handler, { folder: 'zikr_chat', groupId: 'g1', mediaType: 'video' });
+  expect(sign.code).toBe(503); expect(sign.body.code).toBe('UPLOAD_NOT_CONFIGURED');
+});
+
+it('ne rend pas le diagnostic des médias accessible à un non-membre', async () => {
+  const handler = runtime(database({}))('pages/api/cloudinary-sign.js').default;
+  expect((await invoke(handler, { action: 'check', folder: 'zikr_chat', groupId: 'g1', mediaType: 'video' })).code).toBe(403);
+});
+
+it('annonce les vocaux disponibles quand leurs paramètres sont configurés', async () => {
+  vi.stubEnv('CLOUDINARY_AUDIO_UPLOAD_PRESET', 'bounded-audio');
+  const handler = runtime(database({ zikr_members: { g1: { tester: {} } } }))('pages/api/cloudinary-sign.js').default;
+  const result = await invoke(handler, { action: 'check', folder: 'zikr_chat', groupId: 'g1', mediaType: 'video' });
+  expect(result.body).toEqual({ available: true });
+});

@@ -1,7 +1,10 @@
 .next/
+.next-auth/
+.firebase/
 out/
 android/
 node_modules/
 coverage/
 test-results/
 playwright-report/
+playwright-report-auth/

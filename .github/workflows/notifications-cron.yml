@@ -1,0 +1,31 @@
+name: Notification queue
+
+on:
+  schedule:
+    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notification-queue
+  cancel-in-progress: false
+
+jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Reprendre les notifications en attente
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ASRAR_SITE_URL: ${{ vars.ASRAR_SITE_URL || 'https://www.asrarpro.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo '::error::Configurer CRON_SECRET, identique à celui du serveur.'
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "${ASRAR_SITE_URL%/}/api/cron/notifications"

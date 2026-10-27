@@ -24,6 +24,7 @@
 // même principe que lib/rouwhania.js et lib/geomancie.js dans les batches
 // précédents (#120, #122). useAccess()/Spinner.js suivent le même
 // traitement (cast) que dans les batches précédents.
+import AccessibleModalUntyped from '@/components/Modal';
 import './planete.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -57,6 +58,8 @@ import { WEB_OFFSET_CHOICES, planetSlug, planetFromSlug, ringingWebAlarms } from
 import { unlockAlarmAudio, startAlarmRing, stopAlarmRing } from '@/lib/alarmRinger';
 import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
 import { hourEntries, hourIdOf, selectedHourIdFrom } from '@/lib/planetHourSelection';
+const AccessibleModal = AccessibleModalUntyped as any;
+
 
 const Spinner = SpinnerUntyped as any;
 
@@ -540,8 +543,8 @@ function PlaceSheet({ onClose, onPick, onUseGps }: {
   }, [q]);
 
   return (
-    <div className="pm-sheet-backdrop" onClick={onClose}>
-      <div className="pm-sheet" role="dialog" aria-modal="true" aria-label="Choisir la ville" onClick={(e) => e.stopPropagation()}>
+    <AccessibleModal className="pm-sheet-backdrop" onClose={onClose} label="Choisir la ville">
+      <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet-head">
           <h2 className="pm-sheet-title">Choisir la ville</h2>
           <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Fermer"><X size={20} strokeWidth={2} /></button>
@@ -576,7 +579,7 @@ function PlaceSheet({ onClose, onPick, onUseGps }: {
           </ul>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 }
 
@@ -1165,8 +1168,8 @@ function WebAlarmSheet({
   };
 
   return (
-    <div className="alarm-sheet-backdrop" onClick={onClose}>
-      <div className="alarm-sheet glass-panel" role="dialog" aria-modal="true" aria-label={`Alarme — ${row.planet}`} onClick={(e) => e.stopPropagation()}>
+    <AccessibleModal className="alarm-sheet-backdrop" onClose={onClose} label="Réglages de l’alarme">
+      <div className="alarm-sheet glass-panel" onClick={(e) => e.stopPropagation()}>
         <h4 className="alarm-sheet-title">
           <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
         </h4>
@@ -1198,7 +1201,7 @@ function WebAlarmSheet({
           </button>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 }
 
@@ -1251,8 +1254,8 @@ function AlarmSettingsSheet({
   };
 
   return (
-    <div className="alarm-sheet-backdrop" onClick={onClose}>
-      <div className="alarm-sheet glass-panel" role="dialog" aria-modal="true" aria-label={`Alarme — ${row.planet}`} onClick={(e) => e.stopPropagation()}>
+    <AccessibleModal className="alarm-sheet-backdrop" onClose={onClose} label="Réglages de l’alarme">
+      <div className="alarm-sheet glass-panel" onClick={(e) => e.stopPropagation()}>
         <h4 className="alarm-sheet-title">
           <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
         </h4>
@@ -1299,6 +1302,6 @@ function AlarmSettingsSheet({
           </button>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 }

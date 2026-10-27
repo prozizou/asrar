@@ -1,8 +1,8 @@
 # Tests E2E (Playwright)
 
-## Périmètre actuel : tout ce qui NE dépend PAS d'un vrai compte Google
+## Suite sans connexion Google
 
-`lib/firebase.js` pointe sur le **vrai** projet Firebase de production
+En compilation normale, `lib/firebase.js` pointe sur le projet Firebase
 (`asrar-bc059` — les clés client sont publiques, ce n'est pas un problème en
 soi, voir son commentaire d'en-tête). Conséquence directe pour les tests E2E :
 il n'existe **aucun mode « visiteur anonyme navigant l'app »** — `components/
@@ -12,8 +12,8 @@ connexion tant qu'aucun utilisateur Firebase Auth n'est résolu. Automatiser un
 vrai `signInWithPopup()` Google en CI demanderait soit un compte Google de
 test manipulé par un navigateur piloté (fragile, contre les conditions
 d'utilisation Google, et risqué : ce serait un vrai compte sur le vrai
-projet), soit l'**émulateur Firebase Auth** — voir « Chantier de suite »
-plus bas.
+projet), soit l'**émulateur Firebase Auth**, utilisé par la suite
+authentifiée décrite plus bas.
 
 Cette première passe couvre donc ce qui est réellement testable sans
 identité, et qui correspond à des parcours/garanties concrets :
@@ -36,39 +36,55 @@ npm run test:e2e
 En local, si Playwright signale une version de navigateur manquante :
 `npx playwright install chromium`.
 
-## Ce qui n'est PAS couvert ici (chantier de suite)
+## Tests avec comptes authentifiés
 
-Tout parcours qui exige une identité réelle reste hors périmètre tant que
-l'émulateur Firebase n'est pas en place :
+```bash
+# Node 22 et Java 21 ; téléchargement initial des émulateurs nécessaire
+npx playwright install chromium
+npm run test:auth
+```
 
-- **Connexion Google** (`signInWithPopup`/`signInWithRedirect`) — le point
-  que `lib/csp.js` documente déjà comme fragile (une CSP à nonce l'a cassé
-  une fois en production, voir son en-tête).
-- **Paywall côté abonné** : un utilisateur RÉELLEMENT autorisé qui génère un
-  contenu premium (Al Qalam, Géomancie, Wafq, Thalsams).
-- **Commande vendeur / WhatsApp** (`/api/wa`, `/api/shop`).
-- **Zikr collectif** multi-utilisateur (création de groupe, adhésion,
-  compteur partagé).
-- **Parrainage** (génération de lien, activation).
+La commande construit une version isolée dans `.next-auth`, démarre Auth et
+Realtime Database avec `firebase.emulators.json`, crée sept comptes fictifs
+et sème la base locale. Elle lance ensuite `playwright.auth.config.ts` sur
+le port 3102. Aucun compte Google, compte de service ou abonnement de
+production n'est nécessaire. Les émulateurs sont arrêtés à la fin.
 
-Débloquer ces parcours demande, dans l'ordre :
-1. Un `firebase.json` + config d'émulateurs (Auth + Realtime Database) — à
-   ajouter en même temps que celui déjà évoqué dans `rules/README.md` pour le
-   déploiement des règles RTDB (même fichier, deux besoins).
-2. Faire pointer `lib/firebase.js` (client) et `server/grant.js` (Admin SDK)
-   vers les émulateurs quand une variable d'environnement dédiée est
-   positionnée (`connectAuthEmulator`/`connectDatabaseEmulator` côté client ;
-   l'Admin SDK suit `FIREBASE_AUTH_EMULATOR_HOST`/
-   `FIREBASE_DATABASE_EMULATOR_HOST` automatiquement, sans code
-   supplémentaire) — STRICTEMENT gardé par cette variable, jamais actif par
-   défaut : un raccourci de connexion qui fuiterait en production serait une
-   faille, pas un outil de test.
-3. Un utilisateur de test créé dans l'émulateur (script de seed), et une
-   connexion automatisée via `signInWithCustomToken` (l'émulateur Auth
-   l'accepte sans jamais toucher aux serveurs Google réels) plutôt qu'un vrai
-   popup Google.
-4. Semer les nœuds RTDB nécessaires (`allowedUsers`, `sourate`, `versetRef`,
-   `data/appData/asmaUlHusna`…) dans l'émulateur avant chaque run.
+Les scénarios de `authenticated/` vérifient les paliers gratuit, Basic,
+Premium et expiré, les droits administrateur/vendeur, l'e-mail vérifié,
+le catalogue sans contenu payant, le thème Premium, la consommation des
+minutes de formation et l'isolation des notifications. Un navigateur
+se connecte réellement à Auth et retrouve sa session dans l'application.
+Les règles RTDB sont chargées : lecture privée et écriture administrateur
+restent interdites au SDK client. Les tests publient aussi un livre via
+l'API, lancent deux workers concurrents et vérifient la livraison unique
+ainsi que la relance réservée aux administrateurs.
+Les rappels sont aussi vérifiés avec des crons concurrents, une session
+reprogrammée, un abonnement prolongé et une activation d'accès atomique.
+`firebase-cost.spec.ts` vérifie le badge indexé, la lecture incrémentale des
+messages, l'invalidation du catalogue et l'arrêt des sondages en page masquée.
 
-Pas engagé dans cette passe : lift plus lourd que les tests ci-dessus, mieux
-scopé comme chantier séparé une fois ce socle Playwright validé en usage réel.
+Le mode émulateur exige `FIREBASE_TEST_MODE=true`, le projet
+`demo-asrar-test` et les ports de boucle locale prévus. Il refuse Vercel et
+les configurations partielles. `scripts/auth-test-env.cjs` retire les
+identifiants serveur et VAPID de ses processus enfants. La CSP locale
+n'est ajoutée que dans cette compilation de test ; le build normal reste
+séparé. Ne pas définir ces variables sur un hébergement.
+
+Le preload `scripts/emulator-proxy.cjs` corrige les transports locaux des
+outils Firebase qui ignorent `NO_PROXY` : seuls les ports des émulateurs
+contournent le proxy. La copie RTDB embarquée dans firebase-admin 14 exige
+une adaptation en mémoire de son option de proxy, vérifiée au chargement.
+Les connexions Internet conservent le proxy hérité.
+
+FCM ne propose pas d'émulateur : tout envoi externe est refusé dans ce
+mode. Les accusés par appareil, erreurs transitoires et suppressions des
+jetons expirés sont testés avec des fournisseurs simulés dans Vitest.
+La réception effective Web Push/Android doit être vérifiée sur des
+appareils de recette. La popup OAuth Google, WhatsApp, les générateurs
+premium et les parcours multi-utilisateurs Zikr complets restent à
+compléter en recette ; ces tests ne les simulent pas comme réussis.
+
+`zz-commerce-account.spec.ts` vérifie les prix serveur, les transitions vendeur
+dans l’interface, les droits, l’export du compte et les fenêtres au clavier.
+Le lien WhatsApp est inspecté sans contacter son destinataire.

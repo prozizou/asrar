@@ -3,6 +3,9 @@
 
 # build Next.js
 /.next
+/.next-auth
+/.firebase
+*-debug.log
 /out
 # Régénéré automatiquement par `next build`/`next dev` à chaque lancement dès
 # qu'un tsconfig.json existe à la racine (conversion des pages en TypeScript,
@@ -22,6 +25,7 @@ tsconfig.tsbuildinfo
 # jamais à committer — voir playwright.config.ts.
 /test-results
 /playwright-report
+/playwright-report-auth
 /blob-report
 /playwright/.cache
 

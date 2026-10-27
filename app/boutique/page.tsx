@@ -252,7 +252,7 @@ export default function BoutiquePage() {
                   </div>
                   <div className="bq-stat">
                     <span className="bq-stat-num">{formatCount(stats.totalOrders)}</span>
-                    <span className="bq-stat-label">🛍️ Commandes</span>
+                    <span className="bq-stat-label">🛍️ Commandes confirmées</span>
                   </div>
                 </div>
               </div>
@@ -351,6 +351,7 @@ export default function BoutiquePage() {
         />
       )}
 
+      <Link href="/commandes?vue=boutique" className="back-btn">Gérer les demandes et commandes reçues →</Link>
       {toast}
     </div>
   );

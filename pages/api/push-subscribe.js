@@ -57,6 +57,8 @@ export default async function handler(req, res) {
 
   try {
     if (action === "subscribe") {
+      const enabled = db.ref("account_settings/" + user.uid + "/pushEnabled");
+      if ((await enabled.once("value")).val() === false) return res.status(409).json({ error: "Réactivez les notifications dans Mon compte avant d’abonner cet appareil." });
       const ep = subscription && subscription.endpoint;
       const keys = subscription && subscription.keys;
       if (!isValidSubscription(subscription)) {
@@ -87,6 +89,10 @@ export default async function handler(req, res) {
         ...(timeZone ? { timeZone } : {}),
         updatedAt: Date.now(),
       });
+      if ((await enabled.once("value")).val() === false) {
+        await db.ref("push_subscriptions/" + user.uid + "/" + subId(ep)).remove();
+        return res.status(409).json({ error: "Les notifications sont désactivées dans Mon compte." });
+      }
       return res.status(200).json({ ok: true });
     }
 
