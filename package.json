@@ -22,7 +22,7 @@
     "@capacitor/core": "^8.5.2",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/push-notifications": "^8.1.2",
-    "@capgo/capacitor-social-login": "^8.5.12",
+    "@capgo/capacitor-social-login": "^8.7.5",
     "@fontsource/carlito": "^5.3.0",
     "@vercel/functions": "^3.10.4",
     "clipper-lib": "^6.4.2",
