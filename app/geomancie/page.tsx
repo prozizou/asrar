@@ -15,6 +15,7 @@
 // lib/rouwhania.js dans le batch précédent (#120). useAccess()/Spinner.js
 // suivent le même traitement (cast) que dans les batches précédents (#114,
 // #116, #118, #120).
+import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -37,6 +38,8 @@ import {
 import { SHIELD_LAYOUT, SHIELD_EDGES, STEPS, edgePoints } from '@/lib/geomancieLayout';
 import { addHistoryEntry, clearHistory, loadHistory, removeHistoryEntry } from '@/lib/geomancieHistory';
 import { buildEcuPdf, ecuShareText } from '@/lib/geomancieExport';
+const AccessibleModal = AccessibleModalUntyped as any;
+
 
 const Spinner = SpinnerUntyped as any;
 
@@ -629,11 +632,10 @@ function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'b
 }
 
 function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
-  const stop = (e: React.MouseEvent) => e.target === e.currentTarget && onClose();
   return (
-    <div className="geo-modal-overlay" onClick={stop}>
+    <AccessibleModal className="geo-modal-overlay" onClose={onClose} label="Détail de la maison">
       <div className="geo-modal">
-        <button className="close-btn" onClick={onClose}>
+        <button type="button" aria-label="Fermer le détail" className="close-btn" onClick={onClose}>
           ×
         </button>
         <h3>
@@ -715,6 +717,6 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           </>
         )}
       </div>
-    </div>
+    </AccessibleModal>
   );
 }

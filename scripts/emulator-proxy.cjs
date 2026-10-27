@@ -16,7 +16,7 @@ ProxyAgent.prototype.dispatch = function (options, handler) {
   return dispatch.call(this, options, handler);
 };
 
-// firebase-admin 12 embarque sa propre copie de faye, inaccessible via require.
+// Le SDK RTDB utilisé par firebase-admin 14 embarque sa propre copie de faye, inaccessible via require.
 // Adapter uniquement cette option de transport dans le module de test chargé,
 // sans modifier node_modules ni les connexions Internet. À retirer lorsque le
 // SDK RTDB respectera NO_PROXY. Aucun jeton ni règle Firebase n'est remplacé.

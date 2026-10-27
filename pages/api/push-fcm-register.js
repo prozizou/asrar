@@ -42,6 +42,8 @@ export default async function handler(req, res) {
 
   try {
     if (action === "register") {
+      const enabled = db.ref("account_settings/" + user.uid + "/pushEnabled");
+      if ((await enabled.once("value")).val() === false) return res.status(409).json({ error: "Réactivez les notifications dans Mon compte avant d’abonner cet appareil." });
       const check = validateDeviceInput({ platform, token });
       if (!check.valid) return res.status(400).json({ error: check.error });
 
@@ -51,6 +53,10 @@ export default async function handler(req, res) {
         enabled: true,
         updatedAt: Date.now(),
       });
+      if ((await enabled.once("value")).val() === false) {
+        await db.ref("fcm_devices/" + user.uid + "/" + deviceIdFromToken(token)).remove();
+        return res.status(409).json({ error: "Les notifications sont désactivées dans Mon compte." });
+      }
       return res.status(200).json({ ok: true });
     }
 

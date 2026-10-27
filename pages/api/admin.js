@@ -27,6 +27,7 @@ const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { notificationHealth, retryNotification } = require("../../server/notificationAdmin");
 const { invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const { publicOrder } = require("../../server/orderStore");
 const { publishAndNotify } = require("../../server/notify");
 const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
@@ -204,9 +205,9 @@ export default async function handler(req, res) {
       }
 
       case "list-orders": {
-        const snap = await db.ref("orders").once("value");
+        const snap = await db.ref("orders_v2").orderByChild("at").limitToLast(200).once("value");
         const out = [];
-        snap.forEach((u) => { u.forEach((o) => { out.push({ _uid: u.key, _key: o.key, ...(o.val() || {}) }); }); });
+        snap.forEach((order) => { out.push(publicOrder(order.key, order.val())); });
         out.sort((a, b) => (b.at || 0) - (a.at || 0));
         return res.json({ items: out.slice(0, 200) });
       }

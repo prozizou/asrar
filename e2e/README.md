@@ -39,7 +39,7 @@ En local, si Playwright signale une version de navigateur manquante :
 ## Tests avec comptes authentifiés
 
 ```bash
-# Node 22+ et Java 21 ; téléchargement initial des émulateurs nécessaire
+# Node 22 et Java 21 ; téléchargement initial des émulateurs nécessaire
 npx playwright install chromium
 npm run test:auth
 ```
@@ -73,7 +73,7 @@ séparé. Ne pas définir ces variables sur un hébergement.
 
 Le preload `scripts/emulator-proxy.cjs` corrige les transports locaux des
 outils Firebase qui ignorent `NO_PROXY` : seuls les ports des émulateurs
-contournent le proxy. La copie RTDB embarquée dans firebase-admin 12 exige
+contournent le proxy. La copie RTDB embarquée dans firebase-admin 14 exige
 une adaptation en mémoire de son option de proxy, vérifiée au chargement.
 Les connexions Internet conservent le proxy hérité.
 
@@ -84,3 +84,7 @@ La réception effective Web Push/Android doit être vérifiée sur des
 appareils de recette. La popup OAuth Google, WhatsApp, les générateurs
 premium et les parcours multi-utilisateurs Zikr complets restent à
 compléter en recette ; ces tests ne les simulent pas comme réussis.
+
+`zz-commerce-account.spec.ts` vérifie les prix serveur, les transitions vendeur
+dans l’interface, les droits, l’export du compte et les fenêtres au clavier.
+Le lien WhatsApp est inspecté sans contacter son destinataire.

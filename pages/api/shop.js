@@ -88,12 +88,17 @@ export default async function handler(req, res) {
         db.ref("views/product").once("value"),
         db.ref("ratings/product").once("value"),
         db.ref("comments/product").once("value"),
-        db.ref("orders_count").once("value")
+        db.ref("orders_v2").orderByChild("sellerUid").equalTo(user.uid).once("value")
       ]);
       const views = viewsSnap.val() || {};
       const likes = likesSnap.val() || {};
       const coms = comsSnap.val() || {};
-      const orders = ordersSnap.val() || {};
+      const orders = {}, statusCounts = { whatsapp_request: 0, confirmed: 0, paid: 0, delivered: 0, cancelled: 0 };
+      ordersSnap.forEach((child) => {
+        const order = child.val();
+        if (Object.hasOwn(statusCounts, order.status)) statusCounts[order.status]++;
+        if (["confirmed", "paid", "delivered"].includes(order.status)) orders[order.productKey] = (orders[order.productKey] || 0) + 1;
+      });
       const perProduct = {};
       let totalViews = 0, totalLikes = 0, totalComments = 0, totalOrders = 0;
       keys.forEach((k) => {
@@ -104,7 +109,8 @@ export default async function handler(req, res) {
         perProduct[k] = { views: v, likes: l, comments: c, orders: o };
         totalViews += v; totalLikes += l; totalComments += c; totalOrders += o;
       });
-      return res.status(200).json({ ok: true, totalViews, totalLikes, totalComments, totalOrders, perProduct });
+      totalOrders = statusCounts.confirmed + statusCounts.paid + statusCounts.delivered;
+      return res.status(200).json({ ok: true, totalViews, totalLikes, totalComments, totalOrders, statusCounts, perProduct });
     }
 
     if (action === "save-shop") {

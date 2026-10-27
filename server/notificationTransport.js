@@ -34,6 +34,7 @@ async function deliverNotification(db, job, { now = Date.now } = {}) {
     await storeNotification(db, job.uid, notif, job.notificationId);
     await ackDelivery(db, job, "inApp");
   }
+  if ((await db.ref(`account_settings/${job.uid}/pushEnabled`).once("value")).val() === false) return { pending: false, dead: false };
   const [webSnap, fcmSnap] = await Promise.all([
     db.ref(`push_subscriptions/${job.uid}`).orderByChild("updatedAt").limitToLast(10).once("value"),
     db.ref(`fcm_devices/${job.uid}`).orderByChild("updatedAt").limitToLast(10).once("value"),

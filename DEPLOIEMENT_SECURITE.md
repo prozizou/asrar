@@ -27,8 +27,8 @@ un projet de préproduction séparé.
 Tester en préproduction : connexion Google popup/redirect et native, compte
 gratuit/abonné/premium, activation/révocation, deux appareils sur le même
 Zikr, conversion de points et reprise après coupure, images et vocaux,
-lecture d'un livre et ouverture Meet. Les nouveaux imports Firebase restent
-compatibles avec le SDK existant ; ses fournisseurs Auth doivent émettre
+lecture d'un livre et ouverture Meet. Les SDK Firebase 13 / Admin 14 nécessitent Node 22 ; voir
+[MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md). Les fournisseurs Auth doivent émettre
 `email_verified: true` (cas normal de Google).
 
 ## Cloudinary : configuration nécessaire
@@ -107,7 +107,8 @@ Authorization. La branche ne modifie pas le plan payant ni sa facturation.
   authentifiés supplémentaires au-delà de la suite d'émulation.
 - Quotas partagés entre toutes les instances serveur.
 - Droits des fichiers Drive/Meet et modèle commercial de temps réel.
-- Parcours compte, données personnelles, modération et amélioration visuelle.
-- Avis transitif modéré `uuid` : documenter les appels réellement utilisés et
-  prévoir une migration des SDK qui le portent, sans imposer une version
-  majeure incompatible par un remplacement global.
+- Compte et demandes de données : déployer les index et organiser le traitement
+  manuel décrit dans [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md). La modération
+  et la recette lecteur d’écran restent à approfondir.
+- Migration Firebase réalisée ; audit de production sans alerte. Les sept avis
+  modérés de développement sont documentés dans [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).

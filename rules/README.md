@@ -105,3 +105,11 @@ explicitement est fermé au client, sans affecter l'Admin SDK.
   la validation (`text` non vide, ≤ 500 caractères, note 1–5) ne couvre
   toujours pas le **débit** d'écriture (spam) — voir `lib/rateLimit.js`
   côté serveur, qui ne couvrirait pas une écriture RTDB directe.
+
+## Commandes et compte (2026-10-27)
+
+Les index de `orders_v2`, `orders/{uid}` et `privacy_requests` sont versionnés
+pour les nouvelles API (voir [COMMANDES_ET_COMPTE.md](../COMMANDES_ET_COMPTE.md)).
+Ces nœuds et `account_settings` restent privés par la règle racine. Le fichier
+`firebase.emulators.json` charge ces règles pour les tests ; il ne constitue
+pas une configuration de déploiement de production.

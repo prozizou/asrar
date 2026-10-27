@@ -6,6 +6,7 @@
 // uniquement) — une publicité regardée en entier débloque UNE utilisation
 // (voir lib/unityAds.js, server/adReward.js).
 import { useEffect, useState } from 'react';
+import Modal from './Modal';
 import { SUB_PLANS } from '@/lib/access';
 import { openAccess } from '@/lib/whatsapp';
 import { watchRewardedAd } from '@/lib/unityAds';
@@ -59,11 +60,11 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
 
   if (isNetworkGate) {
     return (
-      <div className="sg-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <Modal className="sg-overlay" onClose={onClose} label={isNetworkGate ? 'Connexion trop lente' : 'Abonnement'}>
         <div className="sg-box">
-          <span className="sg-close" onClick={onClose}>
+          <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
             ✕
-          </span>
+          </button>
           <div style={{ fontSize: '2.4rem' }}>📶</div>
           <h2>Connexion trop lente</h2>
           <p className="sg-sub">
@@ -73,16 +74,16 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
             Réessayer
           </button>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   return (
-    <div className="sg-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal className="sg-overlay" onClose={onClose} label={isNetworkGate ? 'Connexion trop lente' : 'Abonnement'}>
       <div className="sg-box">
-        <span className="sg-close" onClick={onClose}>
+        <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
           ✕
-        </span>
+        </button>
         <div style={{ fontSize: '2.4rem' }}>🔒</div>
         <h2>{isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
         <p className="sg-sub">
@@ -102,7 +103,8 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
         )}
         <div className="sg-grid">
           {SUB_PLANS.map((p) => (
-            <div
+            <button
+              type="button"
               key={p.id}
               className={'sg-card' + (p.best ? ' best' : '') + (isLevelGate && !p.best ? ' sg-card-dim' : '')}
               onClick={() => request(p.id)}
@@ -112,11 +114,11 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
               <div className="sg-price">
                 {p.price} <small>FCFA</small>
               </div>
-            </div>
+            </button>
           ))}
         </div>
         <p className="sg-note">💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp.</p>
       </div>
-    </div>
+    </Modal>
   );
 }

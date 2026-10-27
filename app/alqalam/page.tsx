@@ -14,6 +14,7 @@
 // complexe, propre à ce module), même principe que les lib/*.js dans les
 // batches précédents (#120, #122, #124). useAccess()/Spinner.js suivent le
 // même traitement (cast) que dans les batches précédents.
+import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -38,6 +39,8 @@ import {
 } from '@/lib/alqalam';
 import { detectRoundLetters } from '@/lib/alqalamOrne';
 import OrneePhrasePiece, { type OrneePhrasePieceHandle } from './OrneePhrasePiece';
+const AccessibleModal = AccessibleModalUntyped as any;
+
 
 const Spinner = SpinnerUntyped as any;
 
@@ -1243,7 +1246,7 @@ export default function AlQalamPage() {
 
       {/* Popup options Word / PDF — même choix ouverture/fermeture pour les deux formats. */}
       {popupOpen && (
-        <div className="popup-overlay" onClick={(e) => e.target === e.currentTarget && setPopupOpen(false)}>
+        <AccessibleModal className="popup-overlay" onClose={() => setPopupOpen(false)} label="Options du document">
           <div className="popup-content glass-panel">
             <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 12, color: 'var(--accent-blue)' }}>
               {popupFormat === 'orne'
@@ -1265,7 +1268,7 @@ export default function AlQalamPage() {
               Sans ouverture ni fermeture
             </button>
           </div>
-        </div>
+        </AccessibleModal>
       )}
 
       {/* Progression */}

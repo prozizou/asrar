@@ -74,15 +74,15 @@ export default async function handler(req, res) {
     // — Lectures agrégées (page Marché : cartes produit + boutiques, avant
     // même l'ouverture d'un produit précis) — aucun cat/key requis. —
     if (action === "market-popularity") {
-      const [likesSnap, comsSnap, ordersSnap] = await Promise.all([
+      const [likesSnap, comsSnap] = await Promise.all([
         db.ref("ratings/product").once("value"),
         db.ref("comments/product").once("value"),
-        db.ref("orders_count").once("value"),
       ]);
       return res.status(200).json({
         likes: likesSnap.val() || {},
         comments: comsSnap.val() || {},
-        orders: ordersSnap.val() || {},
+        // Les anciens compteurs étaient des clics WhatsApp, pas des ventes.
+        orders: {},
       });
     }
 

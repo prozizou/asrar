@@ -58,6 +58,7 @@ export function database(initial = {}) {
           if ('start' in query) entries = entries.filter((entry) => field(entry) >= query.start);
           if ('after' in query) entries = entries.filter((entry) => field(entry) > query.after);
           if ('end' in query) entries = entries.filter((entry) => field(entry) <= query.end);
+          if ('before' in query) entries = entries.filter((entry) => field(entry) < query.before);
           if (query.last) entries = entries.slice(-query.last);
           if (query.first) entries = entries.slice(0, query.first);
           value = Object.fromEntries(entries);
@@ -97,6 +98,7 @@ export function database(initial = {}) {
       startAt: (v) => ref(p, { ...query, start: v }),
       startAfter: (v) => ref(p, { ...query, after: v }),
       endAt: (v) => ref(p, { ...query, end: v }),
+      endBefore: (v) => ref(p, { ...query, before: v }),
     };
   }
   return { ref, read, metrics, failNext: (p, operation) => failures.push({ path: p, operation }) };

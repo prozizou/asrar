@@ -12,6 +12,7 @@
 // d'images personnalisé, prix+devise regroupés, rythme vertical resserré).
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, X, Plus, Info } from 'lucide-react';
+import Modal from '@/components/Modal';
 import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
@@ -146,7 +147,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
   const cls = (id) => (errorField === id ? ' bq-field-error' : '');
 
   return (
-    <div className="bq-modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal className="bq-modal-overlay open" onClose={onClose} label={isEdit ? 'Modifier un produit' : 'Ajouter un produit'}>
       <div className="bq-modal">
         {/* Barre supérieure fixe (revue design, point 1) : remplace le petit
             ✕ flottant au-dessus d'un très long formulaire — flèche retour +
@@ -306,6 +307,6 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

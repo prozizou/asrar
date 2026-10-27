@@ -1,6 +1,7 @@
 'use client';
 // Bottom-sheet des commentaires — port du bloc #commentSheet + postComment().
 import { useEffect, useRef, useState } from 'react';
+import Modal from '@/components/Modal';
 import SmartImage from '@/components/SmartImage';
 
 export default function CommentSheet({ open, comments, onClose, onPost }) {
@@ -31,12 +32,11 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
   };
 
   return (
-    <>
-      <div className={'overlay' + (open ? ' show' : '')} onClick={onClose} />
+    <Modal open={open} className="asrar-comment-dialog" onClose={onClose} label="Commentaires">
       <div className={'comment-sheet' + (open ? ' open' : '')}>
         <div className="comment-sheet-header">
           <strong>Commentaires</strong>
-          <button onClick={onClose} className="close-sheet-btn">
+          <button aria-label="Fermer les commentaires" onClick={onClose} className="close-sheet-btn">
             ✕
           </button>
         </div>
@@ -59,6 +59,7 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
         </div>
         <div className="comment-input">
           <input
+            aria-label="Votre commentaire"
             ref={inputRef}
             type="text"
             placeholder="Votre commentaire..."
@@ -70,6 +71,6 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
           <button onClick={submit}>Envoyer</button>
         </div>
       </div>
-    </>
+    </Modal>
   );
 }

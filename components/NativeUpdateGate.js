@@ -12,6 +12,7 @@
 // qu'une fois la version requise DISPONIBLE en production sur le Play Store :
 // sinon, l'utilisateur serait renvoyé vers un Play Store sans mise à jour à
 // lui proposer, et resterait bloqué.
+import Modal from './Modal';
 import { useEffect, useState } from 'react';
 import { isAndroidVersionOutdated } from '@/lib/nativeVersion';
 
@@ -46,7 +47,7 @@ export default function NativeUpdateGate() {
   if (!outdated) return null;
 
   return (
-    <div className="nug-overlay" role="alertdialog" aria-modal="true" aria-labelledby="nug-title">
+    <Modal className="nug-overlay" role="alertdialog" labelledBy="nug-title">
       <div className="nug-box">
         <div className="nug-icon" aria-hidden="true">⬆️</div>
         <h2 id="nug-title">Mise à jour requise</h2>
@@ -58,6 +59,6 @@ export default function NativeUpdateGate() {
           Mettre à jour
         </a>
       </div>
-    </div>
+    </Modal>
   );
 }

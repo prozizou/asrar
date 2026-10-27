@@ -127,6 +127,8 @@ npm run dev                  # http://localhost:3000
 
 Connectez-vous avec Google (même projet Firebase que la prod).
 
+Utiliser Node **22.x** (`nvm use`) ; Firebase Admin 14 nécessite Node 22 au minimum.
+
 ## Qualité / CI
 
 ```bash
@@ -134,7 +136,7 @@ npm run lint        # ESLint (next/core-web-vitals)
 npm run typecheck    # TypeScript incrémental (checkJs), scopé à lib/
 npm test             # Vitest — logique pure de lib/ (calculs ésotériques, accès…)
 npm run build         # build de production (échoue si lint/types cassent)
-npm run test:auth     # Auth + RTDB locaux, Node 22+ / Java 21
+npm run test:auth     # Auth + RTDB locaux, Node 22 / Java 21
 npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
 ```
 
@@ -148,6 +150,10 @@ Le job `authenticated` lance les émulateurs sans secrets de production.
 Voir [NOTIFICATIONS.md](NOTIFICATIONS.md) pour la file et son exploitation.
 Voir [COUTS_FIREBASE.md](COUTS_FIREBASE.md) pour les sondages, le cache public,
 les index nécessaires et les mesures de réduction des transferts RTDB.
+
+Voir [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) pour les commandes et les
+demandes de données, et [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md) pour les SDK
+et les alertes restantes limitées aux outils de développement.
 
 ## Modules migrés
 

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-10-27 — Commandes, compte et migration Firebase
+
+- Demandes WhatsApp à prix et vendeur vérifiés côté serveur, références de reprise,
+  étapes confirmation/paiement manuel/livraison et historique réservé aux participants.
+- Compte avec échéance, préférences, export borné et demandes de données suivies
+  par l’administration ; la suppression reste un traitement manuel explicite.
+- Dialogues natifs : navigation clavier, Échap et restitution du focus.
+- Firebase 13.1 / Admin 14.5 et Node 22 ; audit de production sans vulnérabilité,
+  sept avis modérés restants dans les outils de développement. SW `v46.11`.
+- Guides : [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) et
+  [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).
+
 ## 2026-10-27 — Réduction des lectures et transferts Firebase
 
 - Arrêt des sondages en arrière-plan/hors ligne, badge non lu indexé,
