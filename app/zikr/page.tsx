@@ -46,7 +46,7 @@ import {
   RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
   normalizePhone,
 } from '@/lib/zikrLogic';
-import { uploadZikrChatMedia } from '@/lib/cloudinary';
+import { uploadZikrChatMedia, checkZikrAudio } from '@/lib/cloudinary';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone, flagOf } from '@/lib/phoneCountries';
 import { playNotificationBeep } from '@/lib/notifSound';
 import {
@@ -870,6 +870,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const [chatText, setChatText] = useState('');
   const [chatBusy, setChatBusy] = useState(false); // envoi d'un message texte
   const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
+  const [voiceError, setVoiceError] = useState('');
+  const [voiceChecking, setVoiceChecking] = useState(false);
+  const voiceStarting = useRef(false);
+  const [unsentVoice, setUnsentVoice] = useState<Blob | null>(null);
+  const [unsentVoiceUrl, setUnsentVoiceUrl] = useState('');
+  useEffect(() => {
+    if (!unsentVoice) { setUnsentVoiceUrl(''); return; }
+    const url = URL.createObjectURL(unsentVoice); setUnsentVoiceUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [unsentVoice]);
   const chatListRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -1055,23 +1065,29 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // absent de son API Upload — voir lib/cloudinary.js).
   const onVoiceDone = useCallback(
     async (blob: Blob, duration: number) => {
-      setMediaBusy(true);
+      setMediaBusy(true); setVoiceError('');
       try {
         const url = await uploadZikrChatMedia(blob, groupId, 'video');
         await sendMessage(groupId, '', { type: 'audio', url, duration });
         loadMessages();
       } catch (e: any) {
-        notify('❌ ' + (e.message || e));
+        setUnsentVoice(blob); setVoiceError(e.message || 'Votre vocal n’a pas pu être envoyé.');
       } finally {
         setMediaBusy(false);
       }
     },
-    [groupId, notify, loadMessages]
+    [groupId, loadMessages]
   );
   const voice = useVoiceRecorder(onVoiceDone);
   const doStartVoice = async () => {
-    try { await voice.start(); }
-    catch { notify('❌ Accès au micro refusé ou indisponible.'); }
+    if (voiceStarting.current || mediaBusy || unsentVoice) return;
+    voiceStarting.current = true; setVoiceChecking(true); setVoiceError('');
+    try {
+      await checkZikrAudio(groupId);
+      try { await voice.start(); }
+      catch { setVoiceError('Accès au micro refusé ou indisponible. Vérifiez l’autorisation du microphone.'); }
+    } catch (e: any) { setVoiceError(e.message || 'Impossible de vérifier l’envoi de vocaux. Réessayez.'); }
+    finally { voiceStarting.current = false; setVoiceChecking(false); }
   };
   const doShareWish = async (shared: boolean) => {
     if (shareBusy) return;
@@ -1562,6 +1578,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             )}
           </div>
 
+          {voiceError && <p role="alert" className="zk-muted">{voiceError}</p>}
+          {voiceChecking && <p role="status" className="zk-muted">Vérification de l’envoi de vocaux…</p>}
+          {unsentVoice && <div className="zk-unsent-voice"><p>Votre vocal est conservé dans cette page. Enregistrez-le avant de la quitter.</p>
+            {unsentVoiceUrl && <a className="zk-btn ghost" href={unsentVoiceUrl} download={'asrar-vocal.' + (unsentVoice.type.includes('mp4') ? 'm4a' : unsentVoice.type.includes('ogg') ? 'ogg' : 'webm')}>Enregistrer mon vocal</a>}
+            <button type="button" className="zk-btn ghost" onClick={() => { setUnsentVoice(null); setVoiceError(''); }}>Supprimer le vocal non envoyé</button>
+          </div>}
           {voice.recording ? (
             // Barre d'enregistrement — remplace la ligne de saisie tant que
             // le vocal est en cours (un tap sur le micro relance l'écriture).
@@ -1606,7 +1628,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                   placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
               </div>
-              <button type="button" className="zk-chat-tool" disabled={mediaBusy}
+              <button type="button" className="zk-chat-tool" disabled={mediaBusy || voiceChecking || Boolean(unsentVoice)}
                 onClick={doStartVoice} aria-label="Enregistrer un vocal">
                 <Mic size={17} strokeWidth={2.5} aria-hidden="true" />
               </button>

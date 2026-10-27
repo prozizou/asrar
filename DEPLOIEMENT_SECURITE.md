@@ -31,6 +31,8 @@ lecture d'un livre et ouverture Meet. Les SDK Firebase 13 / Admin 14 nécessiten
 [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md). Les fournisseurs Auth doivent émettre
 `email_verified: true` (cas normal de Google).
 
+Voir [AUDIO_ZIKR.md](AUDIO_ZIKR.md) pour remettre en service les vocaux du Zikr.
+
 ## Cloudinary : configuration nécessaire
 
 Les uploads exigent désormais un preset **signé** avec limites définies dans

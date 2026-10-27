@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-27 — Diagnostic et protection des vocaux Zikr
+
+- Vérification du canal audio avant la demande de micro, erreur persistante
+  et récupération du vocal non envoyé par téléchargement. SW `v46.12`.
+- Activation Cloudinary/Vercel décrite dans [AUDIO_ZIKR.md](AUDIO_ZIKR.md) ;
+  le preset signé audio reste obligatoire.
+
 ## 2026-10-27 — Commandes, compte et migration Firebase
 
 - Demandes WhatsApp à prix et vendeur vérifiés côté serveur, références de reprise,

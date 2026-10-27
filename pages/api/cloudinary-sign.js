@@ -31,10 +31,12 @@ function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, 
 
 export default async function handler(req, res) {
   setCors(req, res);
+  res.setHeader("Cache-Control", "no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, folder, groupId, mediaType = "image" } = parseBody(req);
+  const { idToken, folder, groupId, mediaType = "image", action = "sign" } = parseBody(req);
+  if (!["sign", "check"].includes(action)) return res.status(400).json({ error: "Action inconnue." });
   if (mediaType !== "image" && mediaType !== "video") {
     return res.status(400).json({ error: "Type de fichier non autorisé." });
   }
@@ -90,17 +92,19 @@ export default async function handler(req, res) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey    = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  if (!cloudName || !apiKey || !apiSecret) {
-    return res.status(500).json({ error: "Cloudinary non configuré (variables d'environnement manquantes)." });
-  }
 
   // Les limites doivent être définies dans un preset signé. Images et
   // vocaux utilisent des politiques distinctes ; sans preset, aucun upload.
   const uploadPreset = mediaType === "video"
     ? process.env.CLOUDINARY_AUDIO_UPLOAD_PRESET
     : process.env.CLOUDINARY_IMAGE_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET;
-  if (!uploadPreset) {
-    return res.status(503).json({ error: "L'envoi de ce type de fichier est temporairement indisponible." });
+  const configured = Boolean(cloudName && apiKey && apiSecret && uploadPreset);
+  const unavailable = mediaType === "video"
+    ? "L’envoi de vocaux n’est pas activé pour le moment. Contactez l’administration ; les messages écrits restent disponibles."
+    : "L’envoi d’images n’est pas activé pour le moment. Contactez l’administration.";
+  if (action === "check") return res.json({ available: configured, ...(!configured ? { code: "UPLOAD_NOT_CONFIGURED", message: unavailable } : {}) });
+  if (!configured) {
+    return res.status(503).json({ error: unavailable, code: "UPLOAD_NOT_CONFIGURED" });
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
