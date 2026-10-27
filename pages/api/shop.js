@@ -21,7 +21,7 @@ const { app } = require("../../server/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
-const { notifyAllUsers } = require("../../server/notify");
+const { publishAndNotify } = require("../../server/notify");
 const { newProductNotification } = require("../../lib/notifyTemplates");
 
 export default async function handler(req, res) {
@@ -195,18 +195,13 @@ export default async function handler(req, res) {
         vendeurAvatar: shopLogo,     // logo de la boutique (pour le Marché)
         updatedAt: Date.now()
       };
-      await db.ref("det_produits/" + key).update(record);
       if (isNew) {
-        // Diffusion à TOUS les utilisateurs connus — best-effort, jamais
-        // bloquant pour la réponse au vendeur (même principe que
-        // pages/api/admin.js save-secret/save-book).
-        await notifyAllUsers(db, {
+        await publishAndNotify(db, "det_produits/" + key, record, {
           ...newProductNotification({ vendorName: shopName, productName: nom }),
-          senderName: shopName,
-          targetUrl: "/?item=" + key,
+          senderName: shopName, targetUrl: "/?item=" + key,
           meta: { key, tagSuffix: key },
-        }).catch((e) => reportError("shop:notifyAllUsers", e, { action: "save-product", key }));
-      }
+        }, { eventId: "product:" + key });
+      } else await db.ref("det_produits/" + key).update(record);
       return res.status(200).json({ ok: true, key, product: { _key: key, ...record } });
     }
 

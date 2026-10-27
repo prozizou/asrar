@@ -11,9 +11,15 @@
 //   FIREBASE_DB_URL            URL de la Realtime Database
 
 const admin = require("firebase-admin");
+const { emulatorConfig } = require("../lib/emulatorConfig");
 
 function app() {
+  const emulator = emulatorConfig(process.env);
   if (admin.apps.length) return admin;
+  if (emulator) {
+    admin.initializeApp(emulator);
+    return admin;
+  }
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT manquant (JSON brut ou base64).");
   const txt = raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");

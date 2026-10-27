@@ -133,7 +133,7 @@ async function sendSessionReminders(db, now, stats) {
         });
         const membersSnap = await db.ref("zikr_members/" + gid).once("value");
         const uids = new Set();
-        membersSnap.forEach((m) => uids.add(m.key));
+        membersSnap.forEach((m) => { uids.add(m.key); });
         if (v.ownerUid) uids.add(v.ownerUid);
         await Promise.all([...uids].map((uid) => pushToUser(db, uid, payload, stats)));
         await db.ref("zikr_groups/" + gid).update({ sessionReminderSent: true });

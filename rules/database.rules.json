@@ -3,6 +3,11 @@
     ".read": false,
     ".write": false,
 
+    "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
+    "notifications": { "$uid": { ".indexOn": ["createdAt"] } },
+    "push_subscriptions": { "$uid": { ".indexOn": ["updatedAt"] } },
+    "fcm_devices": { "$uid": { ".indexOn": ["updatedAt"] } },
+
     "sourate": { ".read": "auth != null" },
     "versetRef": { ".read": "auth != null" },
     "data": {

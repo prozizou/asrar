@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-10-27 — Tests authentifiés et notifications persistantes
+
+- Suite Playwright isolée sur les émulateurs Auth/RTDB : rôles, contenus
+  protégés, règles Firebase, session navigateur et livraison de notifications.
+- File persistante pour les publications et messages : diffusion par pages,
+  baux concurrents, reprises par appareil et relance des échecs réservée aux
+  administrateurs. Publication et création de tâche atomiques.
+- Correction des itérations Firebase qui tronquaient notifications,
+  commandes, listes administrateur et destinataires des rappels après le
+  premier élément. Le simulateur de tests reproduit désormais ce comportement.
+- Workflow de reprise de la file, contrôles CI authentifiés et guide
+  d'exploitation [NOTIFICATIONS.md](NOTIFICATIONS.md). SW `v46.8`.
+
 ## Session 7 — Liens partageables (deep links) & Parrainage
 
 Deux ajouts, documentés en détail dans **`PARTAGE_ET_PARRAINAGE.md`**.

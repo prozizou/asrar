@@ -25,7 +25,8 @@ const { app } = require("../../server/grant");
 const { SECRET_CATS } = require("../../server/sources");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
 const { reportError } = require("../../server/log");
-const { notifyAllUsers, notifyUsers } = require("../../server/notify");
+const { notificationHealth, retryNotification } = require("../../server/notificationAdmin");
+const { notifyAllUsers, notifyUsers, publishAndNotify } = require("../../server/notify");
 const { secretNotification, documentNotification, newShopNotification, accessGrantedNotification } = require("../../lib/notifyTemplates");
 
 const DAY_MS = 86400000;
@@ -57,6 +58,11 @@ export default async function handler(req, res) {
 
   try {
     switch (action) {
+      case "notification-jobs": return res.json(await notificationHealth(db));
+      case "retry-notification": {
+        const result = await retryNotification(db, body.jobId);
+        return res.status(result.status).json(result.error ? { error: result.error } : { ok: true });
+      }
       case "stats":          return res.json(await getStats(db));
 
       case "list-secrets": {
@@ -72,21 +78,14 @@ export default async function handler(req, res) {
         const isNew = !body.key; // édition d'un Secret existant → jamais renotifié
         const rec = { faida, sirr: str(body.sirr, 8000), img: safeUrl(body.img, 500), updatedAt: Date.now() };
         const key = body.key || db.ref("db_sirr_" + cat).push().key;
-        await db.ref("db_sirr_" + cat + "/" + key).update(rec);
         if (isNew) {
-          // Diffusion à tous les utilisateurs connus (aucune fonctionnalité
-          // d'envoi ciblé pour ce module — voir server/notify.js
-          // notifyAllUsers). Attendue (pas fire-and-forget) : une fonction
-          // serverless peut être gelée dès la réponse envoyée, un envoi non
-          // attendu risquerait de ne jamais aboutir ; le .catch() évite pour
-          // autant qu'un échec de diffusion fasse échouer la publication.
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "db_sirr_" + cat + "/" + key, rec, {
             ...secretNotification({ senderName: BROADCAST_SENDER, preview: faida }),
             senderName: BROADCAST_SENDER,
             targetUrl: "/asrar?item=" + key + "&cat=" + cat,
             meta: { cat, key, tagSuffix: cat + ":" + key },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-secret", key }));
-        }
+          }, { eventId: "secret:" + cat + ":" + key });
+        } else await db.ref("db_sirr_" + cat + "/" + key).update(rec);
         return res.json({ ok: true, key });
       }
       case "delete-secret": {
@@ -106,16 +105,13 @@ export default async function handler(req, res) {
           img: safeUrl(body.img, 500), pdf: safeUrl(body.pdf, 800), updatedAt: Date.now()
         };
         const key = body.key || db.ref("almaqtab").push().key;
-        await db.ref("almaqtab/" + key).update(rec);
         if (isNew) {
-          // Même diffusion broadcast que save-secret ci-dessus.
-          await notifyAllUsers(db, {
+          await publishAndNotify(db, "almaqtab/" + key, rec, {
             ...documentNotification({ senderName: BROADCAST_SENDER, preview: titre }),
-            senderName: BROADCAST_SENDER,
-            targetUrl: "/bibliotheque?item=" + key,
+            senderName: BROADCAST_SENDER, targetUrl: "/bibliotheque?item=" + key,
             meta: { key, tagSuffix: key },
-          }).catch((e) => reportError("admin:notifyAllUsers", e, { action: "save-book", key }));
-        }
+          }, { eventId: "book:" + key });
+        } else await db.ref("almaqtab/" + key).update(rec);
         return res.json({ ok: true, key });
       }
       case "delete-book": {
@@ -208,7 +204,7 @@ export default async function handler(req, res) {
       case "list-orders": {
         const snap = await db.ref("orders").once("value");
         const out = [];
-        snap.forEach((u) => u.forEach((o) => out.push({ _uid: u.key, _key: o.key, ...(o.val() || {}) })));
+        snap.forEach((u) => { u.forEach((o) => { out.push({ _uid: u.key, _key: o.key, ...(o.val() || {}) }); }); });
         out.sort((a, b) => (b.at || 0) - (a.at || 0));
         return res.json({ items: out.slice(0, 200) });
       }
@@ -339,7 +335,7 @@ async function getStats(db) {
 
 function uniqUsers(snaps) {
   const set = new Set();
-  snaps.forEach((s) => s.forEach((c) => set.add(c.key)));
+  snaps.forEach((s) => { s.forEach((c) => { set.add(c.key); }); });
   return set.size;
 }
 async function countChildren(db, path) {
@@ -348,13 +344,13 @@ async function countChildren(db, path) {
 async function readAll(db, path) {
   const snap = await db.ref(path).once("value");
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
   return out;
 }
 async function readFeed(db, path, n) {
   const snap = await db.ref(path).orderByChild("at").limitToLast(n).once("value");
   const out = [];
-  snap.forEach((c) => out.push({ _key: c.key, ...(c.val() || {}) }));
+  snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
   return out.reverse(); // plus récent d'abord
 }
 

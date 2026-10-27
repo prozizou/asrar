@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       // sans compteur séparé susceptible de diverger après une panne/purge.
       const listSnap = await base.orderByChild("createdAt").limitToLast(MAX_PER_USER).once("value");
       const items = [];
-      listSnap.forEach((c) => items.push({ id: c.key, ...c.val() }));
+      listSnap.forEach((c) => { items.push({ id: c.key, ...c.val() }); });
       items.reverse(); // limitToLast renvoie du plus ancien au plus récent → on veut l'inverse
       return res.status(200).json({ items: items.slice(0, LIST_LIMIT), unread: items.filter((item) => item.read !== true).length });
     }

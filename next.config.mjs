@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 import { buildCsp } from './lib/csp.js';
+import { emulatorConfig } from './lib/emulatorConfig.js';
 
 // L'API vit désormais DANS cette app (pages/api/* + server/*) : plus de proxy
 // externe. On conserve le lien court /s (aperçu Open Graph + redirection +
@@ -37,7 +38,8 @@ const LEGACY = [
 // Content-Security-Policy — définition dans lib/csp.js (source unique).
 // Voir son en-tête : un nonce par requête a été essayé puis abandonné (a
 // cassé signInWithPopup en production, erreur Firebase auth/internal-error).
-const CSP = buildCsp();
+const emulator = emulatorConfig(process.env);
+const CSP = buildCsp({ emulators: !!emulator });
 
 const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy', value: CSP },
@@ -53,6 +55,8 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig = {
+  distDir: emulator ? '.next-auth' : '.next',
+  ...(emulator ? { typescript: { tsconfigPath: 'tsconfig.auth.json' } } : {}),
   reactStrictMode: true,
 
   // --- Minification / poids des bundles ---

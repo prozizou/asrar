@@ -97,10 +97,15 @@ Authorization. La branche ne modifie pas le plan payant ni sa facturation.
 
 ## Points restant à traiter séparément
 
+- Le deuxième lot ajoute les tests Auth/RTDB locaux et la file de
+  notifications. Déployer ses index et configurer son ordonnanceur selon
+  [NOTIFICATIONS.md](NOTIFICATIONS.md) ; vérifier Web Push et Android sur
+  des appareils de recette.
 - Vérification du manifeste Android fusionné et recette microphone sur
   appareil ; les permissions ont été ajoutées au manifeste source.
-- Projet Firebase de préproduction et tests authentifiés de bout en bout.
-- File de notifications à concurrence bornée, pagination et quotas partagés.
+- Projet Firebase de préproduction, recette OAuth Google et parcours
+  authentifiés supplémentaires au-delà de la suite d'émulation.
+- Quotas partagés entre toutes les instances serveur.
 - Droits des fichiers Drive/Meet et modèle commercial de temps réel.
 - Parcours compte, données personnelles, modération et amélioration visuelle.
 - Avis transitif modéré `uuid` : documenter les appels réellement utilisés et

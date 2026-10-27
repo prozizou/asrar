@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   try {
     const snap = await app().database().ref("orders/" + user.uid).orderByChild("at").once("value");
     const items = [];
-    snap.forEach((c) => items.push({ _key: c.key, ...(c.val() || {}) }));
+    snap.forEach((c) => { items.push({ _key: c.key, ...(c.val() || {}) }); });
     items.reverse(); // plus récent d'abord
     return res.status(200).json({ items });
   } catch (e) {

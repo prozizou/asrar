@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.lib.json",
     "test:e2e": "playwright test",
+    "test:auth": "node scripts/test-auth.cjs",
     "cap:sync": "cap sync android",
     "android:apk": "cap sync android && cd android && ./gradlew assembleDebug assembleRelease",
     "android:aab": "cap sync android && cd android && ./gradlew bundleRelease"
@@ -23,6 +24,7 @@
     "@capacitor/push-notifications": "^8.1.2",
     "@capgo/capacitor-social-login": "^8.5.12",
     "@fontsource/carlito": "^5.3.0",
+    "@vercel/functions": "^3.10.4",
     "clipper-lib": "^6.4.2",
     "docx": "^8.5.0",
     "dompurify": "^3.4.17",
@@ -44,8 +46,10 @@
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.28.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.28",
+    "firebase-tools": "^15.34.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.12"
   },
@@ -54,6 +58,9 @@
     "@grpc/grpc-js": "^1.14.5",
     "postcss": "^8.5.26",
     "brace-expansion@^1.0.0": "^1.1.21",
-    "brace-expansion@^5.0.0": "^5.0.12"
+    "brace-expansion@^5.0.0": "^5.0.12",
+    "@vercel/cli-config": {
+      "zod": "^4.6.6"
+    }
   }
 }

@@ -38,20 +38,27 @@ export function database(initial = {}) {
     return {
       key, val: () => clone(stored), exists: () => stored != null,
       numChildren: () => Object.keys(stored || {}).length,
-      forEach(fn) { for (const [k, v] of Object.entries(stored || {})) if (fn(snapshot(v, k)) === true) break; },
+      forEach(fn) { for (const [k, v] of Object.entries(stored || {})) if (fn(snapshot(v, k))) return true; return false; },
     };
   }
-  function ref(p, query = {}) {
+  function ref(p = '', query = {}) {
     return {
       key: split(p).at(-1), child: (k) => ref(p + '/' + k),
       once: async () => {
         check(p, 'read');
         let value = read(p);
-        if (query.order || query.last) {
-          let entries = Object.entries(value || {}).sort((a, b) =>
-            (a[1]?.[query.order] || 0) - (b[1]?.[query.order] || 0) || a[0].localeCompare(b[0]));
+        if (query.order || query.last || query.first) {
+          const field = (entry) => query.order === '.key' ? entry[0] : entry[1]?.[query.order] ?? null;
+          let entries = Object.entries(value || {}).sort((a, b) => {
+            const left = field(a), right = field(b);
+            return (typeof left === 'string' ? left.localeCompare(right) : (left || 0) - (right || 0)) || a[0].localeCompare(b[0]);
+          });
           if ('equal' in query) entries = entries.filter(([, v]) => v?.[query.order] === query.equal);
+          if ('start' in query) entries = entries.filter((entry) => field(entry) >= query.start);
+          if ('after' in query) entries = entries.filter((entry) => field(entry) > query.after);
+          if ('end' in query) entries = entries.filter((entry) => field(entry) <= query.end);
           if (query.last) entries = entries.slice(-query.last);
+          if (query.first) entries = entries.slice(0, query.first);
           value = Object.fromEntries(entries);
         }
         return snapshot(value, split(p).at(-1));
@@ -78,8 +85,13 @@ export function database(initial = {}) {
         return value === undefined ? child : child.set(value).then(() => child);
       },
       orderByChild: (key) => ref(p, { ...query, order: key }),
+      orderByKey: () => ref(p, { ...query, order: '.key' }),
       limitToLast: (n) => ref(p, { ...query, last: n }),
+      limitToFirst: (n) => ref(p, { ...query, first: n }),
       equalTo: (v) => ref(p, { ...query, equal: v }),
+      startAt: (v) => ref(p, { ...query, start: v }),
+      startAfter: (v) => ref(p, { ...query, after: v }),
+      endAt: (v) => ref(p, { ...query, end: v }),
     };
   }
   return { ref, read, failNext: (p, operation) => failures.push({ path: p, operation }) };

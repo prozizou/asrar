@@ -1,11 +1,12 @@
 const MAX_PER_USER = 200;
 
-async function storeNotification(db, uid, record) {
+async function storeNotification(db, uid, record, notificationId = null) {
   const ref = db.ref("notifications/" + uid);
-  const key = ref.push().key;
+  const key = notificationId || ref.push().key;
   // Insertion et purge partagent la même transaction. Une publication
   // concurrente ne peut pas être effacée par une lecture-écriture périmée.
   await ref.transaction((current) => {
+    if (current?.[key]) return current; // conserve notamment le statut lu
     const items = { ...(current || {}), [key]: record };
     const keys = Object.keys(items).sort((a, b) =>
       (items[a].createdAt || 0) - (items[b].createdAt || 0) || a.localeCompare(b));
