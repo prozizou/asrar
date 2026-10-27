@@ -16,9 +16,23 @@ function setCors(req, res, methods = "POST, OPTIONS") {
 
 // Body JSON robuste (objet déjà parsé OU chaîne brute).
 function parseBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  if (typeof req.body === "string") { try { return JSON.parse(req.body); } catch { return {}; } }
+  if (req.body && typeof req.body === "object" && !Array.isArray(req.body)) return req.body;
+  if (typeof req.body === "string") {
+    try {
+      const body = JSON.parse(req.body);
+      return body && typeof body === "object" && !Array.isArray(body) ? body : {};
+    } catch { return {}; }
+  }
   return {};
+}
+
+// Une clé désigne un seul enfant Firebase, jamais un chemin ou une valeur
+// convertie implicitement en chaîne. Ne pas « nettoyer » un identifiant :
+// deux entrées différentes pourraient alors désigner le même document.
+function isValidKey(value) {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= 768 &&
+    !/[.#$\[\]\/\u0000-\u001F\u007F]/.test(value);
 }
 
 // Caractères interdits dans une URL affichée : espaces, quotes, chevrons,
@@ -37,4 +51,4 @@ function safeUrl(v, max = 800) {
   return s;
 }
 
-module.exports = { setCors, parseBody, safeUrl };
+module.exports = { setCors, parseBody, safeUrl, isValidKey };

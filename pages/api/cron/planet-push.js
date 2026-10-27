@@ -30,6 +30,7 @@
 // tombent hors fenêtre et aucun push n'est envoyé.
 
 const webpush = require("web-push");
+const { sendWebPush } = require("../../../server/webPush");
 const { app } = require("../../../server/grant");
 const { computePday, currentHour, planetaryNotification, buildHourList } = require("../../../lib/planete");
 const { dueWebAlarms, planetFromSlug } = require("../../../lib/planetWebAlarms");
@@ -105,7 +106,7 @@ async function processSubscription(db, uid, key, sub, now) {
 
   const ref = db.ref(`push_subscriptions/${uid}/${key}`);
   try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, {
+    await sendWebPush({ endpoint: sub.endpoint, keys: sub.keys }, payload, {
       TTL: Math.max(0, Math.floor((state.validUntil.getTime() - Date.now()) / 1000)),
     });
     await ref.update({ lastPlanet: cur.planet, lastStateKey: state.stateKey, lastSentAt: Date.now() });
@@ -207,7 +208,7 @@ async function processUserWebAlarms(db, uid, enabled, now) {
 
 async function sendWebAlarm(db, uid, sub, payload) {
   try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
+    await sendWebPush({ endpoint: sub.endpoint, keys: sub.keys }, payload);
   } catch (e) {
     if (e && (e.statusCode === 404 || e.statusCode === 410)) {
       await db.ref(`push_subscriptions/${uid}/${sub.key}`).remove();

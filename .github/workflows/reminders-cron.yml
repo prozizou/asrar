@@ -1,0 +1,31 @@
+name: Session reminders
+
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: session-reminders
+  cancel-in-progress: false
+
+jobs:
+  reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Déclencher les rappels de session
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ASRAR_SITE_URL: ${{ vars.ASRAR_SITE_URL || 'https://www.asrarpro.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo '::error::Configurer CRON_SECRET, identique à celui du serveur.'
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "${ASRAR_SITE_URL%/}/api/cron/reminders"

@@ -26,6 +26,7 @@ const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const { isValidSubscription } = require("../../server/webPush");
 
 const RATE_LIMIT = { max: 10, windowMs: 60_000 };
 
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
     if (action === "subscribe") {
       const ep = subscription && subscription.endpoint;
       const keys = subscription && subscription.keys;
-      if (!ep || !keys || !keys.p256dh || !keys.auth) {
+      if (!isValidSubscription(subscription)) {
         return res.status(400).json({ error: "Abonnement push invalide." });
       }
       // Optionnelles (voir l'en-tête) : ni l'une ni l'autre ne bloque

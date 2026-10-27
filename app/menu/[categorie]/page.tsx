@@ -17,13 +17,13 @@ export function generateStaticParams() {
   return CATEGORIES.map((c) => ({ categorie: c.slug }));
 }
 
-export function generateMetadata({ params }: { params: { categorie: string } }) {
-  const cat = findCategory(params.categorie);
+export async function generateMetadata({ params }: { params: Promise<{ categorie: string }> }) {
+  const cat = findCategory((await params).categorie);
   return { title: cat ? `${cat.title} — ASRAR PRO` : 'ASRAR PRO' };
 }
 
-export default function CategoryPage({ params }: { params: { categorie: string } }) {
-  const cat = findCategory(params.categorie);
+export default async function CategoryPage({ params }: { params: Promise<{ categorie: string }> }) {
+  const cat = findCategory((await params).categorie);
   if (!cat) notFound();
 
   return (

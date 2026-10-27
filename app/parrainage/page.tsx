@@ -7,7 +7,8 @@
 // le format renvoyé par pages/api/referral.js (action "me") — lib/share.js
 // reste en .js (imports non typés, cf. app/menu/page.tsx pour le même choix).
 import './parrainage.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 import { me, share as shareApp, copy, post, toast } from '@/lib/share';
 import { useAccess } from '@/components/AccessProvider';
@@ -44,6 +45,7 @@ export default function ParrainagePage() {
   const [redeeming, setRedeeming] = useState(false);
   const [error, setError] = useState('');
   const [rulesOpen, setRulesOpen] = useState(false);
+  const redemptionId = useRef<string | null>(null);
 
   const load = useCallback(async (force?: boolean) => {
     try {
@@ -80,17 +82,24 @@ export default function ParrainagePage() {
   };
 
   const convertir = async () => {
-    if (!info) return;
+    if (!info || redeeming) return;
     if (!window.confirm(`Convertir ${info.pointsForReward} points en ${info.rewardDays} jours d'abonnement ?`)) return;
     setRedeeming(true);
     setMsg('Activation en cours…');
     try {
-      const r = await post('redeem');
+      const storageKey = 'referral_redemption_' + auth.currentUser?.uid;
+      try { redemptionId.current ||= localStorage.getItem(storageKey); } catch {}
+      redemptionId.current ||= crypto.randomUUID();
+      try { localStorage.setItem(storageKey, redemptionId.current); } catch {}
+      const r = await post('redeem', { requestId: redemptionId.current });
+      try { localStorage.removeItem(storageKey); } catch {}
+      redemptionId.current = null;
       invalidate(); // équivalent de invalidateAccessCache()
       setMsg('✅ Abonnement activé jusqu\'au ' + new Date(r.expiresAt).toLocaleDateString('fr-FR') + '.');
       load(true);
     } catch (e: any) {
       setMsg('❌ ' + (e.message || e));
+    } finally {
       setRedeeming(false);
     }
   };

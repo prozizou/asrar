@@ -1,5 +1,6 @@
 // Page 404 (convention app router) — appliquée automatiquement pour toute
 // route inexistante, avec la même identité visuelle que le reste de l'app.
+import Link from 'next/link';
 export default function NotFound() {
   return (
     <div className="container" style={{ maxWidth: 480 }}>
@@ -8,9 +9,9 @@ export default function NotFound() {
           <h1>404</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Cette page n'existe pas ou plus.</p>
         </div>
-        <a href="/" className="back-btn">
+        <Link href="/" className="back-btn">
           ← Accueil
-        </a>
+        </Link>
       </div>
     </div>
   );

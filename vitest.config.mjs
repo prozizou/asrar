@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
-// Tests unitaires pour la logique pure de lib/ (aucune dépendance React ni
-// Firebase dans les fichiers testés — voir lib/*.test.js). Volontairement
-// minimal : pas de jsdom, on ne teste pas de composants ici.
+// Logique pure de lib/ et régressions des API/services dans tests/.
+// Les frontières Firebase/réseau sont simulées ; aucun service de production
+// n'est contacté et aucun compte réel n'est nécessaire.
 export default defineConfig({
   resolve: {
     alias: {
@@ -11,6 +11,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['lib/**/*.test.js'],
+    include: ['lib/**/*.test.js', 'tests/**/*.test.js'],
   },
 });

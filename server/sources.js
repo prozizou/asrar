@@ -9,6 +9,11 @@
 //     (le paiement, c'est le PRIX DU PRODUIT, pas un abonnement).
 
 const SECRET_CATS = ["deblocage", "domptage", "ilham", "protection", "ouverture"];
+const PRODUCT_FIELDS = [
+  "produit", "Prix", "devise", "Image", "images", "chain", "vendeur", "vendeurAvatar",
+  "uid", "vendeurId", "vendeurLocation", "vendeurVerifie", "vendeurNote", "vendeurSpecialty",
+  "vendeurBio", "createdAt", "updatedAt",
+];
 
 const SOURCES = {
   // Secrets Mystiques : un nœud par configuration. Champ payant = "sirr".
@@ -28,6 +33,8 @@ const SOURCES = {
   // mais visibles dans la fiche (get-content) à tout utilisateur CONNECTÉ (authOnly).
   product: {
     ref: () => "det_produits",
+    publicFields: PRODUCT_FIELDS,
+    detailFields: [...PRODUCT_FIELDS, "description"],
     secretFields: ["description", "number", "email"],
     // privateFields : JAMAIS renvoyés au client, même par get-content (fiche détail).
     // Les coordonnées du vendeur (téléphone, e-mail) restent côté serveur ; le
@@ -69,7 +76,8 @@ const SOURCES = {
   // qui lit le lien directement une fois le crédit de minutes vérifié.
   formation: {
     ref: () => "formations",
-    secretFields: ["meetLink"]
+    secretFields: ["meetLink"],
+    listOnly: true
   }
 };
 
@@ -81,10 +89,15 @@ function listFields(src, value) {
   const v = value || {};
   const out = {};
   for (const k of Object.keys(v)) {
-    const ok = src.publicFields ? src.publicFields.includes(k) : !src.secretFields.includes(k);
+    const ok = (!src.publicFields || src.publicFields.includes(k)) && !src.secretFields.includes(k);
     if (ok) out[k] = v[k];
   }
   return out;
 }
 
-module.exports = { SOURCES, SECRET_CATS, listFields };
+function getSource(kind) {
+  return typeof kind === "string" && Object.prototype.hasOwnProperty.call(SOURCES, kind)
+    ? SOURCES[kind] : null;
+}
+
+module.exports = { SOURCES, SECRET_CATS, listFields, getSource };

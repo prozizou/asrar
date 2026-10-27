@@ -4,10 +4,8 @@
 //
 // TROIS effets par appel, jamais l'un sans les autres :
 //   1. Persistance in-app : notifications/{uid}/{id} = { type, title, body,
-//      senderName, targetUrl, createdAt, read, meta? } + un compteur non-lu
-//      dénormalisé (notifications_meta/{uid}/unread) — évite de recompter
-//      toute la liste à chaque affichage du badge (pages/api/notifications.js
-//      action="list" le renvoie tel quel).
+//      senderName, targetUrl, createdAt, read, meta? }. Le badge est calculé
+//      depuis les 200 notifications conservées, sans compteur divergent.
 //   2. Push Web (VAPID) best-effort (même infra que pages/api/zikr.js,
 //      pages/api/cron/reminders.js, pages/api/cron/planet-push.js — dupliqué
 //      une 4e fois ici plutôt que factorisé avec eux, même raisonnement que
@@ -29,6 +27,7 @@
 // dépendance.
 
 const webpush = require("web-push");
+const { sendWebPush } = require("./webPush");
 const { reportError } = require("./log");
 const { app } = require("./grant");
 const { channelIdForNotifType, channelById } = require("../lib/pushChannels");
@@ -38,7 +37,7 @@ const { channelIdForNotifType, channelById } = require("../lib/pushChannels");
 // plutôt qu'un cron de nettoyage séparé : un utilisateur actif n'accumule
 // jamais un historique illimité, sans tâche planifiée supplémentaire à
 // maintenir pour une première version.
-const MAX_PER_USER = 200;
+const { storeNotification, MAX_PER_USER } = require("./notificationStore");
 
 function configureVapid() {
   const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -61,7 +60,7 @@ async function sendPushToUid(db, uid, payload) {
     const sub = subSnap.val() || {};
     if (!sub.endpoint || !sub.keys) return;
     tasks.push(
-      webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
+      sendWebPush({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) {
           await db.ref("push_subscriptions/" + uid + "/" + key).remove();
         } else {
@@ -115,23 +114,6 @@ async function sendFcmToUid(db, uid, notif, tag) {
   await Promise.all(tasks);
 }
 
-// Purge les plus anciennes notifications d'un utilisateur au-delà de
-// MAX_PER_USER — appelée après chaque écriture, jamais bloquante pour
-// l'appelant principal (voir notifyUsers).
-async function pruneOldest(db, uid) {
-  const snap = await db.ref("notifications/" + uid)
-    .orderByChild("createdAt")
-    .limitToLast(MAX_PER_USER + 1)
-    .once("value");
-  if (snap.numChildren() <= MAX_PER_USER) return;
-  const keys = [];
-  snap.forEach((c) => keys.push(c.key));
-  const toRemove = keys.slice(0, keys.length - MAX_PER_USER);
-  const updates = {};
-  toRemove.forEach((k) => { updates[k] = null; });
-  await db.ref("notifications/" + uid).update(updates);
-}
-
 /**
  * Notifie UN ensemble d'utilisateurs déjà identifiés par uid (message Zikr
  * collectif : les autres membres du groupe ; toute future notification
@@ -172,12 +154,7 @@ async function notifyUsers(db, uids, notif) {
   const vapidReady = configureVapid();
 
   await Promise.all(targets.map(async (uid) => {
-    const ref = db.ref("notifications/" + uid).push();
-    await ref.set(record);
-    // Compteur non-lu : transaction (concurrence possible si l'utilisateur
-    // reçoit plusieurs notifications au même instant, ex. rattrapage cron).
-    await db.ref("notifications_meta/" + uid + "/unread").transaction((c) => (c || 0) + 1);
-    await pruneOldest(db, uid).catch(() => {}); // best-effort, jamais bloquant
+    await storeNotification(db, uid, record);
     if (vapidReady) await sendPushToUid(db, uid, pushPayload).catch(() => {});
     await sendFcmToUid(db, uid, notif, tag).catch(() => {});
   }));

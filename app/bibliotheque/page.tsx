@@ -1,4 +1,5 @@
 'use client';
+import { reserveExternalWindow } from '@/lib/externalWindow';
 // Module « Bibliothèque Almaqtab » — port de bibliotheque/bibliotheque.html.
 // Grille de livres (via /api/list-content kind=book), social (likes +
 // commentaires via /api/book-social), ouverture du PDF (paywall), partage,
@@ -81,18 +82,24 @@ export default function BibliothequePage() {
 
   const openBook = useCallback(
     async (key: string) => {
-      const ok = await ensureAccess();
-      if (!ok) return;
+      const destination = reserveExternalWindow();
+      if (!destination) {
+        alert("Autorisez l'ouverture d'une nouvelle fenêtre, puis réessayez.");
+        return;
+      }
       try {
+        const ok = await ensureAccess();
+        if (!ok) { destination.close(); return; }
         const { item } = await apiPost('get-content', { kind: 'book', key });
         const link = driveDirectLink(item.pdf || item.pdfUrl || '');
         if (!link) {
+          destination.close();
           alert('Lien du document indisponible.');
           return;
         }
-        const w = window.open(link, '_blank', 'noopener');
-        if (!w) window.location.href = link;
+        destination.navigate(link);
       } catch (e: any) {
+        destination.close();
         if (e.status === 403) openGate();
         else alert('Erreur : ' + e.message);
       }

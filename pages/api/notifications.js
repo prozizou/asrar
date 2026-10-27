@@ -12,7 +12,8 @@
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { setCors, parseBody } = require("../../server/http");
+const { setCors, parseBody, isValidKey } = require("../../server/http");
+const { MAX_PER_USER } = require("../../server/notificationStore");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 
@@ -39,35 +40,29 @@ export default async function handler(req, res) {
 
   try {
     if (action === "list") {
-      const [listSnap, unreadSnap] = await Promise.all([
-        base.orderByChild("createdAt").limitToLast(LIST_LIMIT).once("value"),
-        db.ref("notifications_meta/" + user.uid + "/unread").once("value"),
-      ]);
+      // Le badge est dérivé des mêmes documents que la liste (200 maximum),
+      // sans compteur séparé susceptible de diverger après une panne/purge.
+      const listSnap = await base.orderByChild("createdAt").limitToLast(MAX_PER_USER).once("value");
       const items = [];
       listSnap.forEach((c) => items.push({ id: c.key, ...c.val() }));
       items.reverse(); // limitToLast renvoie du plus ancien au plus récent → on veut l'inverse
-      return res.status(200).json({ items, unread: Math.max(0, unreadSnap.val() || 0) });
+      return res.status(200).json({ items: items.slice(0, LIST_LIMIT), unread: items.filter((item) => item.read !== true).length });
     }
 
     if (action === "markRead") {
-      if (!notifId) return res.status(400).json({ error: "notifId requis." });
+      if (!isValidKey(notifId)) return res.status(400).json({ error: "Identifiant de notification invalide." });
       const ref = base.child(notifId);
       const snap = await ref.once("value");
       if (!snap.exists()) return res.status(404).json({ error: "Notification introuvable." });
-      if (snap.val().read !== true) {
-        await ref.update({ read: true });
-        await db.ref("notifications_meta/" + user.uid + "/unread")
-          .transaction((c) => Math.max(0, (c || 0) - 1));
-      }
+      await ref.transaction((item) => item ? { ...item, read: true } : null);
       return res.status(200).json({ ok: true });
     }
 
     if (action === "markAllRead") {
-      const snap = await base.orderByChild("read").equalTo(false).once("value");
-      const updates = {};
-      snap.forEach((c) => { updates[c.key + "/read"] = true; });
-      if (Object.keys(updates).length > 0) await base.update(updates);
-      await db.ref("notifications_meta/" + user.uid + "/unread").set(0);
+      await base.transaction((items) => {
+        if (!items) return null;
+        return Object.fromEntries(Object.entries(items).map(([key, item]) => [key, { ...item, read: true }]));
+      });
       return res.status(200).json({ ok: true });
     }
 

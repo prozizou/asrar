@@ -37,8 +37,10 @@
 // components/DailyContentCard.js — voir lib/reminders.js.)
 
 const webpush = require("web-push");
+const { sendWebPush } = require("../../../server/webPush");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
+const { effectiveAccess } = require("../../../lib/accessStatus");
 const { authorized } = require("../../../server/cronAuth");
 const {
   shouldSendSessionReminder,
@@ -94,7 +96,7 @@ async function pushToUser(db, uid, payload, stats) {
     const sub = subSnap.val() || {};
     if (!sub.endpoint || !sub.keys) return;
     tasks.push(
-      webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
+      sendWebPush({ endpoint: sub.endpoint, keys: sub.keys }, payload).catch(async (e) => {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) {
           await db.ref("push_subscriptions/" + uid + "/" + key).remove();
           stats.removed++;
@@ -156,10 +158,20 @@ async function sendSessionReminders(db, now, stats) {
 // compte Firebase Auth ne correspond à l'e-mail : accès jamais accordé à un
 // compte réel, ex. saisie erronée côté admin).
 async function sendRenewalReminders(db, now, stats) {
-  const snap = await db.ref("purchased_user").once("value");
+  const [snap, allowedSnap] = await Promise.all([
+    db.ref("purchased_user").once("value"), db.ref("allowedUsers").once("value"),
+  ]);
+  const allowed = allowedSnap.val() || {};
   const tasks = [];
   snap.forEach((doc) => {
-    const p = doc.val() || {};
+    const stored = doc.val() || {};
+    const access = effectiveAccess(stored, allowed[doc.key], now.getTime());
+    // Si tout est expiré, conserver la dernière échéance finie pour l'avis
+    // d'expiration ; un droit actif à vie ne doit jamais être relancé.
+    const expiresAt = access.allowed ? access.expiresAt : Math.max(
+      typeof stored.expiresAt === "number" ? stored.expiresAt : 0,
+      Number(stored.referralAccess?.expiresAt) || 0);
+    const p = { ...stored, expiresAt: expiresAt || null };
     // emailKey() (server/access.js) : '.' → ',' — décodage identique à
     // admin-asrar-pro (api/users.js, action="list_access").
     const email = String(doc.key).replace(/,/g, ".");

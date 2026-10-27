@@ -7,7 +7,7 @@
 
 const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
-const { SOURCES, listFields } = require("../../server/sources");
+const { getSource, listFields } = require("../../server/sources");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
 const { vendorKey } = require("../../lib/market");
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
   const { idToken, kind, cat } = parseBody(req);
-  const src = SOURCES[kind];
+  const src = getSource(kind);
   if (!src) return res.status(400).json({ error: "Type de contenu inconnu." });
   if (src.cats && !src.cats.includes(cat))
     return res.status(400).json({ error: "Configuration inconnue." });

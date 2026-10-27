@@ -23,6 +23,7 @@ import './formation.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
+import { reserveExternalWindow } from '@/lib/externalWindow';
 import { openFormationBooking } from '@/lib/whatsapp';
 import { pricePerMinuteOf, formationMinutesPrice } from '@/lib/formation';
 import { formatPrice } from '@/lib/market';
@@ -142,15 +143,20 @@ export default function FormationPage() {
 
   const joinMeet = async () => {
     if (!current || joining) return;
+    const destination = reserveExternalWindow();
+    if (!destination) {
+      alert("Autorisez l'ouverture d'une nouvelle fenêtre, puis réessayez. Vos minutes n'ont pas été débitées.");
+      return;
+    }
     setJoining(true);
     try {
       const { meetLink, minutes } = await apiPost('formation-access', { action: 'join', key: current._key });
-      const w = window.open(meetLink, '_blank', 'noopener');
-      if (!w) window.location.href = meetLink;
+      destination.navigate(meetLink);
       setGrantMinutes(0);
       alertedRef.current = false;
       setSession({ total: minutes, secondsLeft: minutes * 60 });
     } catch (e: any) {
+      destination.close();
       alert('Erreur : ' + e.message);
       // Le crédit a peut-être déjà été consommé ailleurs (double-clic, autre
       // onglet) : on rafraîchit l'état réel plutôt que de rester bloqué.
