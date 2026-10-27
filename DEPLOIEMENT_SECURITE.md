@@ -114,3 +114,11 @@ Authorization. La branche ne modifie pas le plan payant ni sa facturation.
   et la recette lecteur d’écran restent à approfondir.
 - Migration Firebase réalisée ; audit de production sans alerte. Les sept avis
   modérés de développement sont documentés dans [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md).
+
+## Chargement des dépendances Firebase sur Vercel
+
+Conserver l’option `NODE_OPTIONS` versionnée dans `vercel.json` : elle active
+`require(ESM)` sur le runtime Node 24. Sans elle, `jwks-rsa` ne charge pas
+`jose` et les routes Firebase échouent avant l’authentification. Voir
+[MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md) pour la reproduction et les
+contrôles `test:runtime`, `/api/health` et POST anonyme → 401 en JSON.

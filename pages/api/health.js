@@ -10,21 +10,21 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Méthode non autorisée.' });
   const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim().slice(0, 80);
   if (!rateLimit('health:' + ip, 15, 60000)) return res.status(429).json({ error: 'Trop de demandes.' });
-  const runtime = process.version;
+  const runtime = process.version, requireEsm = process.features?.require_module === true;
   let stage = 'firebase_import';
   try {
     const { app } = require('../../server/grant');
     stage = 'firebase_configuration';
     const admin = app();
     admin.auth(); admin.database();
-    return res.json({ status: 'ready', runtime, checks: { firebaseImport: true, firebaseConfiguration: true }, databaseConnection: 'not_tested' });
+    return res.json({ status: 'ready', runtime, requireEsm, checks: { firebaseImport: true, firebaseConfiguration: true }, databaseConnection: 'not_tested' });
   } catch (error) {
     await reportError('health:' + stage, error);
     const code = ERROR_CODES.has(error.code) ? error.code : 'FIREBASE_INITIALIZATION_FAILED';
     const missing = code === 'MODULE_NOT_FOUND' && String(error.message).match(/^Cannot find module ['"]([^'"]+)['"]/);
     // Seulement un nom de paquet : aucune adresse, clé, stack ou chemin absolu.
     const dependency = missing && missing[1].match(/^(?:@[a-z0-9._-]+\/)?[a-z0-9_-]+(?:\/[a-z0-9._-]+)*$/i);
-    return res.status(503).json({ status: 'unavailable', runtime, stage, code,
+    return res.status(503).json({ status: 'unavailable', runtime, requireEsm, stage, code,
       ...(dependency ? { dependency: dependency[0] } : {}) });
   }
 }

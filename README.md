@@ -136,6 +136,7 @@ npm run lint        # ESLint (next/core-web-vitals)
 npm run typecheck    # TypeScript incrémental (checkJs), scopé à lib/
 npm test             # Vitest — logique pure de lib/ (calculs ésotériques, accès…)
 npm run build         # build de production (échoue si lint/types cassent)
+npm run test:runtime  # après build : chargement API avec les options Vercel
 npm run test:auth     # Auth + RTDB locaux, Node 24.12+ / Java 21
 npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
 ```

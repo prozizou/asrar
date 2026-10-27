@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-10-27 — Chargement ESM dans les fonctions Vercel
+
+- Activation explicite de `--experimental-require-module` sur Node 24 pour
+  le SDK Admin 14 et `jwks-rsa`/`jose`. Le runtime hébergé désactivait ce
+  chargement, provoquant `ERR_REQUIRE_ESM` avant les handlers Firebase.
+- Test du vrai bundle API avec la contrainte du runtime puis les options
+  Vercel ; mêmes options pour les tests HTTP. SDK Admin verrouillé à 14.5.0.
+- Diagnostic de la disponibilité effective de `require(ESM)`. SW `v46.14`.
+
 ## 2026-10-27 — Alignement du runtime Firebase
 
 - Node 24.x pour Vercel, les postes de développement et les deux suites CI.
