@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Constante libre pour les sept alignements
+
+- Retrait du modèle à six alignements et du choix de configuration.
+- Saisie instantanée de toute constante entière S ≥ 57, avec 18 entiers
+  positifs distincts et sept sommes exactes ; six bases vérifiées, sans
+  solveur ni dépendance supplémentaire. SW `v46.26`.
+
 ## 2026-10-28 — Étoile à sept alignements
 
 - Configuration S = 57 : valeurs 1 à 18 sans répétition et sept alignements

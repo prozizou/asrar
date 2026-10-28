@@ -1,13 +1,12 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { magicStar, magicStar57, magicStarText, type MagicStar } from '@/lib/magicStar';
+import { magicStar, magicStarText, type MagicStar } from '@/lib/magicStar';
 import { formatNumeral, type NumeralSystem } from '@/lib/kanzouNumerals';
 import MagicStarDiagram from './MagicStarDiagram';
 import NumeralToggle from './NumeralToggle';
 
 export default function MagicStarGenerator() {
-  const [configuration, setConfiguration] = useState('seven');
   const [input, setInput] = useState('57');
   const [numerals, setNumerals] = useState<NumeralSystem>('latin');
   const [feedback, setFeedback] = useState('');
@@ -16,7 +15,7 @@ export default function MagicStarGenerator() {
   let error = '';
   try {
     if (!/^\d+$/.test(input.trim())) throw new Error('Saisissez un entier positif, sans décimales.');
-    star = configuration === 'seven' ? magicStar57(Number(input)) : magicStar(Number(input));
+    star = magicStar(Number(input));
   } catch (cause) { error = (cause as Error).message; }
 
   async function copy() {
@@ -43,19 +42,11 @@ export default function MagicStarGenerator() {
   return (
     <section aria-label="Générateur d’étoile magique">
       <div className="kz-fields">
-        <label className="kz-field" htmlFor="magic-star-configuration"><span>Configuration de l’étoile</span></label>
-        <select className="kz-star-input" id="magic-star-configuration" value={configuration}
-          onChange={(e) => { setConfiguration(e.target.value); setInput(e.target.value === 'seven' ? '57' : '38'); setFeedback(''); }}>
-          <option value="seven">7 alignements · S = 57</option>
-          <option value="six">6 alignements · S au choix</option>
-        </select>
         <label className="kz-field" htmlFor="magic-star-constant"><span>Constante magique S</span></label>
         <input className="kz-star-input" id="magic-star-constant" type="text" inputMode="numeric" maxLength={32}
-          value={input} readOnly={configuration === 'seven'} aria-invalid={!!error} aria-describedby="magic-star-help magic-star-error"
+          value={input} aria-invalid={!!error} aria-describedby="magic-star-help magic-star-error"
           onChange={(e) => { setInput(e.target.value); setFeedback(''); }} />
-        <p id="magic-star-help" className="kz-method-hint">{configuration === 'seven'
-          ? 'Les nombres de 1 à 18 sont utilisés une seule fois. Cette configuration est définie pour S = 57.'
-          : 'Entier de 38 à 9 007 199 254 740 991. L’étoile se met à jour à chaque saisie.'}</p>
+        <p id="magic-star-help" className="kz-method-hint">Entier de 57 à 9 007 199 254 740 991. Les 7 alignements se mettent à jour à chaque saisie.</p>
         <p id="magic-star-error" role={error ? 'alert' : undefined} className="kz-error">{error}</p>
       </div>
       {star && <>
