@@ -3,6 +3,7 @@
 // lib/kanzouWafq.ts carre5Base()/carre5Askandria() pour les formules).
 import '../carre.css';
 import { useState } from 'react';
+import MethodSelector from '../_components/MethodSelector';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -16,9 +17,9 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'base' | 'askandria';
 
-const MODE_LABELS: Record<Mode, string> = {
-  base: 'Base (une valeur)',
-  askandria: 'Askandria (4 valeurs connues)',
+const METHODS: Record<Mode, { label: string; hint: string }> = {
+  base: { label: 'Base', hint: '1 valeur à renseigner, directement ou à partir de x.' },
+  askandria: { label: 'Askandria', hint: '4 valeurs connues : t8, t4, t21 et t17.' },
 };
 
 export default function Carre5Page() {
@@ -74,13 +75,7 @@ export default function Carre5Page() {
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 5 × 5</h1>
 
-        <div className="kz-modes">
-          {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
-            <button key={m} type="button" className={'kz-mode-btn' + (mode === m ? ' active' : '')} onClick={() => handleModeChange(m)}>
-              {MODE_LABELS[m]}
-            </button>
-          ))}
-        </div>
+        <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
 
         <div className="kz-fields">
           {mode === 'base' && (

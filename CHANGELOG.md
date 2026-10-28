@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Choix des méthodes Hatims
+
+- Sélecteurs compacts en deux colonnes pour les tailles 3, 5 et 8 :
+  libellés courts, méthode active visible et aide contextuelle.
+- Choix accessibles au clavier avec boutons radio natifs ; explications
+  détaillées dépliables et espacement des champs resserré. SW `v46.23`.
+
 ## 2026-10-28 — Copie des recettes
 
 - Retrait du téléchargement PDF dans Secrets mystiques.

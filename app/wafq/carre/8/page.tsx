@@ -3,6 +3,7 @@
 // lib/kanzouWafq.ts carre8()/diamond8() pour les formules).
 import '../carre.css';
 import { useState } from 'react';
+import MethodSelector from '../_components/MethodSelector';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -19,9 +20,9 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'carre' | 'losange';
 
-const MODE_LABELS: Record<Mode, string> = {
-  carre: 'Carré (une valeur)',
-  losange: 'Losange magique (32 nombres)',
+const METHODS: Record<Mode, { label: string; hint: string }> = {
+  carre: { label: 'Carré', hint: '1 valeur à renseigner, au moins égale à 252.' },
+  losange: { label: 'Losange', hint: '1 valeur à renseigner, au moins égale à 124 · 32 nombres.' },
 };
 
 const MIN_VALUE = 252;
@@ -75,16 +76,12 @@ export default function Carre8Page() {
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 8 × 8</h1>
 
-        <div className="kz-modes">
-          {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
-            <button key={m} type="button" className={'kz-mode-btn' + (mode === m ? ' active' : '')} onClick={() => handleModeChange(m)}>
-              {MODE_LABELS[m]}
-            </button>
-          ))}
-        </div>
+        <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
 
         {mode === 'losange' && (
-          <p className="kz-note">
+          <details className="kz-method-help">
+            <summary>Comprendre le losange</summary>
+            <p>
             Losange de 32 nombres : 4 rangées
             gauche-à-droite, 4 rangées droite-à-gauche et 2 colonnes somment toutes au nombre entré ; les
             losanges intérieurs concentriques somment à sa moitié. Chaque case du diagramme est coupée en
@@ -92,7 +89,8 @@ export default function Carre8Page() {
             {DIAMOND_MIN_VALUE} + 8×n restitue les 32 nombres tels quels (décalés uniformément) ; pour tout
             autre nombre, un petit correctif est appliqué sur 4 des 32 cases pour que les 10
             rangées/colonnes somment malgré tout exactement au nombre entré.
-          </p>
+            </p>
+          </details>
         )}
 
         <div className="kz-fields">
