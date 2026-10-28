@@ -53,7 +53,7 @@ production n'est nécessaire. Les émulateurs sont arrêtés à la fin.
 Les scénarios de `authenticated/` vérifient les paliers gratuit, Basic,
 Premium et expiré, les droits administrateur/vendeur, l'e-mail vérifié,
 le catalogue sans contenu payant, le thème Premium, la consommation des
-minutes de formation et l'isolation des notifications. Un navigateur
+désactivation des anciennes sessions de formation sans débit et l'isolation des notifications. Un navigateur
 se connecte réellement à Auth et retrouve sa session dans l'application.
 Les règles RTDB sont chargées : lecture privée et écriture administrateur
 restent interdites au SDK client. Les tests publient aussi un livre via
@@ -93,6 +93,6 @@ Le lien WhatsApp est inspecté sans contacter son destinataire.
 menu, les noms longs, les deux thèmes, les erreurs de notifications et la
 place réservée au clavier et aux safe areas de la discussion.
 
-`all-views.spec.ts` parcourt les 35 vues en clair/sombre à 320/1440 px et
+`all-views.spec.ts` parcourt les 32 vues en clair/sombre à 320/1440 px et
 vérifie les styles après navigation, les reprises réseau, les brouillons de
 commentaire et d’avis, les neuf carrés calculés et la suppression vendeur.

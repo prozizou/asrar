@@ -28,6 +28,7 @@ export default async function handler(req, res) {
   try {
     await verifyUser(idToken); // identité requise (page réservée aux connectés)
 
+    if (kind === 'formation') return res.status(410).json({ error: 'Cette fonctionnalité a été retirée.', code: 'FEATURE_RETIRED' });
     const db = app().database();
     const items = await publicCatalog(db, src.ref(cat), async () => {
       const snap = await db.ref(src.ref(cat)).once("value");

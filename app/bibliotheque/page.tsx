@@ -254,7 +254,7 @@ export default function BibliothequePage() {
                   )}
                 </button>
                 <div className="book-info">
-                  <h2 className="book-title">{book.text}</h2>
+                  <h2 className="sr-only">{book.text}</h2>
                   {book.author && <p className="book-author">{book.author}</p>}
                   <div className="book-social">
                     <button type="button" aria-label={(s.liked ? 'Retirer des favoris : ' : 'Aimer : ') + book.text} aria-pressed={!!s.liked} className={'bs-btn' + (s.liked ? ' liked' : '')} onClick={() => toggleLike(book._key)}>

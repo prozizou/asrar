@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## 2026-10-28 — Copie des recettes
+
+- Retrait du téléchargement PDF dans Secrets mystiques.
+- Copie numérotée réservée au compte vérifié prozizou298@gmail.com, avec
+  reprise manuelle si le presse-papiers est indisponible. SW `v46.22`.
+
+## 2026-10-28 — Présentation de la bibliothèque
+
+- Titres des cartes masqués visuellement selon le choix de présentation ;
+  libellés accessibles et actions conservés. SW `v46.21`.
+
+## 2026-10-28 — Simplification de Combinaisons
+
+- Retrait du Calculateur Abjad et du tableau des 99 noms de la page.
+- Recherche, résultats et détails de combinaison conservés. SW `v46.20`.
+
+## 2026-10-28 — Thème de Planète
+
+- Planète suit le thème de l’application : fond, cartes, fenêtres, boutons
+  et états favorables/défavorables adaptés au clair et au sombre. SW `v46.19`.
+
+## 2026-10-28 — Retrait de modules
+
+- Retrait des écrans Thalsams, Abajad et Formation/visioconférence.
+- Anciens liens redirigés vers les catégories du menu ; retrait du catalogue
+  et des mentions de visioconférence dans le compte.
+- Accès aux sessions désactivé, sans débit des crédits historiques. SW `v46.18`.
+
+## 2026-10-28 — Catalogue Hatims compact
+
+- Grille responsive de deux colonnes, cartes régulières, taille et nombre
+  de cases lisibles ; en-tête allégé, aide visible et interactions discrètes.
+- Les miniatures sont calculées selon chaque taille. SW `v46.17`.
+
 ## 2026-10-28 — Revue des 35 vues et solidité des parcours
 
 - Isolation des styles du marché, de la bibliothèque et de la boutique ;

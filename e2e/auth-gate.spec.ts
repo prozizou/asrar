@@ -18,7 +18,7 @@ const ROUTES = [
   '/', '/menu', '/asrar', '/abajad', '/planete', '/combinaisons',
   '/zikr', '/rouwhania', '/bibliotheque', '/parrainage', '/notifications', '/compte', '/commandes',
   '/alqalam', '/geomancie', // premium
-  '/thalsams', '/wafq', '/tafsir', '/formation', // masquées du menu, pages toujours actives
+  '/thalsams', '/wafq', '/tafsir', '/formation', // modules retirés redirigés, outils restants protégés
 ];
 
 test.describe('Portail d’authentification — aucune route ne contourne le login', () => {

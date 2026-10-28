@@ -3,7 +3,7 @@
 // Recherche des combinaisons de N noms d'Allah dont la somme des poids Abjad
 // vaut une cible. L'algorithme (backtracking + élagage) vit dans
 // lib/combinaisons.js ; ici, l'UI React : formulaire, progression, arrêt,
-// filtre, pagination, calculatrice, tableau des noms et restauration.
+// filtre, pagination, détails et restauration.
 //
 // Revue design v2 : la page lisait comme un outil technique (formulaire
 // imposant, informations internes toujours visibles — branches élaguées,
@@ -26,9 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import {
-  NAMES,
   NUM_NAMES,
-  abjadWeight,
   countCombinations,
   hasAllah,
   describeCombo,
@@ -108,7 +106,6 @@ export default function CombinaisonsPage() {
 
   const [target, setTarget] = useState('');
   const [k, setK] = useState(3);
-  const [calcInput, setCalcInput] = useState('');
 
   const [isSearching, setIsSearching] = useState(false);
   const stopRef = useRef(false);
@@ -118,10 +115,8 @@ export default function CombinaisonsPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [banner, setBanner] = useState<Banner | null>(null); // recherche sauvegardée
-  const [namesFilter, setNamesFilter] = useState(''); // filtre du tableau des 99 noms
   // Fiche de nom (revue design, point 9) : nom touché dans une carte de
-  // résultat — null = fermée. Réutilise pickName() pour « Utiliser comme
-  // cible » (même geste que le tableau des 99 noms plus bas sur la page).
+  // résultat — null = fermée. Permet d’utiliser son poids comme cible.
   const [nameSheet, setNameSheet] = useState<NameSheetData | null>(null);
   // Fiche de combinaison (revue design v2, point 3) : la combinaison entière
   // (tous les noms + la formule), pas un seul nom — voir ComboSheet plus bas.
@@ -173,14 +168,6 @@ export default function CombinaisonsPage() {
       return false;
     }
   }, []);
-
-  const calcWeight = useMemo(() => abjadWeight(calcInput), [calcInput]);
-
-  const filteredNames = useMemo(() => {
-    const q = namesFilter.trim().toLowerCase();
-    if (!q) return NAMES;
-    return NAMES.filter((nm: any) => `${nm.display} ${nm.fr} ${nm.weight}`.toLowerCase().includes(q));
-  }, [namesFilter]);
 
   const results = useMemo(() => (outcome ? outcome.results : []), [outcome]);
   // Tri : combinaisons contenant « الله » d'abord.
@@ -291,8 +278,7 @@ export default function CombinaisonsPage() {
   };
 
   // « Utiliser {poids} comme cible » depuis la fiche de nom (revue design,
-  // point 9) — même geste que pickName() (tableau des 99 noms), en plus de
-  // fermer la fiche.
+  // point 9) : renseigne la cible puis ferme la fiche.
   const applyNameAsTarget = (w: number) => {
     setNameSheet(null);
     pickName(w);
@@ -489,68 +475,6 @@ export default function CombinaisonsPage() {
             </div>
           )}
 
-          {/* Calculatrice Abjad + tableau des 99 noms, réunis dans UNE seule
-              carte (revue design v2, points 5 et 7) : le tableau n'est plus
-              une section indépendante en bas de page, et le résultat de la
-              calculatrice n'est plus un gros pavé sombre mais une ligne de
-              texte sous le champ. */}
-          <div className="card">
-            <div className="card-title">Calculateur Abjad</div>
-            <input
-              aria-label="Texte arabe pour le calcul Abjad"
-              className="calc-text"
-              type="text"
-              dir="rtl"
-              placeholder="Saisissez un texte en arabe…"
-              value={calcInput}
-              onChange={(e) => setCalcInput(e.target.value)}
-            />
-            <div className="calc-result">
-              Poids Abjad : <strong>{calcWeight > 0 ? calcWeight : '—'}</strong>
-            </div>
-            <p className="calc-note">
-              Valeur numérique calculée selon le système Abjad (حساب الجُمَّل). Touchez un nom ci-dessous pour
-              l'utiliser comme cible.
-            </p>
-
-            <details className="names-table">
-              <summary>Tableau des 99 Noms et leurs poids Abjad</summary>
-              <div className="results-search-wrap">
-                <div className="search-icon-wrap">
-                  <span className="search-icon">🔍</span>
-                  <input
-                    className="results-search-input"
-                      aria-label="Rechercher dans les résultats"
-                    type="text"
-                    placeholder="Rechercher un nom…"
-                    dir="auto"
-                    value={namesFilter}
-                    onChange={(e) => setNamesFilter(e.target.value)}
-                  />
-                </div>
-                {namesFilter && (
-                  <button className="results-search-clear" onClick={() => setNamesFilter('')} title="Effacer">
-                    ✕
-                  </button>
-                )}
-              </div>
-              <div className="names-grid">
-                {filteredNames.map((nm: any, i: number) => (
-                  <div className="name-chip" key={i} onClick={() => pickName(nm.weight)} title={nm.fr}>
-                    <span className="nc-ar" dir="rtl">
-                      {nm.display}
-                    </span>
-                    <div className="nc-info">
-                      <div className="nc-weight" dir="ltr">
-                        {nm.weight}
-                      </div>
-                      <div className="nc-fr">{splitFr(nm.fr).translit}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
         </main>
 
         <footer>Les 99 Noms d'Allah · Poids Abjad (حساب الجُمَّل الكبير)</footer>
@@ -558,7 +482,7 @@ export default function CombinaisonsPage() {
 
       {/* Fiche de nom (revue design, point 9) : touchée depuis une carte de
           résultat (voir ResultCard.onNameClick ci-dessous) — crée une vraie
-          continuité entre la liste de résultats et la calculatrice, sans
+          continuité entre les résultats et le formulaire de recherche, sans
           quitter la page. */}
       {nameSheet && (
         <AccessibleModal className="name-sheet-overlay" onClose={() => setNameSheet(null)} label="Détail de la combinaison">

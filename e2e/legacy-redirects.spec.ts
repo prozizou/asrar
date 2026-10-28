@@ -14,7 +14,11 @@ const CASES: Array<[string, string]> = [
   ['/marche/marche.html', '/'],
   ['/marche', '/'], // ancienne route (avant que le Marché devienne l'accueil)
   ['/asrar/asrar.html', '/asrar'],
-  ['/abajad/abajad.html', '/abajad'],
+  ['/abajad/abajad.html', '/menu/outils'],
+  ['/abajad', '/menu/outils'],
+  ['/thalsams', '/menu/outils'],
+  ['/formation', '/menu/ressources'],
+  ['/formation/formation.html', '/menu/ressources'],
   ['/alqalam/index.html', '/alqalam'],
   ['/Benefits/index.html', '/menu'], // module supprimé (2026-09-20)
 ];

@@ -13,7 +13,7 @@
 // donc testable directement.
 import type { ReactNode } from 'react';
 import {
-  Scroll, Calculator, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
+  Scroll, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
   Feather, Grid3x3, Hash, Moon, Layers, Calendar,
 } from 'lucide-react';
 
@@ -62,9 +62,7 @@ const RAW_CATEGORIES: ModuleCategory[] = [
       { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
       { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Tirage géomantique', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },
       { icon: <Hash {...ICON} />, label: 'Hatims', desc: 'Carrés numériques', href: '/wafq/carre', keywords: ['carre magique', 'kanzou', 'wafq', 'carres numeriques', 'export word', 'word'] },
-      // Wafq (générateur par intention) et Thalsams — masqués temporairement
-      // à la demande de l'utilisateur (2026-09-02). Pages /wafq et /thalsams
-      // toujours en place ; /wafq garde son lien interne vers Hatims.
+      // Wafq reste accessible par lien direct et conserve son accès à Hatims.
     ],
   },
   {
@@ -81,13 +79,11 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     title: 'Outils',
     icon: <Sparkles {...CAT_ICON} />,
     items: [
-      { icon: <Calculator {...ICON} />, label: 'Abajad', desc: 'Poids numérique des lettres', href: '/abajad', keywords: ['abjad', 'numerologie', 'lettres', 'poids'] },
       { icon: <Sparkles {...ICON} />, label: 'Combinaisons', desc: 'Les 99 Noms par calcul', href: '/combinaisons', keywords: ['associations', 'calcul', '99 noms'] },
       { icon: <Globe {...ICON} />, label: 'Planète', desc: 'Heure planétaire du moment', href: '/planete', keywords: ['heure planetaire', 'mars', 'mercure', 'astrologie'] },
       { icon: <Calendar {...ICON} />, label: 'Date du jour', desc: 'Date hijri et grégorienne', href: '/hijri', keywords: ['hijri', 'calendrier', 'islamique', 'date', 'mois', 'aladhan'] },
       { icon: <Gift {...ICON} />, label: 'Parrainage', desc: 'Inviter des proches', href: '/parrainage', keywords: ['inviter', 'filleul', 'abonnement', 'referral'] },
-      // Tafsir al-Ahlam et Formation mystique — masqués temporairement à la
-      // demande de l'utilisateur (2026-09-02), pages toujours en place.
+      // Tafsir al-Ahlam reste accessible par lien direct.
     ],
   },
 ];

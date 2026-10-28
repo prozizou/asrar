@@ -31,13 +31,15 @@ test.describe('Droits vérifiés avec Auth et RTDB réels en émulation', () => 
   test('un e-mail non vérifié est rejeté par le serveur', async ({ postAs }) => {
     expect((await postAs('unverified', 'check-access')).status()).toBe(403);
   });
-  test('un abonnement ne donne pas le lien de formation', async ({ postAs }) => {
-    expect((await postAs('premium', 'get-content', { kind: 'formation', key: 'formation1' })).status()).toBe(400);
-    expect((await postAs('premium', 'formation-access', { action: 'join', key: 'formation1' })).status()).toBe(403);
-    const join = await postAs('basic', 'formation-access', { action: 'join', key: 'formation1' });
-    expect(join.status()).toBe(200);
-    expect((await join.json()).minutes).toBe(10);
-    expect((await postAs('basic', 'formation-access', { action: 'join', key: 'formation1' })).status()).toBe(403);
+  test('la visioconférence retirée ne consomme aucun crédit', async ({ postAs }) => {
+    expect((await postAs('basic', 'list-content', { kind: 'formation' })).status()).toBe(410);
+    for (const role of ['premium', 'basic']) {
+      const response = await postAs(role, 'formation-access', { action: 'join', key: 'formation1' });
+      expect(response.status()).toBe(410);
+      expect((await response.json()).code).toBe('FEATURE_RETIRED');
+    }
+    const { app } = require('../../server/grant');
+    expect((await app().database().ref('formation_access/formation1/basic@asrar,test/minutes').once('value')).val()).toBe(10);
   });
   test('les notifications sont isolées par compte', async ({ postAs }) => {
     const own = await postAs('free', 'notifications', { action: 'list' });

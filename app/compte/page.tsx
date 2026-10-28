@@ -71,7 +71,7 @@ export default function ComptePage() {
       <section className="account-card" aria-labelledby="account-subscription"><h2 id="account-subscription">Mon abonnement</h2>
         <strong className="account-plan">{subscription.admin ? 'Administrateur' : subscription.vip ? 'Accès VIP' : subscription.allowed ? plan ? 'Forfait ' + plan.dur : 'Accès activé' : subscription.lastExpiresAt ? 'Abonnement expiré' : 'Aucun abonnement actif'}</strong>
         {subscription.expiresAt ? <p>Échéance : <time dateTime={new Date(subscription.expiresAt).toISOString()}>{date(subscription.expiresAt)}</time></p> : subscription.allowed ? <p>Accès sans échéance enregistrée.</p> : subscription.lastExpiresAt ? <p>Dernière échéance : {date(subscription.lastExpiresAt)}</p> : null}
-        <p>Les formations à la minute et les achats du Marché sont indépendants de cet abonnement.</p>
+        <p>Les achats du Marché sont indépendants de cet abonnement.</p>
         <Link className="account-button" href="/commandes">Mes demandes et commandes</Link>
         {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact}>Contacter l’assistance pour mon abonnement</a>}
       </section>

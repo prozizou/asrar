@@ -1,4 +1,12 @@
-# Qualité des vues — revue des 35 vues
+# Qualité des vues — historique de revue
+
+Depuis v46.21, les titres des cartes de bibliothèque restent volontairement
+masqués visuellement. Leur affichage décrit dans la revue historique n’est
+plus le comportement souhaité. Les libellés accessibles restent présents.
+
+Depuis v46.18, Abajad, Thalsams et Formation/visioconférence sont retirés.
+Les anciens liens redirigent vers les catégories du menu. La revue ci-dessous
+décrit le périmètre historique v46.16 ; la matrice active comporte 32 vues.
 
 ## Défauts constatés et corrections
 
@@ -72,7 +80,7 @@ validation de disponibilité du service réel.
 | `/hijri` | Retour visible ; panne de source et action Réessayer contrôlées. |
 | `/notifications` | États, filtres et reprise du premier lot vérifiés. |
 | `/parrainage` | Commandes Copier et conditions agrandies ; état ouvert annoncé. |
-| `/planete` | Repère principal, retour et choix de ville agrandis ; palette claire fixe conservée conformément au choix de design documenté dans le module. |
+| `/planete` | Repère principal, retour et choix de ville agrandis ; palette désormais synchronisée avec le thème global depuis v46.19. |
 | `/rouwhania` | Retour visible ; formulaire, texte arabe et résultats contrôlés. |
 | `/tafsir` | Filtres compacts et tactiles ; mode actif annoncé, saisie sans zoom forcé. |
 | `/thalsams` | Filtres compacts, champs de 48 px, erreurs contrastées et détail tactile. |
