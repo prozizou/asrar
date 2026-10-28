@@ -331,7 +331,6 @@
 
 :where(.library-page) .book-cover { width: 100%; margin: 0; padding: 0; border-radius: 0; border: 0; flex-shrink: 0; }
 :where(.library-page) .book-cover:hover { transform: none; box-shadow: none; }
-:where(.library-page) .book-title { font-size: 1.05rem; line-height: 1.4; margin: 0 0 6px; letter-spacing: 0; overflow-wrap: anywhere; }
 :where(.library-page) .book-author { font-size: .9rem; color: var(--text-muted); margin-bottom: 8px; overflow-wrap: anywhere; }
 :where(.library-page) .book-info { justify-content: flex-start; gap: 4px; }
 :where(.library-page) .book-social { margin-top: auto; }

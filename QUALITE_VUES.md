@@ -1,5 +1,9 @@
 # Qualité des vues — historique de revue
 
+Depuis v46.21, les titres des cartes de bibliothèque restent volontairement
+masqués visuellement. Leur affichage décrit dans la revue historique n’est
+plus le comportement souhaité. Les libellés accessibles restent présents.
+
 Depuis v46.18, Abajad, Thalsams et Formation/visioconférence sont retirés.
 Les anciens liens redirigent vers les catégories du menu. La revue ci-dessous
 décrit le périmètre historique v46.16 ; la matrice active comporte 32 vues.

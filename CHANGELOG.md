@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-10-28 — Présentation de la bibliothèque
+
+- Titres des cartes masqués visuellement selon le choix de présentation ;
+  libellés accessibles et actions conservés. SW `v46.21`.
+
 ## 2026-10-28 — Simplification de Combinaisons
 
 - Retrait du Calculateur Abjad et du tableau des 99 noms de la page.

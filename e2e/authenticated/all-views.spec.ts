@@ -51,12 +51,16 @@ test('les styles du marché restent isolés après navigation', async ({ page, l
   expect(await appearance()).toEqual(initial);
 });
 
-test('la bibliothèque affiche les titres longs et garde un commentaire en cas d’échec', async ({ page, login, postAs }) => {
+test('la bibliothèque garde ses titres masqués et conserve un commentaire après échec', async ({ page, login, postAs }) => {
   const title = 'Traité de référence — Méditation et textes arabes '.repeat(4).trim();
   // L’API administrateur invalide le catalogue, comme en production.
   expect((await postAs('admin', 'admin', { action: 'save-book', key: 'ui-book', titre: title, auteur: 'Auteur de recette', pdf: 'https://example.invalid/test.pdf' })).status()).toBe(200);
   await page.setViewportSize({ width: 320, height: 800 }); await login('premium'); await page.goto('/bibliotheque');
-  await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  const hiddenTitle = page.getByRole('heading', { name: title, exact: true });
+  await expect(hiddenTitle).toHaveClass('sr-only');
+  await expect(hiddenTitle).toHaveCSS('clip-path', 'inset(50%)');
+  await expect(hiddenTitle).toHaveCSS('width', '1px');
+  await expect(hiddenTitle).toHaveCSS('height', '1px');
   const open = page.getByRole('button', { name: `Ouvrir « ${title} »`, exact: true });
   await open.focus(); await expect(open).toBeFocused();
   await page.getByRole('button', { name: `Commentaires de « ${title} »`, exact: true }).click();
