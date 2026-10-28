@@ -20,9 +20,9 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'carre' | 'losange';
 
-const METHODS: Record<Mode, { label: string; hint: string }> = {
-  carre: { label: 'Carré', hint: '1 valeur à renseigner, au moins égale à 252.' },
-  losange: { label: 'Losange', hint: '1 valeur à renseigner, au moins égale à 124 · 32 nombres.' },
+const METHODS: Record<Mode, { label: string }> = {
+  carre: { label: 'Carré' },
+  losange: { label: 'Losange' },
 };
 
 const MIN_VALUE = 252;
@@ -78,20 +78,6 @@ export default function Carre8Page() {
 
         <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
 
-        {mode === 'losange' && (
-          <details className="kz-method-help">
-            <summary>Comprendre le losange</summary>
-            <p>
-            Losange de 32 nombres : 4 rangées
-            gauche-à-droite, 4 rangées droite-à-gauche et 2 colonnes somment toutes au nombre entré ; les
-            losanges intérieurs concentriques somment à sa moitié. Chaque case du diagramme est coupée en
-            deux : un nombre « extérieur » (haut) et un nombre « intérieur » (bas). Un nombre de la forme{' '}
-            {DIAMOND_MIN_VALUE} + 8×n restitue les 32 nombres tels quels (décalés uniformément) ; pour tout
-            autre nombre, un petit correctif est appliqué sur 4 des 32 cases pour que les 10
-            rangées/colonnes somment malgré tout exactement au nombre entré.
-            </p>
-          </details>
-        )}
 
         <div className="kz-fields">
           {mode === 'carre' ? (

@@ -33,7 +33,6 @@ export default function SquareGrid<T>({
 
   return (
     <>
-      {cols > 4 && <p className="kz-grid-hint">Faites défiler le carré horizontalement si nécessaire.</p>}
       <div className="kz-grid-scroll" style={{ maxWidth }} tabIndex={0} role="region" aria-label={`Carré numérique ${cols} × ${layout.length}`}>
         <div className="kz-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, minWidth: cols * cellWidth + (cols - 1) * 6 }}>
           {layout.flat().map((key, i) => (

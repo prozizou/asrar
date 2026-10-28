@@ -41,7 +41,6 @@ export default function Carre9Page() {
       <Link href="/wafq/carre" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 9 × 9</h1>
-        <p className="kz-note">Chaque ligne totalise le nombre saisi. Les cases complémentaires sont calculées à partir des autres valeurs de leur ligne.</p>
 
         <div className="kz-fields">
           <label className="kz-field">

@@ -16,9 +16,9 @@ import { carre6, SQUARE6_LAYOUT, type Square6 } from '@/lib/kanzouWafq';
 import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'carre' | 'star';
-const METHODS: Record<Mode, { label: string; hint: string }> = {
-  carre: { label: 'Carré', hint: 'Carré classique de 36 cases.' },
-  star: { label: 'Étoile', hint: '18 entiers distincts · 7 alignements · constante S ≥ 57.' },
+const METHODS: Record<Mode, { label: string }> = {
+  carre: { label: 'Carré' },
+  star: { label: 'Étoile' },
 };
 
 export default function Carre6Page() {

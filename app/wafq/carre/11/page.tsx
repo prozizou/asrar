@@ -41,7 +41,6 @@ export default function Carre11Page() {
       <Link href="/wafq/carre" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 11 × 11</h1>
-        <p className="kz-note">Ce carré utilise une grille magique de référence de 121 cases, adaptée au nombre saisi par un décalage uniforme. Lignes, colonnes et diagonales ont la même somme.</p>
 
         <div className="kz-fields">
           <label className="kz-field">
