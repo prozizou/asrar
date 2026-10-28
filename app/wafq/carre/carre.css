@@ -14,14 +14,23 @@
 }
 .kz-note code { color: var(--accent); background: var(--bg-deep); padding: 1px 5px; border-radius: 4px; }
 
-.kz-modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-.kz-mode-btn {
-  padding: 7px 14px; border-radius: 999px; border: 1px solid var(--glass-border);
-  background: var(--surface-2); color: var(--text-dim); font-family: var(--font-ui); font-size: 0.85rem; cursor: pointer;
-}
-.kz-mode-btn.active { border-color: var(--accent); color: var(--text-main); }
+/* Choix natifs : deux colonnes, sans les longues explications dans les chips. */
+.kz-methods { min-width: 0; margin: 18px 0 16px; padding: 0; border: 0; }
+.kz-methods legend { padding: 0; margin-bottom: 8px; font-size: .8rem; font-weight: 700; color: var(--text-dim); }
+.kz-method-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.kz-method-chip { display: flex; align-items: center; gap: 8px; min-height: 44px; min-width: 0; padding: 8px 12px; border: 1px solid var(--glass-border); border-radius: 12px; background: var(--surface-2); color: var(--text-dim); cursor: pointer; }
+.kz-method-chip span { font-size: .85rem; font-weight: 600; overflow-wrap: anywhere; }
+.kz-method-chip input { appearance: auto; flex: 0 0 16px; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent); }
+.kz-method-chip:has(:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); color: var(--text-main); }
+.kz-method-chip:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.kz-method-hint { margin: 8px 0 0; font-size: .8rem; line-height: 1.5; color: var(--text-muted); }
+.kz-method-help { margin: 12px 0; font-size: .82rem; line-height: 1.55; color: var(--text-muted); }
+.kz-method-help summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; color: var(--accent); }
+.kz-method-help summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.kz-method-help p { margin: 8px 0; }
 
 .kz-fields { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.kz-fields > .kz-fields { margin: 0; }
 .kz-fields.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .kz-fields.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .kz-field span { display: block; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 5px; }
@@ -107,8 +116,7 @@
 .hatim-footer span { padding-inline: 5px; }
 @media (max-width: 400px) { .hatim-doors { gap: 10px; } .hatim-door { padding: 12px; gap: 8px; min-height: 112px; } .hatim-thumb { width: 36px; height: 36px; flex-basis: 36px; } .hatim-door-copy { min-width: 0; } .hatim-door-size { font-size: 1.05rem; } .hatim-door-chevron { display: none; } }
 
-.kz-mode-btn, .kz-numeral-toggle button, .kz-export-btn { width: auto; margin: 0; min-height: 44px; }
-.kz-mode-btn { flex: 1 1 auto; }
+.kz-numeral-toggle button, .kz-export-btn { width: auto; margin: 0; min-height: 44px; }
 .kz-field, .kz-result { min-width: 0; }
 .kz-field input { min-width: 0; min-height: 48px; font-size: 16px; }
 .kz-compute-btn, .kz-numeral-toggle button.active { color: var(--button-ink); }

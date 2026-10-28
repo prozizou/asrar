@@ -4,6 +4,7 @@
 // formules et le bug corrigé du mode Bayt).
 import '../carre.css';
 import { useState } from 'react';
+import MethodSelector from '../_components/MethodSelector';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -21,11 +22,11 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'wilaya' | 'ghazaly' | 'bayt' | 'hatim';
 
-const MODE_LABELS: Record<Mode, string> = {
-  wilaya: 'Wilaya (3 valeurs connues)',
-  ghazaly: 'Ghazaly (une valeur)',
-  bayt: 'Bayt (deux valeurs)',
-  hatim: 'Hatim triangulaire (une valeur)',
+const METHODS: Record<Mode, { label: string; hint: string }> = {
+  wilaya: { label: 'Wilaya', hint: '3 valeurs connues : e2, e4 et e9.' },
+  ghazaly: { label: 'Ghazaly', hint: '1 valeur à renseigner : le nombre (hajah).' },
+  bayt: { label: 'Bayt', hint: '2 valeurs à renseigner : le nombre et l’entrée.' },
+  hatim: { label: 'Triangulaire', hint: '1 valeur à renseigner : la somme de chaque ligne.' },
 };
 
 export default function Carre3Page() {
@@ -101,20 +102,17 @@ export default function Carre3Page() {
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 3 × 3</h1>
 
-        <div className="kz-modes">
-          {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
-            <button key={m} type="button" className={'kz-mode-btn' + (mode === m ? ' active' : '')} onClick={() => handleModeChange(m)}>
-              {MODE_LABELS[m]}
-            </button>
-          ))}
-        </div>
+        <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
 
         {mode === 'hatim' && (
-          <p className="kz-note">
+          <details className="kz-method-help">
+            <summary>Comprendre le Hatim triangulaire</summary>
+            <p>
             Le triangle médian intérieur relie les milieux des trois côtés du triangle extérieur. Les
             6 lignes droites du diagramme somment toutes à la valeur entrée. Comme pour Ghazaly, une seule
             valeur suffit — les 3 sommets sont départagés automatiquement.
-          </p>
+            </p>
+          </details>
         )}
 
         <div className="kz-fields">
