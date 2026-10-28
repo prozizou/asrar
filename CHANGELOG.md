@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Étoile magique à 18 cases
+
+- Choix Étoile dans le Hatim 6 × 6 : génération instantanée selon la constante
+  S, à partir de 38, avec vérification des six alignements et des 18 valeurs.
+- Diagramme SVG responsive, copie numérotée et export SVG autonome ; saisies
+  hors plage refusées, accès premium conservé. SW `v46.24`.
+
 ## 2026-10-28 — Choix des méthodes Hatims
 
 - Sélecteurs compacts en deux colonnes pour les tailles 3, 5 et 8 :
