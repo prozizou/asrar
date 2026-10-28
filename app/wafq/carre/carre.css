@@ -133,4 +133,18 @@
 @media (max-width: 480px) { .kz-fields.grid3, .kz-fields.grid2 { grid-template-columns: 1fr; } }
 .kz-numeral-toggle button { border-radius: 0; }
 
+.kz-methods:disabled { opacity: .65; }
+.kz-star-input { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--bg-deep); color: var(--text-main); font: inherit; font-size: 16px; }
+.kz-star-input:focus-visible, .kz-star-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.kz-star-scroll { overflow: auto; max-width: 100%; overscroll-behavior: contain; border: 1px solid var(--glass-border); border-radius: 12px; }
+.kz-star-svg { display: block; width: 100%; --star-surface: var(--bg-deep); --star-ink: var(--text-main); --star-value: var(--status-danger-text); }
+.kz-star-checks { margin-top: 20px; }
+.kz-star-checks h2 { font-size: 1rem; margin: 0 0 8px; }
+.kz-star-checks ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0; list-style: none; margin: 12px 0 0; }
+.kz-star-checks li { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--glass-border); font-size: .85rem; overflow-wrap: anywhere; }
+.kz-star-checks li strong { color: var(--accent); }
+.kz-star-checks + p { margin-top: 12px; }
+.kz-star-checks ~ textarea, .kz-note textarea { width: 100%; font: inherit; }
+@media (max-width: 480px) { .kz-star-checks ol { grid-template-columns: 1fr; } }
+
 @media (max-width: 540px) { .hatim-door-chevron { display: none; } }
