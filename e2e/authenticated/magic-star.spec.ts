@@ -50,6 +50,8 @@ test('étoile vide, sept sommes instantanées, chiffres contenus, copie et expor
   const exported = Buffer.concat(chunks).toString();
   expect(exported.match(/data-case=/g)).toHaveLength(18);
   expect(exported).toContain('--star-surface:#fff');
+  for (const text of ['جبريل', 'ميكائيل', 'اسرافيل', 'عزرائيل', 'محمد']) expect(exported).toContain(text);
+  expect(exported).not.toContain('★');
   const pngEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Exporter en PNG', exact: true }).click();
   const png = await pngEvent;

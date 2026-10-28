@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Inscriptions arabes de l’étoile
+
+- Remplacement des quatre petites étoiles par جبريل, ميكائيل, اسرافيل et
+  عزرائيل aux positions demandées ; محمد au milieu de chaque côté.
+- Ajustement des textes aux espaces disponibles, dans la vue et les exports
+  PNG/SVG sur fond blanc. SW `v46.28`.
+
 ## 2026-10-28 — Hatims compacts et export PNG
 
 - Étoile vide au démarrage et champ « Entrer le nombre », sans constante préremplie.
