@@ -438,31 +438,10 @@ html[data-theme='light'] .cc-page {
 .cc-page .combo-sheet-allah { display: block; text-align: center; margin: 0 0 0.8rem; }
 .cc-page .combo-sheet .name-sheet-weight { display: block; text-align: center; }
 
-/* ABJAD CALC — champ, puis le résultat directement en dessous en simple
-   texte (revue design v2, point 5 : « le gros rectangle sombre avec — est
-   inutile ») plutôt qu'un pavé de couleur à part entière. */
-.cc-page .calc-text {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  border: 1.5px solid var(--gold-border);
-  border-radius: 9px;
-  font-family: var(--font-ar);
-  font-size: 1.15rem;
-  background: var(--gold-pale);
-  color: var(--ink);
-  direction: rtl;
-  text-align: right;
-  outline: none;
-}
-.cc-page .calc-text:focus { border-color: var(--gold); }
-.cc-page .calc-result { margin-top: 0.5rem; font-size: 0.9rem; color: var(--muted); }
-.cc-page .calc-result strong { color: var(--gold); font-family: monospace; font-size: 1.05rem; }
-.cc-page .calc-note { font-size: 0.72rem; color: var(--muted); margin-top: 0.5rem; }
+
 
 /* Tableau des 99 noms, intégré dans la même carte que la calculatrice
    (revue design v2, point 7) — plus de carte indépendante en bas de page. */
-.cc-page .names-table { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--gold-border); }
-.cc-page .names-table .results-search-wrap { margin-top: 0.8rem; margin-bottom: 0.6rem; }
 
 /* RESULTS SEARCH BAR */
 .cc-page .results-search-wrap { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.9rem; }
@@ -551,24 +530,6 @@ html[data-theme='light'] .cc-page {
 .cc-page details summary::before { content: '▶'; font-size: 0.6rem; transition: transform 0.2s; color: var(--gold); }
 .cc-page details[open] summary::before { transform: rotate(90deg); }
 
-.cc-page .names-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.5rem; }
-.cc-page .name-chip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0.8rem;
-  background: var(--gold-pale);
-  border: 1px solid var(--gold-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.cc-page .name-chip:hover { background: var(--cc-soft); border-color: var(--gold); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
-.cc-page .nc-ar { font-family: var(--font-ar); font-size: 1rem; color: var(--cc-heading); font-weight: 700; direction: rtl; }
-.cc-page .nc-info { text-align: right; }
-.cc-page .nc-weight { font-size: 0.75rem; font-weight: 700; color: var(--gold); font-family: monospace; }
-.cc-page .nc-fr { font-size: 0.65rem; color: var(--muted); line-height: 1.2; max-width: 100px; text-align: right; }
-
 /* Footer resserré (revue design v2 : « beaucoup d'espace vide en bas ») —
    la mention "Application éducative et spirituelle" est retirée du texte
    affiché (page.tsx), déjà portée par l'identité de toute l'app. */
@@ -606,4 +567,3 @@ html[data-theme='light'] .cc-page {
 .cc-page .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid var(--gold-border); }
 
 .cc-page input:not([type="checkbox"]), .cc-page select { min-height: 44px; font-size: 16px; }
-.cc-page .names-table > summary { min-height: 44px; }

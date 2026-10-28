@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-10-28 — Simplification de Combinaisons
+
+- Retrait du Calculateur Abjad et du tableau des 99 noms de la page.
+- Recherche, résultats et détails de combinaison conservés. SW `v46.20`.
+
 ## 2026-10-28 — Thème de Planète
 
 - Planète suit le thème de l’application : fond, cartes, fenêtres, boutons
