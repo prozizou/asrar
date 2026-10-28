@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Retrait de modules
+
+- Retrait des écrans Thalsams, Abajad et Formation/visioconférence.
+- Anciens liens redirigés vers les catégories du menu ; retrait du catalogue
+  et des mentions de visioconférence dans le compte.
+- Accès aux sessions désactivé, sans débit des crédits historiques. SW `v46.18`.
+
 ## 2026-10-28 — Catalogue Hatims compact
 
 - Grille responsive de deux colonnes, cartes régulières, taille et nombre

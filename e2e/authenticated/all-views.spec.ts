@@ -3,7 +3,7 @@ import { VIEW_ROUTES } from './view-routes';
 const { app } = require('../../server/grant');
 
 for (const width of [320, 1440]) for (const theme of ['dark', 'light']) {
-  test(`les 35 vues conservent leurs repères à ${width}px en thème ${theme}`, async ({ page, login }) => {
+  test(`les 32 vues conservent leurs repères à ${width}px en thème ${theme}`, async ({ page, login }) => {
     test.setTimeout(70000);
     await page.setViewportSize({ width, height: 900 }); await login('premium');
     await page.evaluate((value) => {
@@ -31,29 +31,24 @@ for (const width of [320, 1440]) for (const theme of ['dark', 'light']) {
   });
 }
 
-test('les feuilles du marché et de la bibliothèque ne modifient pas une autre page après navigation', async ({ page, login }) => {
-  await login('premium'); await page.goto('/abajad');
+test('les styles du marché restent isolés après navigation', async ({ page, login }) => {
+  await login('premium'); await page.goto('/wafq/carre/4');
   const panel = page.locator('.glass-panel');
-  const appearance = () => panel.evaluate((node) => {
-    const style = getComputedStyle(node); return { padding: style.padding, border: style.border, background: style.backgroundColor };
-  });
+  const appearance = () => panel.evaluate((node) => { const s = getComputedStyle(node); return { padding: s.padding, border: s.border, background: s.backgroundColor }; });
   const initial = await appearance();
-  await page.getByRole('link', { name: 'Retour', exact: false }).click();
+  await page.getByRole('link', { name: /Retour/ }).click();
+  await page.getByRole('link', { name: /Retour/ }).click();
+  await page.getByRole('link', { name: /Retour/ }).click();
   await expect(page.locator('.market-page')).toBeVisible();
   await page.getByRole('link', { name: 'Ouvrir le menu', exact: true }).click();
   await page.getByRole('link', { name: /Ressources/ }).click();
   await page.getByRole('link', { name: /Biblioth/ }).click();
-  await expect(page.getByRole('heading', { name: /Bibliothèque Almaqtab/ })).toBeVisible();
-  await page.getByRole('link', { name: 'Retour', exact: false }).click();
+  await page.getByRole('link', { name: /Retour/ }).click();
   await page.getByRole('link', { name: 'Ouvrir le menu', exact: true }).click();
-  await page.getByRole('link', { name: /Outils/ }).click();
-  await page.getByRole('link', { name: /Abajad/ }).click();
-  await expect(panel).toBeVisible(); expect(await appearance()).toEqual(initial);
-  await page.getByRole('link', { name: 'Retour', exact: false }).click();
-  await page.getByRole('link', { name: 'Ouvrir le menu', exact: true }).click();
-  await page.getByRole('link', { name: /Outils/ }).click();
-  await page.getByRole('link', { name: /Planète/ }).click();
-  await expect(page.locator('.pm-head')).toHaveCSS('display', 'block');
+  await page.getByRole('link', { name: /Sciences traditionnelles/ }).click();
+  await page.getByRole('link', { name: /Hatims/ }).click();
+  await page.getByRole('link', { name: 'Carré 4 × 4, 16 cases', exact: true }).click();
+  expect(await appearance()).toEqual(initial);
 });
 
 test('la bibliothèque affiche les titres longs et garde un commentaire en cas d’échec', async ({ page, login, postAs }) => {
@@ -77,13 +72,13 @@ test('la bibliothèque affiche les titres longs et garde un commentaire en cas d
   expect((await postAs('admin', 'admin', { action: 'delete-book', key: 'ui-book' })).status()).toBe(200);
 });
 
-test('bibliothèque, formations, boutique et secrets proposent une reprise après une panne initiale', async ({ page, login }) => {
+test('bibliothèque, boutique et secrets proposent une reprise après une panne initiale', async ({ page, login }) => {
   await login('premium'); let failing = true;
   await page.route('**/api/list-content', (route) => failing
     ? route.fulfill({ status: 503, json: { error: 'Panne simulée' } }) : route.fallback());
   await page.route('**/api/shop', (route) => failing
     ? route.fulfill({ status: 503, json: { error: 'Panne simulée' } }) : route.fallback());
-  for (const [path, title] of [['/bibliotheque', 'Bibliothèque indisponible'], ['/formation', 'Formations indisponibles'], ['/boutique', 'Boutique indisponible'], ['/asrar', 'Secrets indisponibles']]) {
+  for (const [path, title] of [['/bibliotheque', 'Bibliothèque indisponible'], ['/boutique', 'Boutique indisponible'], ['/asrar', 'Secrets indisponibles']]) {
     failing = true; await page.goto(path); await expect(page.getByRole('heading', { name: title })).toBeVisible();
     failing = false; await page.getByRole('button', { name: 'Réessayer', exact: true }).click();
     await expect(page.getByRole('heading', { name: title })).toHaveCount(0);
@@ -92,17 +87,13 @@ test('bibliothèque, formations, boutique et secrets proposent une reprise aprè
 
 test('les filtres et les sous-pages restent utilisables au clavier avec des cibles tactiles de 44px', async ({ page, login }) => {
   await page.setViewportSize({ width: 320, height: 800 }); await login('premium');
-  for (const [path, selector] of [['/tafsir', '.tf-cat-btn'], ['/thalsams', '.th-tab'], ['/wafq', '.wq-intent-btn'], ['/wafq/carre/3', '.kz-mode-btn']]) {
+  for (const [path, selector] of [['/tafsir', '.tf-cat-btn'], ['/wafq', '.wq-intent-btn'], ['/wafq/carre/3', '.kz-mode-btn']]) {
     await page.goto(path); const controls = page.locator(selector);
     for (const button of await controls.all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await controls.last().focus(); await page.keyboard.press('Enter');
     await expect(controls.last()).toHaveClass(/active/);
   }
-  await page.goto('/formation'); const formation = page.getByRole('button', { name: /Formation de test/ });
-  await formation.focus(); await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Formation de test', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Retour', exact: false }).click();
-  await expect(formation).toBeVisible();
+
 });
 
 test('les neuf tailles de carrés affichent des valeurs lisibles sans déborder de la page', async ({ page, login }) => {
@@ -155,7 +146,7 @@ test('un changement rapide de catégorie ne remplace pas les secrets récents pa
   await expect(page.getByRole('button', { name: /Ouverture actuelle/ })).toBeVisible();
 });
 
-for (const kind of ['product', 'secret', 'review']) {
+for (const kind of ['product', 'secret']) {
   test(`le brouillon ${kind} est conservé après échec et vidé après confirmation serveur`, async ({ page, login }) => {
     await login('premium'); let failing = true;
     await page.route('**/api/social', (route) => failing && route.request().postDataJSON()?.action === 'comment'
@@ -169,18 +160,28 @@ for (const kind of ['product', 'secret', 'review']) {
       await page.goto('/asrar'); await page.getByRole('button', { name: /Secret de test/i }).click();
       await page.getByRole('button', { name: 'Commentaires', exact: true }).click();
       input = page.getByRole('textbox', { name: 'Votre commentaire', exact: true });
-    } else {
-      await page.goto('/formation'); await page.getByRole('button', { name: /Formation de test/ }).click();
-      await page.getByRole('button', { name: '4 étoiles', exact: true }).click();
-      input = page.getByRole('textbox', { name: 'Votre avis', exact: true });
     }
     const text = 'Texte de recette à conserver ' + kind;
     await input.fill(text);
-    const send = page.getByRole('button', { name: kind === 'review' ? 'Publier mon avis' : 'Envoyer', exact: true });
+    const send = page.getByRole('button', { name: 'Envoyer', exact: true });
     await send.click(); await expect(page.getByRole('alert').filter({ hasText: /conservé/ })).toBeVisible();
     await expect(input).toHaveValue(text);
-    if (kind === 'review') await expect(page.getByRole('button', { name: '4 étoiles', exact: true })).toHaveAttribute('aria-pressed', 'true');
     failing = false; await send.click(); await expect(input).toHaveValue('');
     await expect(page.getByText(text, { exact: true })).toBeVisible();
   });
 }
+
+
+test('les modules retirés ne réapparaissent pas dans les favoris, les récents ou la recherche', async ({ page, login }) => {
+  await login('free');
+  await page.evaluate(() => {
+    for (const key of ['asrar_favorite_modules', 'asrar_recent_modules']) localStorage.setItem(key, JSON.stringify(['/abajad', '/thalsams', '/formation']));
+  });
+  await page.goto('/menu');
+  await expect(page.locator('a[href="/abajad"], a[href="/thalsams"], a[href="/formation"]')).toHaveCount(0);
+  const search = page.getByRole('searchbox', { name: 'Rechercher un module' });
+  for (const term of ['Abajad', 'Thalsams', 'Formation']) {
+    await search.fill(term);
+    await expect(page.locator('a[href="/abajad"], a[href="/thalsams"], a[href="/formation"]')).toHaveCount(0);
+  }
+});

@@ -18,6 +18,12 @@ if (!appVersion) throw new Error('Version du service worker introuvable.');
 // /marche n'existe plus, d'où les deux entrées qui pointent vers / (au lieu
 // de /marche) — pour les favoris/liens déjà partagés avant ce changement.
 const LEGACY = [
+  ['/abajad', '/menu/outils'],
+  ['/abjad', '/menu/outils'],
+  ['/thalsams', '/menu/outils'],
+  ['/thalsams/thalsams.html', '/menu/outils'],
+  ['/formation', '/menu/ressources'],
+  ['/formation/formation.html', '/menu/ressources'],
   ['/index.html', '/'],
   ['/auth/auth.html', '/'],
   ['/accueil/accueil.html', '/'],
@@ -27,7 +33,7 @@ const LEGACY = [
   ['/boutique/boutique.html', '/boutique'],
   ['/bibliotheque/bibliotheque.html', '/bibliotheque'],
   ['/don/don.html', '/don'],
-  ['/abajad/abajad.html', '/abajad'],
+  ['/abajad/abajad.html', '/menu/outils'],
   ['/parrainage/parrainage.html', '/parrainage'],
   ['/combinaisons/combinaisons.html', '/combinaisons'],
   ['/planete/planete.html', '/planete'],

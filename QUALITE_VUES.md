@@ -1,4 +1,8 @@
-# Qualité des vues — revue des 35 vues
+# Qualité des vues — historique de revue
+
+Depuis v46.18, Abajad, Thalsams et Formation/visioconférence sont retirés.
+Les anciens liens redirigent vers les catégories du menu. La revue ci-dessous
+décrit le périmètre historique v46.16 ; la matrice active comporte 32 vues.
 
 ## Défauts constatés et corrections
 
