@@ -9,11 +9,10 @@ test('étoile 18 cases : saisie instantanée, alignements, copie, export et mobi
   }));
   await page.reload();
   await page.getByRole('radio', { name: 'Étoile', exact: true }).check();
-  await page.getByLabel('Configuration de l’étoile', { exact: true }).selectOption('six');
   const input = page.getByLabel('Constante magique S', { exact: true });
   const diagram = page.getByRole('region', { name: 'Diagramme de l’étoile magique', exact: true });
   await expect(input).toBeVisible();
-  for (const s of [38, 117, 644]) {
+  for (const s of [57, 58, 59, 60, 61, 62, 117, 644]) {
     await input.fill(String(s));
     const values = await diagram.locator('[data-case]').evaluateAll((nodes) => {
       const result: number[] = [];
@@ -22,11 +21,11 @@ test('étoile 18 cases : saisie instantanée, alignements, copie, export et mobi
     });
     expect(values.length).toBe(18); expect(new Set(values).size).toBe(18);
     for (const line of MAGIC_STAR_LINES) expect(line.reduce((sum, i) => sum + values[i - 1], 0)).toBe(s);
-    await expect(page.locator('.kz-star-checks li')).toHaveCount(6);
+    await expect(page.locator('.kz-star-checks li')).toHaveCount(7);
   }
   await page.getByRole('button', { name: 'Copier les valeurs', exact: true }).click();
   expect(await page.evaluate(() => (window as any).copiedStar)).toContain('S = 644');
-  expect(await page.evaluate(() => (window as any).copiedStar)).toContain('156 + 158 + 159 + 171 = 644');
+  expect(await page.evaluate(() => (window as any).copiedStar)).toContain('103 + 118 + 105 + 108 + 100 + 110 = 644');
   const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Exporter l’étoile (SVG)', exact: true }).click();
   const download = await downloadEvent;
@@ -37,7 +36,7 @@ test('étoile 18 cases : saisie instantanée, alignements, copie, export et mobi
   expect(exported).toContain('xmlns="http://www.w3.org/2000/svg"');
   expect(exported.match(/data-case=/g)).toHaveLength(18);
   expect(exported).toContain('--star-surface:#fff');
-  for (const bad of ['', '37', '-38', '38.5', 'abc', '9007199254740992', '1e3']) {
+  for (const bad of ['', '56', '38', '-57', '57.5', 'abc', '9007199254740992', '1e3']) {
     await input.fill(bad); await expect(input).toHaveAttribute('aria-invalid', 'true');
     await expect(diagram).toHaveCount(0);
   }
@@ -47,17 +46,17 @@ test('étoile 18 cases : saisie instantanée, alignements, copie, export et mobi
     await page.setViewportSize({ width, height: 850 });
     for (const theme of ['dark', 'light']) {
       await page.evaluate((t) => document.documentElement.dataset.theme = t, theme);
-      for (const value of ['38', '9007199254740991']) {
+      for (const value of ['57', '9007199254740991']) {
         await input.fill(value);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
-      await input.fill('38');
+      await input.fill('57');
       await diagram.screenshot({ path: test.info().outputPath(`etoile-${width}-${theme}.png`) });
     }
   }
   await page.evaluate(() => Object.defineProperty(navigator.clipboard, 'writeText', { value: async () => { throw new Error('denied'); } }));
   await page.getByRole('button', { name: 'Copier les valeurs', exact: true }).click();
-  await expect(page.getByLabel('Étoile à copier manuellement')).toContainText('S = 38');
+  await expect(page.getByLabel('Étoile à copier manuellement')).toContainText('S = 57');
   await page.getByRole('radio', { name: 'Carré', exact: true }).check();
   await expect(diagram).toHaveCount(0);
   await page.getByLabel('Nombre', { exact: true }).fill('111');
@@ -75,9 +74,10 @@ test('le générateur étoile conserve la vérification de l’accès premium', 
 test('le modèle à sept alignements affiche les valeurs dans les mêmes positions et exporte sept sommes de 57', async ({ page, login }) => {
   await login('premium'); await page.goto('/wafq/carre/6');
   await page.getByRole('radio', { name: 'Étoile', exact: true }).check();
-  await expect(page.getByLabel('Configuration de l’étoile', { exact: true })).toHaveValue('seven');
+  await expect(page.getByLabel('Configuration de l’étoile', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('option', { name: /6 alignements/ })).toHaveCount(0);
   await expect(page.getByLabel('Constante magique S', { exact: true })).toHaveValue('57');
-  await expect(page.getByLabel('Constante magique S', { exact: true })).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel('Constante magique S', { exact: true })).toBeEditable();
   const diagram = page.getByRole('region', { name: 'Diagramme de l’étoile magique', exact: true });
   const expected = [6, 17, 4, 5, 18, 15, 7, 8, 9, 10, 11, 12, 2, 3, 16, 13, 1, 14];
   for (let i = 0; i < 18; i++) {
@@ -105,8 +105,8 @@ test('le modèle à sept alignements affiche les valeurs dans les mêmes positio
   const stream = await download.createReadStream(); const chunks: Buffer[] = [];
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   expect(Buffer.concat(chunks).toString()).toContain('Les 7 alignements ont pour somme 57');
-  await page.getByLabel('Configuration de l’étoile', { exact: true }).selectOption('six');
-  await expect(page.locator('.kz-star-checks li')).toHaveCount(6);
-  await page.getByLabel('Configuration de l’étoile', { exact: true }).selectOption('seven');
+  await page.getByLabel('Constante magique S', { exact: true }).fill('117');
+  await expect(page.locator('.kz-star-checks li strong')).toHaveText(Array(7).fill('117'));
+  await page.getByLabel('Constante magique S', { exact: true }).fill('57');
   await expect(page.locator('.kz-star-checks li strong')).toHaveText(Array(7).fill('57'));
 });

@@ -1,16 +1,26 @@
-/** Cases et alignements numérotés de 1 à 18, conformément au modèle fourni. */
-export const MAGIC_STAR_BASE = [6, 3, 5, 18, 4, 1, 7, 8, 9, 10, 11, 12, 16, 17, 2, 13, 14, 15] as const;
+/** Étoile à 18 cases : indices du schéma numérotés de 1 à 18. */
+export const MAGIC_STAR_BASE = [6, 17, 4, 5, 18, 15, 7, 8, 9, 10, 11, 12, 2, 3, 16, 13, 1, 14] as const;
 export const MAGIC_STAR_LINES = [
-  [3, 7, 8, 4], [1, 7, 9, 13], [2, 8, 10, 14],
-  [5, 9, 11, 17], [6, 10, 12, 18], [15, 11, 12, 16],
-] as const;
-const CORRECTIONS = new Set([4, 13, 14, 16, 17, 18]);
-
-export const MAGIC_STAR_57_BASE = [6, 17, 4, 5, 18, 15, 7, 8, 9, 10, 11, 12, 2, 3, 16, 13, 1, 14] as const;
-export const MAGIC_STAR_57_LINES = [
   [1, 2, 8, 10, 14, 16], [7, 8, 9, 10, 11, 12],
   [4, 6, 10, 12, 17, 18], [11, 12, 13, 14, 15, 16],
   [3, 5, 9, 11, 17, 18], [1, 2, 7, 9, 13, 15], [3, 4, 5, 6, 7, 8],
+] as const;
+
+
+/**
+ * Bases vérifiées pour S = 57, 58, …, 62. Chaque base contient 18 entiers
+ * positifs distincts et respecte les mêmes sept alignements de six cases.
+ * Ajouter q à chaque case ajoute exactement 6q à chaque somme, sans changer
+ * les différences entre les valeurs : toute constante entière S >= 57 est
+ * couverte en choisissant sa base modulo 6. Aucun solveur n'est exécuté.
+ */
+export const MAGIC_STAR_ANCHORS = [
+  MAGIC_STAR_BASE,
+  [6, 18, 3, 5, 20, 15, 7, 8, 9, 10, 11, 13, 2, 4, 16, 12, 1, 14],
+  [6, 19, 3, 5, 21, 15, 7, 8, 9, 10, 11, 14, 1, 4, 17, 12, 2, 13],
+  [6, 20, 4, 5, 18, 17, 7, 9, 8, 10, 14, 12, 3, 2, 16, 13, 1, 15],
+  [6, 21, 4, 5, 18, 19, 7, 8, 9, 10, 15, 12, 2, 3, 16, 13, 1, 14],
+  [6, 21, 4, 5, 22, 16, 7, 8, 9, 11, 12, 15, 2, 3, 17, 13, 1, 14],
 ] as const;
 
 type Alignments = readonly (readonly number[])[];
@@ -34,19 +44,15 @@ function result(values: number[], constant: number, lines: Alignments) {
   return { constant, values, lines, ...checks };
 }
 
-/** Configuration normale (1 à 18). Toute autre constante exige une nouvelle stratégie. */
-export function magicStar57(constant = 57) {
-  if (constant !== 57) throw new RangeError('Cette configuration utilise les nombres 1 à 18 et la constante 57 uniquement.');
-  return result([...MAGIC_STAR_57_BASE], constant, MAGIC_STAR_57_LINES);
-}
-
+/** Génération exacte pour tous les entiers représentables de S >= 57. */
 export function magicStar(constant: number) {
-  if (!Number.isSafeInteger(constant) || constant < 38) {
-    throw new RangeError('S doit être un entier compris entre 38 et 9007199254740991.');
+  if (!Number.isSafeInteger(constant) || constant < 57) {
+    throw new RangeError('S doit être un entier compris entre 57 et 9007199254740991.');
   }
-  const q = Math.floor((constant - 38) / 4);
-  const r = (constant - 38) % 4;
-  const values = MAGIC_STAR_BASE.map((base, i) => base + q + (CORRECTIONS.has(i + 1) ? r : 0));
+  const delta = constant - 57;
+  const remainder = delta % 6;
+  const offset = (delta - remainder) / 6;
+  const values = MAGIC_STAR_ANCHORS[remainder].map((base) => base + offset);
   return result(values, constant, MAGIC_STAR_LINES);
 }
 
