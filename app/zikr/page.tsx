@@ -21,6 +21,7 @@
 // privé à un clic, exclusion), succession automatique de créateur s'il
 // quitte alors que d'autres membres restent.
 import './zikr.css';
+import ParticipantWarning from './ParticipantWarning';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -51,7 +52,7 @@ import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, compose
 import { playNotificationBeep } from '@/lib/notifSound';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
-  approveMember, rejectMember, saveProgress, warnMember, notifyInactiveMembers, dismissWarning,
+  approveMember, rejectMember, saveProgress, notifyInactiveMembers, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
   openWishes, closeWishes, submitWish, shareWish, amineWish,
   sendMessage, getMessages, approveZikr,
@@ -113,6 +114,7 @@ interface Member {
   fait: number;
   rythme: number;
   online: boolean;
+  warning?: { at: number; deadline: number } | null;
   dailyTotal: number; // total du jour (fenêtre UTC commune au groupe, lib/zikrLogic.js utcDateKey)
 }
 
@@ -161,6 +163,7 @@ interface GroupDetailData extends Group {
   myFait?: number;
   myDailyTotal?: number;
   myWarning?: string;
+  myWarningDeadline?: number | null;
   wishesOpen?: boolean;
   wishes?: Wish[];
   myWish?: string;
@@ -196,8 +199,7 @@ const fmtHm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '
 // chiffres). `phone` est déjà au format international normalisé côté
 // serveur (lib/zikrLogic.js normalizePhone) avant d'arriver ici.
 const waContactUrl = (phone: string, groupName: string) =>
-  'https://wa.me/' + phone.replace(/\D/g, '') +
-  '?text=' + encodeURIComponent(`Assalamou aleykoum 🌙 — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
+  'https://wa.me/' + phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(`Assalamou aleykoum — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 const LIST_POLL_MS = 15000; // La liste n'affiche pas le compteur en direct.
@@ -847,6 +849,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
   // « Notifier les inactifs » (créateur only) — voir doNotifyInactive.
   const [notifyBusy, setNotifyBusy] = useState(false);
+  const [warningMember, setWarningMember] = useState<Member | null>(null);
 
   // Écran actif — remplace l'ancien empilement d'une seule longue page :
   // « zikr » (récitation, cœur de l'expérience) est l'écran par défaut,
@@ -1123,7 +1126,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // best-effort). `notified` reflète ce que le SERVEUR a réellement trouvé
   // (recalculé côté serveur, pas simplement inactiveCount côté client).
   const doNotifyInactive = async () => {
-    if (notifyBusy) return;
+    if (notifyBusy || !window.confirm("Avertir les membres sans récitation ? Sans reprise sous 7 jours, ils seront retirés de ce groupe.")) return;
     setNotifyBusy(true);
     try {
       const d = await notifyInactiveMembers(groupId);
@@ -1133,15 +1136,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           ? `🔔 ${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.`
           : 'Aucun compte inactif pour l’instant.'
       );
+      load();
     } catch (e: any) {
       notify('❌ ' + (e.message || e));
     } finally {
       setNotifyBusy(false);
     }
-  };
-  const doWarn = async (targetUid: string, email: string) => {
-    try { await warnMember(groupId, targetUid); notify(`Avertissement privé envoyé à ${email}.`); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
   };
   const doExclude = async (targetUid: string, email: string) => {
     if (!window.confirm(`Exclure ${email} de ce zikr collectif ?`)) return;
@@ -1194,7 +1194,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // décompte qui fait foi est celui recalculé par le serveur, voir
   // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
   // sondage affiché côté client).
-  const inactiveCount = members.filter((m) => m.uid !== uid && m.fait === 0).length;
+  const inactiveCount = members.filter((m) => m.uid !== uid && m.uid !== g.ownerUid && m.fait === 0).length;
   // Résumé de l'onglet Participants — comptés sur la liste RÉELLEMENT
   // affichée (plutôt que g.onlineCount, recalculé côté serveur) : le résumé
   // et les lignes en dessous racontent ainsi toujours la même chose.
@@ -1218,7 +1218,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const recitingMode = isMember && tab === 'zikr';
 
   return (
-    <div className={'zk-detail' + (isMember ? ' zk-has-bottom-nav' : '') + (chatMode ? ' zk-chat-mode' : '')}>
+    <div className={'zk-detail' + ((isMember || canModerate) ? ' zk-has-bottom-nav' : '') + (chatMode ? ' zk-chat-mode' : '')}>
       {/* Barre de nav resserrée : retour, Partager (icône) et un menu ⋮
           — visible de TOUT membre désormais (pas seulement créateur/admin) :
           « Quitter le groupe » (revue design : action secondaire rarement
@@ -1404,7 +1404,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           seulement des membres (pas des visiteurs qui n'ont pas encore
           rejoint), avec les outils de modération pour le créateur (menu par
           ligne, plus les deux boutons colorés en permanence d'avant). */}
-      {isMember && tab === 'participants' && (
+      {(isMember || canModerate) && tab === 'participants' && (
         <div className="zk-board">
           {/* En-tête : libellé discret + résumé d'UNE ligne (en ligne /
               ont récité) plutôt qu'un titre seul — le même traitement que
@@ -1420,12 +1420,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 {fmt(activeCount)} {activeCount > 1 ? 'ont' : 'a'} récité
               </p>
             </div>
-            {g.status === 'owner' && (
+            {canModerate && (
               <button
                 type="button"
                 className="zk-notify-inactive"
                 onClick={doNotifyInactive}
-                disabled={notifyBusy || inactiveCount === 0}
+                disabled={notifyBusy || inactiveCount === 0 || g.full}
                 title="Avertir les comptes n'ayant récité aucun grain — sinon ils seront retirés du groupe"
               >
                 <Bell size={13} strokeWidth={2.5} aria-hidden="true" />
@@ -1479,6 +1479,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                       {m.uid === uid && <span className="zk-board-you">vous</span>}
                     </span>
                     {canModerate && m.email && <span className="zk-board-email-sub">{m.email}</span>}
+                    {canModerate && m.warning && <span className="zk-warned-tag" title={m.warning.at ? `Averti le ${new Date(m.warning.at).toLocaleString('fr-FR')} · échéance ${new Date(m.warning.deadline).toLocaleString('fr-FR')}` : "Avertissement antérieur, sans délai automatique. Renouvelez-le pour démarrer les 7 jours."}>Averti</span>}
                   </span>
                   {/* UN seul nombre dominant par ligne (le total, jamais remis
                       à zéro) ; le total du jour n'apparaît que s'il y en a
@@ -1502,16 +1503,16 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                       que pour le créateur/l'admin, voir pages/api/zikr.js
                       handleGet : rien à vérifier de plus côté client, son
                       absence pour tout autre viewer masque déjà ce bouton. */}
-                  {m.phone && m.uid !== uid && (
-                    <a className="zk-icon-btn zk-board-wa" href={waContactUrl(m.phone, g.name)} target="_blank" rel="noopener noreferrer"
-                      title={`Contacter ${displayName} par WhatsApp`} aria-label={`Contacter ${displayName} par WhatsApp`}>
+                  {m.phone && m.uid !== uid && m.uid !== g.ownerUid && (
+                    <button type="button" className="zk-icon-btn zk-board-wa" onClick={() => setWarningMember(m)}
+                      title={`Préparer un message WhatsApp pour ${displayName}`} aria-label={`Préparer un message WhatsApp pour ${displayName}`} disabled={g.full}>
                       <Phone size={15} strokeWidth={2.5} aria-hidden="true" />
-                    </a>
+                    </button>
                   )}
-                  {g.status === 'owner' && m.uid !== uid && (
+                  {canModerate && m.uid !== g.ownerUid && m.uid !== uid && (
                     <MoreMenu label={`Actions de modération pour ${m.email}`}>
-                      <button type="button" className="zk-attach-item" onClick={() => doWarn(m.uid, m.email)}>
-                        <AlertTriangle size={16} strokeWidth={2.5} aria-hidden="true" /> Avertir en privé
+                      <button type="button" className="zk-attach-item" onClick={() => setWarningMember(m)} disabled={g.full}>
+                        <AlertTriangle size={16} strokeWidth={2.5} aria-hidden="true" /> Message et avertissement
                       </button>
                       <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={() => doExclude(m.uid, m.email)}>
                         <X size={16} strokeWidth={2.5} aria-hidden="true" /> Exclure du groupe
@@ -1741,8 +1742,10 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         </div>
       )}
 
-      {isMember && (
+      {warningMember && <ParticipantWarning key={warningMember.uid} groupId={groupId} group={g} member={members.find((member) => member.uid === warningMember.uid) || warningMember} onClose={() => setWarningMember(null)} onSaved={load} />}
+      {(isMember || canModerate) && (
         <BottomNav
+          canDiscuss={isMember}
           tab={tab}
           setTab={setTab}
           unreadCount={unreadCount}
@@ -1758,7 +1761,8 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 // HORS de cette barre (icône bouclier de la barre du haut, réservée
 // créateur/admin) pour ne pas encombrer l'expérience de récitation des
 // autres membres.
-function BottomNav({ tab, setTab, unreadCount }: {
+function BottomNav({ tab, setTab, unreadCount, canDiscuss = true }: {
+  canDiscuss?: boolean;
   tab: 'zikr' | 'participants' | 'discussion' | 'admin';
   setTab: (t: 'zikr' | 'participants' | 'discussion' | 'admin') => void;
   unreadCount: number;
@@ -1770,7 +1774,7 @@ function BottomNav({ tab, setTab, unreadCount }: {
   ];
   return (
     <nav className="zk-bottom-nav" aria-label="Navigation du zikr collectif">
-      {items.map((it) => (
+      {items.filter((it) => canDiscuss || it.key !== 'discussion').map((it) => (
         <button
           key={it.key}
           type="button"
@@ -1931,6 +1935,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
       {g.myWarning && (
         <div className="zk-warning">
           <p><AlertTriangle size={14} strokeWidth={2.5} aria-hidden="true" /> {g.myWarning}</p>
+          {g.myWarningDeadline && <p>Reprenez une récitation avant le {new Date(g.myWarningDeadline).toLocaleString('fr-FR')} pour rester dans le groupe.</p>}
           <button type="button" className="zk-link" onClick={onDismissWarning}>C’est noté</button>
         </div>
       )}

@@ -188,6 +188,8 @@ const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { recordProgress } = require("../../server/zikrProgress");
+const { warnParticipant } = require("../../server/zikrInactivity");
+const { isActiveZikrMember, zikrWarningMessage, ZIKR_WARNING_MAX } = require("../../lib/zikrWarning");
 const { approveMember } = require("../../server/zikrMembership");
 const { publishAndNotify } = require("../../server/notify");
 const { zikrMessageNotification, zikrCollectifNotification } = require("../../lib/notifyTemplates");
@@ -198,7 +200,7 @@ const { zikrMessageNotification, zikrCollectifNotification } = require("../../li
 const BROADCAST_SENDER = "ASRAR PRO";
 const {
   normalizeGroupInput, cleanText, utcDateKey, normalizePhone,
-  ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_AVERTISSEMENT, MESSAGE_INACTIVITE,
+  ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_INACTIVITE,
   WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount, chatDisplayName,
 } = require("../../lib/zikrLogic");
 
@@ -246,7 +248,7 @@ export default async function handler(req, res) {
       case "approve":        return await handleApprove(db, res, user, gid, safeKey(body.uid));
       case "reject":         return await handleReject(db, res, user, gid, safeKey(body.uid));
       case "progress":       return await handleProgress(db, res, user, gid, body.fait, body.rythme);
-      case "warn":           return await handleWarn(db, res, user, gid, safeKey(body.uid));
+      case "warn":           return await handleWarn(db, res, user, gid, safeKey(body.uid), body.message);
       case "notifyInactive": return await handleNotifyInactive(db, res, user, gid);
       case "dismissWarning": return await handleDismissWarning(db, res, user, gid);
       case "exclude":        return await handleExclude(db, res, user, gid, safeKey(body.uid));
@@ -336,7 +338,7 @@ async function handleList(db, res, user) {
         db.ref("zikr_members/" + grp.id + "/" + user.uid).once("value"),
         db.ref("zikr_requests/" + grp.id + "/" + user.uid).once("value"),
       ]);
-      grp.status = mSnap.exists() ? "member" : rSnap.exists() ? "pending" : "none";
+      grp.status = isActiveZikrMember(mSnap.val()) ? "member" : rSnap.exists() ? "pending" : "none";
     })
   );
 
@@ -461,7 +463,7 @@ async function handleGet(db, res, user, gid) {
   // un membre réel.
   const mineSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
   let mine = null;
-  if (mineSnap.exists()) {
+  if (isActiveZikrMember(mineSnap.val())) {
     const v = mineSnap.val() || {};
     mine = {
       uid: user.uid,
@@ -474,6 +476,7 @@ async function handleGet(db, res, user, gid) {
       online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
       avertissement: v.avertissement || "",
       dailyTotal: dailyOf(v),
+      warningDeadline: v.warning?.deadline || null,
     };
   }
 
@@ -490,12 +493,13 @@ async function handleGet(db, res, user, gid) {
     const membersSnap = await db.ref("zikr_members/" + gid).once("value");
     membersSnap.forEach((m) => {
       const v = m.val() || {};
+      if (!isActiveZikrMember(v)) return;
       members.push({
         uid: m.key,
         email: v.email || "",
         name: v.name || "",
         picture: v.picture || "",
-        ...(canModerate ? { phone: v.phone || "" } : {}),
+        ...(canModerate ? { phone: v.phone || "", warning: v.warning ? { at: v.warning.at, deadline: v.warning.deadline } : v.avertissement ? { at: 0, deadline: 0 } : null } : {}),
         fait: Number(v.fait) || 0,
         rythme: Number(v.rythme) || 0,
         online: now - (Number(v.lastSeenAt) || 0) < ONLINE_WINDOW_MS,
@@ -542,7 +546,7 @@ async function handleGet(db, res, user, gid) {
 
   // Battement de cœur (présence « en ligne ») — seulement pour un membre qui
   // sonde effectivement son propre groupe (pas de sens sinon).
-  if (mine) await db.ref("zikr_members/" + gid + "/" + user.uid + "/lastSeenAt").set(now);
+  if (mine) await db.ref("zikr_members/" + gid + "/" + user.uid).transaction((member) => isActiveZikrMember(member) ? { ...member, lastSeenAt: now } : member);
 
   const full = remaining <= 0; // objectif entièrement récité
 
@@ -609,6 +613,7 @@ async function handleGet(db, res, user, gid) {
     myFait: mine ? mine.fait : 0,
     myDailyTotal: mine ? mine.dailyTotal : 0,
     myWarning: mine ? mine.avertissement : "",
+    myWarningDeadline: mine?.warningDeadline || null,
     myWish,
     myWishShared,
     sharedWishes,
@@ -634,7 +639,7 @@ async function handleJoin(db, res, user, gid, rawPhone) {
   if (g.ownerUid === user.uid) return res.status(200).json({ ok: true, status: "owner" });
 
   const mSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (mSnap.exists()) return res.status(200).json({ ok: true, status: "member" });
+  if (isActiveZikrMember(mSnap.val())) return res.status(200).json({ ok: true, status: "member" });
 
   await db.ref("zikr_requests/" + gid + "/" + user.uid).set({
     email: user.email, name: user.name || "", picture: user.picture || "", phone, at: Date.now(),
@@ -675,7 +680,7 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
 
   const memRef = db.ref("zikr_members/" + gid + "/" + user.uid);
   const memSnap = await memRef.once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
   const mem = memSnap.val() || {};
 
   const now = Date.now();
@@ -688,14 +693,19 @@ async function handleProgress(db, res, user, gid, rawFait, rawRythme) {
 }
 
 // ── Créateur : avertissement privé à un clic ────────────────────
-async function handleWarn(db, res, user, gid, uid) {
-  await assertOwner(db, gid, user);
+async function handleWarn(db, res, user, gid, uid, rawMessage) {
+  const g = await assertOwner(db, gid, user, true);
   if (!uid) return res.status(400).json({ error: "Compte manquant." });
-  if (uid === user.uid) return res.status(400).json({ error: "Vous ne pouvez pas vous avertir vous-même." });
-  const memSnap = await db.ref("zikr_members/" + gid + "/" + uid).once("value");
-  if (!memSnap.exists()) return res.status(404).json({ error: "Ce compte n'est plus dans le groupe." });
-  await db.ref("zikr_members/" + gid + "/" + uid + "/avertissement").set(MESSAGE_AVERTISSEMENT);
-  return res.status(200).json({ ok: true });
+  if (uid === g.ownerUid) return res.status(400).json({ error: "Le créateur ne peut pas être averti pour inactivité." });
+  if ((Number(g.total) || 0) >= Number(g.target)) return res.status(409).json({ error: "L'objectif du groupe est déjà atteint." });
+  const member = (await db.ref(`zikr_members/${gid}/${uid}`).once("value")).val();
+  if (!isActiveZikrMember(member)) return res.status(404).json({ error: "Ce compte n'est plus dans le groupe." });
+  if (rawMessage !== undefined && (typeof rawMessage !== 'string' || !rawMessage.trim() || rawMessage.length > ZIKR_WARNING_MAX)) {
+    return res.status(400).json({ error: `Le message doit contenir de 1 à ${ZIKR_WARNING_MAX} caractères.` });
+  }
+  const message = rawMessage === undefined ? zikrWarningMessage(g, member) : rawMessage.trim();
+  const warning = await warnParticipant(db, gid, uid, user.uid, message);
+  return res.status(200).json({ ok: true, warning });
 }
 
 // ── Créateur : avertit EN UNE FOIS tous les comptes inactifs ────
@@ -707,22 +717,23 @@ async function handleWarn(db, res, user, gid, uid) {
 // abonné, cf. pages/api/push-subscribe.js) : sans le push, un compte qui
 // n'ouvre déjà plus l'app ne verrait jamais l'avertissement.
 async function handleNotifyInactive(db, res, user, gid) {
-  await assertOwner(db, gid, user);
+  const g = await assertOwner(db, gid, user, true);
+  if ((Number(g.total) || 0) >= Number(g.target)) return res.status(409).json({ error: "L’objectif du groupe est déjà atteint." });
   const membersSnap = await db.ref("zikr_members/" + gid).once("value");
   const targets = [];
   membersSnap.forEach((m) => {
-    if (m.key === user.uid) return; // jamais le créateur lui-même
+    if (m.key === g.ownerUid || m.key === user.uid) return; // jamais le créateur ni soi-même
     const v = m.val() || {};
-    if ((Number(v.fait) || 0) === 0) targets.push(m.key);
+    if (isActiveZikrMember(v) && (Number(v.fait) || 0) === 0) targets.push({ uid: m.key, member: v });
   });
   if (targets.length === 0) return res.status(200).json({ ok: true, notified: 0 });
 
   await Promise.all(
-    targets.map((uid) => db.ref("zikr_members/" + gid + "/" + uid + "/avertissement").set(MESSAGE_INACTIVITE))
+    targets.map(({ uid, member }) => warnParticipant(db, gid, uid, user.uid, zikrWarningMessage(g, member)))
   );
   // Best-effort : l'avertissement en application ci-dessus reste enregistré
   // même si VAPID est mal configuré ou qu'un envoi échoue.
-  await pushInactivityWarning(db, targets, gid).catch(() => {});
+  await pushInactivityWarning(db, targets.map((target) => target.uid), gid).catch(() => {});
 
   return res.status(200).json({ ok: true, notified: targets.length });
 }
@@ -810,7 +821,7 @@ async function notifyReciting(db, gid, senderUid, senderEmail, fait) {
   const tasks = [];
   membersSnap.forEach((m) => {
     const uid = m.key;
-    if (uid === senderUid) return;
+    if (uid === senderUid || !isActiveZikrMember(m.val())) return;
     const v = m.val() || {};
     if (now - (Number(v.lastRecitingPushAt) || 0) < RECITING_PUSH_WINDOW_MS) return; // déjà notifié récemment
     tasks.push(
@@ -831,7 +842,7 @@ async function handleDismissWarning(db, res, user, gid) {
 
 // ── Créateur : exclut un participant (jamais lui-même) ──────────
 async function handleExclude(db, res, user, gid, uid) {
-  const g = await assertOwner(db, gid, user);
+  const g = await assertOwner(db, gid, user, true);
   if (!uid) return res.status(400).json({ error: "Compte manquant." });
   if (uid === g.ownerUid) {
     return res.status(400).json({ error: "Le créateur ne peut pas s'auto-exclure — quittez ou supprimez le zikr collectif." });
@@ -864,7 +875,7 @@ async function removeParticipant(db, gid, g, targetUid) {
   let existed = false;
   const tx = await db.ref("zikr_members/" + gid).transaction((members) => {
     members = members || {};
-    if (!members[targetUid]) { existed = false; return members; }
+    if (!isActiveZikrMember(members[targetUid])) { existed = false; return members; }
     existed = true;
     delete members[targetUid];
     return members;
@@ -876,7 +887,7 @@ async function removeParticipant(db, gid, g, targetUid) {
 
   if (targetUid === g.ownerUid) {
     const remaining = (tx.committed && tx.snapshot && tx.snapshot.val()) || {};
-    const entries = Object.entries(remaining).sort(
+    const entries = Object.entries(remaining).filter(([, value]) => isActiveZikrMember(value)).sort(
       (a, b) => (Number(a[1].joinedAt) || 0) - (Number(b[1].joinedAt) || 0)
     );
     if (entries.length > 0) {
@@ -980,7 +991,7 @@ async function handleSubmitWish(db, res, user, gid, rawText) {
   }
 
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   const text = cleanText(rawText, WISH_MAX);
   if (!text) return res.status(400).json({ error: "Écrivez votre vœu avant d'envoyer." });
@@ -997,7 +1008,7 @@ async function handleSubmitWish(db, res, user, gid, rawText) {
 async function handleShareWish(db, res, user, gid, rawShared) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   const wishSnap = await db.ref("zikr_wishes/" + gid + "/" + user.uid).once("value");
   if (!wishSnap.exists()) return res.status(400).json({ error: "Envoyez d'abord votre vœu avant de le partager." });
@@ -1014,7 +1025,7 @@ async function handleShareWish(db, res, user, gid, rawShared) {
 async function handleAmineWish(db, res, user, gid, wishUid) {
   if (!gid || !wishUid) return res.status(400).json({ error: "Vœu introuvable." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   const wishSnap = await db.ref("zikr_wishes/" + gid + "/" + wishUid).once("value");
   const wish = wishSnap.val();
@@ -1041,7 +1052,7 @@ async function handleAmineWish(db, res, user, gid, wishUid) {
 async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawMediaUrl, rawMediaDuration) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   const text = cleanText(rawText, CHAT_MESSAGE_MAX);
   const mediaType = CHAT_MEDIA_TYPES.includes(rawMediaType) ? rawMediaType : null;
@@ -1081,7 +1092,7 @@ async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawM
 async function handleMessages(db, res, user, gid, after) {
   if (!gid) return res.status(400).json({ error: "Groupe manquant." });
   const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!memSnap.exists()) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
+  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
 
   if (after != null && !isValidKey(after)) return res.status(400).json({ error: "Curseur de discussion invalide." });
   let query = db.ref("zikr_chat/" + gid).orderByKey();
@@ -1123,7 +1134,7 @@ async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayNa
   const notif = zikrMessageNotification({ senderName, preview: text, hasMedia });
 
   const targets = [];
-  membersSnap.forEach((m) => { if (m.key !== senderUid) targets.push(m.key); });
+  membersSnap.forEach((m) => { if (m.key !== senderUid && isActiveZikrMember(m.val())) targets.push(m.key); });
   await publishAndNotify(db, "zikr_chat/" + gid + "/" + messageId, message, {
     ...notif,
     senderName,
@@ -1134,11 +1145,11 @@ async function notifyNewMessage(db, gid, senderUid, senderEmail, senderDisplayNa
 
 // Vérifie que l'appelant est bien le créateur du groupe, sinon lève une erreur
 // HTTP (403/404). Renvoie le groupe (utile pour lire target/total ensuite).
-async function assertOwner(db, gid, user) {
+async function assertOwner(db, gid, user, allowAdmin = false) {
   if (!gid) { const e = new Error("Groupe manquant."); e.statusCode = 400; throw e; }
   const g = (await db.ref("zikr_groups/" + gid).once("value")).val();
   if (!g) { const e = new Error("Zikr collectif introuvable."); e.statusCode = 404; throw e; }
-  if (g.ownerUid !== user.uid) {
+  if (g.ownerUid !== user.uid && !(allowAdmin && await isAdmin(user))) {
     const e = new Error("Action réservée au créateur du zikr collectif.");
     e.statusCode = 403;
     throw e;

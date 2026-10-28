@@ -113,3 +113,15 @@ pour les nouvelles API (voir [COMMANDES_ET_COMPTE.md](../COMMANDES_ET_COMPTE.md)
 Ces nœuds et `account_settings` restent privés par la règle racine. Le fichier
 `firebase.emulators.json` charge ces règles pour les tests ; il ne constitue
 pas une configuration de déploiement de production.
+
+## File d’inactivité du Zikr
+
+`zikr_inactivity/.indexOn = ["deadline"]` est nécessaire pour traiter les
+avertissements expirés sans parcourir les adhésions. Déployer cette règle
+avec les autres règles de la base ; Vercel ne déploie pas les règles Firebase.
+Le cron existant `/api/cron/reminders`, protégé par `CRON_SECRET`, traite
+les avertissements expirés par lots indexés de 50, pendant 30 secondes au
+maximum (1 000 tâches par passage quotidien). Les tâches restantes sont
+conservées pour le prochain passage. Le créateur, les groupes
+terminés et les membres ayant repris une récitation sont préservés. Aucun
+ancien membre non averti n’est supprimé rétroactivement.
