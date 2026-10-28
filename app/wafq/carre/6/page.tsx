@@ -18,7 +18,7 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 type Mode = 'carre' | 'star';
 const METHODS: Record<Mode, { label: string; hint: string }> = {
   carre: { label: 'Carré', hint: 'Carré classique de 36 cases.' },
-  star: { label: 'Étoile', hint: '18 cases distinctes · 6 alignements · constante S ≥ 38.' },
+  star: { label: 'Étoile', hint: '18 cases · modèle à 7 alignements (57) ou à 6 alignements.' },
 };
 
 export default function Carre6Page() {
