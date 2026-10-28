@@ -1,29 +1,29 @@
 'use client';
 // Vue détail d'un secret — port de showDetailView() + la barre d'interactions,
-// le partage, le PDF et l'image plein écran. L'état (like, commentaires,
+// le partage, la copie et l'image plein écran. L'état (like, commentaires,
 // favori, feuille de commentaires) est géré par React au lieu du DOM.
 import { useEffect, useRef, useState } from 'react';
-import { Share2, FileText, Heart, MessageCircle, Bookmark, ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { secretImages, secretParagraphs, secretInlineParts, secretIsArabic } from '@/lib/secretPresentation';
+import { Share2, Copy, FileText, Heart, MessageCircle, Bookmark, ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { secretImages, secretParagraphs, secretInlineParts, secretIsArabic, secretHasNumberPrefix, numberedSecretText } from '@/lib/secretPresentation';
 import CommentSheet from './CommentSheet';
 import { useSecretRealtime } from '@/components/useSecretRealtime';
-import { useAccess } from '@/components/AccessProvider';
-import { share as shareLink, toast } from '@/lib/share';
+import { useAuth } from '@/components/AuthProvider';
+import { share as shareLink } from '@/lib/share';
 import { optimImg } from '@/lib/img';
 import { sentenceCaseIfShouting } from '@/lib/text';
 import SmartImage from '@/components/SmartImage';
-import { downloadSecretPdf, PDF_MIN_LEVEL } from '@/lib/pdf';
 
 export default function SecretDetail({ secret, catLabel }) {
   const { catId, key, data } = secret;
   const { liked, likeCount, comments, toggleLike, postComment } = useSecretRealtime(catId, key);
-  const { getLevel, openGate } = useAccess();
+  const { user } = useAuth();
+  const canCopy = user?.emailVerified === true && user.email?.trim().toLowerCase() === 'prozizou298@gmail.com';
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
-  const [pdfBusy, setPdfBusy] = useState(false);
+  const [copyState, setCopyState] = useState('');
   const dialogRef = useRef(null);
   const images = secretImages(data);
   const title = sentenceCaseIfShouting(data.faida || data.title || 'Secret mystique');
@@ -49,6 +49,7 @@ export default function SecretDetail({ secret, catLabel }) {
     setImageIndex(0);
     setFullscreen(false);
     setSheetOpen(false);
+    setCopyState('');
     window.scrollTo(0, 0);
   }, [bmKey]);
 
@@ -71,21 +72,13 @@ export default function SecretDetail({ secret, catLabel }) {
     });
   };
 
-  const doPdf = async () => {
-    if (getLevel() < PDF_MIN_LEVEL) {
-      toast("📄 Le téléchargement PDF est réservé à l'abonnement 45 000 FCFA.");
-      openGate();
-      return;
-    }
-    if (pdfBusy) return;
-    setPdfBusy(true);
+  const doCopy = async () => {
+    if (!canCopy || copyState === 'busy' || !paragraphs.length) return;
+    setCopyState('busy');
     try {
-      await downloadSecretPdf(data);
-    } catch {
-      toast('Générateur PDF indisponible (connexion requise).');
-    } finally {
-      setPdfBusy(false);
-    }
+      await navigator.clipboard.writeText(numberedSecretText(title, data.sirr || data.content || ''));
+      setCopyState('success');
+    } catch { setCopyState('error'); }
   };
 
   return (
@@ -94,10 +87,15 @@ export default function SecretDetail({ secret, catLabel }) {
         <button type="button" className="detail-expand primary" onClick={doShare}>
           <Share2 size={18} aria-hidden="true" /> Partager
         </button>
-        <button type="button" className="detail-expand" onClick={doPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
-          <FileText size={18} aria-hidden="true" /> {pdfBusy ? 'Préparation…' : 'PDF'}
-        </button>
+        {canCopy && <button type="button" className="detail-expand" onClick={doCopy} disabled={copyState === 'busy' || !paragraphs.length} aria-busy={copyState === 'busy'}>
+          <Copy size={18} aria-hidden="true" /> {copyState === 'busy' ? 'Copie…' : 'Copier la recette'}
+        </button>}
       </div>
+      {canCopy && copyState === 'success' && <p role="status" className="view-feedback view-feedback-success">Recette copiée avec la numérotation des parties.</p>}
+      {canCopy && copyState === 'error' && <div className="view-feedback view-feedback-error">
+        <p role="alert">La copie automatique est indisponible. Vous pouvez sélectionner et copier la recette ci-dessous.</p>
+        <textarea aria-label="Recette à copier manuellement" readOnly value={numberedSecretText(title, data.sirr || data.content || '')} onFocus={(event) => event.target.select()} rows={6} style={{ width: '100%', marginTop: 12 }} />
+      </div>}
 
       <section className="secret-detail-summary">
         {catLabel && <span className="secret-cat-chip">{catLabel}</span>}
@@ -130,7 +128,7 @@ export default function SecretDetail({ secret, catLabel }) {
               // détecterait jamais le sens ici — voir secretIsArabic().
               const arabic = secretIsArabic(paragraph);
               return (
-                <li key={index} className={/^\s*\d+[.)]\s/.test(paragraph) ? 'source-numbered' : ''}>
+                <li key={index} className={secretHasNumberPrefix(paragraph) ? 'source-numbered' : ''}>
                   <div className={'secret-paragraph' + (arabic ? ' secret-paragraph-ar' : '')} dir={arabic ? 'rtl' : 'auto'} lang={arabic ? 'ar' : undefined}>
                     {arabic
                       ? paragraph

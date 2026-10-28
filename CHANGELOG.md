@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-10-28 — Copie des recettes
+
+- Retrait du téléchargement PDF dans Secrets mystiques.
+- Copie numérotée réservée au compte vérifié prozizou298@gmail.com, avec
+  reprise manuelle si le presse-papiers est indisponible. SW `v46.22`.
+
 ## 2026-10-28 — Présentation de la bibliothèque
 
 - Titres des cartes masqués visuellement selon le choix de présentation ;
