@@ -11,6 +11,9 @@
 // (composants/hooks partagés, hors scope de ce batch) — mêmes principes que
 // dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './asrar.css';
+import Link from 'next/link';
+import ViewState from '@/components/ViewState';
+import { useToast } from '@/components/useToast';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower, ScrollText, Bookmark, ChevronRight } from 'lucide-react';
 import { apiPost } from '@/lib/api';
@@ -58,6 +61,9 @@ const CATS: Category[] = [
 ];
 
 export default function AsrarPage() {
+  const { notify, toast } = useToast();
+  const [listError, setListError] = useState(false);
+  const listRequest = useRef(0);
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
@@ -73,7 +79,6 @@ export default function AsrarPage() {
   const bootRef = useRef(false);
   const topbarRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
-  const [topbarHeight, setTopbarHeight] = useState<number>();
   const [railEdges, setRailEdges] = useState({ left: false, right: false });
   const updateRailEdges = useCallback(() => {
     const rail = railRef.current;
@@ -111,7 +116,10 @@ export default function AsrarPage() {
   }, []);
 
   const loadSecrets = useCallback(async (catId: string) => {
+    const request = ++listRequest.current;
+    setListError(false);
     if (cacheRef.current[catId]) {
+      setLoadingList(false);
       setList(cacheRef.current[catId]);
       return cacheRef.current[catId];
     }
@@ -130,14 +138,13 @@ export default function AsrarPage() {
       // Les plus récents en haut (updatedAt desc, sinon ordre des clés push).
       mapped.sort((a, b) => b.ts - a.ts || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
       cacheRef.current[catId] = mapped;
-      setList(mapped);
+      if (request === listRequest.current) setList(mapped);
       return mapped;
-    } catch (e) {
-      cacheRef.current[catId] = [];
-      setList([]);
+    } catch {
+      if (request === listRequest.current) { setListError(true); setList([]); }
       return [];
     } finally {
-      setLoadingList(false);
+      if (request === listRequest.current) setLoadingList(false);
     }
   }, []);
 
@@ -157,12 +164,12 @@ export default function AsrarPage() {
           ensureAccess();
           return;
         }
-        alert('Impossible de charger le secret.');
+        notify('Ce secret n’a pas pu être chargé. Réessayez dans un instant.');
       } finally {
         setLoadingSecret(false);
       }
     },
-    [ensureAccess]
+    [ensureAccess, notify]
   );
 
   const openSecret = useCallback(
@@ -204,7 +211,7 @@ export default function AsrarPage() {
   useEffect(() => {
     const bar = topbarRef.current;
     if (!bar) return;
-    const measure = () => { setTopbarHeight(bar.getBoundingClientRect().height); updateRailEdges(); };
+    const measure = () => { updateRailEdges(); };
     const observer = new ResizeObserver(measure);
     observer.observe(bar);
     measure();
@@ -231,13 +238,14 @@ export default function AsrarPage() {
 
   return (
     <div className="container asrar-page">
+      {toast}
       <div className="asrar-topbar" ref={topbarRef}>
         {inDetail ? (
           <div className="secret-detail-topbar">
             <button type="button" className="secret-return" onClick={goBackFromSecret}>← Retour</button>
             <span dir="auto">{sentenceCaseIfShouting(currentSecret?.data.faida || 'Secret mystique')}</span>
           </div>
-        ) : null}
+        ) : <div className="asrar-heading"><Link href="/menu" className="back-btn" aria-label="Retour au menu">←</Link><h1>Secrets mystiques</h1></div>}
         {!inDetail && (
           // .cat-rail-wrap porte le dégradé de bord droit (voir asrar.css) —
           // indice visuel qu'il reste des catégories à faire défiler, plutôt
@@ -261,7 +269,6 @@ export default function AsrarPage() {
           </div>
         )}
       </div>
-      <div className={'asrar-topbar-spacer' + (inDetail ? '' : ' with-cats')} style={{ height: topbarHeight }} aria-hidden />
 
       <div className="glass-panel">
         <div className={'asrar-wrap' + (inDetail ? ' detail-mode' : '')}>
@@ -272,13 +279,16 @@ export default function AsrarPage() {
               <div className="secrets-list">
                 {loadingList ? (
                   <div className="loader" />
+                ) : listError ? (
+                  <ViewState kind="error" title="Secrets indisponibles" description="Cette catégorie n’a pas pu être chargée. Réessayez dans un instant."
+                    action={<button type="button" className="view-button" onClick={() => loadSecrets(currentCat.id)}>Réessayer</button>} />
                 ) : list.length === 0 ? (
                   <p className="secrets-empty">Aucun secret trouvé dans cette catégorie.</p>
                 ) : (
                   <>
                   {/* Cartes horizontales (maquette) : vignette à gauche, titre en
                       capitales + filet vert + description, flèche ronde à droite. */}
-                  <h1 className="sr-only">{currentCat.label}</h1>
+                  <h2 className="sr-only">{currentCat.label}</h2>
                   <div className="secrets-grid">
                   {visibleList.map((item) => (
                     <button

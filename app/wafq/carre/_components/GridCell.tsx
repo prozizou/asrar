@@ -29,7 +29,7 @@ export default function GridCell({
   const fontSize = `clamp(${minRem * scale}rem, 4vw, ${maxRem * scale}rem)`;
 
   return (
-    <div className={'kz-cell' + (filled ? '' : ' empty')}>
+    <div className={'kz-cell' + (filled ? '' : ' empty')} title={text}>
       <span className="kz-cell-txt" style={{ fontSize }}>{text}</span>
     </div>
   );

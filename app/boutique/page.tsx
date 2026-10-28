@@ -11,6 +11,8 @@
 // Spinner.js restent en .js (composants partagés, hors scope de ce batch) —
 // mêmes principes que dans les batches précédents (#114, #116, #118).
 import './boutique.css';
+import ModalUntyped from '@/components/Modal';
+import ViewState from '@/components/ViewState';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -23,6 +25,7 @@ import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import ProductForm from './ProductForm';
 
+const Modal = ModalUntyped as any;
 const SmartImage = SmartImageUntyped as any;
 const Spinner = SpinnerUntyped as any;
 
@@ -60,8 +63,11 @@ const PLANS = [
 
 export default function BoutiquePage() {
   const { notify, toast } = useToast();
+  const [savingShop, setSavingShop] = useState(false);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [view, setView] = useState<View>('loading');
-  const [errorMsg, setErrorMsg] = useState('');
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
 
@@ -100,7 +106,6 @@ export default function BoutiquePage() {
         setView('gate');
       }
     } catch (e: any) {
-      setErrorMsg(e.message || String(e));
       setView('error');
     }
   }, []);
@@ -151,11 +156,15 @@ export default function BoutiquePage() {
     setLogoPreview(URL.createObjectURL(f));
   };
 
+  useEffect(() => () => { if (logoPreview.startsWith('blob:')) URL.revokeObjectURL(logoPreview); }, [logoPreview]);
+
   const saveShop = async () => {
+    if (savingShop) return;
     if (!shopName.trim()) {
       notify('Le nom de la boutique est requis.');
       return;
     }
+    setSavingShop(true); setActionError('');
     try {
       let logoUrl;
       if (logoFile) logoUrl = await uploadImage(logoFile, 'shop_logos');
@@ -163,18 +172,20 @@ export default function BoutiquePage() {
       notify('✅ Boutique enregistrée.');
       await loadStatus();
     } catch (e: any) {
-      notify('Erreur : ' + (e.message || e));
-    }
+      setActionError('La boutique n’a pas été enregistrée. Vos modifications sont conservées ; réessayez.');
+    } finally { setSavingShop(false); }
   };
 
-  const deleteProduct = async (key: string) => {
-    if (!confirm('Supprimer ce produit ?')) return;
+  const deleteProduct = async () => {
+    if (!deletingKey || deleteBusy) return;
+    setDeleteBusy(true); setActionError('');
     try {
-      await apiPost('shop', { action: 'delete-product', key });
+      await apiPost('shop', { action: 'delete-product', key: deletingKey });
+      setDeletingKey(null);
       await loadStatus();
-    } catch (e: any) {
-      notify('Erreur : ' + (e.message || e));
-    }
+    } catch {
+      setActionError('La suppression n’a pas été confirmée. Le produit est conservé ; réessayez.');
+    } finally { setDeleteBusy(false); }
   };
 
   const expiry =
@@ -183,13 +194,13 @@ export default function BoutiquePage() {
       : null;
 
   return (
-    <div className="container">
-      <Link href="/" className="back-btn">
+    <div className="container boutique-page">
+      <Link href="/" className="back-btn" aria-label="Retour au marché">
         ← Marché
       </Link>
 
       <div className="glass-panel">
-        <h2>🏪 Ma Boutique</h2>
+        <h1 className="module-title">🏪 Ma Boutique</h1>
         <p className="subtitle">Vendez vos produits sur le Marché Mystique.</p>
 
         {view === 'loading' && (
@@ -198,7 +209,9 @@ export default function BoutiquePage() {
           </div>
         )}
 
-        {view === 'error' && <p className="bq-error">Erreur : {errorMsg}</p>}
+        {view === 'error' && <ViewState kind="error" title="Boutique indisponible" description="Vos informations n’ont pas pu être chargées. Réessayez dans un instant."
+          action={<button type="button" className="view-button" onClick={loadStatus}>Réessayer</button>} />}
+        {actionError && !deletingKey && <p role="alert" className="view-feedback view-feedback-error">{actionError}</p>}
 
         {view === 'gate' && (
           <div>
@@ -208,13 +221,13 @@ export default function BoutiquePage() {
             </p>
             <div className="bq-plans">
               {PLANS.map((p) => (
-                <div key={p.id} className={'bq-plan' + (p.best ? ' best' : '')} onClick={() => souscrire(p.id)}>
+                <div key={p.id} className={'bq-plan' + (p.best ? ' best' : '')}>
                   {p.badge && <span className="bq-badge">{p.badge}</span>}
                   <div className="bq-plan-dur">{p.dur}</div>
                   <div className="bq-plan-price">
                     {p.price} <small>FCFA</small>
                   </div>
-                  <button className="bq-plan-btn">Choisir</button>
+                  <button type="button" className="bq-plan-btn" onClick={() => souscrire(p.id)} aria-label={"Choisir la formule " + p.dur}>Choisir</button>
                 </div>
               ))}
             </div>
@@ -229,9 +242,7 @@ export default function BoutiquePage() {
           <div>
             <div className="bq-status">
               <span className="bq-dot" /> Boutique active{expiry && ' · expire le ' + expiry}
-              <a className="bq-renew" onClick={() => setView('gate')}>
-                Prolonger
-              </a>
+              <button type="button" className="bq-renew" onClick={() => setView('gate')}>Prolonger</button>
             </div>
 
             {stats && (
@@ -262,7 +273,7 @@ export default function BoutiquePage() {
             <div className="bq-form">
               <label>
                 Logo de la boutique
-                <input type="file" accept="image/*" onChange={onLogoChange} />
+                <input disabled={savingShop} type="file" accept="image/*" onChange={onLogoChange} />
                 <div className="bq-logo-preview">
                   {logoPreview ? (
                     <SmartImage src={logoPreview} alt="" fill sizes="110px" style={{ objectFit: 'cover' }} />
@@ -273,18 +284,18 @@ export default function BoutiquePage() {
               </label>
               <label>
                 Nom de la boutique
-                <input type="text" maxLength={80} placeholder="Ex : Boutique Al-Baraka" value={shopName} onChange={(e) => setShopName(e.target.value)} />
+                <input type="text" maxLength={80} placeholder="Ex : Boutique Al-Baraka" disabled={savingShop} value={shopName} onChange={(e) => setShopName(e.target.value)} />
               </label>
               <label>
                 Description
-                <textarea maxLength={600} rows={3} placeholder="Présentez votre boutique…" value={shopDesc} onChange={(e) => setShopDesc(e.target.value)} />
+                <textarea maxLength={600} rows={3} placeholder="Présentez votre boutique…" disabled={savingShop} value={shopDesc} onChange={(e) => setShopDesc(e.target.value)} />
               </label>
               <label>
                 Téléphone / WhatsApp
-                <input type="tel" maxLength={20} placeholder="221770000000" value={shopPhone} onChange={(e) => setShopPhone(e.target.value)} />
+                <input type="tel" maxLength={20} placeholder="221770000000" disabled={savingShop} value={shopPhone} onChange={(e) => setShopPhone(e.target.value)} />
               </label>
-              <button className="bq-btn" onClick={saveShop}>
-                💾 Enregistrer la boutique
+              <button type="button" className="bq-btn" onClick={saveShop} disabled={savingShop}>
+                {savingShop ? "Enregistrement…" : "Enregistrer la boutique"}
               </button>
             </div>
 
@@ -328,8 +339,8 @@ export default function BoutiquePage() {
                       )}
                     </div>
                     <div className="bq-prod-actions">
-                      <button onClick={() => setFormProduct(p)}>✏️</button>
-                      <button onClick={() => deleteProduct(p._key)}>🗑️</button>
+                      <button type="button" aria-label={"Modifier « " + (p.produit || "Produit") + " »"} onClick={() => setFormProduct(p)}>✏️</button>
+                      <button type="button" aria-label={"Supprimer « " + (p.produit || "Produit") + " »"} onClick={() => { setActionError(''); setDeletingKey(p._key); }}>🗑️</button>
                     </div>
                   </div>
                 ))
@@ -339,6 +350,17 @@ export default function BoutiquePage() {
         )}
       </div>
 
+      {deletingKey && <Modal className="bq-modal-overlay open" onClose={deleteBusy ? undefined : () => setDeletingKey(null)} label="Supprimer le produit">
+        <div className="bq-delete-dialog">
+          <h2>Supprimer le produit ?</h2>
+          <p>« {products.find((p) => p._key === deletingKey)?.produit || 'Produit'} » sera retiré du marché.</p>
+          {actionError && <p role="alert" className="view-feedback view-feedback-error">{actionError}</p>}
+          <div className="bq-delete-actions">
+            <button type="button" className="view-button" onClick={() => setDeletingKey(null)} disabled={deleteBusy}>Conserver</button>
+            <button type="button" className="view-button view-button-danger" onClick={deleteProduct} disabled={deleteBusy}>{deleteBusy ? 'Suppression…' : 'Supprimer'}</button>
+          </div>
+        </div>
+      </Modal>}
       {formProduct !== undefined && (
         <ProductForm
           product={formProduct}

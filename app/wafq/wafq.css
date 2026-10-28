@@ -89,3 +89,9 @@
 }
 .wq-kanzou-link:hover { border-color: var(--accent); }
 .wq-kanzou-sub { font-weight: 400; font-size: 0.76rem; color: var(--text-muted); }
+
+.wq-intent-btn { width: auto; margin: 0; min-height: 44px; text-align: left; }
+.wq-mini-btn { width: auto; margin: 0; min-height: 44px; flex: 1; }
+.wq-generate-btn { color: var(--button-ink); }
+.wq-toggle-row { min-height: 44px; }
+.wq-cards { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }

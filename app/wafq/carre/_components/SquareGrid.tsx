@@ -25,21 +25,23 @@ export default function SquareGrid<T>({
   maxWidth?: number;
 }) {
   const cols = layout[0]?.length ?? 1;
+  const values = layout.flat().map((key) => formatNumeral(getValue(key), numerals));
+  // Les grands carrés gardent des chiffres lisibles : seul le tableau défile,
+  // jamais la page. La taille manuelle agrandit aussi l’espace des cases.
+  const longest = Math.max(1, ...values.map((value) => String(value ?? '—').length));
+  const cellWidth = Math.max(52, Math.ceil(longest * 12 * scale + 16));
 
   return (
-    <div
-      className="kz-grid"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, maxWidth }}
-    >
-      {layout.flat().map((key, i) => (
-        <GridCell
-          key={i}
-          value={formatNumeral(getValue(key), numerals)}
-          filled={getFilled ? getFilled(key) : true}
-          scale={scale}
-        />
-      ))}
-    </div>
+    <>
+      {cols > 4 && <p className="kz-grid-hint">Faites défiler le carré horizontalement si nécessaire.</p>}
+      <div className="kz-grid-scroll" style={{ maxWidth }} tabIndex={0} role="region" aria-label={`Carré numérique ${cols} × ${layout.length}`}>
+        <div className="kz-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, minWidth: cols * cellWidth + (cols - 1) * 6 }}>
+          {layout.flat().map((key, i) => (
+            <GridCell key={i} value={values[i]} filled={getFilled ? getFilled(key) : true} scale={scale} />
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 

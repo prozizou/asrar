@@ -285,16 +285,15 @@ html.kb-open .secret-interactions { display: none; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Rappel d'expiration d'abonnement (components/SubscriptionExpiryBanner.js) —
-   fixé en haut (le toast est en bas) : présent sur toute page, il ne doit
-   jamais recouvrir un bouton d'action au moment où l'utilisateur en a besoin. */
+/* Rappel dans le flux : il ne recouvre ni les en-têtes adhérents ni les
+   fenêtres de dialogue, et défile avec la page. */
 .expiry-banner {
     /* Flux normal (pas fixed) : pousse le contenu au lieu de le recouvrir —
        chaque page a son propre en-tête fixe/sticky en haut, un bandeau
        superposé le cacherait ou masquerait un bouton juste sous lui. */
-    position: sticky;
-    top: var(--sat);
-    z-index: 9000;
+    position: relative;
+    top: auto;
+    z-index: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -506,17 +505,10 @@ input:focus {
     border: 1px solid var(--glass-border);
 }
 
-/* Boutons « Retour » (toutes pages) : réservés au PC. Sur mobile/tablette,
-   le retour se fait uniquement via le backpress natif (Android) / geste
-   navigateur — cohérent avec le comportement des apps mobiles. Les 2
-   panneaux ouverts en state React (détail secret, fiche boutique vendeur)
-   restent joignables via useHistoryClose (components/useHistoryClose.js),
-   qui pousse une entrée d'historique pour que le backpress fonctionne aussi. */
-@media (max-width: 900px) {
-    .back-btn, .detail-back, .geo-back {
-        display: none !important;
-    }
-}
+/* Un retour reste visible sur téléphone, y compris dans les sous-pages.
+   Le geste système peut compléter cette commande sans la remplacer. */
+.back-btn { display: inline-flex; align-items: center; justify-content: center;
+    width: auto; min-height: 44px; margin-top: 0; line-height: 1.3; }
 
 /* ───────────── Résultats & loader ───────────── */
 .result-box {
@@ -2095,3 +2087,21 @@ html[data-theme="light"] {
 .menu-home .menu-appbar-bell, .menu-home .menu-appbar-profile { min-width: 44px; min-height: 44px; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* Revue de toutes les rubriques : repères et cibles partagés. */
+.module-title { font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.2; margin-bottom: 8px; letter-spacing: -.02em; }
+.category-page-head > a { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; min-height: 44px; border-radius: 12px; color: var(--accent); background: var(--surface-2); text-decoration: none; }
+.category-page-title { min-width: 0; overflow-wrap: anywhere; }
+.menu-search-box { min-height: 44px; }
+.menu-search-box input { min-height: 42px; }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+.view-feedback-error { color: var(--status-danger-text); background: var(--status-danger-bg); border: 1px solid color-mix(in srgb, var(--status-danger-text) 35%, transparent); }
+.view-button-danger { color: var(--status-danger-text); background: var(--status-danger-bg); border-color: var(--status-danger-text); }
+
+.sr-star-btn { width: 44px; height: 44px; margin: 0; padding: 4px; flex-shrink: 0; }
+.sr-form textarea { font-size: 16px; min-height: 88px; }
+.sr-submit { width: auto; margin: 0; min-height: 44px; color: var(--button-ink); }
+.sr-item-email, .sr-item-text { overflow-wrap: anywhere; }

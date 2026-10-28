@@ -10,26 +10,28 @@ function fmtDate(t) {
 
 export default function CommentModal({ book, comments, loading, error, onClose, onSubmit }) {
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const send = () => {
+  const send = async () => {
     const t = text.trim();
-    if (!t) return;
-    onSubmit(t);
-    setText('');
+    if (!t || sending) return;
+    setSending(true);
+    try { if (await onSubmit(t)) setText(''); }
+    finally { setSending(false); }
   };
 
   return (
-    <Modal className="modal-overlay open" onClose={onClose} label={'Commentaires — ' + book.text}>
+    <Modal className="modal-overlay open" onClose={sending ? undefined : onClose} label={'Commentaires — ' + book.text}>
       <div className="modal-box">
-        <button type="button" aria-label="Fermer les commentaires" className="modal-close" onClick={onClose}>
+        <button type="button" aria-label="Fermer les commentaires" className="modal-close" onClick={onClose} disabled={sending}>
           ✕
         </button>
-        <h3>Commentaires — {book.text}</h3>
+        <h3 className="cm-title">Commentaires — {book.text}</h3>
         <div className="cm-list">
           {loading ? (
             <p className="cm-empty">Chargement…</p>
           ) : error ? (
-            <p className="cm-empty">Erreur : {error}</p>
+            <p role="alert" className="cm-empty cm-error">{error}</p>
           ) : comments.length === 0 ? (
             <p className="cm-empty">Aucun commentaire. Soyez le premier !</p>
           ) : (
@@ -45,6 +47,7 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
         </div>
         <div className="cm-form">
           <textarea
+            disabled={sending}
             aria-label="Écrire un commentaire"
             maxLength={500}
             rows={2}
@@ -52,8 +55,8 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <button className="cm-send" onClick={send}>
-            Envoyer
+          <button type="button" className="cm-send" onClick={send} disabled={sending || !text.trim()}>
+            {sending ? "Envoi…" : "Envoyer"}
           </button>
         </div>
       </div>

@@ -91,12 +91,13 @@ export default function AbajadPage() {
             terminologie utilisée pour cette même notion — cf. leurs propres
             revues design, point « terminologie ». */}
         <div className="ab-header">
-          <h2>Calculateur Abjad</h2>
+          <h1 className="module-title">Calculateur Abjad</h1>
           <p className="ab-subtitle">Analyse ésotérique et numérique</p>
         </div>
 
         <input
           type="text"
+          aria-label="Texte arabe ou nombre à analyser"
           className="abajad-input"
           dir="rtl"
           placeholder="بسم الله الرحمن الرحيم"
@@ -104,7 +105,6 @@ export default function AbajadPage() {
           autoComplete="off"
           value={input}
           onChange={onChange}
-          autoFocus
         />
         <p className="ab-hint">💡 Vous pouvez aussi saisir directement un nombre (ex. 711).</p>
         <datalist id="versetList">

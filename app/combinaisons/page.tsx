@@ -347,7 +347,7 @@ export default function CombinaisonsPage() {
             <div className="card-title">Recherche de combinaisons</div>
             <div className="form-grid">
               <div className="field">
-                <label>
+                <label htmlFor="combination-target">
                   Poids cible
                   <span
                     className="field-help"
@@ -361,6 +361,7 @@ export default function CombinaisonsPage() {
                 </label>
                 <input
                   type="number"
+                  id="combination-target"
                   placeholder="ex. 644"
                   min="1"
                   max="999999"
@@ -370,8 +371,8 @@ export default function CombinaisonsPage() {
                 />
               </div>
               <div className="field">
-                <label>Nombre de noms</label>
-                <select value={k} onChange={(e) => setK(parseInt(e.target.value, 10))}>
+                <label htmlFor="combination-count">Nombre de noms</label>
+                <select id="combination-count" value={k} onChange={(e) => setK(parseInt(e.target.value, 10))}>
                   {K_OPTIONS.map((n) => (
                     <option key={n} value={n}>
                       {n} noms
@@ -427,6 +428,7 @@ export default function CombinaisonsPage() {
                     <span className="search-icon">🔍</span>
                     <input
                       className="results-search-input"
+                      aria-label="Rechercher dans les résultats"
                       type="text"
                       placeholder="Filtrer : nom arabe, transcription, poids…"
                       dir="auto"
@@ -495,6 +497,7 @@ export default function CombinaisonsPage() {
           <div className="card">
             <div className="card-title">Calculateur Abjad</div>
             <input
+              aria-label="Texte arabe pour le calcul Abjad"
               className="calc-text"
               type="text"
               dir="rtl"
@@ -517,6 +520,7 @@ export default function CombinaisonsPage() {
                   <span className="search-icon">🔍</span>
                   <input
                     className="results-search-input"
+                      aria-label="Rechercher dans les résultats"
                     type="text"
                     placeholder="Rechercher un nom…"
                     dir="auto"

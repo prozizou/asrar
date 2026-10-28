@@ -12,6 +12,8 @@ import { reserveExternalWindow } from '@/lib/externalWindow';
 // (composants/hooks partagés, hors scope de ce batch) — mêmes principes que
 // dans app/menu/page.tsx et app/commandes/page.tsx (#114, #116).
 import './bibliotheque.css';
+import ViewState from '@/components/ViewState';
+import { useToast } from '@/components/useToast';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -48,6 +50,7 @@ interface Comment {
 }
 
 export default function BibliothequePage() {
+  const { notify, toast } = useToast();
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
@@ -84,7 +87,7 @@ export default function BibliothequePage() {
     async (key: string) => {
       const destination = reserveExternalWindow();
       if (!destination) {
-        alert("Autorisez l'ouverture d'une nouvelle fenêtre, puis réessayez.");
+        notify("Autorisez l'ouverture d'une nouvelle fenêtre, puis réessayez.");
         return;
       }
       try {
@@ -94,23 +97,21 @@ export default function BibliothequePage() {
         const link = driveDirectLink(item.pdf || item.pdfUrl || '');
         if (!link) {
           destination.close();
-          alert('Lien du document indisponible.');
+          notify('Lien du document indisponible.');
           return;
         }
         destination.navigate(link);
       } catch (e: any) {
         destination.close();
         if (e.status === 403) openGate();
-        else alert('Erreur : ' + e.message);
+        else notify('Erreur : ' + e.message);
       }
     },
-    [ensureAccess, openGate]
+    [ensureAccess, openGate, notify]
   );
 
-  useEffect(() => {
-    if (bootRef.current) return;
-    bootRef.current = true;
-    (async () => {
+  const loadBooks = useCallback(async () => {
+    setLoading(true); setError('');
       try {
         const { items } = await apiPost('list-content', { kind: 'book' });
         const list: Book[] = (items || [])
@@ -144,21 +145,25 @@ export default function BibliothequePage() {
               document.getElementById('book-' + deep.key)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 100);
             openBook(deep.key);
-          } else alert("Cet ouvrage n'est plus disponible.");
+          } else notify("Cet ouvrage n'est plus disponible.");
         }
       } catch (e: any) {
         setLoading(false);
         setError(e.message || 'Erreur de chargement.');
       }
-    })();
-  }, [loadSocialCounts, openBook]);
+  }, [loadSocialCounts, openBook, notify]);
+  useEffect(() => {
+    if (bootRef.current) return;
+    bootRef.current = true;
+    void loadBooks();
+  }, [loadBooks]);
 
   const toggleLike = async (key: string) => {
     try {
       const r = await apiPost('book-social', { action: 'like', bookKey: key });
       setSocial((prev) => ({ ...prev, [key]: { ...prev[key], likes: r.likes, liked: r.liked } }));
     } catch (e: any) {
-      alert('Erreur : ' + e.message);
+      notify('Erreur : ' + e.message);
     }
   };
 
@@ -185,29 +190,37 @@ export default function BibliothequePage() {
   };
 
   const submitComment = async (text: string) => {
-    if (!commentBook) return;
+    if (!commentBook) return false;
     const key = commentBook._key;
     try {
       await apiPost('book-social', { action: 'comment', bookKey: key, text });
+    } catch {
+      setCommentsError('Le commentaire n’a pas été envoyé. Votre texte est conservé ; réessayez.');
+      return false;
+    }
+    // L’écriture confirmée ne doit pas être répétée si seule la relecture échoue.
+    try {
       const r = await apiPost('book-social', { action: 'list', bookKey: key });
       setSocial((prev) => ({ ...prev, [key]: { ...prev[key], comments: r.comments.length } }));
       setComments(r.comments || []);
-    } catch (e: any) {
-      alert('Erreur : ' + e.message);
+      setCommentsError('');
+    } catch {
+      setCommentsError('Commentaire envoyé. Fermez puis rouvrez les commentaires pour actualiser la liste.');
     }
+    return true;
   };
 
   // Rendu progressif : la grille ne monte plus toutes les couvertures d'un bloc.
   const { visible: visibleBooks, sentinelRef, hasMore } = useProgressiveList(books);
 
   return (
-    <div className="container">
+    <div className="container library-page">
       <Link href="/" className="back-btn">
         ← Retour
       </Link>
 
       <div className="glass-panel">
-        <h2>📚 Bibliothèque Almaqtab</h2>
+        <h1 className="module-title">📚 Bibliothèque Almaqtab</h1>
         <p className="subtitle">Manuscrits, traités et ouvrages mystiques.</p>
         <div id="bookCount">{!loading && !error ? `${books.length} livre(s)` : ''}</div>
       </div>
@@ -216,20 +229,17 @@ export default function BibliothequePage() {
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton" />)
         ) : error ? (
-          <p className="empty-msg">
-            Erreur de chargement.
-            <br />
-            <small>{error}</small>
-          </p>
+          <ViewState kind="error" title="Bibliothèque indisponible" description="Les ouvrages n’ont pas pu être chargés. Réessayez dans un instant."
+            action={<button type="button" className="view-button" onClick={loadBooks}>Réessayer</button>} />
         ) : books.length === 0 ? (
-          <p className="empty-msg">Aucun ouvrage disponible.</p>
+          <ViewState title="Aucun ouvrage disponible" description="Les prochaines publications apparaîtront ici." />
         ) : (
           <>
           {visibleBooks.map((book) => {
             const s = social[book._key] || { likes: 0, liked: false, comments: 0 };
             return (
               <div key={book._key} className={'book-card' + (highlightKey === book._key ? ' book-highlight' : '')} id={'book-' + book._key}>
-                <div className="book-cover" onClick={() => openBook(book._key)}>
+                <button type="button" className="book-cover" aria-label={"Ouvrir « " + book.text + " »"} onClick={() => openBook(book._key)}>
                   {book.img && !imgErrors[book._key] ? (
                     <SmartImage
                       src={optimImg(book.img, 300)}
@@ -242,16 +252,18 @@ export default function BibliothequePage() {
                   ) : (
                     '📖'
                   )}
-                </div>
+                </button>
                 <div className="book-info">
+                  <h2 className="book-title">{book.text}</h2>
+                  {book.author && <p className="book-author">{book.author}</p>}
                   <div className="book-social">
-                    <button className={'bs-btn' + (s.liked ? ' liked' : '')} onClick={() => toggleLike(book._key)}>
+                    <button type="button" aria-label={(s.liked ? 'Retirer des favoris : ' : 'Aimer : ') + book.text} aria-pressed={!!s.liked} className={'bs-btn' + (s.liked ? ' liked' : '')} onClick={() => toggleLike(book._key)}>
                       ❤ <span>{s.likes}</span>
                     </button>
-                    <button className="bs-btn" onClick={() => openComments(book)}>
+                    <button type="button" className="bs-btn" aria-label={"Commentaires de « " + book.text + " »"} onClick={() => openComments(book)}>
                       💬 <span>{s.comments}</span>
                     </button>
-                    <button className="bs-btn" title="Partager" onClick={() => share(book._key)}>
+                    <button type="button" className="bs-btn" aria-label={"Partager « " + book.text + " »"} title="Partager" onClick={() => share(book._key)}>
                       📤
                     </button>
                   </div>
@@ -264,6 +276,7 @@ export default function BibliothequePage() {
         )}
       </div>
 
+      {toast}
       {commentBook && (
         <CommentModal
           book={commentBook}

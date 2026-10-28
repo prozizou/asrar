@@ -16,12 +16,13 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
         ← Retour au marché
       </button>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+      <div className="vendor-shop-heading" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <div
           style={{
             position: 'relative', // nécessaire à next/image (fill) — voir SmartImage
             width: 80,
             height: 80,
+            flexShrink: 0,
             borderRadius: '50%',
             background: 'var(--mk-surface-3)',
             display: 'flex',
@@ -44,7 +45,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
             '🔮'
           )}
         </div>
-        <div>
+        <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
           <h2 style={{ margin: 0 }}>
             {vendor.name} {vendor.verified && <span style={{ color: '#4CAF50', fontSize: '1rem' }}>✔ Vérifié</span>}
           </h2>
@@ -65,7 +66,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
 
       <div className="prod-grid">
         {products.map((p) => (
-          <div key={p._key} className="prod-card" onClick={() => onOpenProduct(p._key)}>
+          <button type="button" key={p._key} className="prod-card" onClick={() => onOpenProduct(p._key)}>
             {p.Image && !imgErrors[p._key] ? (
               <div className="prod-img">
                 <SmartImage
@@ -87,7 +88,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
               <div className="prod-name">{displayProductName(p.produit) || 'Produit'}</div>
               <ProductPrice prix={p.Prix} devise={p.devise} />
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

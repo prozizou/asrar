@@ -2,8 +2,11 @@
    Scopé sous .alq-page : le module redéfinit certains tokens partagés
    (--glass-bg/--glass-border) via des alias locaux. Les polices
    calligraphiques (Scheherazade New, Alkalami) sont préservées — cœur du module. */
-@import url('https://fonts.googleapis.com/css2?family=Alkalami&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@700&display=swap');
+/* Même police locale que le moteur vectoriel : utilisable hors ligne. */
+@font-face {
+  font-family: 'Scheherazade New'; font-style: normal; font-weight: 700;
+  font-display: swap; src: url('/fonts/ScheherazadeNew-Bold.ttf') format('truetype');
+}
 
 .alq-page {
   --accent-blue: var(--accent, #4d96ff);

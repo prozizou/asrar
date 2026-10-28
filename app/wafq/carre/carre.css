@@ -195,3 +195,21 @@
 @media (max-width: 480px) {
   .hatim-decor-lantern { display: none; }
 }
+
+.kz-mode-btn, .kz-numeral-toggle button, .kz-export-btn { width: auto; margin: 0; min-height: 44px; }
+.kz-mode-btn { flex: 1 1 auto; }
+.kz-field, .kz-result { min-width: 0; }
+.kz-field input { min-width: 0; min-height: 48px; font-size: 16px; }
+.kz-compute-btn, .kz-numeral-toggle button.active { color: var(--button-ink); }
+.kz-suggest-btn { min-height: 44px; padding: 8px 0; margin: 0; }
+.kz-error { color: var(--status-danger-text); }
+.kz-scale-slider { flex-wrap: wrap; min-height: 44px; }
+.kz-scale-slider input[type="range"] { min-height: 44px; }
+.kz-grid-scroll { width: 100%; overflow: auto; margin-inline: auto; overscroll-behavior: contain; border-radius: 8px; }
+.kz-grid-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.kz-grid-scroll .kz-grid { width: 100%; }
+.kz-grid-scroll .kz-cell-txt { white-space: nowrap; overflow-wrap: normal; }
+.kz-grid-hint { font-size: .85rem; color: var(--text-muted); margin: 8px 0; text-align: center; }
+.hatim-icon-btn { width: 44px; height: 44px; }
+@media (max-width: 480px) { .kz-fields.grid3, .kz-fields.grid2 { grid-template-columns: 1fr; } }
+.kz-numeral-toggle button { border-radius: 0; }

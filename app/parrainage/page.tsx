@@ -255,7 +255,7 @@ export default function ParrainagePage() {
             </div>
           </div>
 
-          <button className="pr-rules-toggle" onClick={() => setRulesOpen((o) => !o)}>
+          <button type="button" aria-expanded={rulesOpen} className="pr-rules-toggle" onClick={() => setRulesOpen((o) => !o)}>
             Voir les conditions du parrainage
             <ChevronRight size={15} strokeWidth={2} className={rulesOpen ? 'pr-chevron open' : 'pr-chevron'} aria-hidden="true" />
           </button>

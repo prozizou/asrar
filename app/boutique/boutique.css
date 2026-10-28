@@ -17,80 +17,73 @@
 }
 
 /* ==================== MA BOUTIQUE ==================== */
-body {
-  background: var(--bq-bg);
-  color: var(--bq-text);
-  font-family: var(--font-ui);
-  margin: 0;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-.container { max-width: 760px; margin: 0 auto; padding: 1rem; }
-.glass-panel {
+.boutique-page.container { max-width: 760px; margin: 0 auto; padding: 1rem; }
+:where(.boutique-page) .glass-panel {
   background: var(--bq-surface);
   border: 1px solid var(--bq-border);
   border-radius: 20px;
   padding: 1.6rem;
   color: var(--bq-text);
 }
-.back-btn {
+:where(.boutique-page) .back-btn {
   color: var(--bq-gold); text-decoration: none; font-size: .9rem;
   display: inline-block; margin-bottom: 1rem; opacity: .85;
 }
-h2 { font-family: var(--font-display); margin: 0 0 4px; color: var(--bq-text); }
-h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
-.subtitle { color: var(--bq-text-dim); margin: 0 0 1rem; }
-.bq-loading {
+:where(.boutique-page) h2 { font-family: var(--font-display); margin: 0 0 4px; color: var(--bq-text); }
+:where(.boutique-page) h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
+:where(.boutique-page) .subtitle { color: var(--bq-text-dim); margin: 0 0 1rem; }
+:where(.boutique-page) .bq-loading {
   color: var(--bq-text-dim); text-align: center; padding: 2rem;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.bq-error  { color: var(--danger); text-align: center; }
-.bq-intro, .bq-note { color: var(--bq-text-dim); font-size: .88rem; line-height: 1.5; }
-.bq-note { margin-top: 12px; text-align: center; }
+:where(.boutique-page) .bq-error  { color: var(--danger); text-align: center; }
+:where(.boutique-page) .bq-intro, :where(.boutique-page) .bq-note { color: var(--bq-text-dim); font-size: .88rem; line-height: 1.5; }
+:where(.boutique-page) .bq-note { margin-top: 12px; text-align: center; }
 
 /* Plans */
-.bq-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 1rem 0; }
-.bq-plan {
+:where(.boutique-page) .bq-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 1rem 0; }
+:where(.boutique-page) .bq-plan {
   position: relative; background: var(--bq-surface-2); border: 1px solid var(--bq-border);
   border-radius: 16px; padding: 20px 14px; text-align: center; cursor: pointer;
   transition: transform .2s, border-color .2s;
 }
-.bq-plan:hover { transform: translateY(-3px); border-color: var(--bq-gold); }
-.bq-plan.best { border-color: var(--bq-gold); }
-.bq-plan-dur { font-size: 1.1rem; font-weight: 600; color: var(--bq-text); }
-.bq-plan-price { margin-top: 6px; font-size: 1.4rem; font-weight: 700; color: var(--bq-gold); }
-.bq-plan-price small { font-size: .7rem; color: var(--bq-text-dim); }
-.bq-plan-btn {
+:where(.boutique-page) .bq-plan:hover { transform: translateY(-3px); border-color: var(--bq-gold); }
+:where(.boutique-page) .bq-plan.best { border-color: var(--bq-gold); }
+:where(.boutique-page) .bq-plan-dur { font-size: 1.1rem; font-weight: 600; color: var(--bq-text); }
+:where(.boutique-page) .bq-plan-price { margin-top: 6px; font-size: 1.4rem; font-weight: 700; color: var(--bq-gold); }
+:where(.boutique-page) .bq-plan-price small { font-size: .7rem; color: var(--bq-text-dim); }
+:where(.boutique-page) .bq-plan-btn {
   margin-top: 12px; width: 100%; background: var(--bq-gold); color: var(--text-on-accent); border: none;
   border-radius: 10px; padding: 8px; font-weight: 700; cursor: pointer;
 }
-.bq-badge {
+:where(.boutique-page) .bq-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
   background: var(--bq-gold); color: var(--text-on-accent); font-size: .62rem; font-weight: 700;
   padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
 
 /* Statut */
-.bq-status {
+:where(.boutique-page) .bq-status {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   background: color-mix(in srgb, var(--bq-gold) 12%, transparent);
   border: 1px solid var(--bq-gold);
   border-radius: 12px; padding: 10px 14px; font-size: .9rem; color: var(--bq-text);
 }
-.bq-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--success); display: inline-block; }
-.bq-renew { color: var(--bq-gold); cursor: pointer; text-decoration: underline; margin-left: auto; }
+:where(.boutique-page) .bq-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--success); display: inline-block; }
+:where(.boutique-page) .bq-renew { color: var(--bq-gold); cursor: pointer; text-decoration: underline; margin-left: auto; }
 
 /* Statistiques (propriétaire seulement) */
-.bq-stats { margin: 1rem 0; }
-.bq-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: .5rem; }
-.bq-stat {
+:where(.boutique-page) .bq-stats { margin: 1rem 0; }
+:where(.boutique-page) .bq-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: .5rem; }
+:where(.boutique-page) .bq-stat {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: var(--bq-surface-2); border: 1px solid var(--bq-border); border-radius: 12px; padding: 10px 6px;
 }
-.bq-stat-num { font-size: 1.2rem; font-weight: 700; color: var(--bq-gold); }
-.bq-stat-label { font-size: .72rem; color: var(--bq-text-dim); text-align: center; }
-.bq-prod-stats { color: var(--bq-text-dim); font-size: .74rem; margin-top: 2px; }
+:where(.boutique-page) .bq-stat-num { font-size: 1.2rem; font-weight: 700; color: var(--bq-gold); }
+:where(.boutique-page) .bq-stat-label { font-size: .72rem; color: var(--bq-text-dim); text-align: center; }
+:where(.boutique-page) .bq-prod-stats { color: var(--bq-text-dim); font-size: .74rem; margin-top: 2px; }
 @media (max-width: 420px) {
-  .bq-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  :where(.boutique-page) .bq-stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Formulaires
@@ -98,29 +91,29 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
    entre deux groupes de champs, 6px entre un label et son champ, 52px de
    hauteur minimale par champ — un espacement auparavant assez lâche et peu
    régulier (voir aussi .bq-form input/textarea/select ci-dessous). */
-.bq-form { display: flex; flex-direction: column; gap: 20px; }
-.bq-form label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; color: var(--bq-text-soft); }
-.bq-form input, .bq-form textarea, .bq-form select {
+:where(.boutique-page) .bq-form { display: flex; flex-direction: column; gap: 20px; }
+:where(.boutique-page) .bq-form label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; color: var(--bq-text-soft); }
+:where(.boutique-page) .bq-form input, :where(.boutique-page) .bq-form textarea, :where(.boutique-page) .bq-form select {
   min-height: 52px;
   box-sizing: border-box;
   background: var(--bq-surface-2); border: 1px solid var(--bq-border); border-radius: 10px;
   padding: 10px 12px; color: var(--bq-text); font-size: .95rem; font-family: inherit;
 }
-.bq-form textarea { min-height: unset; } /* hauteur pilotée par l'attribut rows, pas ce plancher */
-.bq-form input:focus, .bq-form textarea:focus, .bq-form select:focus { outline: none; border-color: var(--bq-gold); }
-.bq-btn {
+:where(.boutique-page) .bq-form textarea { min-height: unset; } /* hauteur pilotée par l'attribut rows, pas ce plancher */
+:where(.boutique-page) .bq-form input:focus, :where(.boutique-page) .bq-form textarea:focus, :where(.boutique-page) .bq-form select:focus { outline: none; border-color: var(--bq-gold); }
+:where(.boutique-page) .bq-btn {
   background: var(--bq-gold); color: var(--text-on-accent); border: none; border-radius: 10px;
   padding: 13px 16px; font-weight: 700; cursor: pointer; font-size: .95rem;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.bq-btn:hover { filter: brightness(1.08); }
-.bq-btn.small { padding: 7px 12px; font-size: .85rem; }
-.bq-btn:disabled { opacity: .7; cursor: default; filter: none; }
+:where(.boutique-page) .bq-btn:hover { filter: brightness(1.08); }
+:where(.boutique-page) .bq-btn.small { padding: 7px 12px; font-size: .85rem; }
+:where(.boutique-page) .bq-btn:disabled { opacity: .7; cursor: default; filter: none; }
 
 /* Prix + devise regroupés en un seul champ visuel (revue design) — un
    conteneur au même habillage que .bq-form input, deux sous-champs sans
    bordure propre à l'intérieur, séparés par un simple filet. */
-.bq-price-group {
+:where(.boutique-page) .bq-price-group {
   display: flex;
   align-items: stretch;
   min-height: 52px;
@@ -131,32 +124,32 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   overflow: hidden;
   transition: border-color .2s;
 }
-.bq-price-group:focus-within { border-color: var(--bq-gold); }
-.bq-price-group input {
+:where(.boutique-page) .bq-price-group:focus-within { border-color: var(--bq-gold); }
+:where(.boutique-page) .bq-price-group input {
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   min-height: unset !important;
   box-sizing: border-box;
 }
-.bq-price-group input:first-child { flex: 1; min-width: 0; padding: 0 12px; }
-.bq-price-sep { width: 1px; align-self: stretch; margin: 10px 0; background: var(--bq-border); }
-.bq-price-group .bq-price-currency { flex: 0 0 76px; width: 76px; padding: 0 10px; text-align: center; font-weight: 600; }
+:where(.boutique-page) .bq-price-group input:first-child { flex: 1; min-width: 0; padding: 0 12px; }
+:where(.boutique-page) .bq-price-sep { width: 1px; align-self: stretch; margin: 10px 0; background: var(--bq-border); }
+:where(.boutique-page) .bq-price-group .bq-price-currency { flex: 0 0 76px; width: 76px; padding: 0 10px; text-align: center; font-weight: 600; }
 
 /* Select catégorie : même habillage que les autres champs (revue design :
    « ressemble à un composant HTML natif ») — appearance:none neutralise le
    chevron du navigateur, .bq-select-wrap::after en dessine un cohérent avec
    le reste de l'identité (même principe que les accordéons du module
    Rouwhanes). */
-.bq-select-wrap { position: relative; }
-.bq-form select {
+:where(.boutique-page) .bq-select-wrap { position: relative; }
+:where(.boutique-page) .bq-form select {
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
   padding-right: 32px;
   cursor: pointer;
 }
-.bq-select-wrap::after {
+:where(.boutique-page) .bq-select-wrap::after {
   content: '⌄';
   position: absolute;
   right: 14px;
@@ -170,13 +163,13 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 
 /* Libellé + info secondaire sur la même ligne (ex. « Images du produit * ·
    2 minimum · 5 maximum ») — même niveau que .bq-form label. */
-.bq-field-label { display: block; font-size: .82rem; color: var(--bq-text-soft); margin-bottom: 6px; }
-.bq-field-hint { font-weight: 400; color: var(--bq-text-dim); }
+:where(.boutique-page) .bq-field-label { display: block; font-size: .82rem; color: var(--bq-text-soft); margin-bottom: 6px; }
+:where(.boutique-page) .bq-field-hint { font-weight: 400; color: var(--bq-text-dim); }
 
 /* Encart d'information secondaire (revue design : le texte WhatsApp en bas
    de formulaire se perdait) — même habillage surface-2 + bordure que les
    champs du formulaire, mais pensé comme une info calme, pas un champ. */
-.bq-info-box {
+:where(.boutique-page) .bq-info-box {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -188,30 +181,30 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   font-size: .8rem;
   line-height: 1.45;
 }
-.bq-info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--bq-gold); }
+:where(.boutique-page) .bq-info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--bq-gold); }
 
 /* Produits */
-.bq-products-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.bq-empty { color: var(--bq-text-dim); text-align: center; padding: 1.2rem; }
-.bq-products { display: flex; flex-direction: column; gap: 10px; margin-top: .6rem; }
-.bq-prod {
+:where(.boutique-page) .bq-products-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+:where(.boutique-page) .bq-empty { color: var(--bq-text-dim); text-align: center; padding: 1.2rem; }
+:where(.boutique-page) .bq-products { display: flex; flex-direction: column; gap: 10px; margin-top: .6rem; }
+:where(.boutique-page) .bq-prod {
   display: flex; align-items: center; gap: 12px;
   background: var(--bq-surface-2); border: 1px solid var(--bq-border); border-radius: 14px; padding: 10px;
   color: var(--bq-text);
 }
-.bq-prod-img {
+:where(.boutique-page) .bq-prod-img {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   width: 56px; height: 56px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; background: var(--bq-bg); font-size: 1.6rem;
   color: var(--bq-gold-soft);
 }
-.bq-prod-img img { width: 100%; height: 100%; object-fit: cover; }
-.bq-prod-body { flex: 1; min-width: 0; }
-.bq-prod-name { font-weight: 600; }
-.bq-prod-price { color: var(--bq-gold); font-weight: 700; font-size: .9rem; }
-.bq-prod-chain { color: var(--bq-text-dim); font-size: .78rem; }
-.bq-prod-actions { display: flex; gap: 6px; }
-.bq-prod-actions button {
+:where(.boutique-page) .bq-prod-img img { width: 100%; height: 100%; object-fit: cover; }
+:where(.boutique-page) .bq-prod-body { flex: 1; min-width: 0; }
+:where(.boutique-page) .bq-prod-name { font-weight: 600; }
+:where(.boutique-page) .bq-prod-price { color: var(--bq-gold); font-weight: 700; font-size: .9rem; }
+:where(.boutique-page) .bq-prod-chain { color: var(--bq-text-dim); font-size: .78rem; }
+:where(.boutique-page) .bq-prod-actions { display: flex; gap: 6px; }
+:where(.boutique-page) .bq-prod-actions button {
   background: var(--bq-border); color: var(--bq-text); border: none; border-radius: 8px; padding: 8px 10px;
   cursor: pointer; font-size: 1rem;
 }
@@ -226,7 +219,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
    ci-dessous) — pas la structure entière de la fiche. À partir de 640px, la
    fiche redevient une carte centrée classique (l'espace horizontal ne
    justifie plus le plein écran). */
-.bq-modal-overlay {
+:where(.boutique-page) .bq-modal-overlay {
   position: fixed; inset: 0; z-index: 999; display: none;
   align-items: stretch; justify-content: center;
   /* Mobile : formulaire plein écran → en-tête sous la barre d'état. */
@@ -235,8 +228,8 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
-.bq-modal-overlay.open { display: flex; }
-.bq-modal {
+:where(.boutique-page) .bq-modal-overlay.open { display: flex; }
+:where(.boutique-page) .bq-modal {
   position: relative;
   background: var(--bq-surface);
   color: var(--bq-text);
@@ -248,8 +241,8 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   overflow: hidden; /* le scroll se fait dans .bq-form-scroll, pas ici */
 }
 @media (min-width: 640px) {
-  .bq-modal-overlay { padding: 24px; }
-  .bq-modal {
+  :where(.boutique-page) .bq-modal-overlay { padding: 24px; }
+  :where(.boutique-page) .bq-modal {
     max-width: 480px;
     height: auto;
     max-height: 90vh;
@@ -262,7 +255,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 /* Barre supérieure fixe : flèche retour + titre + fermeture, boutons
    circulaires 44×44px (revue design : « bouton tactile plus propre » —
    l'ancien ✕ était un simple caractère collé au bord). */
-.bq-modal-topbar {
+:where(.boutique-page) .bq-modal-topbar {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -270,7 +263,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   border-bottom: 1px solid var(--bq-border);
   flex-shrink: 0;
 }
-.bq-modal-topbar h3 {
+:where(.boutique-page) .bq-modal-topbar h3 {
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -280,7 +273,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.bq-modal-back, .bq-modal-close {
+:where(.boutique-page) .bq-modal-back, :where(.boutique-page) .bq-modal-close {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -294,12 +287,12 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   cursor: pointer;
   transition: background .2s, color .2s;
 }
-.bq-modal-back:hover, .bq-modal-close:hover { background: var(--bq-surface-2); color: var(--bq-text); }
+:where(.boutique-page) .bq-modal-back:hover, :where(.boutique-page) .bq-modal-close:hover { background: var(--bq-surface-2); color: var(--bq-text); }
 
 /* Seule zone qui scrolle dans la fiche (revue design : « un long scroll
    interne » portait auparavant sur la modale entière, y compris son
    padding et son titre). */
-.bq-form-scroll {
+:where(.boutique-page) .bq-form-scroll {
   flex: 1;
   min-height: 0; /* laisse flex calculer une vraie hauteur scrollable */
   overflow-y: auto;
@@ -309,16 +302,16 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 
 /* CTA fixe en bas, hors du flux scrollable — safe-area gérée comme les
    autres barres fixes de l'app (voir marche.css/asrar.css). */
-.bq-modal-footer {
+:where(.boutique-page) .bq-modal-footer {
   flex-shrink: 0;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--bq-border);
   background: var(--bq-surface);
 }
-.bq-modal-footer .bq-btn { width: 100%; }
+:where(.boutique-page) .bq-modal-footer .bq-btn { width: 100%; }
 
 /* Aperçu logo / image produit */
-.bq-logo-preview {
+:where(.boutique-page) .bq-logo-preview {
   position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
   margin-top: 8px; width: 110px; height: 110px; border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--bq-gold) 35%, transparent);
@@ -326,7 +319,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   display: flex; align-items: center; justify-content: center; overflow: hidden;
   color: var(--bq-gold-soft); font-size: .8rem; text-align: center;
 }
-.bq-logo-preview img { width: 100%; height: 100%; object-fit: cover; }
+:where(.boutique-page) .bq-logo-preview img { width: 100%; height: 100%; object-fit: cover; }
 /* ───── Sélecteur d'images du produit, personnalisé (2 à 5) ─────
    Remplace l'ancien <input type="file"> nu + « Aucune image » + décompte
    brut (revue design : « fait très HTML natif, alors que le reste de
@@ -334,12 +327,12 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
    états : une grande zone tactile tant qu'aucune image n'est choisie
    (.bq-image-dropzone), puis une rangée de tuiles carrées + une tuile "+"
    une fois la première image ajoutée (.bq-image-tile/.bq-image-add). */
-.bq-image-grid {
+:where(.boutique-page) .bq-image-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
-.bq-image-dropzone {
+:where(.boutique-page) .bq-image-dropzone {
   width: 100%;
   min-height: 96px;
   display: flex;
@@ -354,11 +347,11 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   cursor: pointer;
   transition: border-color .2s, color .2s;
 }
-.bq-image-dropzone:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
-.bq-image-dropzone strong { font-size: .85rem; color: var(--bq-text); font-weight: 600; }
-.bq-image-dropzone small { font-size: .72rem; }
+:where(.boutique-page) .bq-image-dropzone:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
+:where(.boutique-page) .bq-image-dropzone strong { font-size: .85rem; color: var(--bq-text); font-weight: 600; }
+:where(.boutique-page) .bq-image-dropzone small { font-size: .72rem; }
 
-.bq-image-tile {
+:where(.boutique-page) .bq-image-tile {
   position: relative;
   width: 76px;
   height: 76px;
@@ -368,7 +361,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   background: var(--bq-surface-2);
   border: 1px solid var(--bq-border);
 }
-.bq-image-add {
+:where(.boutique-page) .bq-image-add {
   width: 76px;
   height: 76px;
   flex: 0 0 auto;
@@ -382,15 +375,15 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
   cursor: pointer;
   transition: border-color .2s, color .2s;
 }
-.bq-image-add:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
-.bq-image-remove {
+:where(.boutique-page) .bq-image-add:hover { border-color: var(--bq-gold); color: var(--bq-gold); }
+:where(.boutique-page) .bq-image-remove {
   position: absolute; top: 4px; right: 4px;
   width: 20px; height: 20px; border-radius: 50%;
   background: rgba(0, 0, 0, .6); color: #fff; border: none;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.bq-image-main {
+:where(.boutique-page) .bq-image-main {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: rgba(0, 0, 0, .7); color: var(--bq-gold, var(--accent));
   font-size: .58rem; text-align: center;
@@ -398,7 +391,7 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 }
 
 /* Champ en erreur (validation du formulaire produit) */
-.bq-field-error {
+:where(.boutique-page) .bq-field-error {
   border-color: #e74c3c !important;
   box-shadow: 0 0 0 2px rgba(231, 76, 60, .18);
 }
@@ -408,18 +401,18 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 
 /* ═══════════════════ RESPONSIVE ═══════════════════ */
 @media (max-width: 600px) {
-  .container { padding: .75rem; }
-  .glass-panel { padding: 1.1rem; border-radius: 16px; }
+  .boutique-page.container { padding: .75rem; }
+  :where(.boutique-page) .glass-panel { padding: 1.1rem; border-radius: 16px; }
 
   /* Plans : 2 par ligne minimum même sur petit écran */
-  .bq-plans { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  :where(.boutique-page) .bq-plans { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
   /* La ligne de statut : le lien « renouveler » repasse sous le texte */
-  .bq-renew { margin-left: 0; }
+  :where(.boutique-page) .bq-renew { margin-left: 0; }
 
   /* Produit : les actions ne débordent plus, l'image reste alignée en haut */
-  .bq-prod { flex-wrap: wrap; }
-  .bq-prod-actions { margin-left: auto; }
+  :where(.boutique-page) .bq-prod { flex-wrap: wrap; }
+  :where(.boutique-page) .bq-prod-actions { margin-left: auto; }
 
   /* .bq-modal (fiche produit) : déjà plein écran par défaut, sans padding
      ni coin arrondi propres — voir la règle de base plus haut, qui gère ce
@@ -428,6 +421,17 @@ h3 { color: var(--bq-gold); margin: 1.4rem 0 .6rem; font-size: 1.05rem; }
 }
 
 @media (max-width: 380px) {
-  .bq-plans { grid-template-columns: 1fr; }
-  .bq-plan-price { font-size: 1.25rem; }
+  :where(.boutique-page) .bq-plans { grid-template-columns: 1fr; }
+  :where(.boutique-page) .bq-plan-price { font-size: 1.25rem; }
 }
+
+:where(.boutique-page) .bq-plan-btn, :where(.boutique-page) .bq-renew { min-height: 44px; }
+:where(.boutique-page) .bq-renew { width: auto; margin: 0 0 0 auto; padding: 8px 12px; color: var(--accent); background: var(--surface-2); border: 1px solid var(--border); }
+:where(.boutique-page) .bq-prod-body { min-width: 0; overflow-wrap: anywhere; }
+:where(.boutique-page) .bq-prod-actions button { width: 44px; min-height: 44px; margin: 0; padding: 8px; }
+:where(.boutique-page) .bq-delete-dialog { width: min(100%, 480px); max-height: calc(100dvh - var(--sat) - var(--sab) - 32px); overflow: auto; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 20px; padding: 24px; color: var(--text-main); }
+:where(.boutique-page) .bq-delete-dialog p { margin-top: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+:where(.boutique-page) .bq-delete-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+:where(.boutique-page) .bq-form-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+:where(.boutique-page) .bq-save-error { color: var(--status-danger-text); }

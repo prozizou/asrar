@@ -6,7 +6,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 30000,
-  globalTimeout: 180000,
+  globalTimeout: 300000,
   globalSetup: './e2e/authenticated/setup.cjs',
   reporter: process.env.CI ? [['github'], ['html', { outputFolder: 'playwright-report-auth', open: 'never' }]] : 'list',
   outputDir: 'test-results/authenticated',

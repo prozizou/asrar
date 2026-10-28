@@ -30,7 +30,7 @@ export default function Carre9Page() {
     if (base.trim() === '') { setSquare(null); setError('Champ vide.'); return; }
     const b = Number(base);
     if (Number.isNaN(b)) { setSquare(null); setError('Merci de renseigner un nombre valide.'); return; }
-    if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être supérieure à ${MIN_VALUE}.`); return; }
+    if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être au moins égale à ${MIN_VALUE}.`); return; }
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     setSquare(carre9(b));
@@ -41,20 +41,15 @@ export default function Carre9Page() {
       <Link href="/wafq/carre" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 9 × 9</h1>
-        <p className="kz-note">
-          Dans l’app d’origine, 9 cases n’étaient jamais calculées (le code s’arrête avec un commentaire
-          « //KASR »). Elles sont complétées ici en appliquant la règle du carré magique : chaque ligne doit
-          sommer au nombre entré, donc la case manquante d’une ligne vaut ce nombre moins la somme des 8
-          autres cases de la même ligne.
-        </p>
+        <p className="kz-note">Chaque ligne totalise le nombre saisi. Les cases complémentaires sont calculées à partir des autres valeurs de leur ligne.</p>
 
         <div className="kz-fields">
           <label className="kz-field">
-            <span>Nombre (supérieur à {MIN_VALUE})</span>
+            <span>Nombre (au moins {MIN_VALUE})</span>
             <input type="number" inputMode="numeric" value={base} onChange={(e) => setBase(e.target.value)} />
           </label>
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
-          {error && <p className="kz-error">{error}</p>}
+          {error && <p role="alert" className="kz-error">{error}</p>}
         </div>
 
         {square && (

@@ -342,7 +342,7 @@ export default function PlanetePage() {
         <Link href="/" className="back-btn">← Retour</Link>
 
         <header className="pm-head">
-          <p className="pm-eyebrow">Temporalité mystique</p>
+          <h1 className="pm-eyebrow">Temporalité mystique</h1>
           <p className="pm-clock" aria-live="off">{timeStr}</p>
           <p className="pm-date">{dateStr}</p>
           <button type="button" className="pm-place-chip" onClick={() => setPlaceSheet(true)} aria-label={`Position : ${placeLabel}. Changer de ville`}>
@@ -713,7 +713,7 @@ function HoursScreen({
           <ChevronLeft size={22} strokeWidth={2.2} aria-hidden="true" />
         </button>
         <div>
-          <h1 className="pm-hours-title">Heures planétaires</h1>
+          <h2 className="pm-hours-title">Heures planétaires</h2>
           <p className="pm-hours-meta">
             {dateStr} · {position}
             {todayPlanetName && <> · Régent : {CHALDEAN_EMOJIS[todayPlanetName]} {todayPlanetName}</>}

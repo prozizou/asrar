@@ -16,16 +16,16 @@ export default function ReviewsSection({ cat, itemKey, canReview = true, title =
   const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const reviews = comments.filter((c) => typeof c.stars === 'number');
 
   const submit = async () => {
     if (!stars || !text.trim() || busy) return;
-    setBusy(true);
+    setBusy(true); setError('');
     try {
-      await postComment(text.trim(), stars);
-      setText('');
-      setStars(0);
+      if (await postComment(text.trim(), stars)) { setText(''); setStars(0); }
+      else setError('Avis non envoyé. Votre texte et votre note sont conservés ; réessayez.');
     } finally {
       setBusy(false);
     }
@@ -42,12 +42,15 @@ export default function ReviewsSection({ cat, itemKey, canReview = true, title =
         <div className="sr-form">
           <StarRatingInput value={stars} onChange={setStars} />
           <textarea
+            aria-label="Votre avis"
+            disabled={busy}
             maxLength={500}
             rows={2}
             placeholder="Partagez votre expérience…"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+          {error && <p role="alert" className="view-feedback view-feedback-error">{error}</p>}
           <button type="button" className="sr-submit" onClick={submit} disabled={busy || !stars || !text.trim()}>
             {busy ? 'Envoi…' : 'Publier mon avis'}
           </button>
