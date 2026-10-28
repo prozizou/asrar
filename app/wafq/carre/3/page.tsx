@@ -22,11 +22,11 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'wilaya' | 'ghazaly' | 'bayt' | 'hatim';
 
-const METHODS: Record<Mode, { label: string; hint: string }> = {
-  wilaya: { label: 'Wilaya', hint: '3 valeurs connues : e2, e4 et e9.' },
-  ghazaly: { label: 'Ghazaly', hint: '1 valeur à renseigner : le nombre (hajah).' },
-  bayt: { label: 'Bayt', hint: '2 valeurs à renseigner : le nombre et l’entrée.' },
-  hatim: { label: 'Triangulaire', hint: '1 valeur à renseigner : la somme de chaque ligne.' },
+const METHODS: Record<Mode, { label: string }> = {
+  wilaya: { label: 'Wilaya' },
+  ghazaly: { label: 'Ghazaly' },
+  bayt: { label: 'Bayt' },
+  hatim: { label: 'Triangulaire' },
 };
 
 export default function Carre3Page() {
@@ -104,16 +104,6 @@ export default function Carre3Page() {
 
         <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
 
-        {mode === 'hatim' && (
-          <details className="kz-method-help">
-            <summary>Comprendre le Hatim triangulaire</summary>
-            <p>
-            Le triangle médian intérieur relie les milieux des trois côtés du triangle extérieur. Les
-            6 lignes droites du diagramme somment toutes à la valeur entrée. Comme pour Ghazaly, une seule
-            valeur suffit — les 3 sommets sont départagés automatiquement.
-            </p>
-          </details>
-        )}
 
         <div className="kz-fields">
           {mode === 'wilaya' && (

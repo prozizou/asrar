@@ -17,9 +17,9 @@ import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
 type Mode = 'base' | 'askandria';
 
-const METHODS: Record<Mode, { label: string; hint: string }> = {
-  base: { label: 'Base', hint: '1 valeur à renseigner, directement ou à partir de x.' },
-  askandria: { label: 'Askandria', hint: '4 valeurs connues : t8, t4, t21 et t17.' },
+const METHODS: Record<Mode, { label: string }> = {
+  base: { label: 'Base' },
+  askandria: { label: 'Askandria' },
 };
 
 export default function Carre5Page() {
@@ -85,7 +85,7 @@ export default function Carre5Page() {
                 <input type="number" inputMode="numeric" value={base} onChange={(e) => setBase(e.target.value)} />
               </label>
               <label className="kz-field">
-                <span>Ou calculer depuis une autre valeur (base = 5 × (x − 2))</span>
+                <span>Autre valeur (x)</span>
                 <input
                   type="number" inputMode="numeric" value={base2}
                   onChange={(e) => {

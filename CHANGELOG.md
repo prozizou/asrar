@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Hatims compacts et export PNG
+
+- Étoile vide au démarrage et champ « Entrer le nombre », sans constante préremplie.
+- Retrait des explications des vues Hatims, outils compacts et vérifications repliées.
+- Export PNG blanc haute résolution en plus du SVG ; chiffres mesurés et ajustés
+  dans les régions du diagramme, sans agrandir la page. SW `v46.27`.
+
 ## 2026-10-28 — Constante libre pour les sept alignements
 
 - Retrait du modèle à six alignements et du choix de configuration.

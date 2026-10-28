@@ -41,7 +41,6 @@ export default function Carre10Page() {
       <Link href="/wafq/carre" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 10 × 10</h1>
-        <p className="kz-note">Ce carré utilise une grille magique de référence : lignes, colonnes et diagonales ont la même somme. Les valeurs sont décalées uniformément selon le nombre saisi.</p>
 
         <div className="kz-fields">
           <label className="kz-field">

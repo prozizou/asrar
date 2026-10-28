@@ -148,3 +148,27 @@
 @media (max-width: 480px) { .kz-star-checks ol { grid-template-columns: 1fr; } }
 
 @media (max-width: 540px) { .hatim-door-chevron { display: none; } }
+
+/* Hiérarchie compacte commune aux formulaires Hatims. */
+.kz-wrap.glass-panel { padding: 18px; }
+.kz-wrap .kz-title { font-size: 1.4rem; margin: 0 0 12px; }
+.kz-wrap .kz-methods { margin: 12px 0; }
+.kz-wrap .kz-fields { margin: 12px 0; gap: 10px; }
+.kz-wrap .kz-fields > .kz-fields { margin: 0; }
+.kz-wrap .kz-result { margin-top: 16px; }
+.kz-wrap .kz-result-toolbar { gap: 8px; margin-bottom: 12px; }
+.kz-star-entry { margin: 12px 0; }
+.kz-star-generator .kz-star-scroll { max-width: 520px; margin-inline: auto; }
+.kz-star-entry-row { display: grid; grid-template-columns: minmax(0, 1fr) 78px; gap: 8px; }
+.kz-star-entry .kz-star-input { margin: 0; height: 48px; padding: 10px 12px; box-sizing: border-box; }
+.kz-wrap .kz-field input { margin-bottom: 0; }
+.kz-star-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.kz-star-actions .kz-export-btn { justify-content: center; width: 100%; padding: 8px; }
+.kz-star-actions .kz-star-png { background: var(--accent); border-color: var(--accent); color: var(--button-ink); }
+.kz-star-generator .kz-star-checks { margin-top: 8px; }
+.kz-star-checks summary { min-height: 44px; align-content: center; cursor: pointer; font-size: .85rem; color: var(--text-dim); }
+.kz-star-checks summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kz-star-generator textarea { width: 100%; }
+.hatim-page .hatim-door { min-height: 96px; padding: 12px; }
+.hatim-page .hatim-topbar { margin-bottom: 12px; }
+@media (max-width: 360px) { .kz-wrap.glass-panel { padding: 14px; } }

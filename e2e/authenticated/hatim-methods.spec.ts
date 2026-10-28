@@ -35,14 +35,11 @@ for (const size of [3, 5, 8]) {
       await expect(page.locator('.kz-grid')).toBeVisible();
       await page.getByRole('radio', { name: 'Bayt', exact: true }).check();
       await expect(page.locator('.kz-grid')).toHaveCount(0);
-      await expect(page.getByText('2 valeurs à renseigner : le nombre et l’entrée.', { exact: true })).toBeVisible();
       await expect(page.getByLabel('Entrée', { exact: true })).toBeVisible();
       await page.getByRole('radio', { name: 'Ghazaly', exact: true }).check();
       await expect(page.getByLabel('Nombre (hajah)', { exact: true })).toHaveValue('21');
       await page.getByRole('radio', { name: 'Triangulaire', exact: true }).check();
-      await expect(page.locator('details')).not.toHaveAttribute('open', '');
-      await page.getByText('Comprendre le Hatim triangulaire', { exact: true }).click();
-      await expect(page.locator('details')).toHaveAttribute('open', '');
+      await expect(page.locator('.kz-method-help, .kz-method-hint')).toHaveCount(0);
     } else if (size === 5) {
       await expect(page.getByLabel('t8', { exact: true })).toBeVisible();
       await expect(page.getByLabel('t17', { exact: true })).toBeVisible();
