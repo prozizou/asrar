@@ -1,3 +1,4 @@
+const { isActiveZikrMember } = require("../lib/zikrWarning");
 const crypto = require("crypto");
 const { normalizeFait, normalizeRythme, utcDateKey } = require("../lib/zikrLogic");
 const { httpError } = require("./access");
@@ -8,6 +9,7 @@ async function recordProgress(db, gid, uid, rawFait, rawRythme, now = Date.now()
   const today = utcDateKey(now);
   const memberTx = await memberRef.transaction((member) => {
     if (!member) return null; // laisse Firebase relire un cache initial vide
+    if (!isActiveZikrMember(member)) return;
     const previous = Number(member.fait) || 0;
     const fait = Math.max(previous, normalizeFait(rawFait));
     const daily = member.daily?.date === today ? Number(member.daily.total) || 0 : 0;
@@ -18,11 +20,12 @@ async function recordProgress(db, gid, uid, rawFait, rawRythme, now = Date.now()
       progressEpoch: member.progressEpoch || epoch,
       progressBase: member.progressBase ?? previous,
       fait, rythme: normalizeRythme(rawRythme), updatedAt: now, lastSeenAt: now,
+      ...(fait > previous ? { lastProgressAt: now, warning: null, avertissement: null } : {}),
       daily: { date: today, total: daily + fait - previous },
     };
   });
   const member = memberTx.snapshot.val();
-  if (!member) throw httpError(403, "Rejoignez d'abord ce zikr collectif.");
+  if (!isActiveZikrMember(member)) throw httpError(403, "Rejoignez d'abord ce zikr collectif.");
 
   const totalTx = await db.ref(`zikr_groups/${gid}`).transaction((group) => {
     if (!group) return null;

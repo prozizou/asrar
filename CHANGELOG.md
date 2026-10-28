@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-10-28 — Suivi des participants au Zikr collectif
+
+- Messages WhatsApp personnalisables avec méthode et progression, avertissement
+  enregistré dans l’application et badge privé pour les modérateurs.
+- Retrait du groupe après sept jours sans récitation suivant l’avertissement,
+  via le cron des rappels ; compte ASRAR et total récité conservés.
+- Reprise d’activité annulant l’avertissement et retrait idempotent avec reprise
+  après panne ; file indexée sans scan global des membres. SW `v46.29`.
+
 ## 2026-10-28 — Inscriptions arabes de l’étoile
 
 - Remplacement des quatre petites étoiles par جبريل, ميكائيل, اسرافيل et

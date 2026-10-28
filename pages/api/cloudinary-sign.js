@@ -12,6 +12,7 @@
 //   timestamp, signature, folder, uploadPreset? }
 // `groupId` n'est lu (et exigé) que pour folder="zikr_chat".
 
+const { isActiveZikrMember } = require("../../lib/zikrWarning");
 const crypto = require("crypto");
 const { verifyUser } = require("../../server/access");
 const { isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
     const gid = safeKey(groupId);
     if (!gid) return res.status(400).json({ error: "Groupe manquant." });
     const memSnap = await app().database().ref("zikr_members/" + gid + "/" + user.uid).once("value");
-    if (!memSnap.exists()) {
+    if (!isActiveZikrMember(memSnap.val())) {
       return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
     }
     safeFolder = `zikr_chat/${gid}/${user.uid}`;

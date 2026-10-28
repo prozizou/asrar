@@ -5,6 +5,7 @@
 
     "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
     "notifications": { "$uid": { ".indexOn": ["createdAt", "read"] } },
+    "zikr_inactivity": { ".indexOn": ["deadline"] },
     "zikr_groups": { ".indexOn": ["sessionAt"] },
     "orders_v2": { ".indexOn": ["buyerSort", "sellerSort", "sellerUid", "buyerUid", "at"] },
     "privacy_requests": { ".indexOn": ["status"] },

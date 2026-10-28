@@ -24,11 +24,19 @@ test.describe('PWA — installabilité', () => {
     // PwaGate.js enregistre le service worker pour TOUS les visiteurs,
     // connectés ou non (voir son commentaire d'en-tête).
     await page.goto('/');
-    const swUrl = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.ready;
-      return reg.active?.scriptURL ?? null;
-    });
-    expect(swUrl).toContain('/sw.js');
+    // clients.claim() déclenche le rechargement initial de PwaGate. Chaque
+    // tentative relit l'enregistrement dans le document courant.
+    await expect.poll(async () => {
+      try {
+        return await page.evaluate(async () => {
+          const reg = await navigator.serviceWorker.getRegistration();
+          return reg?.active?.scriptURL ?? '';
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Execution context was destroyed')) return '';
+        throw error;
+      }
+    }, { timeout: 10000 }).toContain('/sw.js');
   });
 
   test('sw.js répond et déclare une version', async ({ request }) => {

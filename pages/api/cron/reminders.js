@@ -1,6 +1,8 @@
 // Les marqueurs indiquent une mise en file durable, jamais un succès push.
 // Les identifiants par session/échéance rendent les passages concurrents
 // idempotents ; le worker conserve les accusés par appareil.
+const { isActiveZikrMember } = require("../../../lib/zikrWarning");
+const { processZikrInactivity } = require("../../../server/zikrInactivity");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
@@ -23,7 +25,13 @@ export default async function handler(req, res) {
   const now = new Date();
   const stats = { sessionQueued: 0, sessionSkipped: 0, renewalQueued: 0, expiredQueued: 0, renewalNoAccount: 0 };
   try {
-    await mapBounded([() => queueSessionReminders(db, now, stats), () => queueRenewalReminders(db, now, stats)], 2, (run) => run());
+    const results = await Promise.allSettled([
+      queueSessionReminders(db, now, stats),
+      queueRenewalReminders(db, now, stats),
+      processZikrInactivity(db, now.getTime()).then((result) => { stats.zikrInactivity = result; }),
+    ]);
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed) throw failed.reason;
     await db.ref("cron_health/reminders").set({ at: Date.now(), ...stats });
     return res.status(200).json({ ok: true, ...stats });
   } catch (error) {
@@ -47,7 +55,7 @@ async function queueSessionReminders(db, now, stats) {
     }
     const members = await db.ref(`zikr_members/${gid}`).once("value");
     const uids = new Set();
-    members.forEach((member) => { uids.add(member.key); });
+    members.forEach((member) => { if (isActiveZikrMember(member.val())) uids.add(member.key); });
     if (group.ownerUid) uids.add(group.ownerUid);
     if (uids.size) {
       await enqueueNotification(db, { type: "users", uids: [...uids].sort() }, {
