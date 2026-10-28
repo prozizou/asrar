@@ -76,7 +76,7 @@ validation de disponibilité du service réel.
 | `/hijri` | Retour visible ; panne de source et action Réessayer contrôlées. |
 | `/notifications` | États, filtres et reprise du premier lot vérifiés. |
 | `/parrainage` | Commandes Copier et conditions agrandies ; état ouvert annoncé. |
-| `/planete` | Repère principal, retour et choix de ville agrandis ; palette claire fixe conservée conformément au choix de design documenté dans le module. |
+| `/planete` | Repère principal, retour et choix de ville agrandis ; palette désormais synchronisée avec le thème global depuis v46.19. |
 | `/rouwhania` | Retour visible ; formulaire, texte arabe et résultats contrôlés. |
 | `/tafsir` | Filtres compacts et tactiles ; mode actif annoncé, saisie sans zoom forcé. |
 | `/thalsams` | Filtres compacts, champs de 48 px, erreurs contrastées et détail tactile. |

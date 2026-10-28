@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-10-28 — Thème de Planète
+
+- Planète suit le thème de l’application : fond, cartes, fenêtres, boutons
+  et états favorables/défavorables adaptés au clair et au sombre. SW `v46.19`.
+
 ## 2026-10-28 — Retrait de modules
 
 - Retrait des écrans Thalsams, Abajad et Formation/visioconférence.
