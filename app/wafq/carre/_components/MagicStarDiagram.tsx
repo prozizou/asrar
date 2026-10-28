@@ -59,13 +59,14 @@ const MagicStarDiagram = forwardRef<SVGSVGElement, { star: MagicStar | null; num
   const svg = useRef<SVGSVGElement>(null);
   useImperativeHandle(ref, () => svg.current!);
   useLayoutEffect(() => {
-    svg.current?.querySelectorAll<SVGTextElement>('[data-case]').forEach((text) => {
-      text.setAttribute('font-size', '28');
+    svg.current?.querySelectorAll<SVGTextElement>('[data-case], [data-ornament]').forEach((text) => {
+      const fontSize = Number(text.dataset.fontSize || 28);
+      text.setAttribute('font-size', String(fontSize));
       text.removeAttribute('textLength');
       text.setAttribute('y', text.dataset.center!);
       const box = text.getBBox();
       const ratio = Math.min(1, Number(text.dataset.width) / box.width, 28 / box.height) * .94;
-      text.setAttribute('font-size', String(28 * ratio));
+      text.setAttribute('font-size', String(fontSize * ratio));
       text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
       text.setAttribute('textLength', String(Math.min(text.getBBox().width, Number(text.dataset.width) * .92)));
       const fitted = text.getBBox();
@@ -99,9 +100,16 @@ const MagicStarDiagram = forwardRef<SVGSVGElement, { star: MagicStar | null; num
         {SECTORS.map((angle, i) => <path key={angle} data-region={i + 7} d={`M${pair(polar(150, angle - 27))} A150 150 0 0 1 ${pair(polar(150, angle + 27))} L${pair(polar(80, angle + 27))} A80 80 0 0 0 ${pair(polar(80, angle - 27))}Z`} />)}
       </g>
       <circle cx="320" cy="320" r="36" fill="var(--star-ink, #151515)" />
-      <g fill="var(--star-ink, #151515)" fontSize="36" textAnchor="middle" aria-hidden="true">
-        <text x="196" y="126">★</text><text x="444" y="126">★</text>
-        <text x="196" y="544">★</text><text x="444" y="544">★</text>
+      <g fill="var(--star-ink, #151515)" fontSize="26" fontFamily="Arial, sans-serif" textAnchor="middle" dominantBaseline="central" lang="ar" direction="rtl">
+        {[
+          { position: 'top-right', text: 'جبريل', x: 435, y: 124, width: 86 },
+          { position: 'top-left', text: 'ميكائيل', x: 205, y: 124, width: 86 },
+          { position: 'bottom-right', text: 'اسرافيل', x: 435, y: 516, width: 86 },
+          { position: 'bottom-left', text: 'عزرائيل', x: 205, y: 516, width: 86 },
+          { position: 'middle-left', text: 'محمد', x: 94, y: 320, width: 66 },
+          { position: 'middle-right', text: 'محمد', x: 546, y: 320, width: 66 },
+        ].map(({ position, text, x, y, width }) => <text key={position} data-ornament={position} x={x} y={y}
+          data-center={y} data-width={width} data-font-size="26">{text}</text>)}
       </g>
       {OUTER.map(({ index, points }) => label(index, [points.reduce((s, p) => s + p[0], 0) / 3, points.reduce((s, p) => s + p[1], 0) / 3]))}
       {SECTORS.map((angle, i) => label(i + 7, polar(115, angle)))}
