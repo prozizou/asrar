@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-10-28 — Catalogue Hatims compact
+
+- Grille responsive de deux colonnes, cartes régulières, taille et nombre
+  de cases lisibles ; en-tête allégé, aide visible et interactions discrètes.
+- Les miniatures sont calculées selon chaque taille. SW `v46.17`.
+
 ## 2026-10-28 — Revue des 35 vues et solidité des parcours
 
 - Isolation des styles du marché, de la bibliothèque et de la boutique ;
