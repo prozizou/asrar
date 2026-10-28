@@ -1,6 +1,8 @@
 'use client';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import PageHeader from '@/components/PageHeader';
+import ViewState from '@/components/ViewState';
 import { useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { ORDER_LABELS, ORDER_TRANSITIONS, formatOrderPrice } from '@/lib/orderStatus';
@@ -23,7 +25,7 @@ function OrdersContent() {
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }, [seller, administrator]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { setItems([]); setCursor(null); void load(); }, [load]);
   const contact = async (order: any) => {
     const destination = reserveExternalWindow();
     if (!destination) { setError('Autorisez l’ouverture d’une nouvelle fenêtre pour contacter la boutique.'); return; }
@@ -40,16 +42,15 @@ function OrdersContent() {
     } catch (e: any) { setError(e.message); }
     finally { setBusy(false); }
   };
-  return <main className="account-page container"><Link href="/menu" className="back-btn">← Tableau de bord</Link>
-    <header><p className="account-eyebrow">Marché</p><h1>{administrator ? 'Suivi des commandes — administration' : seller ? 'Demandes reçues par ma boutique' : 'Mes demandes et commandes'}</h1>
-      <p>Une demande WhatsApp n’est ni une confirmation d’achat ni une preuve de paiement. La boutique confirme ensuite chaque étape.</p></header>
-    <nav aria-label="Historique des commandes"><Link className="account-button" href="/commandes">Mes demandes</Link> · <Link className="account-button" href="/commandes?vue=boutique">Demandes reçues</Link> · <Link href="/compte">Mon compte</Link></nav>
-    {error && <p role="alert" className="account-error">{error} <button onClick={() => load()}>Réessayer</button></p>}
-    {loading && <p role="status">Chargement des demandes…</p>}
-    {!loading && items.length === 0 && <p>Aucune demande {seller ? 'reçue pour le moment.' : 'enregistrée. Ouvrez une fiche produit pour contacter sa boutique.'}</p>}
+  return <main className="account-page container page-shell">
+    <PageHeader eyebrow="Marché" title={administrator ? 'Suivi des commandes — administration' : seller ? 'Demandes reçues par ma boutique' : 'Mes demandes et commandes'} description="Une demande WhatsApp ne confirme ni l’achat ni le paiement. La boutique renseigne ensuite chaque étape." />
+    <nav className="orders-nav" aria-label="Historique des commandes"><Link className="view-button view-button-secondary" aria-current={!seller && !administrator ? "page" : undefined} href="/commandes">Mes demandes</Link><Link className="view-button view-button-secondary" aria-current={seller ? "page" : undefined} href="/commandes?vue=boutique">Demandes reçues</Link><Link className="view-button view-button-secondary" href="/compte">Mon compte</Link></nav>
+    {error && <ViewState kind="error" compact title="Demandes indisponibles" description={error} action={<button className="view-button" onClick={() => load()}>Réessayer</button>} />}
+    {loading && items.length === 0 && !error && <ViewState kind="loading" title="Chargement de vos demandes" />}
+    {!loading && !error && items.length === 0 && <ViewState title={administrator ? 'Aucune demande récente' : seller ? 'Aucune demande reçue' : 'Vos demandes seront regroupées ici'} description={administrator ? 'Les demandes récentes de l’ensemble des boutiques apparaîtront ici.' : seller ? 'Les demandes adressées à votre boutique apparaîtront ici, avec leur suivi.' : 'Ouvrez une fiche du marché pour vérifier sa disponibilité auprès de la boutique.'} action={!seller && !administrator ? <Link className="view-button" href="/">Découvrir le marché</Link> : undefined} />}
     <div className="account-grid">{items.map((order) => <article key={order._key} className="account-card">
-      <h2>{order.produit}</h2><strong>{formatOrderPrice(order.prix, order.devise)}</strong><p>{order.vendeur} · {new Date(order.at).toLocaleDateString('fr-FR')}</p>
-      <p><strong>{(ORDER_LABELS as any)[order.status] || 'État à vérifier'}</strong></p>
+      <h2>{order.produit}</h2><strong className="order-amount">{formatOrderPrice(order.prix, order.devise)}</strong><p className="account-muted">{order.vendeur} · {order.at > 0 ? new Date(order.at).toLocaleDateString('fr-FR') : 'Date indisponible'}</p>
+      <p><strong className={'order-status order-status-' + order.status}>{(ORDER_LABELS as any)[order.status] || 'État à vérifier'}</strong></p>
       {order.schemaVersion === 1 ? <p className="account-muted">Ancienne demande : prix et vendeur historiques non vérifiés. Aucun achat ni paiement confirmé.</p> : <>
         <p className="account-muted">Référence : {order._key.slice(0, 12)}</p>
         {!seller && !administrator && order.status !== 'cancelled' && <button disabled={busy} onClick={() => contact(order)}>Contacter la boutique</button>}
@@ -58,12 +59,12 @@ function OrdersContent() {
       </>}
     </article>)}</div>
     {cursor && <button className="account-button" disabled={loading} onClick={() => load(cursor)}>Afficher les demandes précédentes</button>}
-    {change && <Modal className="account-modal" label="Confirmer le changement de statut" onClose={() => setChange(null)}><section className="account-card"><h2>{(ORDER_LABELS as any)[change.status]}</h2>
+    {change && <Modal className="account-modal" label="Confirmer le changement de statut" onClose={() => { if (!busy) setChange(null); }}><section className="account-card"><h2>{(ORDER_LABELS as any)[change.status]}</h2>
       {change.status === 'paid' ? <p>Confirmez uniquement après avoir vérifié que le paiement a été reçu. Cette étape enregistre votre déclaration manuelle.</p> : change.status === 'delivered' ? <p>Confirmez uniquement après la livraison effective au client.</p> : <p>Le changement sera enregistré dans l’historique de cette demande.</p>}
       <label htmlFor="order-note">Note de suivi, visible par l’acheteur</label><textarea id="order-note" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
-      <button disabled={busy} onClick={transition}>Confirmer cette étape</button><button className="account-secondary" onClick={() => setChange(null)}>Revenir sans modifier</button>
+      <button disabled={busy} onClick={transition}>Confirmer cette étape</button><button className="account-secondary" disabled={busy} onClick={() => setChange(null)}>Revenir sans modifier</button>
       {error && <p role="alert">{error}</p>}
     </section></Modal>}
   </main>;
 }
-export default function CommandesPage() { return <Suspense fallback={<p>Chargement des demandes…</p>}><OrdersContent /></Suspense>; }
+export default function CommandesPage() { return <Suspense fallback={<main className="container page-shell"><ViewState kind="loading" title="Chargement de vos demandes" /></main>}><OrdersContent /></Suspense>; }

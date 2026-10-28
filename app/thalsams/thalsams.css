@@ -66,3 +66,11 @@
   font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; margin-top: 18px;
   padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--glass-border);
 }
+
+.th-tab { width: auto; margin: 0; min-height: 44px; flex: 1 1 auto; }
+.th-field input, .th-field select { min-height: 48px; font-size: 16px; min-width: 0; }
+.th-row2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.th-checkbox-field { min-height: 44px; }
+.th-detail-toggle { min-height: 44px; width: auto; padding: 8px 12px; }
+.th-generate-btn { color: var(--button-ink); }
+.th-error { color: var(--status-danger-text); }

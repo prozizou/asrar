@@ -33,6 +33,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
   const [errorField, setErrorField] = useState('');
   const [imagesError, setImagesError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Galerie : { file: File|null, url: string }. file = nouvelle image à
   // téléverser ; url seule = image déjà hébergée (édition).
@@ -108,7 +109,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
 
   const save = async () => {
     if (saving || !validate()) return;
-    setSaving(true);
+    setSaving(true); setSaveError(false);
     try {
       // Téléverse uniquement les nouvelles images ; conserve les URL existantes.
       const urls = [];
@@ -137,8 +138,8 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
       notify('✅ Produit enregistré.');
       onSaved();
     } catch (e) {
-      setNote('');
-      notify('Erreur : ' + (e.message || e));
+      setSaveError(true);
+      setNote('Le produit n’a pas été enregistré. Vos informations sont conservées ; réessayez.');
     } finally {
       setSaving(false);
     }
@@ -147,24 +148,24 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
   const cls = (id) => (errorField === id ? ' bq-field-error' : '');
 
   return (
-    <Modal className="bq-modal-overlay open" onClose={onClose} label={isEdit ? 'Modifier un produit' : 'Ajouter un produit'}>
+    <Modal className="bq-modal-overlay open" onClose={saving ? undefined : onClose} label={isEdit ? 'Modifier un produit' : 'Ajouter un produit'}>
       <div className="bq-modal">
         {/* Barre supérieure fixe (revue design, point 1) : remplace le petit
             ✕ flottant au-dessus d'un très long formulaire — flèche retour +
             titre + fermeture, toujours visibles, quelle que soit la position
             du scroll dans le formulaire. */}
         <div className="bq-modal-topbar">
-          <button type="button" className="bq-modal-back" onClick={onClose} aria-label="Retour">
+          <button type="button" className="bq-modal-back" onClick={onClose} disabled={saving} aria-label="Retour">
             <ArrowLeft size={18} strokeWidth={2} aria-hidden="true" />
           </button>
           <h3>{isEdit ? 'Modifier le produit' : 'Ajouter un produit'}</h3>
-          <button type="button" className="bq-modal-close" onClick={onClose} aria-label="Fermer">
+          <button type="button" className="bq-modal-close" onClick={onClose} disabled={saving} aria-label="Fermer">
             <X size={18} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
 
         <div className="bq-form-scroll">
-          <div className="bq-form">
+          <fieldset className="bq-form bq-form-fields" disabled={saving}>
             <label>
               Nom du produit *
               <input
@@ -182,10 +183,11 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
                 design) — deux blocs verticaux séparés pour deux informations
                 qui se lisent naturellement ensemble prenaient deux fois plus
                 de hauteur que nécessaire. */}
-            <label>
+            <label htmlFor="product-price">
               Prix *
               <div className={'bq-price-group' + (cls('pPrice') || cls('pDevise'))}>
                 <input
+                  id="product-price"
                   ref={refs.pPrice}
                   type="number"
                   min={1}
@@ -289,13 +291,13 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
               <Info size={15} strokeWidth={2} aria-hidden="true" />
               <span>Le numéro WhatsApp de votre boutique sera affiché automatiquement aux acheteurs.</span>
             </div>
-          </div>
+          </fieldset>
         </div>
 
         {/* CTA fixe en bas (revue design, point 1) — toujours accessible
             sans avoir à scroller jusqu'au bout du formulaire. */}
         <div className="bq-modal-footer">
-          {note && <p className="bq-note" style={{ margin: '0 0 8px' }}>{note}</p>}
+          {note && <p role={saveError ? 'alert' : 'status'} className={saveError ? 'bq-note bq-save-error' : 'bq-note'} style={{ margin: '0 0 8px' }}>{note}</p>}
           <button className="bq-btn" onClick={save} disabled={saving}>
             {saving ? (
               'Enregistrement…'

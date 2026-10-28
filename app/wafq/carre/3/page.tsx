@@ -111,8 +111,7 @@ export default function Carre3Page() {
 
         {mode === 'hatim' && (
           <p className="kz-note">
-            Absent de l’app Android d’origine (aucune Activity Java correspondante). Un triangle extérieur
-            (sommet + 2 coins de base) dont le triangle médian intérieur relie les milieux des 3 côtés : les
+            Le triangle médian intérieur relie les milieux des trois côtés du triangle extérieur. Les
             6 lignes droites du diagramme somment toutes à la valeur entrée. Comme pour Ghazaly, une seule
             valeur suffit — les 3 sommets sont départagés automatiquement.
           </p>
@@ -155,7 +154,7 @@ export default function Carre3Page() {
           )}
 
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
-          {error && <p className="kz-error">{error}</p>}
+          {error && <p role="alert" className="kz-error">{error}</p>}
         </div>
 
         {mode !== 'hatim' && square && (

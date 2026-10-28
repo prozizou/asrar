@@ -416,3 +416,5 @@ html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
   .geo-page.ecu-view .synthesis-card p { font-size: 1rem; }
   .geo-page.ecu-view .parity-badge { font-size: 0.85rem; }
 }
+
+.geo-page .dot-row { min-height: 44px; }

@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 2026-10-28 — Revue des 35 vues et solidité des parcours
+
+- Isolation des styles du marché, de la bibliothèque et de la boutique ;
+  retours mobiles visibles, titres et commandes tactiles harmonisés.
+- Bibliothèque : titres et auteurs visibles, ouverture au clavier, commentaires
+  conservés après échec. Formations, boutique et secrets : reprise après panne.
+- Boutique : confirmation accessible de suppression, protection pendant les
+  envois et erreurs persistantes. Secrets : réponses obsolètes ignorées.
+- Grands carrés Wafq : chiffres lisibles et défilement du tableau au clavier ;
+  filtres compacts et polices Al-Qalam locales. SW `v46.16`.
+- Matrice de contrôle de chaque vue : [QUALITE_VUES.md](QUALITE_VUES.md).
+
+## 2026-10-27 — Cohérence des vues personnelles et confort mobile
+
+- Rappel d’échéance compact, menu personnel structuré et version de repli
+  cohérente avec le build ; en-têtes et états partagés des vues personnelles.
+- Notifications : reprise après erreur, marquage confirmé et filtre local
+  des non-lues. Contrastes adaptés aux deux thèmes et retour mobile visible.
+- Zikr : safe areas Capacitor, espace de clavier, saisie multilignes et
+  retours audio lisibles. Zoom utilisateur rétabli. SW `v46.15`.
+- Audit et périmètre : [QUALITE_VUES.md](QUALITE_VUES.md).
+
 ## 2026-10-27 — Chargement ESM dans les fonctions Vercel
 
 - Activation explicite de `--experimental-require-module` sur Node 24 pour

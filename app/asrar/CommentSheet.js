@@ -6,6 +6,8 @@ import SmartImage from '@/components/SmartImage';
 
 export default function CommentSheet({ open, comments, onClose, onPost }) {
   const [value, setValue] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const listRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -24,19 +26,22 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
     return () => document.body.classList.remove('comment-open');
   }, [open]);
 
-  const submit = () => {
+  const submit = async () => {
     const t = value.trim();
-    if (!t) return;
-    onPost(t);
-    setValue('');
+    if (!t || sending) return;
+    setSending(true); setError('');
+    try {
+      if (await onPost(t)) setValue('');
+      else setError('Envoi impossible. Votre texte est conservé ; réessayez.');
+    } finally { setSending(false); }
   };
 
   return (
-    <Modal open={open} className="asrar-comment-dialog" onClose={onClose} label="Commentaires">
+    <Modal open={open} className="asrar-comment-dialog" onClose={sending ? undefined : onClose} label="Commentaires">
       <div className={'comment-sheet' + (open ? ' open' : '')}>
         <div className="comment-sheet-header">
           <strong>Commentaires</strong>
-          <button aria-label="Fermer les commentaires" onClick={onClose} className="close-sheet-btn">
+          <button aria-label="Fermer les commentaires" onClick={onClose} disabled={sending} className="close-sheet-btn">
             ✕
           </button>
         </div>
@@ -57,8 +62,10 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
             </div>
           ))}
         </div>
+        {error && <p role="alert" className="view-feedback view-feedback-error">{error}</p>}
         <div className="comment-input">
           <input
+            disabled={sending}
             aria-label="Votre commentaire"
             ref={inputRef}
             type="text"
@@ -66,9 +73,9 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
             maxLength={500}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && submit()}
           />
-          <button onClick={submit}>Envoyer</button>
+          <button type="button" onClick={submit} disabled={sending || !value.trim()}>{sending ? "Envoi…" : "Envoyer"}</button>
         </div>
       </div>
     </Modal>

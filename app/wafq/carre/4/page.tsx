@@ -47,7 +47,7 @@ export default function Carre4Page() {
             <input type="number" inputMode="numeric" value={base} onChange={(e) => setBase(e.target.value)} />
           </label>
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
-          {error && <p className="kz-error">{error}</p>}
+          {error && <p role="alert" className="kz-error">{error}</p>}
         </div>
 
         {square && (

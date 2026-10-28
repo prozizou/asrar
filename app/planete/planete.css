@@ -350,3 +350,6 @@
 @media (prefers-reduced-motion: reduce) {
   .pm-progress span { transition: none; }
 }
+
+.pm .pm-place-chip { min-height: 44px; }
+.planete-page.pm { padding-bottom: max(24px, var(--sab)); }

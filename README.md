@@ -162,3 +162,6 @@ Chaque module garde sa **logique pure dans `lib/`** (testable hors UI, cf.
 `lib/*.test.js`) et ses **styles scopés** pour éviter toute fuite entre pages.
 L'ex-site statique n'existe plus dans ce dépôt ; les anciennes URLs `.html`
 restent redirigées (voir ci-dessus) pour ne pas casser les liens déjà partagés.
+
+La revue des vues et le périmètre du premier lot sont documentés dans
+[QUALITE_VUES.md](QUALITE_VUES.md).

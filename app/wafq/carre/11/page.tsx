@@ -30,7 +30,7 @@ export default function Carre11Page() {
     if (base.trim() === '') { setSquare(null); setError('Champ vide.'); return; }
     const b = Number(base);
     if (Number.isNaN(b)) { setSquare(null); setError('Merci de renseigner un nombre valide.'); return; }
-    if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être supérieure à ${MIN_VALUE}.`); return; }
+    if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être au moins égale à ${MIN_VALUE}.`); return; }
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     setSquare(carre11(b));
@@ -41,19 +41,15 @@ export default function Carre11Page() {
       <Link href="/wafq/carre" className="back-btn">← Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 11 × 11</h1>
-        <p className="kz-note">
-          Taille absente de l’app Android d’origine (le plus grand carré développé était le 10×10, resté
-          inachevé). Ce carré repose sur un carré magique de référence (671 ; lignes, colonnes et diagonales
-          valides ; entiers 1 à 121 chacun utilisé une fois), décalé uniformément selon le nombre entré.
-        </p>
+        <p className="kz-note">Ce carré utilise une grille magique de référence de 121 cases, adaptée au nombre saisi par un décalage uniforme. Lignes, colonnes et diagonales ont la même somme.</p>
 
         <div className="kz-fields">
           <label className="kz-field">
-            <span>Nombre (supérieur à {MIN_VALUE})</span>
+            <span>Nombre (au moins {MIN_VALUE})</span>
             <input type="number" inputMode="numeric" value={base} onChange={(e) => setBase(e.target.value)} />
           </label>
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
-          {error && <p className="kz-error">{error}</p>}
+          {error && <p role="alert" className="kz-error">{error}</p>}
         </div>
 
         {square && (

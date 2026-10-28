@@ -82,7 +82,6 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#1a1712',
   // Sans ceci, `env(safe-area-inset-*)` résout à 0 sur iOS même en mode PWA
   // installé (statusBarStyle "black-translucent" ci-dessus ne suffit pas à
@@ -104,7 +103,7 @@ const themeInit = `(function(){try{var t=localStorage.getItem('asrar_theme')||'d
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>

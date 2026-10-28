@@ -88,3 +88,11 @@ compléter en recette ; ces tests ne les simulent pas comme réussis.
 `zz-commerce-account.spec.ts` vérifie les prix serveur, les transitions vendeur
 dans l’interface, les droits, l’export du compte et les fenêtres au clavier.
 Le lien WhatsApp est inspecté sans contacter son destinataire.
+
+`ui-layout.spec.ts` vérifie le rappel d’échéance sur mobile, les cibles du
+menu, les noms longs, les deux thèmes, les erreurs de notifications et la
+place réservée au clavier et aux safe areas de la discussion.
+
+`all-views.spec.ts` parcourt les 35 vues en clair/sombre à 320/1440 px et
+vérifie les styles après navigation, les reprises réseau, les brouillons de
+commentaire et d’avis, les neuf carrés calculés et la suppression vendeur.

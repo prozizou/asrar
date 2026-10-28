@@ -604,3 +604,6 @@ html[data-theme='light'] .cc-page {
 .cc-page .rb-btn { padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; font-family: var(--font-ui); }
 .cc-page .rb-btn-restore { background: var(--deep); color: var(--gold-light); }
 .cc-page .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid var(--gold-border); }
+
+.cc-page input:not([type="checkbox"]), .cc-page select { min-height: 44px; font-size: 16px; }
+.cc-page .names-table > summary { min-height: 44px; }

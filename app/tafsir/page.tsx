@@ -69,10 +69,10 @@ export default function TafsirPage() {
         </div>
 
         <div className="tf-tabs">
-          <button type="button" className={'tf-tab' + (mode === 'search' ? ' active' : '')} onClick={() => setMode('search')}>
+          <button type="button" aria-pressed={mode === 'search'} className={'tf-tab' + (mode === 'search' ? ' active' : '')} onClick={() => setMode('search')}>
             🔍 Rechercher un symbole
           </button>
-          <button type="button" className={'tf-tab' + (mode === 'dream' ? ' active' : '')} onClick={() => setMode('dream')}>
+          <button type="button" aria-pressed={mode === 'dream'} className={'tf-tab' + (mode === 'dream' ? ' active' : '')} onClick={() => setMode('dream')}>
             💭 Raconter mon rêve
           </button>
         </div>
@@ -87,13 +87,13 @@ export default function TafsirPage() {
               />
             </label>
             <div className="tf-categories">
-              <button type="button" className={'tf-cat-btn' + (categoryId === null ? ' active' : '')} onClick={() => setCategoryId(null)}>
+              <button type="button" aria-pressed={categoryId === null} className={'tf-cat-btn' + (categoryId === null ? ' active' : '')} onClick={() => setCategoryId(null)}>
                 Toutes
               </button>
               {TAFSIR_CATEGORIES.map((c) => (
                 <button
                   key={c.id} type="button"
-                  className={'tf-cat-btn' + (categoryId === c.id ? ' active' : '')}
+                  aria-pressed={categoryId === c.id} className={'tf-cat-btn' + (categoryId === c.id ? ' active' : '')}
                   onClick={() => setCategoryId(c.id)}
                 >
                   {c.icon} {c.label}

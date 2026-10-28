@@ -20,6 +20,7 @@
 //   • Décompte après avoir rejoint : PUREMENT VISUEL/informatif — Google Meet
 //     est un service externe que l'app ne peut pas couper à distance.
 import './formation.css';
+import ViewState from '@/components/ViewState';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -75,10 +76,8 @@ export default function FormationPage() {
   const alertedRef = useRef(false);
 
   const bootRef = useRef(false);
-  useEffect(() => {
-    if (bootRef.current) return;
-    bootRef.current = true;
-    (async () => {
+  const loadFormations = useCallback(async () => {
+    setLoading(true); setError('');
       try {
         const { items } = await apiPost('list-content', { kind: 'formation' });
         const list: Formation[] = (items || []).slice().sort(
@@ -90,8 +89,12 @@ export default function FormationPage() {
       } finally {
         setLoading(false);
       }
-    })();
   }, []);
+  useEffect(() => {
+    if (bootRef.current) return;
+    bootRef.current = true;
+    void loadFormations();
+  }, [loadFormations]);
 
   const inDetail = !!current;
   const closeDetail = useCallback(() => setCurrent(null), []);
@@ -198,7 +201,7 @@ export default function FormationPage() {
                 />
               </div>
             )}
-            <h2>{current!.titre}</h2>
+            <h1 className="module-title">{current!.titre}</h1>
             {(current!.duree || Number(current!.prix) > 0) && (
               <div className="fm-detail-meta">
                 {current!.duree && <span>⏱️ {current!.duree}</span>}
@@ -278,23 +281,20 @@ export default function FormationPage() {
             ← Retour
           </Link>
           <div className="glass-panel">
-            <h2>🎓 Formation mystique</h2>
+            <h1 className="module-title">🎓 Formation mystique</h1>
             <p className="fm-subtitle">Ateliers et formations en direct, par visioconférence — payée à la minute.</p>
           </div>
           <div className="fm-grid">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => <div key={i} className="fm-skeleton" />)
             ) : error ? (
-              <p className="fm-empty">
-                Erreur de chargement.
-                <br />
-                <small>{error}</small>
-              </p>
+              <ViewState kind="error" title="Formations indisponibles" description="Les sessions n’ont pas pu être chargées. Réessayez dans un instant."
+                action={<button type="button" className="view-button" onClick={loadFormations}>Réessayer</button>} />
             ) : items.length === 0 ? (
-              <p className="fm-empty">Aucune formation programmée pour l’instant.</p>
+              <ViewState title="Aucune formation programmée" description="Les prochaines sessions apparaîtront ici." />
             ) : (
               items.map((f) => (
-                <div key={f._key} className="fm-card" onClick={() => setCurrent(f)}>
+                <button type="button" key={f._key} className="fm-card" onClick={() => setCurrent(f)}>
                   <div className="fm-cover">
                     {f.img ? (
                       <SmartImage
@@ -315,7 +315,7 @@ export default function FormationPage() {
                       {Number(f.prix) > 0 && <span>💳 {formatPrice(f.prix, 'FCFA')}</span>}
                     </div>
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

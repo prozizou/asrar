@@ -1,178 +1,68 @@
 'use client';
-// Menu PROFIL du tableau de bord : thème clair/sombre (contrôle désormais
-// unique de l'app, ex-bouton flottant ThemeToggle), paramètres, version et
-// DÉCONNEXION. Le thème initial est posé avant le rendu par le script
-// anti-FOUC du layout ; ici on ne fait que lire/écrire l'attribut data-theme
-// déjà en place.
-//
-// Le déclencheur est fourni par l'appelant (`trigger`, app/menu/UserBar.js
-// passe l'avatar) : l'en-tête n'a ainsi qu'UNE cible à droite — avant, le
-// hamburger de ce panneau, l'avatar et un bouton de déconnexion séparé s'y
-// alignaient tous les trois (revue design).
 import { useEffect, useState } from 'react';
-import Modal from './Modal';
 import Link from 'next/link';
+import { UserRound, ShoppingBag, Moon, Sun, LogOut, X, Download, ChevronRight } from 'lucide-react';
+import Modal from './Modal';
 import { useAuth } from '@/components/AuthProvider';
-import pkg from '@/package.json';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
 
-const APP_VERSION = pkg.version;
-
-// Interroge le service worker ACTIF (celui qui contrôle réellement la page)
-// pour sa version — plus fidèle que package.json/APP_VERSION, qui n'est
-// presque jamais mis à jour alors que SW_VERSION l'est à chaque déploiement
-// (voir public/sw.js). Résout `null` si aucun SW ne contrôle encore la page
-// (premier chargement avant install) ou en l'absence de réponse.
 function getSwVersion() {
   return new Promise((resolve) => {
-    if (typeof navigator === 'undefined' || !navigator.serviceWorker || !navigator.serviceWorker.controller) {
-      resolve(null);
-      return;
-    }
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker?.controller) { resolve(null); return; }
     const channel = new MessageChannel();
-    const timer = setTimeout(() => resolve(null), 1500);
-    channel.port1.onmessage = (event) => {
-      clearTimeout(timer);
-      resolve((event.data && event.data.version) || null);
-    };
+    const finish = (version) => { clearTimeout(timer); channel.port1.close(); resolve(version); };
+    const timer = setTimeout(() => finish(null), 1500);
+    channel.port1.onmessage = (event) => finish(event.data?.version || null);
     navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
   });
 }
 
 export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
-  const { signOut } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [theme, setTheme] = useState('dark');
-  const [swVersion, setSwVersion] = useState(null);
-  const [standalone, setStandalone] = useState(true); // optimiste → pas de flash de la ligne pour les installés
-  const [installState, setInstallState] = useState(getInstallState); // { canInstall, installed }
-  const [ios, setIos] = useState(false);
-
+  const { user, signOut } = useAuth();
+  const [open, setOpen] = useState(false), [theme, setTheme] = useState('dark'), [swVersion, setSwVersion] = useState(null);
+  const [standalone, setStandalone] = useState(true), [installState, setInstallState] = useState(getInstallState), [ios, setIos] = useState(false);
+  const name = user?.displayName || user?.email?.split('@')[0] || 'Mon compte';
+  useEffect(() => { setTheme(document.documentElement.getAttribute('data-theme') || 'dark'); }, []);
   useEffect(() => {
-    setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-  }, []);
-
-  // Voir lib/installPrompt.js : capture PARTAGÉE avec PwaGate (un seul
-  // listener global), on ne fait ici que s'abonner à son état.
-  useEffect(() => {
-    setStandalone(isStandalone());
-    setIos(isIOS());
-    setInstallState(getInstallState());
+    setStandalone(isStandalone()); setIos(isIOS()); setInstallState(getInstallState());
     return subscribeInstallState(() => setInstallState(getInstallState()));
   }, []);
-
   useEffect(() => {
-    getSwVersion().then(setSwVersion);
-  }, []);
-
+    let active = true;
+    const update = () => getSwVersion().then((version) => { if (active) setSwVersion(version); });
+    update(); navigator.serviceWorker?.addEventListener('controllerchange', update);
+    return () => { active = false; navigator.serviceWorker?.removeEventListener('controllerchange', update); };
+  }, [open]);
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    document.documentElement.style.colorScheme = next;
-    try {
-      localStorage.setItem('asrar_theme', next);
-    } catch {}
+    document.documentElement.setAttribute('data-theme', next); document.documentElement.style.colorScheme = next;
+    try { localStorage.setItem('asrar_theme', next); } catch {}
     setTheme(next);
   };
-
-  return (
-    <>
-      <button
-        type="button"
-        className={triggerClassName || 'signout-btn'}
-        onClick={() => setOpen(true)}
-        aria-label={triggerLabel || 'Ouvrir le menu'}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        title={triggerLabel || 'Menu'}
-      >
-        {trigger || '☰'}
-      </button>
-
-      {open && (
-        <Modal className="drawer-overlay" onClose={() => setOpen(false)} label="Menu">
-          <div className="drawer-panel">
-            <div className="drawer-header">
-              <h3>Menu</h3>
-              <button type="button" className="drawer-close" onClick={() => setOpen(false)} aria-label="Fermer le menu">
-                ✕
-              </button>
-            </div>
-
-            <div className="drawer-body">
-              <div className="drawer-row">
-                <span className="drawer-row-label">
-                  <span className="drawer-row-icon">{theme === 'light' ? '☀️' : '🌙'}</span>
-                  Mode {theme === 'light' ? 'clair' : 'sombre'}
-                </span>
-                <button
-                  type="button"
-                  className={'theme-switch' + (theme === 'light' ? ' is-light' : '')}
-                  role="switch"
-                  aria-checked={theme === 'light'}
-                  aria-label="Basculer entre le mode clair et le mode sombre"
-                  onClick={toggleTheme}
-                >
-                  <span className="theme-switch-thumb" />
-                </button>
-              </div>
-
-              <Link href="/compte" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}>Mon compte et mes données</Link>
-              <Link href="/commandes" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}>Mes demandes et commandes</Link>
-
-              {!standalone &&
-                (installState.canInstall ? (
-                  <button type="button" className="drawer-row drawer-row-link" onClick={promptInstall}>
-                    <span className="drawer-row-label">
-                      <span className="drawer-row-icon">📲</span>
-                      Installer l'application
-                    </span>
-                  </button>
-                ) : (
-                  <div className="drawer-row drawer-row-static">
-                    <span className="drawer-row-label">
-                      <span className="drawer-row-icon">📲</span>
-                      Installer l'application
-                    </span>
-                    <span className="drawer-row-hint">
-                      {ios ? 'Partager ⎋ → Écran d’accueil' : 'Non proposé par ce navigateur'}
-                    </span>
-                  </div>
-                ))}
-
-              <div className="drawer-row drawer-row-static">
-                <span className="drawer-row-label">
-                  <span className="drawer-row-icon">📦</span>
-                  Version de l'app
-                </span>
-                {/* Version du service worker réellement actif sur l'appareil
-                    (voir getSwVersion) — repli sur package.json tant qu'elle
-                    n'est pas encore résolue ou hors contexte PWA/SW. Plus de
-                    SHA de commit accolé ici (retiré à la demande) : ce
-                    numéro seul suffit, voir public/sw.js. */}
-                <span className="drawer-row-hint">{swVersion || `v${APP_VERSION}`}</span>
-              </div>
-
-              {/* Déconnexion : déplacée ici depuis l'en-tête (revue design)
-                  — une action rare, qui n'a pas à occuper en permanence une
-                  cible à côté du profil, et qu'un tap accidentel ne doit pas
-                  déclencher. */}
-              <button type="button" className="drawer-row drawer-row-link drawer-row-danger" onClick={signOut}>
-                <span className="drawer-row-label">
-                  <span className="drawer-row-icon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                  </span>
-                  Déconnexion
-                </span>
-              </button>
-            </div>
+  return <>
+    <button type="button" className={triggerClassName || 'signout-btn'} onClick={() => setOpen(true)}
+      aria-label={triggerLabel || 'Ouvrir le menu'} aria-haspopup="dialog" aria-expanded={open} title={triggerLabel || 'Menu'}>{trigger || '☰'}</button>
+    {open && <Modal className="drawer-overlay" onClose={() => setOpen(false)} label="Menu">
+      <div className="drawer-panel">
+        <div className="drawer-header"><h2>Mon espace</h2><button type="button" className="drawer-close" onClick={() => setOpen(false)} aria-label="Fermer le menu"><X size={20} aria-hidden="true" /></button></div>
+        <div className="drawer-identity"><span className="drawer-avatar" aria-hidden="true">{name.charAt(0).toUpperCase()}</span><div><strong dir="auto">{name}</strong><span>{user?.email}</span></div></div>
+        <div className="drawer-body">
+          <p className="drawer-section-label">Votre activité</p>
+          <nav className="drawer-nav" aria-label="Espace personnel">
+            <Link href="/compte" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}><UserRound size={20} aria-hidden="true" /><span>Mon compte et mes données</span><ChevronRight size={16} aria-hidden="true" /></Link>
+            <Link href="/commandes" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}><ShoppingBag size={20} aria-hidden="true" /><span>Mes demandes et commandes</span><ChevronRight size={16} aria-hidden="true" /></Link>
+          </nav>
+          <p className="drawer-section-label">Préférences</p>
+          <div className="drawer-row"><span className="drawer-row-label">{theme === 'light' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />} Mode {theme === 'light' ? 'clair' : 'sombre'}</span>
+            <button type="button" className={'theme-switch' + (theme === 'light' ? ' is-light' : '')} role="switch" aria-checked={theme === 'light'} aria-label="Basculer entre le mode clair et le mode sombre" onClick={toggleTheme}><span className="theme-switch-thumb" /></button>
           </div>
-        </Modal>
-      )}
-    </>
-  );
+          {!standalone && installState.canInstall && <button type="button" className="drawer-row drawer-row-link" onClick={promptInstall}><Download size={20} aria-hidden="true" /><span>Installer l’application</span></button>}
+          {!standalone && !installState.canInstall && ios && <p className="drawer-install-tip">Pour installer l’application : Partager, puis « Sur l’écran d’accueil ».</p>}
+        </div>
+        <div className="drawer-footer"><div className="drawer-version"><span>Version de l’app</span><span>{swVersion || process.env.NEXT_PUBLIC_APP_VERSION || 'Version web'}</span></div>
+          <button type="button" className="drawer-row drawer-row-link drawer-row-danger" onClick={signOut}><LogOut size={20} aria-hidden="true" /><span>Déconnexion</span></button>
+        </div>
+      </div>
+    </Modal>}
+  </>;
 }

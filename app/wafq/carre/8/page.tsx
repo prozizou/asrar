@@ -54,7 +54,7 @@ export default function Carre8Page() {
       if (base.trim() === '') { setSquare(null); setError('Champ vide.'); return; }
       const b = Number(base);
       if (Number.isNaN(b)) { setSquare(null); setError('Merci de renseigner un nombre valide.'); return; }
-      if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être supérieure à ${MIN_VALUE}.`); return; }
+      if (b < MIN_VALUE) { setSquare(null); setError(`La valeur doit être au moins égale à ${MIN_VALUE}.`); return; }
       const ok = await ensureAccess(PREMIUM_LEVEL);
       if (!ok) return;
       setSquare(carre8(b));
@@ -62,7 +62,7 @@ export default function Carre8Page() {
       if (diamondBase.trim() === '') { setDiamond(null); setError('Champ vide.'); return; }
       const b = Number(diamondBase);
       if (Number.isNaN(b)) { setDiamond(null); setError('Merci de renseigner un nombre valide.'); return; }
-      if (b < DIAMOND_MIN_VALUE) { setDiamond(null); setError(`La valeur doit être supérieure à ${DIAMOND_MIN_VALUE}.`); return; }
+      if (b < DIAMOND_MIN_VALUE) { setDiamond(null); setError(`La valeur doit être au moins égale à ${DIAMOND_MIN_VALUE}.`); return; }
       const ok = await ensureAccess(PREMIUM_LEVEL);
       if (!ok) return;
       setDiamond(diamond8(b));
@@ -85,7 +85,7 @@ export default function Carre8Page() {
 
         {mode === 'losange' && (
           <p className="kz-note">
-            Absent de l’app Android d’origine. Losange de 32 nombres fourni par l’utilisateur : 4 rangées
+            Losange de 32 nombres : 4 rangées
             gauche-à-droite, 4 rangées droite-à-gauche et 2 colonnes somment toutes au nombre entré ; les
             losanges intérieurs concentriques somment à sa moitié. Chaque case du diagramme est coupée en
             deux : un nombre « extérieur » (haut) et un nombre « intérieur » (bas). Un nombre de la forme{' '}
@@ -98,18 +98,18 @@ export default function Carre8Page() {
         <div className="kz-fields">
           {mode === 'carre' ? (
             <label className="kz-field">
-              <span>Nombre (supérieur à {MIN_VALUE})</span>
+              <span>Nombre (au moins {MIN_VALUE})</span>
               <input type="number" inputMode="numeric" value={base} onChange={(e) => setBase(e.target.value)} />
             </label>
           ) : (
             <label className="kz-field">
-              <span>Nombre (supérieur à {DIAMOND_MIN_VALUE})</span>
+              <span>Nombre (au moins {DIAMOND_MIN_VALUE})</span>
               <input type="number" inputMode="numeric" value={diamondBase} onChange={(e) => setDiamondBase(e.target.value)} />
             </label>
           )}
 
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
-          {error && <p className="kz-error">{error}</p>}
+          {error && <p role="alert" className="kz-error">{error}</p>}
         </div>
 
         {mode === 'carre' && square && (

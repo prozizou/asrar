@@ -868,6 +868,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     if (tab === 'discussion') setUnreadCount(0);
   }, [tab]);
   const [chatText, setChatText] = useState('');
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const field = chatInputRef.current;
+    if (!field) return;
+    field.style.height = 'auto'; field.style.height = Math.min(field.scrollHeight, 120) + 'px';
+  }, [chatText, tab]);
   const [chatBusy, setChatBusy] = useState(false); // envoi d'un message texte
   const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
   const [voiceError, setVoiceError] = useState('');
@@ -1578,7 +1584,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
             )}
           </div>
 
-          {voiceError && <p role="alert" className="zk-muted">{voiceError}</p>}
+          {voiceError && <p role="alert" className="zk-chat-feedback">{voiceError}</p>}
           {voiceChecking && <p role="status" className="zk-muted">Vérification de l’envoi de vocaux…</p>}
           {unsentVoice && <div className="zk-unsent-voice"><p>Votre vocal est conservé dans cette page. Enregistrez-le avant de la quitter.</p>
             {unsentVoiceUrl && <a className="zk-btn ghost" href={unsentVoiceUrl} download={'asrar-vocal.' + (unsentVoice.type.includes('mp4') ? 'm4a' : unsentVoice.type.includes('ogg') ? 'ogg' : 'webm')}>Enregistrer mon vocal</a>}
@@ -1624,9 +1630,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
               />
               <div className="zk-chat-field">
                 <EmojiPicker onPick={(e: string) => setChatText((t: string) => (t + e).slice(0, CHAT_MESSAGE_MAX))} />
-                <textarea rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
+                <textarea ref={chatInputRef} aria-label="Écrire un message" rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
                   placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); } }} />
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); doSendMessage(); } }} />
               </div>
               <button type="button" className="zk-chat-tool" disabled={mediaBusy || voiceChecking || Boolean(unsentVoice)}
                 onClick={doStartVoice} aria-label="Enregistrer un vocal">

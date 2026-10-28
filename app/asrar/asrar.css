@@ -41,7 +41,7 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 16px max(24px, env(safe-area-inset-bottom));
+  padding: 0 16px max(24px, var(--sab));
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -56,16 +56,14 @@
   padding: 15px 0 0;
 }
 .asrar-topbar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
+  width: calc(100% + 32px);
+  margin-inline: -16px;
   z-index: 40;
   background: var(--asrar-bg-deep);
   border-bottom: 1px solid var(--asrar-border);
-  padding: max(10px, env(safe-area-inset-top)) 12px 12px;
+  padding: calc(10px + var(--sat)) 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -858,3 +856,7 @@ body.comment-open #asrarViewBtn { display: none !important; }
   .secret-detail-summary, .secret-instructions { padding: 14px; }
   .secret-reading-steps > li { padding-left: 34px; }
 }
+
+.asrar-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.asrar-heading h1 { font-size: 1.25rem; letter-spacing: 0; }
+.asrar-heading .back-btn { min-width: 44px; padding: 8px; }

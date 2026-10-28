@@ -1,24 +1,17 @@
-/* bibliotheque.css — styles extraits de bibliotheque/bibliotheque.html (blocs <style> inline). */
+/* bibliotheque.css — styles extraits de bibliotheque/bibliotheque.html (blocs \3c style> inline). */
     /* === BASE ÉSOTÉRIQUE === */
-    body {
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      font-family: var(--font-ui);
-      margin: 0;
-      transition: background 0.3s;
-    }
-    .container {
+    .library-page.container {
       max-width: 1300px;
       margin: 0 auto;
       padding: 1rem;
     }
-    .glass-panel {
+    :where(.library-page) .glass-panel {
       background: transparent !important;
       backdrop-filter: none !important;
       border: none !important;
       padding: 1rem 0;
     }
-    .back-btn {
+    :where(.library-page) .back-btn {
       color: var(--text-main);
       text-decoration: none;
       font-size: 0.9rem;
@@ -27,28 +20,28 @@
       opacity: 0.7;
       transition: opacity 0.2s;
     }
-    .back-btn:hover { opacity: 1; }
-    h2 {
+    :where(.library-page) .back-btn:hover { opacity: 1; }
+    :where(.library-page) h2 {
       font-family: var(--font-display);
       font-weight: 600;
       font-size: 2.2rem;
       margin-bottom: 0.5rem;
       letter-spacing: 0.5px;
     }
-    .subtitle {
+    :where(.library-page) .subtitle {
       color: var(--text-dim);
       margin-top: 4px;
       margin-bottom: 1.5rem;
     }
 
     /* === BARRE DE RECHERCHE & FILTRES === */
-    .search-section {
+    :where(.library-page) .search-section {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       margin-bottom: 1.5rem;
     }
-    .search-bar {
+    :where(.library-page) .search-bar {
       flex: 2 1 250px;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -58,8 +51,8 @@
       font-size: 1rem;
       outline: none;
     }
-    .search-bar::placeholder { color: var(--text-faint); }
-    .filter-select {
+    :where(.library-page) .search-bar::placeholder { color: var(--text-faint); }
+    :where(.library-page) .filter-select {
       flex: 1 1 150px;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -70,24 +63,24 @@
       outline: none;
       cursor: pointer;
     }
-    .filter-select option {
+    :where(.library-page) .filter-select option {
       background: var(--surface);
       color: var(--text-main);
     }
-    #bookCount {
+    :where(.library-page) #bookCount {
       color: var(--text-dim);
       font-size: 0.9rem;
       margin: 0.5rem 0 1rem;
     }
 
     /* === GRILLE ÉTAGÈRE === */
-    .book-grid {
+    :where(.library-page) .book-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 20px;
       margin-top: 10px;
     }
-    .book-card {
+    :where(.library-page) .book-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -98,12 +91,12 @@
       flex-direction: column;
       position: relative;
     }
-    .book-card:hover {
+    :where(.library-page) .book-card:hover {
       transform: translateY(-5px);
       background: rgba(255,255,255,0.16);
       border-color: var(--border-strong);
     }
-    .book-cover {
+    :where(.library-page) .book-cover {
       position: relative; /* nécessaire à next/image (fill) — voir SmartImage */
       height: 220px;
       background: var(--surface-3);
@@ -115,24 +108,24 @@
       overflow: hidden;
       position: relative;
     }
-    .book-cover img {
+    :where(.library-page) .book-cover img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    .book-info {
+    :where(.library-page) .book-info {
       padding: 10px 12px;
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
-    .book-pt {
+    :where(.library-page) .book-pt {
       color: var(--accent);
       font-size: 0.85rem;
       margin-top: auto;
     }
-    .bookmark-indicator {
+    :where(.library-page) .bookmark-indicator {
       position: absolute;
       top: 10px;
       right: 10px;
@@ -141,7 +134,7 @@
     }
 
     /* Squelettes */
-    .skeleton {
+    :where(.library-page) .skeleton {
       background: var(--surface);
       border-radius: 16px;
       height: 300px;
@@ -151,7 +144,7 @@
       0%, 100% { opacity: 0.4; }
       50% { opacity: 0.7; }
     }
-    .empty-msg {
+    :where(.library-page) .empty-msg {
       grid-column: 1 / -1;
       text-align: center;
       padding: 60px 20px;
@@ -160,7 +153,7 @@
     }
 
     /* === MODALE DE DÉTAIL === */
-    .modal-overlay {
+    :where(.library-page) .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
@@ -170,8 +163,8 @@
       justify-content: center;
       backdrop-filter: blur(6px);
     }
-    .modal-overlay.open { display: flex; }
-    .modal-box {
+    :where(.library-page) .modal-overlay.open { display: flex; }
+    :where(.library-page) .modal-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 24px;
@@ -185,12 +178,12 @@
       font-family: var(--font-ui);
       transition: background 0.3s, color 0.3s;
     }
-    .modal-box.sepia-mode {
+    :where(.library-page) .modal-box.sepia-mode {
       background: #2b2a1e;
       color: #f0e6d3;
       border-color: #5e5726;
     }
-    .modal-close {
+    :where(.library-page) .modal-close {
       position: absolute;
       top: 18px;
       right: 18px;
@@ -198,7 +191,7 @@
       font-size: 1.4rem;
       color: var(--text-dim);
     }
-    .modal-img {
+    :where(.library-page) .modal-img {
       width: 100%;
       max-height: 280px;
       object-fit: contain;
@@ -206,29 +199,29 @@
       margin-bottom: 20px;
       background: var(--surface-3);
     }
-    #modal-title {
+    :where(.library-page) #modal-title {
       font-family: var(--font-display);
       font-size: 1.6rem;
       margin: 0.5rem 0;
     }
-    .modal-meta-line {
+    :where(.library-page) .modal-meta-line {
       color: var(--accent);
       margin: 8px 0;
       font-size: 0.9rem;
     }
-    .modal-description {
+    :where(.library-page) .modal-description {
       margin: 16px 0;
       line-height: 1.6;
       font-size: 1rem;
     }
-    .comfort-controls {
+    :where(.library-page) .comfort-controls {
       display: flex;
       gap: 12px;
       align-items: center;
       margin: 18px 0;
       flex-wrap: wrap;
     }
-    .comfort-btn {
+    :where(.library-page) .comfort-btn {
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border-strong);
       border-radius: 20px;
@@ -237,22 +230,22 @@
       cursor: pointer;
       font-size: 0.85rem;
     }
-    .comfort-btn.active {
+    :where(.library-page) .comfort-btn.active {
       background: var(--accent);
       color: var(--text-on-accent);
       border-color: var(--accent);
     }
-    #modal-pt {
+    :where(.library-page) #modal-pt {
       color: var(--accent);
       margin: 10px 0;
     }
-    .action-buttons {
+    :where(.library-page) .action-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       margin: 20px 0 10px;
     }
-    .action-btn {
+    :where(.library-page) .action-btn {
       background: var(--accent);
       border: none;
       color: var(--text-on-accent);
@@ -264,36 +257,36 @@
       display: inline-block;
       font-size: 0.95rem;
     }
-    .action-btn.secondary {
+    :where(.library-page) .action-btn.secondary {
       background: transparent;
       border: 1px solid var(--accent);
       color: var(--accent);
     }
-    .action-btn:hover {
+    :where(.library-page) .action-btn:hover {
       filter: brightness(1.1);
     }
-    .modal-bookmark {
+    :where(.library-page) .modal-bookmark {
       font-size: 1.4rem;
       cursor: pointer;
       margin-left: auto;
     }
-    .modal-bookmark.saved { color: var(--accent); }
+    :where(.library-page) .modal-bookmark.saved { color: var(--accent); }
 
     /* Responsive */
     @media (max-width: 600px) {
-      .search-section {
+      :where(.library-page) .search-section {
         flex-direction: column;
       }
-      .book-grid {
+      :where(.library-page) .book-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 12px;
       }
-      .book-cover { height: 180px; }
+      :where(.library-page) .book-cover { height: 180px; }
       /* Cartes plus étroites : resserre encore la rangée d'actions pour
          qu'elle tienne sur une ligne sans jamais déborder. */
-      .book-info { padding: 8px 10px; }
-      .book-social { gap: 3px; }
-      .bs-btn { font-size: .7rem; padding: 4px 3px; gap: 2px; min-height: 26px; }
+      :where(.library-page) .book-info { padding: 8px 10px; }
+      :where(.library-page) .book-social { gap: 3px; }
+      :where(.library-page) .bs-btn { font-size: .7rem; padding: 4px 3px; gap: 2px; min-height: 26px; }
     }
 
     /* Rangée like/commentaires/partage : UNE seule ligne horizontale, quelle
@@ -303,8 +296,8 @@
        se contracte plutôt que de déborder de la carte. display:inline-flex +
        line-height:1 fige la hauteur des 3 boutons (les glyphes emoji ont des
        métriques de ligne différentes selon le navigateur/OS, sinon). */
-    .book-social { display:flex; flex-wrap:nowrap; gap:4px; margin-top:8px; }
-    .bs-btn {
+    :where(.library-page) .book-social { display:flex; flex-wrap:nowrap; gap:4px; margin-top:8px; }
+    :where(.library-page) .bs-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -318,20 +311,36 @@
       background:rgba(255,255,255,0.05); border:1px solid rgba(201,169,97,0.25);
       color:#cdbb8f; border-radius:20px; padding:5px 6px; font-size:.78rem; cursor:pointer;
     }
-    .bs-btn.liked { color:#e0607a; border-color:#e0607a; background:rgba(224,96,122,0.1); }
-    .book-cover { cursor:pointer; }
+    :where(.library-page) .bs-btn.liked { color:#e0607a; border-color:#e0607a; background:rgba(224,96,122,0.1); }
+    :where(.library-page) .book-cover { cursor:pointer; }
     /* Couleurs crème/or codées en dur (pensées pour un fond sombre) → illisibles
        en thème clair, où .modal-box passe sur un fond clair (var(--surface)).
        Remplacées par les tokens de thème globaux, comme le reste de la modale. */
-    .cm-list { max-height:45vh; overflow:auto; margin:10px 0; text-align:left; }
-    .cm-item { padding:10px 0; border-bottom:1px solid var(--border); }
-    .cm-head { font-size:.85rem; color:var(--accent); }
-    .cm-date { color:var(--text-dim); font-size:.75rem; margin-left:6px; }
-    .cm-text { color:var(--text-main); margin-top:3px; white-space:pre-wrap; word-break:break-word; }
-    .cm-empty { color:var(--text-dim); text-align:center; padding:16px; }
-    .cm-form { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-    .cm-form textarea { width:100%; box-sizing:border-box; min-height:64px; border-radius:10px; padding:10px; background:var(--surface-input);
+    :where(.library-page) .cm-list { max-height:45vh; overflow:auto; margin:10px 0; text-align:left; }
+    :where(.library-page) .cm-item { padding:10px 0; border-bottom:1px solid var(--border); }
+    :where(.library-page) .cm-head { font-size:.85rem; color:var(--accent); }
+    :where(.library-page) .cm-date { color:var(--text-dim); font-size:.75rem; margin-left:6px; }
+    :where(.library-page) .cm-text { color:var(--text-main); margin-top:3px; white-space:pre-wrap; word-break:break-word; }
+    :where(.library-page) .cm-empty { color:var(--text-dim); text-align:center; padding:16px; }
+    :where(.library-page) .cm-form { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+    :where(.library-page) .cm-form textarea { width:100%; box-sizing:border-box; min-height:64px; border-radius:10px; padding:10px; background:var(--surface-input);
       border:1px solid var(--border); color:var(--text-main); resize:vertical; font-size:.95rem; }
-    .book-highlight { outline:2px solid var(--accent); outline-offset:3px; border-radius:12px; }
-    .cm-send { align-self:flex-end; background:linear-gradient(45deg,var(--accent),var(--accent-hover)); border:none; color:var(--text-on-accent);
+    :where(.library-page) .book-highlight { outline:2px solid var(--accent); outline-offset:3px; border-radius:12px; }
+    :where(.library-page) .cm-send { align-self:flex-end; background:linear-gradient(45deg,var(--accent),var(--accent-hover)); border:none; color:var(--text-on-accent);
       font-weight:700; border-radius:10px; padding:10px 22px; cursor:pointer; }
+
+:where(.library-page) .book-cover { width: 100%; margin: 0; padding: 0; border-radius: 0; border: 0; flex-shrink: 0; }
+:where(.library-page) .book-cover:hover { transform: none; box-shadow: none; }
+:where(.library-page) .book-title { font-size: 1.05rem; line-height: 1.4; margin: 0 0 6px; letter-spacing: 0; overflow-wrap: anywhere; }
+:where(.library-page) .book-author { font-size: .9rem; color: var(--text-muted); margin-bottom: 8px; overflow-wrap: anywhere; }
+:where(.library-page) .book-info { justify-content: flex-start; gap: 4px; }
+:where(.library-page) .book-social { margin-top: auto; }
+:where(.library-page) .bs-btn { min-height: 44px; }
+:where(.library-page) .book-grid > .view-state { grid-column: 1 / -1; }
+:where(.library-page) .modal-box { background: var(--bg-deep); padding: 24px; width: min(92%, 600px); max-height: calc(100dvh - var(--sat) - var(--sab) - 32px); }
+:where(.library-page) .modal-close { width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 12px; top: 12px; right: 12px; }
+:where(.library-page) .cm-title { padding-right: 44px; overflow-wrap: anywhere; line-height: 1.4; }
+:where(.library-page) .cm-form textarea { width: 100%; min-height: 88px; font-size: 16px; margin-top: 12px; }
+:where(.library-page) .cm-text { overflow-wrap: anywhere; white-space: pre-wrap; }
+:where(.library-page) .cm-error { color: var(--status-danger-text); margin-block: 12px; }
+:where(.library-page) .cm-list { margin-top: 16px; }

@@ -30,6 +30,8 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
   const [mainImg, setMainImg] = useState(galerie[0] || '');
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [commentError, setCommentError] = useState('');
   const [descOpen, setDescOpen] = useState(false);
   const taRef = useRef(null);
   const listRef = useRef(null);
@@ -53,12 +55,14 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   };
 
-  const submitComment = () => {
+  const submitComment = async () => {
     const t = comment.trim();
-    if (!t) return;
-    postComment(t);
-    setComment('');
-    if (taRef.current) autoGrow(taRef.current);
+    if (!t || commentBusy) return;
+    setCommentBusy(true); setCommentError('');
+    try {
+      if (await postComment(t)) { setComment(''); if (taRef.current) taRef.current.style.height = 'auto'; }
+      else setCommentError('Envoi impossible. Votre texte est conservé ; réessayez.');
+    } finally { setCommentBusy(false); }
   };
 
   const doShare = () => {
@@ -245,8 +249,10 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
                 </div>
               ))}
             </div>
+            {commentError && <p role="alert" className="view-feedback view-feedback-error">{commentError}</p>}
             <div className="pm-comment-input">
               <textarea
+                disabled={commentBusy}
                 ref={taRef}
                 maxLength={500}
                 rows={1}
@@ -258,13 +264,13 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
                   autoGrow(e.target);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     submitComment();
                   }
                 }}
               />
-              <button type="button" className="pm-comment-send" onClick={submitComment} aria-label="Envoyer">
+              <button type="button" className="pm-comment-send" onClick={submitComment} aria-label="Envoyer" disabled={commentBusy || !comment.trim()}>
                 <Send size={17} strokeWidth={2.2} aria-hidden="true" />
               </button>
             </div>
