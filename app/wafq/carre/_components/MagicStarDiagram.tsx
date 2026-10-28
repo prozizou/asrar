@@ -39,7 +39,7 @@ const MagicStarDiagram = forwardRef<SVGSVGElement, { star: MagicStar; numerals: 
     <svg ref={ref} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 670" className="kz-star-svg"
       style={{ minWidth: digits > 4 ? digits * 110 : undefined }} role="img" aria-labelledby={`${id}-title ${id}-desc`}>
       <title id={`${id}-title`}>Étoile magique à 18 cases, somme {star.constant}</title>
-      <desc id={`${id}-desc`}>{star.values.map((value, i) => `Case ${i + 1} : ${value}`).join(' ; ')}. Les six alignements ont pour somme {star.constant}.</desc>
+      <desc id={`${id}-desc`}>{star.values.map((value, i) => `Case ${i + 1} : ${value}`).join(' ; ')}. Les {star.lines.length} alignements ont pour somme {star.constant}.</desc>
       <rect width="640" height="670" fill="var(--star-surface, #fff)" />
       <g fill="none" stroke="var(--star-ink, #151515)" strokeWidth="5" strokeLinejoin="round">
         <circle cx="320" cy="320" r="282" /><circle cx="320" cy="320" r="270" />

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-28 — Étoile à sept alignements
+
+- Configuration S = 57 : valeurs 1 à 18 sans répétition et sept alignements
+  de six cases vérifiés automatiquement, positions du schéma conservées.
+- Sélection entre les deux modèles, contrôle partagé indépendant du rendu,
+  copie et export adaptés au nombre d’alignements. SW `v46.25`.
+
 ## 2026-10-28 — Étoile magique à 18 cases
 
 - Choix Étoile dans le Hatim 6 × 6 : génération instantanée selon la constante
