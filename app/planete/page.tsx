@@ -26,6 +26,7 @@
 // traitement (cast) que dans les batches précédents.
 import AccessibleModalUntyped from '@/components/Modal';
 import './planete.css';
+import NativeAlarmCheck from './NativeAlarmCheck';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -955,6 +956,7 @@ function HourGrid({
 
   return (
     <>
+      {alarmMode === 'native' && <NativeAlarmCheck errorMessage={nativeAlarmErrorMessage} />}
       <div className="hour-grid-wrap">
         <ol className="hour-grid">
           {rows.map((r, i) => {

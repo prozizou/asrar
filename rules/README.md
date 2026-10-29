@@ -125,3 +125,24 @@ maximum (1 000 tâches par passage quotidien). Les tâches restantes sont
 conservées pour le prochain passage. Le créateur, les groupes
 terminés et les membres ayant repris une récitation sont préservés. Aucun
 ancien membre non averti n’est supprimé rétroactivement.
+
+## Discussion Zikr : signal temps réel
+
+`zikr_chat_signals/$gid` ne contient que `{ at, nonce }`. Sa lecture exige un
+compte authentifié avec email vérifié et une adhésion active au groupe ; les
+écritures clientes restent interdites. Les messages, réactions et accusés de
+lecture passent toujours par l’API autorisée. Aucune lecture directe des
+messages ou des données privées de membres n’est accordée.
+
+Publier les règles avant d’utiliser le signal temps réel en production. Le
+client conserve un repli de sondage visible (12 secondes), sans activité réseau
+périodique lorsque l’application est masquée. Les nouvelles branches
+`zikr_chat_changes` et `zikr_chat_reads` héritent du refus de lecture/écriture
+côté client. Les requêtes sont ordonnées par clé ; aucun nouvel index composé
+n’est nécessaire.
+
+`zikr_chat_read_counts/$gid/$uid` est un ensemble de lecteurs par message,
+accessible seulement à cet auteur, s’il reste membre actif avec email vérifié.
+Il actualise les statuts sans invalider l’historique de tout le groupe. Le
+client limite l’abonnement aux cinquante messages récents de l’auteur ; les
+reçus nominatifs restent exclusivement servis par l’API.

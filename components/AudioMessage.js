@@ -1,81 +1,59 @@
 'use client';
-// components/AudioMessage.js — Lecteur audio personnalisé pour un vocal de
-// la discussion d'un zikr collectif (app/zikr/page.tsx) — demandé
-// explicitement (« le lecteur gris casse complètement le design violet »).
-// Un <audio> natif reste le moteur de lecture (caché), mais toute l'UI
-// (bouton lecture/pause, barre de progression, temps) est la nôtre —
-// intégrée à la bulle plutôt que le widget système.
 import { useEffect, useRef, useState } from 'react';
 import { Play, Pause } from 'lucide-react';
-
-function fmtTime(s) {
-  const n = Number.isFinite(s) && s > 0 ? s : 0;
-  const m = Math.floor(n / 60);
-  const sec = Math.floor(n % 60);
-  return `${m}:${String(sec).padStart(2, '0')}`;
+function fmtTime(seconds) {
+  const value = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  return `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 }
-
-export default function AudioMessage({ src, duration }) {
+export default function AudioMessage({ src, duration, onListened, waveform }) {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
-  // `duration` (mediaDuration, envoyé par l'enregistreur — voir
-  // components/useVoiceRecorder.js) sert de repli tant que les métadonnées
-  // réelles du fichier ne sont pas encore chargées (évite d'afficher "0:00").
   const [total, setTotal] = useState(duration || 0);
-
+  const [speed, setSpeed] = useState(1);
+  const [error, setError] = useState('');
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return undefined;
-    const onTime = () => setCurrent(el.currentTime);
-    const onLoaded = () => { if (Number.isFinite(el.duration) && el.duration > 0) setTotal(el.duration); };
-    const onEnd = () => { setPlaying(false); setCurrent(0); };
-    el.addEventListener('timeupdate', onTime);
-    el.addEventListener('loadedmetadata', onLoaded);
-    el.addEventListener('ended', onEnd);
-    return () => {
-      el.removeEventListener('timeupdate', onTime);
-      el.removeEventListener('loadedmetadata', onLoaded);
-      el.removeEventListener('ended', onEnd);
-    };
-  }, []);
-
-  const toggle = () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-      setPlaying(false);
-    } else {
-      el.play().catch(() => {});
-      setPlaying(true);
-    }
+    setPlaying(false); setCurrent(0); setTotal(duration || 0); setError('');
+  }, [src, duration]);
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => { if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); } };
+  }, [src]);
+  const toggle = async () => {
+    const el = audioRef.current; if (!el) return;
+    if (!el.paused) { el.pause(); return; }
+    setError('');
+    try { el.playbackRate = speed; await el.play(); }
+    catch { setPlaying(false); setError('Lecture impossible. Vérifiez votre connexion et réessayez.'); }
   };
-
-  // Tap n'importe où sur la barre pour aller à ce point — pas besoin d'un
-  // vrai <input type="range"> (moins de contrôle sur l'apparence).
-  const seek = (e) => {
-    const el = audioRef.current;
-    if (!el || !total) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    el.currentTime = ratio * total;
-    setCurrent(el.currentTime);
-  };
-
-  const pct = total > 0 ? Math.min(100, (current / total) * 100) : 0;
-
-  return (
+  return <div className="zk-audio-wrapper">
     <div className="zk-audio-player">
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- vocal parlé, pas de piste de sous-titres à fournir */}
-      <audio ref={audioRef} src={src} preload="metadata" />
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- Vocal sans transcription fournie. */}
+      <audio ref={audioRef} src={src} preload="metadata"
+        onPlay={(event) => {
+          document.querySelectorAll('audio').forEach((audio) => { if (audio !== event.currentTarget) audio.pause(); });
+          setPlaying(true);
+        }} onPause={() => setPlaying(false)} onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => { if (Number.isFinite(e.currentTarget.duration)) setTotal(e.currentTarget.duration); }}
+        onEnded={() => { setPlaying(false); setCurrent(0); onListened?.(); }}
+        onError={() => { setPlaying(false); setError('Ce vocal ne peut pas être lu pour le moment.'); }} />
       <button type="button" className="zk-audio-play" onClick={toggle} aria-label={playing ? 'Mettre en pause' : 'Écouter'}>
-        {playing ? <Pause size={14} strokeWidth={2.5} aria-hidden="true" /> : <Play size={14} strokeWidth={2.5} aria-hidden="true" />}
+        {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
       </button>
-      <div className="zk-audio-bar" onClick={seek} role="presentation">
-        <div className="zk-audio-bar-fill" style={{ width: pct + '%' }} />
+      <div className="zk-audio-wave">
+        <svg viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">{(waveform?.length ? waveform : Array(32).fill(12)).map((level, index, levels) => {
+          const height = Math.max(3, Math.min(30, level * .3));
+          return <rect key={index} x={index * 100 / levels.length} y={(32 - height) / 2} width={Math.max(1, 70 / levels.length)} height={height} rx="1" fill={total > 0 && index / levels.length < current / total ? '#7450a3' : '#94909f'} />;
+        })}</svg>
+      <input className="zk-audio-seek" type="range" min="0" max={total || 1} step=".1" value={Math.min(current, total || 1)} aria-label="Position dans le vocal"
+        onChange={(e) => { if (audioRef.current && total > 0) { audioRef.current.currentTime = Number(e.target.value); setCurrent(Number(e.target.value)); } }} />
       </div>
-      <span className="zk-audio-time">{fmtTime(playing || current > 0 ? current : total)}</span>
+      <span className="zk-audio-time">{fmtTime(current > 0 ? current : total)}</span>
+      <button type="button" className="zk-audio-speed" aria-label={`Vitesse du vocal : ${speed} fois`} onClick={() => {
+        const next = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1;
+        setSpeed(next); if (audioRef.current) audioRef.current.playbackRate = next;
+      }}>{speed}×</button>
     </div>
-  );
+    {error && <p role="alert" className="zk-audio-error">{error}</p>}
+  </div>;
 }

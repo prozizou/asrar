@@ -35,6 +35,7 @@ public class PlanetAlarmService extends Service {
             JSONObject alarm = new JSONObject(intent.getStringExtra("alarm"));
             stopSound();
             activeId = alarm.getInt("id");
+            PlanetAlarmDiagnostics.record(this, activeId, "service-started", "");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (Build.VERSION.SDK_INT >= 26) {
                 NotificationChannel channel = new NotificationChannel(CHANNEL, "Réveils des heures planétaires", NotificationManager.IMPORTANCE_HIGH);
@@ -70,23 +71,67 @@ public class PlanetAlarmService extends Service {
                 focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT).setAudioAttributes(attributes).setOnAudioFocusChangeListener(focusListener).build();
                 focus = audioManager.requestAudioFocus(focusRequest);
             } else focus = audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-            if (focus != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) { stopSelf(); return START_NOT_STICKY; }
-            player = new MediaPlayer();
-            player.setAudioAttributes(attributes);
-            player.setDataSource(this, sound);
-            player.setLooping(true);
-            player.setOnErrorListener((mp, what, extra) -> { stopSelf(); return true; });
-            player.prepare();
-            player.start();
+            boolean audible = false;
+            String failure = "audio-focus-denied";
+            if (focus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                audible = playSound(sound, attributes);
+                if (!audible) {
+                    // A missing or unreadable chosen ringtone must not silently
+                    // discard the alarm. Try the system alarm, then the bundled tone.
+                    audible = playSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), attributes);
+                    if (!audible) {
+                        int fallback = getResources().getIdentifier("asrar_notification", "raw", getPackageName());
+                        if (fallback != 0) audible = playSound(Uri.parse("android.resource://" + getPackageName() + "/" + fallback), attributes);
+                    }
+                }
+                failure = "audio-playback-failed";
+            }
+            if (audible) PlanetAlarmDiagnostics.record(this, activeId, "ringing", "");
+            else {
+                PlanetAlarmDiagnostics.record(this, activeId, "audio-unavailable", failure);
+                // Keep the stop action and vibration available instead of
+                // stopping the service without any explanation.
+                Notification warning = new NotificationCompat.Builder(this, CHANNEL)
+                    .setSmallIcon(com.asrarpro.app.R.drawable.ic_stat_asrar)
+                    .setContentTitle(alarm.optString("title", "Réveil planétaire"))
+                    .setContentText("Son indisponible. Vérifiez le volume des alarmes et les réglages audio du téléphone.")
+                    .setCategory(NotificationCompat.CATEGORY_ALARM).setOngoing(true)
+                    .setContentIntent(open).addAction(0, "Arrêter", stop).build();
+                manager.notify(NOTIFICATION_ID, warning);
+            }
             if (alarm.optBoolean("vibration", true)) {
                 vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
                 long[] pattern = {0, 500, 250, 500, 750};
                 if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0));
                 else vibrator.vibrate(pattern, 0);
             }
-            handler.postDelayed(this::stopSelf, 10 * 60_000L);
-        } catch (Exception e) { stopSelf(); }
+            handler.postDelayed(() -> {
+                PlanetAlarmDiagnostics.record(this, activeId, "timeout", "");
+                stopSelf();
+            }, alarm.optBoolean("test", false) ? 20_000L : 10 * 60_000L);
+        } catch (Exception e) {
+            PlanetAlarmDiagnostics.record(this, activeId, "failed", e.getClass().getSimpleName());
+            stopSelf();
+        }
         return START_NOT_STICKY;
+    }
+    private boolean playSound(Uri sound, AudioAttributes attributes) {
+        if (sound == null) return false;
+        MediaPlayer candidate = new MediaPlayer();
+        try {
+            candidate.setAudioAttributes(attributes);
+            candidate.setDataSource(this, sound);
+            candidate.setLooping(true);
+            candidate.setOnErrorListener((mp, what, extra) -> {
+                PlanetAlarmDiagnostics.record(this, activeId, "audio-unavailable", "media-error-" + what);
+                stopSelf();
+                return true;
+            });
+            candidate.prepare();
+            candidate.start();
+            player = candidate;
+            return true;
+        } catch (Exception failure) { candidate.release(); return false; }
     }
     private void stopSound() {
         handler.removeCallbacksAndMessages(null);
@@ -101,5 +146,8 @@ public class PlanetAlarmService extends Service {
         audioManager = null;
         focusRequest = null;
     }
-    @Override public void onDestroy() { stopSound(); stopForeground(true); super.onDestroy(); }
+    @Override public void onDestroy() {
+        if (activeId >= 0) PlanetAlarmDiagnostics.record(this, activeId, "stopped", "");
+        stopSound(); stopForeground(true); super.onDestroy();
+    }
 }

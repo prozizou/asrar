@@ -6,6 +6,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.net.Uri;
+import android.media.AudioManager;
 import android.os.Build;
 import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
@@ -56,6 +57,7 @@ public class PlanetAlarmPlugin extends Plugin {
                 JSONObject alarm = alarms.getJSONObject(i);
                 ids.put(alarm.getInt("id"));
                 PlanetAlarmStore.schedule(getContext(), alarm);
+                PlanetAlarmDiagnostics.scheduled(getContext(), alarm.getInt("id"), alarm.getLong("at"));
             }
             JSObject result = new JSObject(); result.put("ids", ids); call.resolve(result);
         } catch (Exception e) {
@@ -72,6 +74,20 @@ public class PlanetAlarmPlugin extends Plugin {
             try { notifications.put(new JSONObject((String) value)); } catch (Exception ignored) {}
         }
         JSObject result = new JSObject(); result.put("notifications", notifications); call.resolve(result);
+    }
+    @PluginMethod public void getStatus(PluginCall call) {
+        AlarmManager alarms = getContext().getSystemService(AlarmManager.class);
+        NotificationManager notifications = getContext().getSystemService(NotificationManager.class);
+        AudioManager audio = getContext().getSystemService(AudioManager.class);
+        NotificationChannel channel = Build.VERSION.SDK_INT >= 26 ? notifications.getNotificationChannel("planet_alarm_clock_v1") : null;
+        JSObject result = new JSObject();
+        result.put("exactAlarms", Build.VERSION.SDK_INT < 31 || alarms.canScheduleExactAlarms());
+        result.put("notifications", notifications.areNotificationsEnabled() && (channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE));
+        result.put("volume", audio.getStreamVolume(AudioManager.STREAM_ALARM));
+        result.put("maxVolume", audio.getStreamMaxVolume(AudioManager.STREAM_ALARM));
+        result.put("interruptionFilter", notifications.getCurrentInterruptionFilter());
+        result.put("events", PlanetAlarmDiagnostics.history(getContext()));
+        call.resolve(result);
     }
     @PluginMethod public void cancel(PluginCall call) {
         JSArray ids = call.getArray("ids", new JSArray());

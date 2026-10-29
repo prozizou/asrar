@@ -9,6 +9,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -48,6 +49,9 @@ public class MainActivity extends BridgeActivity {
         // super.onCreate(), qui pose la vue. Les zones système restent
         // dégagées par le site (safe areas CSS, app/globals.css) à partir des
         // insets transmis par le plugin SystemBars de Capacitor.
+        // Apply the post-splash NoActionBar theme before AppCompat creates
+        // its window decor; changing themes afterwards can leave a title bar.
+        SplashScreen.installSplashScreen(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
 

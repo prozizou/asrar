@@ -35,6 +35,7 @@ final class PlanetAlarmStore {
         if (!prefs(c).edit().remove(String.valueOf(id)).commit()) throw new IllegalStateException("storage");
         c.getSystemService(AlarmManager.class).cancel(trigger(c, id));
         c.startService(new Intent(c, PlanetAlarmService.class).setAction("cancel").putExtra("id", id));
+        PlanetAlarmDiagnostics.record(c, id, "cancelled", "");
     }
     static void restore(Context c) {
         for (Map.Entry<String, ?> item : prefs(c).getAll().entrySet()) {

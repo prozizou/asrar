@@ -56,10 +56,10 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- `versionName "7.9.4"`. Le `versionCode` envoyé par la CI est calculé
+- `versionName "7.9.5"`. Le `versionCode` envoyé par la CI est calculé
   automatiquement (`100 + numéro d'exécution du workflow`, variable
   `ASRAR_VERSION_CODE`) : il augmente à chaque build. Dernière version
-  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 116.
+  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 117.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
 
@@ -172,5 +172,5 @@ Aucune permission de notification plein écran ou de contournement de Ne pas
 déranger n'est demandée. Publier l'AAB signé avec la même clé que l'application
 existante. Le workflow `Android release` accepte la piste `production` et
 `upload=true` ; l'envoi nécessite `PLAY_SERVICE_ACCOUNT_JSON`. Le nom de version
-est 7.9.4 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
+est 7.9.5 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
 versions précédentes du même workflow).

@@ -365,3 +365,10 @@ html[data-theme="light"] .planete-page.pm {
   --pm-bad-bg: #fdecea;
   --pm-mixed: #7a4f00; --pm-mixed-bg: #fff3d6;
 }
+
+.native-alarm-check { margin: 12px 0; border: 1px solid var(--pm-border); border-radius: 16px; }
+.native-alarm-check > summary { cursor: pointer; padding: 12px 16px; min-height: 44px; font-weight: 600; }
+.native-alarm-check-content { padding: 0 16px 16px; }
+.native-alarm-check-content p { margin: 8px 0; overflow-wrap: anywhere; }
+.native-alarm-check textarea { width: 100%; min-height: 140px; margin-top: 12px; }
+.pm .native-alarm-check .alarm-sheet-btn-secondary { color: var(--pm-text); border: 1px solid var(--pm-border); }

@@ -14,8 +14,8 @@ def signingValue = { String prop, String env -> keystoreProps.getProperty(prop) 
 def releaseStoreFile = signingValue('storeFile', 'ASRAR_KEYSTORE_FILE')
 def hasReleaseSigning = releaseStoreFile && signingValue('storePassword', 'ASRAR_KEYSTORE_PASSWORD')
 
-// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 116 en local.
-def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '116')
+// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 117 en local.
+def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '117')
 
 android {
     namespace = "com.asrarpro.app"
@@ -28,9 +28,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play Store : versionCode doit augmenter à CHAQUE envoi. La CI le fournit
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
-        // local, repli sur la valeur 116 définie plus haut. Dernier build CI observé : 115.
+        // local, repli sur la valeur 117 définie plus haut. Dernier build CI publié : 116.
         versionCode asrarVersionCode
-        versionName "7.9.4"
+        versionName "7.9.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
