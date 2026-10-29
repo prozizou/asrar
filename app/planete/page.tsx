@@ -1084,7 +1084,8 @@ async function applyNativeAlarm(
   lng: number | null,
   sunCache: SunCache
 ): Promise<{ ok: true; record: NativeRecord } | { ok: false; error?: string }> {
-  await cancelAlarms(record.scheduledIds);
+  try { await cancelAlarms(record.scheduledIds); }
+  catch { return { ok: false, error: 'cancel' }; }
   const res = prefs.repeat
     ? lat == null || lng == null
       ? { ok: false as const, error: 'position' }
@@ -1098,6 +1099,9 @@ async function applyNativeAlarm(
 }
 
 function nativeAlarmErrorMessage(code?: string) {
+  if (code === 'cancel') return 'Impossible d’annuler le réveil précédent. Réessayez avant de programmer une autre heure.';
+  if (code === 'native-update') return 'Mettez ASRAR PRO à jour sur le Play Store pour utiliser le réveil sonore.';
+  if (code === 'exact-permission') return 'Autorisez les alarmes et rappels dans les réglages Android qui viennent de s’ouvrir, puis activez à nouveau le réveil.';
   if (code === 'permission') return 'Autorisation refusée — activez les notifications pour ASRAR PRO dans les réglages du téléphone.';
   if (code === 'position') return 'Position GPS requise pour programmer les occurrences à venir.';
   if (code === 'past') return 'Cette heure est déjà passée.';
@@ -1246,11 +1250,15 @@ function AlarmSettingsSheet({
 
   const disable = async () => {
     setBusy(true);
-    await cancelAlarms(record.scheduledIds);
-    clearPlanetAlarmRecord(row.planet);
-    onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null });
-    onClose();
-    setBusy(false);
+    setError('');
+    try {
+      await cancelAlarms(record.scheduledIds);
+      clearPlanetAlarmRecord(row.planet);
+      onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null });
+      onClose();
+    } catch {
+      setError(nativeAlarmErrorMessage('cancel'));
+    } finally { setBusy(false); }
   };
 
   return (
@@ -1270,12 +1278,13 @@ function AlarmSettingsSheet({
           ))}
         </div>
 
+        <p className="alarm-sheet-note">Réveil sonore sur ce téléphone, même écran verrouillé. Arrêt depuis la notification ; arrêt automatique après 10 minutes. Le volume des alarmes et le mode Ne pas déranger restent ceux du téléphone.</p>
         <p className="alarm-sheet-label">Sonnerie</p>
         <div className="alarm-sheet-options">
           {SOUND_CHOICES.map((s) => (
             <label key={s.id} className="alarm-sheet-radio">
               <input type="radio" name="sound" checked={prefs.soundId === s.id} onChange={() => setPrefs({ ...prefs, soundId: s.id })} />
-              {s.label}
+              {s.id === 'systeme' ? 'Sonnerie du réveil système' : s.label}
             </label>
           ))}
         </div>

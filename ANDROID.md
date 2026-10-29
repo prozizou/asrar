@@ -56,10 +56,10 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- `versionName "7.9.3"`. Le `versionCode` envoyé par la CI est calculé
+- `versionName "7.9.4"`. Le `versionCode` envoyé par la CI est calculé
   automatiquement (`100 + numéro d'exécution du workflow`, variable
   `ASRAR_VERSION_CODE`) : il augmente à chaque build. Dernière version
-  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 102.
+  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 116.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
 
@@ -123,3 +123,54 @@ plugin local `AsrarNative` (`AsrarNativePlugin.java`) et n'enregistre les
 push natives que si Firebase est prêt. Pour activer les push : télécharger
 `google-services.json` (Firebase → app Android `com.Asrar`), le placer dans
 `android/app/`, puis reconstruire.
+
+
+## Réveil planétaire natif (7.9.4)
+
+Le plugin local `PlanetAlarm` programme `AlarmManager.setAlarmClock` sur cet
+appareil. Le déclenchement démarre un service `mediaPlayback` au premier plan,
+avec une sonnerie en boucle (`USAGE_ALARM`) et un bouton **Arrêter** dans la
+notification, utilisable écran verrouillé. Arrêt de sécurité après dix minutes.
+Aucun appel cron ni accès Internet n'est nécessaire à l'instant du réveil.
+Les notifications de changement d'heure restent des notifications classiques.
+
+Android 12+ : autoriser **Alarmes et rappels**, puis réactiver le réveil après
+le retour des réglages. Android 13+ : autoriser les notifications, nécessaires
+pour afficher le bouton d'arrêt. Le volume des alarmes, Ne pas déranger et les
+restrictions constructeur restent sous le contrôle du téléphone. Un arrêt forcé
+par Android désactive les alarmes jusqu'à la prochaine ouverture ; ne pas
+présenter cette fonction comme une garantie absolue.
+
+Les horaires sont conservés localement, restaurés après redémarrage/mise à jour,
+et exclus des sauvegardes et transferts vers un autre appareil. Les anciennes
+notifications ponctuelles ne sont pas converties silencieusement : sélectionner
+à nouveau les heures voulues après installation de la mise à jour. Les APK sans
+le plugin demandent une mise à jour au lieu d'annoncer un réveil sonore.
+Les occurrences répétées couvrent les quatorze jours à venir : rouvrir Planète
+pour renouveler leur programmation.
+
+### Validation avant mise en production
+
+```bash
+npm test -- lib/planetAlarmClock.test.js lib/planetAlarms.test.js
+cd android
+./gradlew :app:testDebugUnitTest :app:assembleDebug :app:bundleRelease
+```
+
+Sur un appareil physique Android 12 et 13+ : programmer un réveil proche,
+verrouiller l'écran et couper Internet, vérifier la boucle sonore et le bouton
+Arrêter ; tester annulation, refus d'autorisation, volume nul, Ne pas déranger,
+redémarrage, et extinction de la sonnerie après dix minutes. Les tests locaux
+Robolectric couvrent la persistance, restauration, annulation, consommation
+unique et rejet des réveils périmés, ainsi que la lecture en boucle, le bouton
+Arrêter et la libération des ressources après expiration ; ils ne remplacent pas
+cette écoute réelle.
+
+Dans Play Console, déclarer l'utilisation du service au premier plan
+**mediaPlayback** pour la sonnerie du réveil, avec démonstration si demandée.
+Aucune permission de notification plein écran ou de contournement de Ne pas
+déranger n'est demandée. Publier l'AAB signé avec la même clé que l'application
+existante. Le workflow `Android release` accepte la piste `production` et
+`upload=true` ; l'envoi nécessite `PLAY_SERVICE_ACCOUNT_JSON`. Le nom de version
+est 7.9.4 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
+versions précédentes du même workflow).

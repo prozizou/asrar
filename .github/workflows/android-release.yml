@@ -68,6 +68,9 @@ jobs:
       - name: Dépendances Node
         run: npm ci
 
+      - name: Tests natifs du réveil
+        run: npx cap sync android && cd android && ./gradlew :app:testDebugUnitTest --console=plain
+
       - name: Keystore de signature
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -111,3 +114,4 @@ jobs:
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: ${{ inputs.track || 'internal' }}
           status: completed
+          whatsNewDirectory: distribution/whatsnew
