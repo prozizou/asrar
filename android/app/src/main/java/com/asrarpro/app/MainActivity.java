@@ -40,6 +40,7 @@ public class MainActivity extends BridgeActivity {
         // Plugin local (voir AsrarNativePlugin) — à enregistrer AVANT
         // super.onCreate(), qui crée le bridge.
         registerPlugin(AsrarNativePlugin.class);
+        registerPlugin(PlanetAlarmPlugin.class);
         registerPlugin(UnityAdsPlugin.class);
         // Affichage bord à bord sur TOUTES les versions d'Android (imposé
         // d'office à partir d'Android 15 par targetSdk 36, recommandé par

@@ -1,3 +1,10 @@
+## 7.9.4 Android / SW v46.30
+
+- Réveil natif pour les heures planétaires sélectionnées : programmation locale exacte, sonnerie en boucle sur le volume des alarmes et arrêt depuis la notification.
+- Restauration après redémarrage, annulation durable, protection contre les déclenchements en double ou périmés ; arrêt de sécurité à dix minutes.
+- Sons ASRAR et doux embarqués ; autorisations Android et mise à jour des anciens APK expliquées dans l’interface.
+- Version Android 7.9.4 et code de livraison augmenté.
+
 # CHANGELOG
 
 ## 2026-10-28 — Suivi des participants au Zikr collectif

@@ -104,3 +104,6 @@ app/src/main/res/xml/config.xml
 keystore.properties
 *.jks
 *.keystore
+
+# Kotlin compiler cache
+/.kotlin/

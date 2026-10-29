@@ -4,4 +4,4 @@
      configuration Capacitor (capacitor.config.ts → LocalNotifications.smallIcon),
      invisibles pour l'analyse du code. -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_asrar" />
+    tools:keep="@drawable/ic_stat_asrar,@raw/asrar_notification,@raw/asrar_notification_douce" />
