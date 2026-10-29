@@ -77,7 +77,10 @@ test('la discussion respecte les safe areas Android et libère la place du clavi
   await page.setViewportSize({ width: 360, height: 780 }); await login('free'); await page.goto('/zikr?item=' + id);
   await page.getByRole('button', { name: 'Discussion', exact: true }).click();
   await page.evaluate(() => { document.documentElement.style.setProperty('--safe-area-inset-top', '28px'); document.documentElement.style.setProperty('--safe-area-inset-bottom', '24px'); });
-  const top = await page.locator('.zk-detail-topbar').boundingBox(); expect(top!.y).toBeGreaterThanOrEqual(40);
+  const top = await page.locator('.zk-detail-topbar').boundingBox(); // The compact header starts immediately after the system inset.
+  expect(top!.y).toBeGreaterThanOrEqual(28);
+  expect(top!.height).toBeGreaterThanOrEqual(56);
+  expect(top!.height).toBeLessThanOrEqual(64);
   const nav = page.getByRole('navigation', { name: 'Navigation du zikr collectif' });
   expect((await nav.boundingBox())!.height).toBe(92);
   const input = page.getByRole('textbox', { name: 'Écrire un message', exact: true });

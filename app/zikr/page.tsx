@@ -5,15 +5,9 @@
 // grain égrené par n'importe quel participant. Chacun égrène sans plafond
 // ni série qui lui soit propre (components/useTasbih.js, `uncapped`).
 //
-// Port du modèle de référence (dépôt prozizou/mon-chapelet, ZIP fourni :
-// « Mon chapelet Ma solution — Zikr collectif ») adapté à l'architecture
-// d'ASRAR PRO : leur version écrit directement dans Firebase RTDB depuis le
-// navigateur (SDK client) et utilise `onDisconnect()` pour la présence ; ici
-// tout reste derrière /api/zikr (Admin SDK — jamais de RTDB client direct,
-// cf. l'historique /api/check-access, /api/social : ce canal peut rester
-// bloqué en silence sur certains réseaux), et la présence « en ligne » est
-// approximée par un battement de cœur posé à chaque sondage (voir
-// pages/api/zikr.js, ONLINE_WINDOW_MS).
+// Messages et mutations servis par l’API authentifiée. La messagerie écoute
+// uniquement un petit signal RTDB réservé aux membres pour actualiser son
+// contenu ; présence et progression conservent leurs mécanismes existants.
 //
 // Fonctionnalités ajoutées avec ce port : formules prédéfinies (ou « Zikr
 // libre »), présence en ligne, rythme instantané (repère anti-tapotement
@@ -22,12 +16,13 @@
 // quitte alors que d'autres membres restent.
 import './zikr.css';
 import ParticipantWarning from './ParticipantWarning';
+import ZikrMessenger from './ZikrMessenger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
-  Trash2, Check, Handshake, AlertTriangle, Send, ChevronRight, Zap,
-  Mic, Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
+  Trash2, Check, Handshake, AlertTriangle, ChevronRight, Zap,
+  Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -35,33 +30,24 @@ import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
-import { useVoiceRecorder } from '@/components/useVoiceRecorder';
-import EmojiPickerUntyped from '@/components/EmojiPicker';
-import AttachMenuUntyped from '@/components/AttachMenu';
-import AudioMessageUntyped from '@/components/AudioMessage';
 import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
-  progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX, CHAT_MESSAGE_MAX,
-  RYTHME_SUSPECT, CHAT_AUDIO_MAX_S, chatDisplayName, avatarColorFor, groupChatMessages,
+  progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX,
+  RYTHME_SUSPECT, chatDisplayName, avatarColorFor,
   normalizePhone,
 } from '@/lib/zikrLogic';
-import { uploadZikrChatMedia, checkZikrAudio } from '@/lib/cloudinary';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone, flagOf } from '@/lib/phoneCountries';
-import { playNotificationBeep } from '@/lib/notifSound';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, notifyInactiveMembers, dismissWarning,
   excludeMember, leaveGroup, deleteGroup, restoreLocalCount,
   openWishes, closeWishes, submitWish, shareWish, amineWish,
-  sendMessage, getMessages, approveZikr,
+  approveZikr,
 } from '@/lib/zikrCollectif';
 
 const Spinner = SpinnerUntyped as any;
-const EmojiPicker = EmojiPickerUntyped as any;
-const AttachMenu = AttachMenuUntyped as any;
-const AudioMessage = AudioMessageUntyped as any;
 const MoreMenu = MoreMenuUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
@@ -137,21 +123,6 @@ interface SharedWish {
   aminedByMe: boolean;
 }
 
-type ChatMediaType = 'image' | 'audio';
-
-interface ChatMessage {
-  id: string;
-  uid: string;
-  email: string;
-  name?: string; // nom Google (server/access.js verifyUser) — absent pour un compte email/mot de passe
-  picture?: string; // photo de profil Google — idem
-  text: string;
-  at: number;
-  mediaType?: ChatMediaType;
-  mediaUrl?: string;
-  mediaDuration?: number;
-}
-
 interface GroupDetailData extends Group {
   presetId: string;
   ownerUid: string;
@@ -189,11 +160,6 @@ const toLocalInputValue = (ms: number) => {
 };
 const fmtSessionAt = (ms: number) =>
   new Date(ms).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
-// Heure d'un message de discussion (revue design : « impossible de comprendre
-// précisément la chronologie ») — un seul repère par GROUPE de messages
-// consécutifs (voir groupChatMessages, lib/zikrLogic.js), pas la date
-// complète : dans une conversation en direct, seule l'heure compte.
-const fmtHm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 // Lien de contact WhatsApp direct (créateur/admin → un participant précis) —
 // wa.me exige le numéro SANS le "+" (l'indicatif pays reste dans les
 // chiffres). `phone` est déjà au format international normalisé côté
@@ -859,47 +825,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // — jamais dans la barre du bas, pour ne pas encombrer en permanence
   // l'expérience de récitation des autres membres.
   const [tab, setTab] = useState<'zikr' | 'participants' | 'discussion' | 'admin'>('zikr');
+  const [invocationOpen, setInvocationOpen] = useState(false);
 
-  // Discussion du groupe façon WhatsApp — sondée en continu tant qu'on est
-  // membre (pas seulement quand l'onglet est affiché) pour pouvoir compter
-  // les messages non lus pendant qu'on est sur un autre onglet.
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const tabRef = useRef(tab);
-  useEffect(() => {
-    tabRef.current = tab;
-    if (tab === 'discussion') setUnreadCount(0);
-  }, [tab]);
-  const [chatText, setChatText] = useState('');
-  const chatInputRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    const field = chatInputRef.current;
-    if (!field) return;
-    field.style.height = 'auto'; field.style.height = Math.min(field.scrollHeight, 120) + 'px';
-  }, [chatText, tab]);
-  const [chatBusy, setChatBusy] = useState(false); // envoi d'un message texte
-  const [mediaBusy, setMediaBusy] = useState(false); // upload d'une image/d'un vocal en cours
-  const [voiceError, setVoiceError] = useState('');
-  const [voiceChecking, setVoiceChecking] = useState(false);
-  const voiceStarting = useRef(false);
-  const [unsentVoice, setUnsentVoice] = useState<Blob | null>(null);
-  const [unsentVoiceUrl, setUnsentVoiceUrl] = useState('');
-  useEffect(() => {
-    if (!unsentVoice) { setUnsentVoiceUrl(''); return; }
-    const url = URL.createObjectURL(unsentVoice); setUnsentVoiceUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [unsentVoice]);
-  const chatListRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  // Dernier message vu (par SON id, pas juste son nombre — un message
-  // supprimé ferait sinon rebaisser artificiellement le compte) : sert à
-  // détecter un NOUVEAU message d'un AUTRE membre entre deux sondages pour
-  // jouer le bip et incrémenter le compteur non lus (voir loadMessages) —
-  // jamais au tout premier chargement.
-  const lastMsgIdRef = useRef<string | null>(null);
-  const chatCursorRef = useRef<{ context: string; after: string | null; fullAt: number; seq: number }>({ context: '', after: null, fullAt: 0, seq: 0 });
-
   // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
   // sondage régulier écraserait une saisie en cours toutes les POLL_MS ms —
   // même précaution que syncedFait dans MemberCounter).
@@ -958,62 +886,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // référence, faute d'accès direct au client (voir l'en-tête du fichier).
   useEffect(() => startVisiblePolling(load, POLL_MS), [load]);
 
-  // Discussion : sondée en continu tant qu'on est membre — plus seulement
-  // quand le panneau est affiché — pour pouvoir signaler les messages non
-  // lus (badge sur l'onglet « Discussion », BottomNav) pendant qu'on est sur
-  // un autre onglet. Bip sonore (demandé explicitement) : joué quand le
-  // DERNIER message a changé depuis le sondage précédent ET qu'il ne vient
-  // pas de MOI — jamais au premier chargement (rien à comparer), jamais pour
-  // son propre envoi (déjà su, pas une "nouvelle" à signaler). Le cas où
-  // l'app n'est pas au premier plan est couvert séparément par la
-  // notification push serveur (pages/api/zikr.js notifyNewMessage), qui a
-  // son propre son (système).
-  const loadMessages = useCallback(async () => {
-    const context = `${groupId}:${uid}`;
-    if (chatCursorRef.current.context !== context) {
-      chatCursorRef.current = { context, after: null, fullAt: 0, seq: 0 };
-      lastMsgIdRef.current = null;
-      setMessages([]);
-    }
-    const cursor = chatCursorRef.current;
-    const seq = ++cursor.seq;
-    // Réconciliation complète chaque minute pour prendre en compte les
-    // corrections/suppressions administratives, même après une longue pause.
-    const after = Date.now() - cursor.fullAt < 60000 ? cursor.after : null;
-    try {
-      const d = await getMessages(groupId, after || undefined);
-      if (chatCursorRef.current !== cursor || cursor.seq !== seq) return;
-      const list: ChatMessage[] = d.messages || [];
-      const last = list[list.length - 1];
-      if (last && lastMsgIdRef.current !== null && last.id !== lastMsgIdRef.current && last.uid !== uid) {
-        playNotificationBeep();
-        if (tabRef.current !== 'discussion') setUnreadCount((c) => c + 1);
-      }
-      if (last) lastMsgIdRef.current = last.id;
-      if (!d.incremental) { cursor.fullAt = Date.now(); cursor.after = last?.id || null; }
-      else if (last) cursor.after = last.id;
-      setMessages((previous) => d.incremental ? Array.from(new Map([...previous, ...list].map((m) => [m.id, m])).values())
-        .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).slice(-200) : list);
-    } catch (error: any) {
-      if (error.status === 403 && chatCursorRef.current === cursor && cursor.seq === seq) {
-        cursor.after = null; cursor.fullAt = 0;
-        lastMsgIdRef.current = null;
-        setMessages([]);
-      }
-      // Sondage best-effort : une lecture ratée ne doit pas casser le panneau.
-    }
-  }, [groupId, uid]);
-
-  const isMemberForPolling = g ? (g.status === 'member' || g.status === 'owner') : false;
-  useEffect(() => {
-    if (!isMemberForPolling) return undefined;
-    return startVisiblePolling(loadMessages, POLL_MS);
-  }, [isMemberForPolling, loadMessages]);
-
-  useEffect(() => {
-    if (tab === 'discussion' && chatListRef.current) chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
-  }, [messages, tab]);
-
   const [joinBusy, setJoinBusy] = useState(false);
   const doJoin = async (phone: string) => {
     if (joinBusy) return;
@@ -1040,63 +912,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     if (!window.confirm(msg)) return;
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
     catch (e: any) { notify('❌ ' + (e.message || e)); }
-  };
-  const doSendMessage = async () => {
-    const t = chatText.trim();
-    if (!t || chatBusy) return;
-    setChatBusy(true);
-    try { await sendMessage(groupId, t); setChatText(''); loadMessages(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
-    finally { setChatBusy(false); }
-  };
-  // Image jointe au message — upload DIRECT vers Cloudinary (lib/cloudinary.js
-  // uploadZikrChatMedia, autorisé par appartenance au groupe), puis
-  // enregistrement du pointeur seulement (le fichier ne transite jamais par
-  // notre propre API — même flux que les images produit du marché).
-  const doSendImage = async (file: File) => {
-    if (!file || mediaBusy) return;
-    setMediaBusy(true);
-    try {
-      const url = await uploadZikrChatMedia(file, groupId, 'image');
-      await sendMessage(groupId, '', { type: 'image', url });
-      loadMessages();
-    } catch (e: any) {
-      notify('❌ ' + (e.message || e));
-    } finally {
-      setMediaBusy(false);
-      if (imageInputRef.current) imageInputRef.current.value = '';
-      if (cameraInputRef.current) cameraInputRef.current.value = '';
-    }
-  };
-  // Vocal enregistré (components/useVoiceRecorder.js) — même flux que
-  // l'image : upload direct, puis pointeur enregistré comme message.
-  // Cloudinary héberge l'audio sous resource_type="video" (pas "audio",
-  // absent de son API Upload — voir lib/cloudinary.js).
-  const onVoiceDone = useCallback(
-    async (blob: Blob, duration: number) => {
-      setMediaBusy(true); setVoiceError('');
-      try {
-        const url = await uploadZikrChatMedia(blob, groupId, 'video');
-        await sendMessage(groupId, '', { type: 'audio', url, duration });
-        loadMessages();
-      } catch (e: any) {
-        setUnsentVoice(blob); setVoiceError(e.message || 'Votre vocal n’a pas pu être envoyé.');
-      } finally {
-        setMediaBusy(false);
-      }
-    },
-    [groupId, loadMessages]
-  );
-  const voice = useVoiceRecorder(onVoiceDone);
-  const doStartVoice = async () => {
-    if (voiceStarting.current || mediaBusy || unsentVoice) return;
-    voiceStarting.current = true; setVoiceChecking(true); setVoiceError('');
-    try {
-      await checkZikrAudio(groupId);
-      try { await voice.start(); }
-      catch { setVoiceError('Accès au micro refusé ou indisponible. Vérifiez l’autorisation du microphone.'); }
-    } catch (e: any) { setVoiceError(e.message || 'Impossible de vérifier l’envoi de vocaux. Réessayez.'); }
-    finally { voiceStarting.current = false; setVoiceChecking(false); }
   };
   const doShareWish = async (shared: boolean) => {
     if (shareBusy) return;
@@ -1230,7 +1045,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         <button type="button" className="zk-icon-btn zk-topbar-back" onClick={onBack} aria-label="Retour à la liste des zikr">
           <ArrowLeft size={24} strokeWidth={2.2} aria-hidden="true" />
         </button>
-        <span className="zk-topbar-title">Zikr</span>
+        {chatMode ? <button type="button" className="zk-title-toggle" onClick={() => setInvocationOpen((value) => !value)}
+          aria-label={`${invocationOpen ? 'Masquer' : 'Afficher'} l’invocation du groupe ${g.name}`}
+          aria-expanded={invocationOpen} aria-controls="zk-chat-invocation" aria-describedby="zk-chat-presence">
+          <span><strong>{g.name || 'Zikr collectif'}</strong><ChevronDown size={14} aria-hidden="true" /></span>
+          <small id="zk-chat-presence">{fmt(g.membersCount)} participants{g.onlineCount > 0 ? ` · ${g.onlineCount} en ligne` : ''}</small>
+        </button> : <span className="zk-topbar-title">Zikr</span>}
         <span className="zk-topbar-actions">
           <button type="button" className="zk-icon-btn" onClick={doShare}
             title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
@@ -1261,7 +1081,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           qu'un simple texte coloré) et une seule ligne d'informations
           compacte (créateur + participants + en ligne) — jamais l'email
           complet du créateur (revue design, point 3). */}
-      <div className="zk-detail-head">
+      <div className="zk-detail-head" hidden={chatMode && !invocationOpen}>
         {recitingMode ? (
           <ZikrHero name={g.name} arabic={g.arabic} transliteration={g.transliteration} presetId={g.presetId} />
         ) : (
@@ -1272,9 +1092,14 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
                 métadonnées à icônes (créateur · participants · en ligne). */}
             {/* Même identité que l'écran Zikr (ZikrHero) en version compacte :
                 légende capitales violettes, formule arabe, translittération. */}
+            {chatMode ? <div id="zk-chat-invocation" className="zk-chat-invocation">
+              {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
+              {g.transliteration && <span className="zk-head-translit">{g.transliteration}</span>}
+            </div> : <>
             <h1 className="zk-hero-caption zk-head-caption">Zikr collectif · {g.name}</h1>
             {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
             {g.transliteration && <span className="zk-head-translit">{g.transliteration}</span>}
+            </>}
             <div className="zk-owner">
               <span className="zk-meta-item"><Crown size={12} strokeWidth={2.4} aria-hidden="true" /> {chatDisplayName(g.ownerEmail, g.ownerName)}</span>
               <span className="zk-meta-item"><Users size={12} strokeWidth={2.4} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
@@ -1532,121 +1357,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           messages consécutifs d'un même auteur sont regroupés (revue design :
           « l'identité est répétée inutilement ») — un seul en-tête (avatar/
           nom/heure) par groupe, voir groupChatMessages (lib/zikrLogic.js). */}
-      {isMember && tab === 'discussion' && (
-        <div className="zk-chat-panel">
-          {/* Pas de titre "Discussion" ici : déjà dit par l'onglet actif de
-              la BottomNav juste en dessous — un en-tête de plus ne ferait
-              que reprendre de la hauteur sur l'écran le plus dense de tous. */}
-          <div className="zk-chat-list" ref={chatListRef}>
-            {messages.length === 0 ? (
-              <p className="zk-muted">Aucun message pour l’instant — lancez la discussion !</p>
-            ) : (
-              groupChatMessages(messages).map((grp: { uid: string; items: ChatMessage[] }) => {
-                const first = grp.items[0];
-                const name = chatDisplayName(first.email, first.name);
-                const mine = grp.uid === uid;
-                return (
-                  <div key={first.id} className={'zk-chat-group' + (mine ? ' me' : '')}>
-                    {!mine && (
-                      first.picture ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- avatar Google, URL dynamique
-                        <img className="zk-chat-avatar" src={first.picture} alt="" loading="lazy" />
-                      ) : (
-                        <span className="zk-chat-avatar zk-chat-avatar-fallback" style={{ background: avatarColorFor(grp.uid) }}>
-                          {name.charAt(0).toUpperCase()}
-                        </span>
-                      )
-                    )}
-                    <div className="zk-chat-bubbles">
-                      {!mine && (
-                        <span className="zk-chat-author">
-                          {name}
-                          {grp.uid === g.ownerUid && <Crown size={10} strokeWidth={2.5} aria-label="Créateur" />}
-                          <span className="zk-chat-time">{fmtHm(first.at)}</span>
-                        </span>
-                      )}
-                      {grp.items.map((m) => (
-                        <div key={m.id} className="zk-chat-msg">
-                          {m.mediaType === 'image' && m.mediaUrl && (
-                            // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary dynamique, next/image inutile ici (déjà optimisée à l'upload)
-                            <img className="zk-chat-media-img" src={m.mediaUrl} alt="" loading="lazy" />
-                          )}
-                          {m.mediaType === 'audio' && m.mediaUrl && (
-                            <AudioMessage src={m.mediaUrl} duration={m.mediaDuration} />
-                          )}
-                          {m.text && <p className="zk-chat-text">{m.text}</p>}
-                          {mine && <span className="zk-chat-time me">{fmtHm(m.at)}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {voiceError && <p role="alert" className="zk-chat-feedback">{voiceError}</p>}
-          {voiceChecking && <p role="status" className="zk-muted">Vérification de l’envoi de vocaux…</p>}
-          {unsentVoice && <div className="zk-unsent-voice"><p>Votre vocal est conservé dans cette page. Enregistrez-le avant de la quitter.</p>
-            {unsentVoiceUrl && <a className="zk-btn ghost" href={unsentVoiceUrl} download={'asrar-vocal.' + (unsentVoice.type.includes('mp4') ? 'm4a' : unsentVoice.type.includes('ogg') ? 'ogg' : 'webm')}>Enregistrer mon vocal</a>}
-            <button type="button" className="zk-btn ghost" onClick={() => { setUnsentVoice(null); setVoiceError(''); }}>Supprimer le vocal non envoyé</button>
-          </div>}
-          {voice.recording ? (
-            // Barre d'enregistrement — remplace la ligne de saisie tant que
-            // le vocal est en cours (un tap sur le micro relance l'écriture).
-            <div className="zk-chat-input-row zk-voice-recording">
-              <span className="zk-voice-dot" aria-hidden="true" />
-              <span className="zk-voice-time">
-                {String(Math.floor(voice.seconds / 60)).padStart(1, '0')}:{String(voice.seconds % 60).padStart(2, '0')}
-                {' / '}{Math.floor(CHAT_AUDIO_MAX_S / 60)}:{String(CHAT_AUDIO_MAX_S % 60).padStart(2, '0')}
-              </span>
-              <button type="button" className="zk-chat-tool" onClick={voice.cancel} aria-label="Annuler le vocal">
-                <X size={16} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-              <button type="button" className="zk-chat-send" onClick={voice.stop} aria-label="Envoyer le vocal">
-                <Send size={16} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-            </div>
-          ) : (
-            <div className="zk-chat-input-row">
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doSendImage(f); }}
-              />
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                hidden
-                onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doSendImage(f); }}
-              />
-              <AttachMenu
-                disabled={mediaBusy}
-                onPickPhoto={() => imageInputRef.current?.click()}
-                onPickCamera={() => cameraInputRef.current?.click()}
-              />
-              <div className="zk-chat-field">
-                <EmojiPicker onPick={(e: string) => setChatText((t: string) => (t + e).slice(0, CHAT_MESSAGE_MAX))} />
-                <textarea ref={chatInputRef} aria-label="Écrire un message" rows={1} maxLength={CHAT_MESSAGE_MAX} value={chatText}
-                  placeholder="Écrire un message…" onChange={(e) => setChatText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); doSendMessage(); } }} />
-              </div>
-              <button type="button" className="zk-chat-tool" disabled={mediaBusy || voiceChecking || Boolean(unsentVoice)}
-                onClick={doStartVoice} aria-label="Enregistrer un vocal">
-                <Mic size={17} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-              <button type="button" className="zk-chat-send" onClick={doSendMessage}
-                disabled={chatBusy || mediaBusy || !chatText.trim()} aria-label="Envoyer">
-                <Send size={16} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {isMember && <ZikrMessenger key={groupId + ':' + uid} groupId={groupId} uid={uid} active={tab === 'discussion'} onUnread={setUnreadCount} notify={notify} />}
 
       {/* Vœux (dua) : ouverts par le créateur une fois l'objectif ATTEINT —
           voir handleOpenWishes (pages/api/zikr.js), refusé côté serveur avant.
@@ -1779,16 +1490,19 @@ function BottomNav({ tab, setTab, unreadCount, canDiscuss = true }: {
           key={it.key}
           type="button"
           className={'zk-bottom-nav-item' + (tab === it.key ? ' active' : '')}
+          aria-label={it.label}
+          aria-describedby={it.key === 'discussion' && unreadCount > 0 ? 'zk-unread-description' : undefined}
           aria-current={tab === it.key ? 'page' : undefined}
           onClick={() => setTab(it.key)}
         >
           <span className="zk-bottom-nav-icon">
             <span className="zk-bottom-nav-icon-circle">{it.icon}</span>
             {it.key === 'discussion' && unreadCount > 0 && (
-              <span className="zk-bottom-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              <span className="zk-bottom-nav-badge" aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </span>
           {it.label}
+          {it.key === 'discussion' && unreadCount > 0 && <span id="zk-unread-description" className="sr-only">{unreadCount} message{unreadCount > 1 ? 's' : ''} non lu{unreadCount > 1 ? 's' : ''}</span>}
         </button>
       ))}
     </nav>

@@ -65,3 +65,20 @@ it('annonce les vocaux disponibles quand leurs paramètres sont configurés', as
   const result = await invoke(handler, { action: 'check', folder: 'zikr_chat', groupId: 'g1', mediaType: 'video' });
   expect(result.body).toEqual({ available: true });
 });
+
+it('refuse une configuration faite uniquement d’espaces avant tout upload', async () => {
+  vi.stubEnv('CLOUDINARY_CLOUD_NAME', '   ');
+  vi.stubEnv('CLOUDINARY_IMAGE_UPLOAD_PRESET', 'bounded-images');
+  const result = await invoke(sellerHandler(), { folder: 'products' });
+  expect(result.code).toBe(503);
+  expect(result.body.code).toBe('UPLOAD_NOT_CONFIGURED');
+  expect(result.body.signature).toBeUndefined();
+});
+
+it('utilise le preset image historique si le nouveau champ ne contient que des espaces', async () => {
+  vi.stubEnv('CLOUDINARY_IMAGE_UPLOAD_PRESET', '  ');
+  vi.stubEnv('CLOUDINARY_UPLOAD_PRESET', 'bounded-legacy');
+  const result = await invoke(sellerHandler(), { folder: 'products' });
+  expect(result.code).toBe(200);
+  expect(result.body.uploadPreset).toBe('bounded-legacy');
+});

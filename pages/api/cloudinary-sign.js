@@ -14,6 +14,7 @@
 
 const { isActiveZikrMember } = require("../../lib/zikrWarning");
 const crypto = require("crypto");
+const { cloudinaryUploadConfig } = require("../../server/cloudinaryConfig");
 const { verifyUser } = require("../../server/access");
 const { isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { app } = require("../../server/grant");
@@ -90,16 +91,8 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Trop de demandes d'upload, réessayez dans une minute." });
   }
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  // Les limites doivent être définies dans un preset signé. Images et
-  // vocaux utilisent des politiques distinctes ; sans preset, aucun upload.
-  const uploadPreset = mediaType === "video"
-    ? process.env.CLOUDINARY_AUDIO_UPLOAD_PRESET
-    : process.env.CLOUDINARY_IMAGE_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET;
-  const configured = Boolean(cloudName && apiKey && apiSecret && uploadPreset);
+  // Shared with the read-only local checker; whitespace is not valid config.
+  const { cloudName, apiKey, apiSecret, uploadPreset, configured } = cloudinaryUploadConfig(process.env, mediaType);
   const unavailable = mediaType === "video"
     ? "L’envoi de vocaux n’est pas activé pour le moment. Contactez l’administration ; les messages écrits restent disponibles."
     : "L’envoi d’images n’est pas activé pour le moment. Contactez l’administration.";

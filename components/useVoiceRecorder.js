@@ -12,7 +12,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CHAT_AUDIO_MAX_S } from '@/lib/zikrLogic';
 
-export function useVoiceRecorder(onDone) {
+/**
+ * @param {(blob: Blob, duration: number) => any} onDone
+ * @param {((blob: Blob, duration: number) => void) | undefined} [onInterrupted]
+ */
+export function useVoiceRecorder(onDone, onInterrupted = undefined) {
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const mediaRecorderRef = useRef(null);
@@ -22,6 +26,8 @@ export function useVoiceRecorder(onDone) {
   const startedAtRef = useRef(0);
   const mountedRef = useRef(true);
   const startingRef = useRef(false);
+  const interruptedRef = useRef(false);
+  const callbacks = useRef({ onDone, onInterrupted }); callbacks.current = { onDone, onInterrupted };
 
   const stopTracks = () => {
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
@@ -40,6 +46,16 @@ export function useVoiceRecorder(onDone) {
       stopTracks();
     };
   }, []);
+
+  const interrupt = useCallback(() => {
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state !== 'inactive') { interruptedRef.current = true; rec.stop(); }
+  }, []);
+  useEffect(() => {
+    const hidden = () => { if (document.visibilityState === 'hidden') interrupt(); };
+    document.addEventListener('visibilitychange', hidden);
+    return () => document.removeEventListener('visibilitychange', hidden);
+  }, [interrupt]);
 
   // Arrête PROPREMENT (déclenche onstop → upload+envoi via onDone).
   const stop = useCallback(() => {
@@ -68,6 +84,7 @@ export function useVoiceRecorder(onDone) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
+      interruptedRef.current = false;
       streamRef.current = stream;
       chunksRef.current = [];
       const rec = new MediaRecorder(stream);
@@ -79,7 +96,9 @@ export function useVoiceRecorder(onDone) {
         setRecording(false);
         setSeconds(0);
         if (duration > 0 && chunksRef.current.length > 0) {
-          onDone(new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' }), duration);
+          const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
+          if (interruptedRef.current) callbacks.current.onInterrupted?.(blob, duration);
+          else callbacks.current.onDone(blob, duration);
         }
       };
       startedAtRef.current = Date.now();
@@ -100,7 +119,7 @@ export function useVoiceRecorder(onDone) {
     } finally {
       startingRef.current = false;
     }
-  }, [recording, onDone, stop]);
+  }, [recording, stop]);
 
-  return { recording, seconds, start, stop, cancel };
+  return { recording, seconds, start, stop, cancel, interrupt };
 }

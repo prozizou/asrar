@@ -57,6 +57,38 @@ public class PlanetAlarmServiceTest {
         service.onStartCommand(stop, 0, 3);
         assertTrue(shadowOf(service).isStoppedBySelf());
     }
+    @Test public void deniedAudioFocusLeavesAnActionableNotificationInsteadOfDisappearing() throws Exception {
+        shadowOf(app.getSystemService(AudioManager.class)).setNextFocusRequestResponse(AudioManager.AUDIOFOCUS_REQUEST_FAILED);
+        PlanetAlarmService service = ring();
+        assertFalse(shadowOf(service).isStoppedBySelf());
+        assertNull(ReflectionHelpers.getField(service, "player"));
+        Notification warning = shadowOf(app.getSystemService(android.app.NotificationManager.class)).getNotification(73001);
+        assertTrue(warning.extras.getCharSequence(Notification.EXTRA_TEXT).toString().contains("Son indisponible"));
+        org.json.JSONArray events = PlanetAlarmDiagnostics.history(app);
+        assertEquals("audio-focus-denied", events.getJSONObject(events.length() - 1).getString("reason"));
+    }
+    @Test public void anUnreadableSelectedSoundFallsBackToASystemAlarm() throws Exception {
+        java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+        ShadowMediaPlayer.setMediaInfoProvider(source -> attempts.incrementAndGet() == 1 ? null : new ShadowMediaPlayer.MediaInfo(3000, 0));
+        PlanetAlarmService service = ring();
+        MediaPlayer player = ReflectionHelpers.getField(service, "player");
+        assertNotNull(player);
+        assertTrue(player.isPlaying());
+        assertTrue(attempts.get() >= 2);
+        assertFalse(shadowOf(service).isStoppedBySelf());
+    }
+    @Test public void theDiagnosticTestStopsAfterTwentySeconds() throws Exception {
+        PlanetAlarmService service = controller.get();
+        JSONObject alarm = new JSONObject().put("id", 2147483647).put("test", true).put("sound", "asrar").put("vibration", false);
+        service.onStartCommand(new Intent(app, PlanetAlarmService.class).setAction("ring").putExtra("alarm", alarm.toString()), 0, 1);
+        MediaPlayer player = ReflectionHelpers.getField(service, "player");
+        assertNotNull(player);
+        player.pause();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(19));
+        assertFalse(shadowOf(service).isStoppedBySelf());
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+        assertTrue(shadowOf(service).isStoppedBySelf());
+    }
     @Test public void theSafetyTimeoutStopsPlaybackAndReleasesTheWakeLock() throws Exception {
         PlanetAlarmService service = ring();
         MediaPlayer player = ReflectionHelpers.getField(service, "player");

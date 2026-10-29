@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <exclude domain="sharedpref" path="planet_alarm_clock.xml" />
+    <exclude domain="sharedpref" path="planet_alarm_diagnostics.xml" />
 </full-backup-content>

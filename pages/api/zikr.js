@@ -187,6 +187,7 @@ const { app } = require("../../server/grant");
 const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
+const chat = require("../../server/zikrChat");
 const { recordProgress } = require("../../server/zikrProgress");
 const { warnParticipant } = require("../../server/zikrInactivity");
 const { isActiveZikrMember, zikrWarningMessage, ZIKR_WARNING_MAX } = require("../../lib/zikrWarning");
@@ -201,7 +202,7 @@ const BROADCAST_SENDER = "ASRAR PRO";
 const {
   normalizeGroupInput, cleanText, utcDateKey, normalizePhone,
   ONLINE_WINDOW_MS, RECITING_PUSH_WINDOW_MS, MESSAGE_INACTIVITE,
-  WISH_MAX, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage, amineCount, chatDisplayName,
+  WISH_MAX, amineCount, chatDisplayName,
 } = require("../../lib/zikrLogic");
 
 // Clé Firebase valide (ids de groupe = push keys ; uid = uid Firebase).
@@ -211,7 +212,7 @@ function safeKey(v) { return isValidKey(v) ? v : ""; }
 // réel + remontée d'avancement + discussion) mais légers → larges ;
 // écritures rares → serrées.
 function limitFor(action) {
-  if (action === "list" || action === "get" || action === "progress" || action === "messages") {
+  if (action === "list" || action === "get" || action === "progress" || action === "messages" || action === "readMessages") {
     return { max: 120, windowMs: 60_000 };
   }
   return { max: 20, windowMs: 60_000 };
@@ -219,6 +220,7 @@ function limitFor(action) {
 
 export default async function handler(req, res) {
   setCors(req, res);
+  res.setHeader("Cache-Control", "no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
@@ -259,8 +261,14 @@ export default async function handler(req, res) {
       case "submitWish":     return await handleSubmitWish(db, res, user, gid, body.text);
       case "shareWish":      return await handleShareWish(db, res, user, gid, body.shared);
       case "amineWish":      return await handleAmineWish(db, res, user, gid, safeKey(body.wishUid));
-      case "sendMessage":    return await handleSendMessage(db, res, user, gid, body.text, body.mediaType, body.mediaUrl, body.mediaDuration);
-      case "messages":       return await handleMessages(db, res, user, gid, body.after);
+      case "sendMessage":    return await chat.send(db, res, user, gid, body, notifyNewMessage);
+      case "reactMessage": return await chat.react(db, res, user, gid, body);
+      case "deleteMessage": return await chat.mutate(db, res, user, gid, body, true);
+      case "editMessage": return await chat.mutate(db, res, user, gid, body, false);
+      case "forwardMessage": return await chat.forward(db, res, user, gid, body, notifyNewMessage);
+      case "readMessages": return await chat.read(db, res, user, gid, body);
+      case "messageReaders": return await chat.readers(db, res, user, gid, body);
+      case "messages":       return await chat.messages(db, res, user, gid, body);
       case "approveZikr":    return await handleApproveZikr(db, res, user, gid);
       default:               return res.status(400).json({ error: "Action inconnue." });
     }
@@ -925,6 +933,10 @@ async function handleDelete(db, res, user, gid) {
     db.ref("zikr_requests/" + gid).remove(),
     db.ref("zikr_wishes/" + gid).remove(),
     db.ref("zikr_chat/" + gid).remove(),
+    db.ref("zikr_chat_changes/" + gid).remove(),
+    db.ref("zikr_chat_reads/" + gid).remove(),
+    db.ref("zikr_chat_read_counts/" + gid).remove(),
+    db.ref("zikr_chat_signals/" + gid).remove(),
   ]);
   return res.status(200).json({ ok: true });
 }
@@ -1049,71 +1061,6 @@ async function handleAmineWish(db, res, user, gid, wishUid) {
 // déjà été envoyé DIRECTEMENT à Cloudinary par le client (voir
 // pages/api/cloudinary-sign.js, folder="zikr_chat") ; seule l'URL déjà
 // hébergée transite par cet appel, comme pour les images produit (marché).
-async function handleSendMessage(db, res, user, gid, rawText, rawMediaType, rawMediaUrl, rawMediaDuration) {
-  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
-  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
-
-  const text = cleanText(rawText, CHAT_MESSAGE_MAX);
-  const mediaType = CHAT_MEDIA_TYPES.includes(rawMediaType) ? rawMediaType : null;
-  // L'URL vient de NOTRE propre compte Cloudinary (res.cloudinary.com) —
-  // jamais une URL arbitraire fournie par le client, qui permettrait
-  // d'afficher/faire jouer n'importe quelle ressource externe dans la
-  // discussion (usurpation, contenu non modéré) sous couvert d'un "message".
-  const mediaUrl = mediaType && /^https:\/\/res\.cloudinary\.com\//.test(String(rawMediaUrl || "")) ? String(rawMediaUrl) : null;
-  if (!isValidChatMessage(text, mediaType, mediaUrl)) {
-    return res.status(400).json({ error: "Écrivez un message ou joignez une image/un audio avant d'envoyer." });
-  }
-
-  const msg = { uid: user.uid, email: user.email, text, at: Date.now() };
-  // Nom/photo Google (déjà vérifiés par verifyUser — jamais fournis par le
-  // client) : demandé explicitement (« nom/pseudo + avatar » plutôt que
-  // l'email brut). Absents pour un compte email/mot de passe — le client
-  // retombe alors sur la partie locale de l'email (voir displayNameOf).
-  if (user.name) msg.name = user.name;
-  if (user.picture) msg.picture = user.picture;
-  if (mediaUrl) {
-    msg.mediaType = mediaType;
-    msg.mediaUrl = mediaUrl;
-    // Purement indicatif (affichage du minuteur du vocal côté client) —
-    // jamais vérifié ici, voir CHAT_AUDIO_MAX_S (lib/zikrLogic.js).
-    const dur = Math.floor(Number(rawMediaDuration));
-    if (mediaType === "audio" && Number.isFinite(dur) && dur > 0) msg.mediaDuration = dur;
-  }
-
-  const ref = db.ref("zikr_chat/" + gid).push();
-  await notifyNewMessage(db, gid, user.uid, user.email, user.name, text, !!mediaUrl, ref.key, msg);
-  return res.status(200).json({ ok: true, id: ref.key });
-}
-
-// Messages récents (200 derniers — une discussion de groupe reste modeste,
-// pas besoin de pagination complète). Sondée régulièrement par le client
-// tant que le panneau discussion est ouvert (app/zikr/page.tsx).
-async function handleMessages(db, res, user, gid, after) {
-  if (!gid) return res.status(400).json({ error: "Groupe manquant." });
-  const memSnap = await db.ref("zikr_members/" + gid + "/" + user.uid).once("value");
-  if (!isActiveZikrMember(memSnap.val())) return res.status(403).json({ error: "Rejoignez d'abord ce zikr collectif." });
-
-  if (after != null && !isValidKey(after)) return res.status(400).json({ error: "Curseur de discussion invalide." });
-  let query = db.ref("zikr_chat/" + gid).orderByKey();
-  if (after) query = query.startAfter(after);
-  const snap = await query.limitToLast(200).once("value");
-  const messages = [];
-  snap.forEach((m) => {
-    const v = m.val() || {};
-    const msg = { id: m.key, uid: v.uid || "", email: v.email || "", text: v.text || "", at: v.at || 0 };
-    if (v.name) msg.name = v.name;
-    if (v.picture) msg.picture = v.picture;
-    if (CHAT_MEDIA_TYPES.includes(v.mediaType) && v.mediaUrl) {
-      msg.mediaType = v.mediaType;
-      msg.mediaUrl = v.mediaUrl;
-      if (v.mediaDuration) msg.mediaDuration = Number(v.mediaDuration) || 0;
-    }
-    messages.push(msg);
-  });
-  return res.status(200).json({ messages, incremental: !!after });
-}
-
 // ── Prévient les AUTRES membres qu'un nouveau message a été posté ──
 // Demandé explicitement (« bip sonore + notification aux membres », puis
 // centre de notifications in-app — voir server/notify.js) : le bip lui-même

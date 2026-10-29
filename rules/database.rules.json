@@ -5,6 +5,20 @@
 
     "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
     "notifications": { "$uid": { ".indexOn": ["createdAt", "read"] } },
+    "zikr_chat_read_counts": {
+      "$gid": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid && auth.token.email_verified == true && root.child('zikr_members').child($gid).child(auth.uid).exists() && !root.child('zikr_members').child($gid).child(auth.uid).child('removalId').exists()",
+          ".write": false
+        }
+      }
+    },
+    "zikr_chat_signals": {
+      "$gid": {
+        ".read": "auth != null && auth.token.email_verified == true && root.child('zikr_members').child($gid).child(auth.uid).exists() && !root.child('zikr_members').child($gid).child(auth.uid).child('removalId').exists()",
+        ".write": false
+      }
+    },
     "zikr_inactivity": { ".indexOn": ["deadline"] },
     "zikr_groups": { ".indexOn": ["sessionAt"] },
     "orders_v2": { ".indexOn": ["buyerSort", "sellerSort", "sellerUid", "buyerUid", "at"] },
