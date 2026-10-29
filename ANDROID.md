@@ -162,7 +162,9 @@ verrouiller l'écran et couper Internet, vérifier la boucle sonore et le bouton
 Arrêter ; tester annulation, refus d'autorisation, volume nul, Ne pas déranger,
 redémarrage, et extinction de la sonnerie après dix minutes. Les tests locaux
 Robolectric couvrent la persistance, restauration, annulation, consommation
-unique et rejet des réveils périmés ; ils ne remplacent pas cette écoute réelle.
+unique et rejet des réveils périmés, ainsi que la lecture en boucle, le bouton
+Arrêter et la libération des ressources après expiration ; ils ne remplacent pas
+cette écoute réelle.
 
 Dans Play Console, déclarer l'utilisation du service au premier plan
 **mediaPlayback** pour la sonnerie du réveil, avec démonstration si demandée.

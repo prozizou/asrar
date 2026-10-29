@@ -40,8 +40,12 @@ final class PlanetAlarmStore {
         for (Map.Entry<String, ?> item : prefs(c).getAll().entrySet()) {
             try {
                 JSONObject alarm = new JSONObject((String) item.getValue());
-                if (alarm.getLong("at") <= System.currentTimeMillis()) prefs(c).edit().remove(item.getKey()).commit();
-                else schedule(c, alarm);
+                long at = alarm.getLong("at");
+                long now = System.currentTimeMillis();
+                if (at < now - 120000) prefs(c).edit().remove(item.getKey()).commit();
+                else if (at > now) schedule(c, alarm);
+                // Keep just-due entries: their AlarmManager broadcast may still
+                // be queued. A simultaneous pending-list refresh must not eat it.
             } catch (SecurityException denied) {
                 // Retain future entries: granting exact-alarm access can restore them.
             } catch (Exception invalid) { prefs(c).edit().remove(item.getKey()).commit(); }

@@ -50,6 +50,11 @@ public class PlanetAlarmTest {
         receiver.onReceive(app, event);
         assertNull(shadowOf(app).getNextStartedService());
     }
+    @Test public void restoringWhileTheDueBroadcastIsQueuedDoesNotConsumeTheAlarm() throws Exception {
+        PlanetAlarmStore.prefs(app).edit().putString("42", alarm(42).put("at", System.currentTimeMillis() - 1000).toString()).commit();
+        PlanetAlarmStore.restore(app);
+        assertNotNull(PlanetAlarmStore.take(app, 42));
+    }
     @Test @Config(sdk = 31) public void exactAlarmPermissionIsRequiredBeforeAnyPersistence() throws Exception {
         shadowOf(app.getSystemService(AlarmManager.class)).setCanScheduleExactAlarms(false);
         try { PlanetAlarmStore.schedule(app, alarm(42)); fail(); } catch (SecurityException expected) {}
