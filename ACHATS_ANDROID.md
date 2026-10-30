@@ -3,7 +3,8 @@
 Le travail Android est isolé sur `feat/android-secret-purchases`.
 Les préparations Wave et Orange Money sont conservées **uniquement en local**,
 sur `local/payments-wave-orange` (instantané `fe0f125`). Elles ne sont pas incluses
-dans cette branche Android et aucun déploiement de paiement n’a été effectué.
+dans cette branche Android. La publication du code serveur ne déclenche pas
+l’activation des ventes : la bascule reste explicitement administrée.
 
 ## Situation marchande à résoudre avant l’encaissement
 
@@ -121,8 +122,9 @@ lien Firebase conflictuel : un conflit bloque la vente pour vérification. Une
 désactivation explicite dans Firebase reste prioritaire ; les achats déjà validés
 restent restaurables. L’administration affiche l’identifiant sans nouvelle saisie.
 
-Cette association est enregistrée dans le code local, sans écriture Firebase,
-sans activation globale des ventes et sans déploiement web de production.
+Cette association est incluse dans la livraison web SW v46.32, sans écriture
+Firebase et sans activation globale des ventes. Wave et Orange Money restent
+exclus de cette livraison.
 L’AAB 7.9.6 déjà envoyé en interne n’a pas besoin d’être reconstruit pour cette
 configuration serveur. La vérification réelle Google et l’accès du compte
 testeur restent nécessaires avant tout essai d’encaissement.
