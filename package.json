@@ -27,7 +27,7 @@
     "@fontsource/carlito": "^5.3.0",
     "@vercel/functions": "^3.10.4",
     "clipper-lib": "^6.4.2",
-    "docx": "^8.5.0",
+    "docx": "^9.14.0",
     "dompurify": "^3.4.17",
     "firebase": "^13.1.0",
     "firebase-admin": "14.5.0",
