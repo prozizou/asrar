@@ -71,3 +71,18 @@ test('le prix localisé vient du bridge Play et un achat en attente ne livre auc
   await expect(dialog.getByRole('status')).toContainText('0 achat(s) restauré(s)');
 });
 
+
+test('l’administration retrouve le produit approuvé pour RETOUR À L’ENVOYEUR sans saisie manuelle', async ({ page, login, postAs }) => {
+  const key = '-P2PntsHubOw5y3jXbI_';
+  await app().database().ref('db_sirr_protection/' + key).set({ faida: 'RETOUR À L’ENVOYEUR', sirr: 'Texte fictif de recette pilote pour les émulateurs.' });
+  try {
+    await login('admin'); await page.goto('/asrar?cat=protection&item=' + key);
+    await page.getByRole('button', { name: 'Configurer l’achat de ce secret' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Vente individuelle du secret' });
+    await expect(dialog).toContainText('RETOUR À L’ENVOYEUR');
+    const input = dialog.getByRole('textbox', { name: 'Identifiant Google Play' });
+    await expect(input).toHaveValue('secret_protection_001'); await expect(input).toHaveAttribute('readonly');
+    await expect(dialog.getByRole('button', { name: 'Association enregistrée' })).toBeDisabled();
+    const denied = await postAs('free', 'secret-purchases', { action: 'configuration', cat: 'protection', key }); expect(denied.status()).toBe(403);
+  } finally { await app().database().ref('db_sirr_protection/' + key).remove(); }
+});

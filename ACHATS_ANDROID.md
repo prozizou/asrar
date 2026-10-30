@@ -90,16 +90,39 @@ jusqu’à cette date ; une reconduction ultérieure ne prolonge pas leur ancien
 accès global aux secrets. Les accès existants sans échéance et les privilèges
 admin/VIP restent préservés. Les abonnements aux autres rubriques sont inchangés.
 
-La version Android 7.9.6 (code CI attendu 118) est préparée pour un envoi
-uniquement sur la piste interne, sans fusion dans main ni déploiement web de
-production. Aucun profil marchand, produit, paiement ou règle de production
+La version Android 7.9.6 (code 118) a été construite, signée et importée
+uniquement sur la piste interne le 30 octobre 2026, sans fusion dans main ni
+déploiement web de production. Exécution :
+https://github.com/prozizou/asrar/actions/runs/41009100631. Aucun profil marchand, produit, paiement ou règle de production
 n’est créé par cette construction. La recette avec les prestataires reste à faire.
 
 ## Validation de cette branche
 
-827 tests unitaires et quatre parcours authentifiés d’achat passent. La
+835 tests unitaires et cinq parcours authentifiés d’achat passent. La
 compilation Next, le lint et le contrôle des types passent. Les tests natifs
 existants et la compilation APK de débogage passent. Les paiements Google et
 les notifications de paiement sont simulés dans les tests ; aucun achat réel
 ni versement marchand n’a été exécuté. Le test de licence sur une installation
 Play interne reste indispensable lorsque le compte marchand sera éligible.
+
+## Premier secret associé
+
+Le lien de partage fourni par le propriétaire identifie le secret
+**RETOUR À L’ENVOYEUR**, catégorie `protection`, clé `-P2PntsHubOw5y3jXbI_`.
+Le produit créé dans Play Console est `secret_protection_001`, avec l’option
+`achat-unique`. Le tarif reste celui défini dans Google Play, jamais un montant
+fourni par le navigateur. Le libellé « zizou » n’est pas utilisé comme clé de
+contenu ni pour autoriser un achat.
+
+`server/playSecretBindings.js` contient l’association approuvée. Elle est lue
+côté serveur par l’offre, la validation des achats, les notifications et les
+contrôles de bascule. Elle ne crée pas de recette et ne remplace pas un ancien
+lien Firebase conflictuel : un conflit bloque la vente pour vérification. Une
+désactivation explicite dans Firebase reste prioritaire ; les achats déjà validés
+restent restaurables. L’administration affiche l’identifiant sans nouvelle saisie.
+
+Cette association est enregistrée dans le code local, sans écriture Firebase,
+sans activation globale des ventes et sans déploiement web de production.
+L’AAB 7.9.6 déjà envoyé en interne n’a pas besoin d’être reconstruit pour cette
+configuration serveur. La vérification réelle Google et l’accès du compte
+testeur restent nécessaires avant tout essai d’encaissement.

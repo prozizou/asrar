@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { database, runtime, invoke } from './support/runtime';
-const uid = 'tester', cat = 'protection', key = 'secret1', productId = 'secret_protection_001', token = 'token-for-secret-001';
+const uid = 'tester', cat = 'protection', key = 'secret1', productId = 'secret_test_001', token = 'token-for-secret-001';
 function setup(seed = {}, userId = uid) {
   const db = database({ db_sirr_protection: { secret1: { faida: 'Titre', sirr: 'Contenu confidentiel', img: 'https://example.com/private.png' } },
     play_secret_products: { [productId]: { cat, key } }, secret_products: { [cat]: { [key]: { productId, enabled: true } } }, ...seed });

@@ -1,4 +1,5 @@
 const play = require('./playBilling');
+const bindings = require('./playSecretBindings');
 const { getSource } = require('./sources');
 const { isValidKey } = require('./http');
 const { effectiveAccess } = require('../lib/accessStatus');
@@ -39,7 +40,7 @@ async function offer(db, user, cat, key, globalAccess) {
   const item = (await db.ref(getSource('secret').ref(cat) + '/' + key).once('value')).val();
   if (!item) throw fail(404, 'Secret introuvable.');
   const status = await access(db, user, cat, key, globalAccess);
-  const mapping = (await db.ref(`secret_products/${cat}/${key}`).once('value')).val();
+  const mapping = await bindings.bySecret(db, cat, key);
   if (status.mode === 'individual' && mapping?.enabled && PRODUCT.test(mapping.productId)) {
     const link = await db.ref('play_secret_accounts/' + play.accountId(user.uid)).transaction((current) => {
       if (current && current.uid !== user.uid) return;
@@ -88,7 +89,7 @@ async function synchronize(db, productId, token, expected, verifiedPurchase) {
 }
 async function verify(db, user, productId, token) {
   if (!PRODUCT.test(productId || '') || typeof token !== 'string' || token.length < 10 || token.length > 4096 || /[\s\u0000-\u001f]/.test(token)) throw fail(400, 'Reçu Google Play invalide.');
-  const mapping = (await db.ref('play_secret_products/' + productId).once('value')).val();
+  const mapping = await bindings.byProduct(db, productId);
   if (!mapping) throw fail(400, 'Produit non reconnu.');
   validSecret(mapping.cat, mapping.key);
   const purchase = await play.getPurchase(productId, token);
@@ -105,6 +106,7 @@ async function verify(db, user, productId, token) {
 async function configure(db, cat, key, productId) {
   validSecret(cat, key);
   if (!PRODUCT.test(productId || '')) throw fail(400, 'Identifiant produit Google Play invalide.');
+  bindings.assertPair(cat, key, productId);
   if (!(await db.ref(getSource('secret').ref(cat) + '/' + key).once('value')).exists()) throw fail(404, 'Secret introuvable.');
   const old = (await db.ref(`secret_products/${cat}/${key}`).once('value')).val();
   if (old && old.productId !== productId) throw fail(409, 'Le produit de ce secret est déjà fixé. Créez une nouvelle édition pour changer de produit.');
@@ -122,8 +124,10 @@ async function activate(db) {
   if (!process.env.PLAY_RTDN_AUDIENCE || !process.env.PLAY_RTDN_SERVICE_ACCOUNT_EMAIL) throw fail(503, 'Configurez les notifications de paiement avant la bascule.');
   for (const cat of getSource('secret').cats) {
     const contents = (await db.ref(getSource('secret').ref(cat)).once('value')).val() || {};
-    const products = (await db.ref('secret_products/' + cat).once('value')).val() || {};
-    if (Object.keys(contents).some((key) => !products[key]?.enabled || !PRODUCT.test(products[key].productId))) throw fail(409, 'Associez un produit Google Play à chaque secret avant la bascule.');
+    for (const key of Object.keys(contents)) {
+      const product = await bindings.bySecret(db, cat, key);
+      if (!product?.enabled || !PRODUCT.test(product.productId)) throw fail(409, 'Associez un produit Google Play à chaque secret avant la bascule.');
+    }
   }
   const [purchases, allowed] = await Promise.all(['purchased_user', 'allowedUsers'].map((path) => db.ref(path).once('value')));
   const p = purchases.val() || {}, a = allowed.val() || {}, rights = {}, at = Date.now();
@@ -142,7 +146,7 @@ async function activate(db) {
 }
 async function completeNotification(db, productId, token) {
   if (!PRODUCT.test(productId || '') || typeof token !== 'string' || token.length < 10 || token.length > 4096 || /[\s\u0000-\u001f]/.test(token)) return;
-  if (!(await db.ref('play_secret_products/' + productId).once('value')).exists()) return;
+  if (!(await bindings.byProduct(db, productId))) return;
   const purchase = await play.getPurchase(productId, token);
   if (purchase.purchaseState !== 0 || !/^[a-f0-9]{64}$/.test(purchase.obfuscatedExternalAccountId || '')) return;
   const link = (await db.ref('play_secret_accounts/' + purchase.obfuscatedExternalAccountId).once('value')).val();
