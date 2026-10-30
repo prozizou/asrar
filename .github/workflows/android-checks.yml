@@ -38,7 +38,7 @@ jobs:
       - name: Tests natifs et APK de test
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: android-test-results
