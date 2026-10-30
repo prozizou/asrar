@@ -3,7 +3,7 @@
 //
 // Body (JSON) : { idToken, kind: "secret"|"book", cat?, key }
 
-const { verifyUser, hasActiveAccess } = require("../../server/access");
+const { verifyUser, hasActiveAccess, getAccessStatus } = require("../../server/access");
 const { consumeAdPass } = require("../../server/adReward");
 const { app } = require("../../server/grant");
 const { getSource } = require("../../server/sources");
@@ -26,12 +26,21 @@ export default async function handler(req, res) {
     const user = await verifyUser(idToken);
 
     // Le Marché (authOnly) ne demande PAS d'abonnement : l'achat = le prix du produit.
-    const hasAccess = src.authOnly || await hasActiveAccess(user);
+    let secretAccess = null;
+    if (kind === 'secret') {
+      const { access, settings } = require('../../server/secretPurchases');
+      const mode = await settings(app().database(), user);
+      secretAccess = mode.enabled ? await access(app().database(), user, cat, key, await getAccessStatus(user), mode) : { allowed: await hasActiveAccess(user), mode: 'subscription' };
+    }
+    const hasAccess = secretAccess ? secretAccess.allowed : src.authOnly || await hasActiveAccess(user);
     const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
     const item = snap.val();
     if (!item || typeof item !== "object" || Array.isArray(item))
       return res.status(404).json({ error: "Élément introuvable." });
 
+    if (!hasAccess && secretAccess?.mode === 'individual') {
+      return res.status(403).json({ error: 'Achetez ce secret pour le débloquer.', code: 'SECRET_PURCHASE_REQUIRED' });
+    }
     if (!hasAccess) {
       // Sans abonnement : passe à usage unique ouvert par une publicité
       // récompensée (server/adReward.js), consommé ici.
