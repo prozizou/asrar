@@ -63,7 +63,7 @@ jobs:
           node-version-file: '.nvmrc'
           cache: npm
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Dépendances Node
         run: npm ci
