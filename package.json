@@ -31,6 +31,7 @@
     "dompurify": "^3.4.17",
     "firebase": "^13.1.0",
     "firebase-admin": "14.5.0",
+    "google-auth-library": "^10.9.1",
     "harfbuzzjs": "^1.6.2",
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",

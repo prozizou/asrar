@@ -43,6 +43,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AsrarNativePlugin.class);
         registerPlugin(PlanetAlarmPlugin.class);
         registerPlugin(UnityAdsPlugin.class);
+        registerPlugin(SecretBillingPlugin.class);
         // Affichage bord à bord sur TOUTES les versions d'Android (imposé
         // d'office à partir d'Android 15 par targetSdk 36, recommandé par
         // Android vitals pour les versions antérieures) — avant

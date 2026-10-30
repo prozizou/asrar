@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Configuration inconnue." });
 
   try {
-    await verifyUser(idToken); // identité requise (page réservée aux connectés)
+    const user = await verifyUser(idToken); // identité requise (page réservée aux connectés)
 
     if (kind === 'formation') return res.status(410).json({ error: 'Cette fonctionnalité a été retirée.', code: 'FEATURE_RETIRED' });
     const db = app().database();
@@ -52,6 +52,17 @@ export default async function handler(req, res) {
       return items;
     });
 
+    if (kind === 'secret') {
+      const mode = await require('../../server/secretPurchases').settings(db, user);
+      if (mode.enabled) {
+        const previews = items.map((item) => {
+          const result = { ...item };
+          for (const field of ['img', 'image', 'images', 'imgs', 'intro']) delete result[field];
+          return result;
+        });
+        return res.status(200).json({ items: previews, individualPurchases: true });
+      }
+    }
     return res.status(200).json({ items });
   } catch (e) {
     if (!e.statusCode) await reportError("list-content", e, { kind, cat });

@@ -860,3 +860,19 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .asrar-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .asrar-heading h1 { font-size: 1.25rem; letter-spacing: 0; }
 .asrar-heading .back-btn { min-width: 44px; padding: 8px; }
+
+.secret-purchase-panel { width: min(100%, 420px); display: grid; gap: 12px; padding: 20px; color: var(--text-main, #eee); }
+.secret-purchase-panel h2, .secret-purchase-panel p { margin: 0; }
+.secret-purchase-panel p { line-height: 1.5; }
+.secret-purchase-panel button { min-height: 44px; border-radius: 14px; padding: 10px 14px; }
+.secret-purchase-panel input:not([type="checkbox"]) { width: 100%; min-height: 44px; border: 1px solid var(--border, #666); border-radius: 12px; padding: 10px; background: var(--surface, #241b32); color: inherit; }
+.secret-purchase-panel .primary { background: #ae8bfa; color: #190e2c; font-weight: 700; }
+.secret-purchase-close { justify-self: end; width: 44px; }
+.secret-purchase-lock { color: #ae8bfa; font-size: 32px; text-align: center; }
+.secret-sales-admin { margin: 16px 0; }
+
+.app-dialog.secret-purchase-dialog { display: grid; place-items: center; padding: max(16px, var(--sat)) max(16px, var(--sar)) max(16px, var(--sab)) max(16px, var(--sal)); background: rgba(6, 3, 14, .72); overflow: auto; }
+.secret-purchase-dialog .secret-purchase-panel { max-height: min(90dvh, 760px); overflow: auto; background: var(--bg-deep, #21182e); border: 1px solid var(--border, #59446d); border-radius: 22px; box-shadow: 0 24px 80px rgba(0,0,0,.35); }
+.secret-purchase-dialog .secret-purchase-panel button:not(.primary) { background: var(--surface-2, #332741); color: var(--text-main, #eee); border: 1px solid var(--border, #59446d); }
+.secret-purchase-dialog .secret-purchase-panel button { margin: 0; }
+.secret-purchase-dialog .secret-purchase-panel button:disabled { opacity: .55; cursor: default; }
