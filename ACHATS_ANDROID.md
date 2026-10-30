@@ -90,8 +90,10 @@ jusqu’à cette date ; une reconduction ultérieure ne prolonge pas leur ancien
 accès global aux secrets. Les accès existants sans échéance et les privilèges
 admin/VIP restent préservés. Les abonnements aux autres rubriques sont inchangés.
 
-Aucun profil marchand, produit, paiement, publication Play ou règle de production
-n’a été créé par ce travail local. La recette avec les prestataires reste à faire.
+La version Android 7.9.6 (code CI attendu 118) est préparée pour un envoi
+uniquement sur la piste interne, sans fusion dans main ni déploiement web de
+production. Aucun profil marchand, produit, paiement ou règle de production
+n’est créé par cette construction. La recette avec les prestataires reste à faire.
 
 ## Validation de cette branche
 

@@ -94,6 +94,20 @@ jobs:
           echo "versionCode=$ASRAR_VERSION_CODE"
           npm run android:aab
 
+      - name: Vérifier signature et autorisation Billing
+        run: |
+          jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab
+          python3 - <<'PYVERIFY'
+          import re
+          import zipfile
+          with zipfile.ZipFile('android/app/build/outputs/bundle/release/app-release.aab') as bundle:
+              names = bundle.namelist()
+              assert any(re.fullmatch(r'META-INF/[^/]+\.(RSA|DSA|EC)', name) for name in names), 'Signature AAB absente'
+              assert any(re.fullmatch(r'META-INF/[^/]+\.SF', name) for name in names), 'Manifeste de signature absent'
+              assert b'com.android.vending.BILLING' in bundle.read('base/manifest/AndroidManifest.xml'), 'Autorisation Billing absente'
+          print('AAB signé et autorisation Billing présents.')
+          PYVERIFY
+
       - name: Nettoyage du keystore
         if: always()
         run: rm -f android/prozizou.jks
