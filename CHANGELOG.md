@@ -1,3 +1,8 @@
+## SW v46.39 — Compte à rebours de 5 s après chaque pub
+
+- Après la pub au clic, une fenêtre affiche une bannière Adsterra 300x250 et « Votre résultat arrive dans N s » ; le bouton « Continuer » n'apparaît qu'au bout de 5 s (temps passé sur l'onglet de pub compris). Fermer l'onglet de pub tout de suite ne fait donc gagner aucun temps.
+- Bannières Adsterra regroupées dans `components/AdsterraBanner.js`.
+
 ## SW v46.38 — Pub obligatoire à chaque action
 
 - Chaque action (ouvrir un secret, Calculer, Générer…) ouvre une pub dans un nouvel onglet pour les visiteurs sans abonnement valide ; si le navigateur bloque l'onglet, l'action ne s'exécute pas et une fenêtre explique comment autoriser les pop-ups (ou retirer les pubs).

@@ -10,6 +10,7 @@ import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
 import { openActionAd } from '@/lib/actionAd';
 import Modal from './Modal';
+import AdCountdown from './AdCountdown';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -22,6 +23,11 @@ export default function AccessProvider({ children }) {
   // Pub au clic bloquée par le navigateur (lib/actionAd.ts) : l'action est
   // refusée et cette fenêtre explique comment autoriser les pop-ups.
   const [adBlocked, setAdBlocked] = useState(false);
+  // Pub ouverte par le clic en cours, pas encore « attendue » : ensureAccess()
+  // affiche alors AdCountdown (bannière 300x250 + compte à rebours) avant de
+  // laisser l'action s'exécuter. Valeur = instant d'ouverture de la pub.
+  const pendingAdAt = useRef(0);
+  const [countdown, setCountdown] = useState(null); // { start, resolve } | null
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   // Publicité récompensée proposée dans le portail (APK, sans abonnement,
   // module hors forfait 1 An) — voir lib/unityAds.js.
@@ -133,14 +139,28 @@ export default function AccessProvider({ children }) {
   // n'autorise l'ouverture d'un onglet que pendant le clic.
   const requireActionAd = useCallback(() => {
     if (adFree !== false) return true;
-    if (openActionAd() !== 'blocked') return true;
+    const result = openActionAd();
+    if (result === 'opened') pendingAdAt.current = Date.now();
+    if (result !== 'blocked') return true;
     setAdBlocked(true);
     return false;
   }, [adFree]);
 
+  // Délai minimal avant le résultat (AD_WAIT_MS, components/AdCountdown.js) :
+  // fermer l'onglet de pub tout de suite ne fait gagner aucun temps. Le temps
+  // passé sur la pub compte dans ce délai. Résout quand l'utilisateur touche
+  // « Continuer », à la fin du compte à rebours.
+  const waitForAd = useCallback(() => {
+    const start = pendingAdAt.current;
+    pendingAdAt.current = 0;
+    if (!start) return Promise.resolve();
+    return new Promise((resolve) => setCountdown({ start, resolve }));
+  }, []);
+
   const ensureAccess = useCallback(
     async (minLevel = 0) => {
       if (!requireActionAd()) return false;
+      await waitForAd();
       if (!user) return false;
       let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
       if (!status) {
@@ -161,7 +181,7 @@ export default function AccessProvider({ children }) {
       });
       return result;
     },
-    [user, requireActionAd, openGate, spendAdCredit]
+    [user, requireActionAd, waitForAd, openGate, spendAdCredit]
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
@@ -180,6 +200,13 @@ export default function AccessProvider({ children }) {
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
+      {countdown && (
+        <AdCountdown
+          start={countdown.start}
+          onDone={() => { const { resolve } = countdown; setCountdown(null); resolve(); }}
+          onRemoveAds={() => openGate('noads')}
+        />
+      )}
       {adBlocked && (
         <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité bloquée">
           <div className="sg-box">

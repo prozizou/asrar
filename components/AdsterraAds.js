@@ -20,14 +20,14 @@
 //  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
 //                                         (dernier segment) nomme le conteneur
 //                                         « container-<clé> » attendu.
-// Les clés des Banners sont dans BANNERS ci-dessous.
+// Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
 import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
 import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
+import { AD_HOST, BANNERS, Banner } from './AdsterraBanner';
 
 const env = (value, fallback) => (value === undefined ? fallback : value);
 
-const AD_HOST = 'https://bicea.org';
 const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_HOST}/14/56ff6c976d7d264a3439f37c7d6ca8e5`);
 const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, '');
 const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
@@ -37,14 +37,6 @@ const NATIVE_KEY = NATIVE_SRC.split('/').pop();
 // Géomancie, Planète, Hijri). Jamais dans les achats ni les pages religieuses.
 export { ADSTERRA_SMARTLINK };
 
-const BANNERS = {
-  b320x50: { key: '563c98782ed872bff3a559ced174eb4e', width: 320, height: 50 },
-  b468x60: { key: '4e6dae61157b6b11ee648226d05336c6', width: 468, height: 60 },
-  b728x90: { key: '58908a49d51073409be1bb6dac283f9b', width: 728, height: 90 },
-  b300x250: { key: 'd691104dc0fe411adbaedd982a916508', width: 300, height: 250 },
-  b160x300: { key: '4d2141d8a51d186c4ed329a1a9013dde', width: 160, height: 300 },
-  b160x600: { key: '59ac401eb38177b992c5300da8969816', width: 160, height: 600 },
-};
 // Colonnes latérales (160 px) seulement si elles tiennent à côté du contenu,
 // large au plus de 800 px : 800 + 2 × (160 + marges) ≈ 1200 px.
 const SIDES_MIN_WIDTH = 1200;
@@ -55,36 +47,6 @@ function isNativeApp() {
   } catch {
     return false;
   }
-}
-
-// Le script d'un Banner lit la variable GLOBALE atOptions à son exécution :
-// plusieurs bannières chargées en parallèle se la disputeraient. On les
-// charge donc l'une APRÈS l'autre (file d'attente partagée).
-let bannerQueue = Promise.resolve();
-function loadBanner(el, banner) {
-  let cancelled = false;
-  bannerQueue = bannerQueue.then(() => new Promise((done) => {
-    if (cancelled || !el.isConnected) return done();
-    const opts = document.createElement('script');
-    opts.text = `atOptions = {'key':'${banner.key}','format':'iframe','height':${banner.height},'width':${banner.width},'params':{}};`;
-    const invoke = document.createElement('script');
-    invoke.src = `${AD_HOST}/22/${banner.key}`;
-    invoke.onload = invoke.onerror = () => done();
-    el.append(opts, invoke);
-  }));
-  return () => { cancelled = true; el.replaceChildren(); };
-}
-
-function Banner({ banner, style }) {
-  const box = useRef(null);
-  useEffect(() => (box.current ? loadBanner(box.current, banner) : undefined), [banner]);
-  return (
-    <div
-      ref={box}
-      aria-label="Publicité"
-      style={{ display: 'flex', justifyContent: 'center', width: banner.width, height: banner.height, maxWidth: '100%', overflow: 'hidden', ...style }}
-    />
-  );
 }
 
 // Bandeau adapté à la largeur d'écran + pavé 300x250, en bas du contenu ;

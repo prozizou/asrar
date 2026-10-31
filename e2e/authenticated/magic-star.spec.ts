@@ -105,9 +105,15 @@ test('étoile vide, sept sommes instantanées, chiffres contenus, copie et expor
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
 });
 
-test('le générateur étoile est ouvert à un compte gratuit (app gratuite)', async ({ page, login }) => {
+test('compte gratuit : pub au clic, compte à rebours de 5 s, puis le générateur étoile', async ({ page, login }) => {
   await login('free'); await page.goto('/wafq/carre/6');
+  const popup = page.waitForEvent('popup');
   await page.getByRole('radio', { name: 'Étoile', exact: true }).check();
+  await popup;
+  const ad = page.getByRole('dialog', { name: 'Publicité' });
+  await expect(ad.getByRole('status')).toContainText('Votre résultat arrive dans');
+  await expect(ad.getByRole('button', { name: 'Continuer' })).toHaveCount(0);
+  await expect(page.getByLabel('Constante magique', { exact: true })).toHaveCount(0);
+  await ad.getByRole('button', { name: 'Continuer' }).click({ timeout: 7000 });
   await expect(page.getByLabel('Constante magique', { exact: true })).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
