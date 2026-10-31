@@ -24,6 +24,7 @@ import {
 } from '@/lib/abjad';
 import { WAFQ_INTENTIONS, DEFAULT_WAFQ_INTENTION_ID, findWafqIntention } from '@/lib/wafqIntentions';
 import { renderWafqCanvas, downloadCanvasPng, printCanvas } from '@/lib/wafqExport';
+import { SponsoredLink } from '@/components/AdsterraAds';
 
 const CUSTOM_TEXT_MAX = 60;
 
@@ -227,6 +228,7 @@ export default function WafqPage() {
             <WafqTypeSection squares={s3} orderedKeys={orderedKeys} typeName="3×3 Classique" arabicPhrase={arabicPhrase} translit={translit} target={target} eastern={eastern} />
             <WafqTypeSection squares={s3v} orderedKeys={orderedKeys} typeName="3×3 Vide" arabicPhrase={arabicPhrase} translit={translit} target={target} eastern={eastern} />
             <WafqTypeSection squares={s4} orderedKeys={orderedKeys} typeName="4×4 Murabba" arabicPhrase={arabicPhrase} translit={translit} target={target} eastern={eastern} />
+            <SponsoredLink />
           </>
         )}
       </div>

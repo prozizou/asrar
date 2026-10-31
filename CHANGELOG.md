@@ -1,3 +1,7 @@
+## SW v46.34 — Smartlink Adsterra
+
+- Lien « Sponsorisé » (Smartlink Adsterra) sur la page 404 et sous les résultats de Combinaisons, Wafq, Géomancie, Planète et Hijri. Mêmes règles que les autres pubs : site web uniquement, jamais pour un abonné.
+
 ## SW v46.33 — Publicités Adsterra
 
 - Publicités Adsterra sur le site web uniquement (jamais dans l'APK ni pour les abonnés) : Social Bar, Popunder, Native Banner, bandeaux 320x50 / 468x60 / 728x90 selon la largeur d'écran, pavé 300x250 et colonnes 160x300 / 160x600 sur grand écran. Pubs adultes désactivées.

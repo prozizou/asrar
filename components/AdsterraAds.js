@@ -25,8 +25,9 @@ const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_
 const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, 'https://afders.org/1/d5663adcf33b434a0bee2c6cd0625bb4');
 const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
 const NATIVE_KEY = NATIVE_SRC.split('/').pop();
-// Smartlink : simple lien (pas de script) — exporté pour qu'un bouton ou un
-// lien « Sponsorisé » puisse s'en servir ; il n'est placé nulle part d'office.
+// Smartlink : simple lien (pas de script), affiché par <SponsoredLink /> sur
+// la page 404 et sous les résultats des calculs (Combinaisons, Wafq,
+// Géomancie, Planète, Hijri). Jamais dans les achats ni les pages religieuses.
 export const ADSTERRA_SMARTLINK = 'https://arwf.org/4/c12b8f66b93c495d8d8a836d32401474';
 
 const BANNERS = {
@@ -131,12 +132,28 @@ function BodyScript({ src }) {
   return null;
 }
 
-export default function AdsterraAds() {
+// Mêmes règles pour tous les formats : site web, visiteur non abonné.
+function useShowAds() {
   const access = useAccess();
   const [native, setNative] = useState(true);
   useEffect(() => { setNative(isNativeApp()); }, []);
+  return !native && !!access && access.allowed === false;
+}
 
-  if (native || !access || access.allowed !== false) return null;
+export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
+  if (!useShowAds() || !ADSTERRA_SMARTLINK) return null;
+  return (
+    <p style={{ textAlign: 'center', margin: '20px 0 8px', fontSize: 13 }}>
+      <a href={ADSTERRA_SMARTLINK} target="_blank" rel="sponsored noopener noreferrer" style={{ color: 'var(--text-muted)' }}>
+        <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11, marginRight: 6 }}>Sponsorisé</span>
+        {label} ↗
+      </a>
+    </p>
+  );
+}
+
+export default function AdsterraAds() {
+  if (!useShowAds()) return null;
   return (
     <>
       {SOCIALBAR_SRC ? <BodyScript src={SOCIALBAR_SRC} /> : null}

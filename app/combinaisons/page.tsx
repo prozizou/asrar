@@ -34,6 +34,7 @@ import {
   searchCombinations,
   splitFr,
 } from '@/lib/combinaisons';
+import { SponsoredLink } from '@/components/AdsterraAds';
 const AccessibleModal = AccessibleModalUntyped as any;
 
 
@@ -472,6 +473,8 @@ export default function CombinaisonsPage() {
                   }}
                 />
               )}
+
+              <SponsoredLink />
             </div>
           )}
 
