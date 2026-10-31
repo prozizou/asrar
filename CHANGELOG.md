@@ -1,3 +1,9 @@
+## SW v46.38 — Pub obligatoire à chaque action
+
+- Chaque action (ouvrir un secret, Calculer, Générer…) ouvre une pub dans un nouvel onglet pour les visiteurs sans abonnement valide ; si le navigateur bloque l'onglet, l'action ne s'exécute pas et une fenêtre explique comment autoriser les pop-ups (ou retirer les pubs).
+- Bibliothèque : la pub s'ouvre au clic, puis « Ouvrir le document » (un navigateur n'autorise qu'un onglet par clic).
+- Plus d'intervalle d'une minute entre deux pubs (`NEXT_PUBLIC_ACTION_AD_INTERVAL_SECONDS` supprimée).
+
 ## SW v46.37 — Pub au clic sur les boutons d'action
 
 - Ouvrir un secret, un document, Calculer, Générer… ouvre une pub Adsterra (Smartlink) dans un nouvel onglet pour les visiteurs sans abonnement valide, sur le web uniquement, au plus une fois par minute (`NEXT_PUBLIC_ACTION_AD_INTERVAL_SECONDS`).
