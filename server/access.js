@@ -91,20 +91,27 @@ async function isAdmin({ email }) {
  * résultat tel quel — voir la note de cet endpoint sur la raison d'être de
  * ce doublon serveur (lecture Admin SDK, pas le SDK client RTDB).
  * @param {{uid:string, email:string}} user
- * @returns {Promise<{allowed:boolean, admin:boolean, vip:boolean, level:number, purchase:object|null, expiresAt:number|null}>}
+ * adFree : abonnement réellement valide (retire les publicités), même quand
+ * FREE_FOR_ALL ouvre l'accès à tous.
+ * @returns {Promise<{allowed:boolean, adFree:boolean, admin:boolean, vip:boolean, level:number, purchase:object|null, expiresAt:number|null}>}
  */
 async function getAccessStatus({ uid, email }) {
   const emailLower = (email || "").toLowerCase();
   if (emailLower === SUPER_ADMIN) {
-    return { allowed: true, admin: true, vip: false, level: Infinity, purchase: null, expiresAt: null };
+    return { allowed: true, adFree: true, admin: true, vip: false, level: Infinity, purchase: null, expiresAt: null };
   }
-  // Voir FREE_FOR_ALL (lib/plans.js) : application temporairement gratuite —
-  // admin/vip restent `false` (pas de mensonge sur le vrai statut du compte),
-  // seul l'accès l'est. Les lectures RTDB ci-dessous restent inchangées.
-  if (FREE_FOR_ALL) {
-    return { allowed: true, admin: false, vip: false, level: Infinity, purchase: null, expiresAt: null };
-  }
+  const real = await subscriptionStatus({ uid, email });
+  // Voir FREE_FOR_ALL (lib/plans.js) : application gratuite — l'accès est
+  // total pour tous, mais adFree garde le VRAI statut d'abonnement (un
+  // abonnement valide retire les publicités), de même que admin/vip et
+  // expiresAt (rappel d'expiration de l'abonnement sans publicité).
+  // subscriptionLevel : palier réellement payé (page « Mon compte »).
+  if (FREE_FOR_ALL) return { ...real, allowed: true, level: Infinity, adFree: real.allowed, subscriptionLevel: real.level };
+  return { ...real, adFree: real.allowed };
+}
 
+// Statut d'abonnement réel (lectures RTDB), indépendant de FREE_FOR_ALL.
+async function subscriptionStatus({ uid, email }) {
   const db  = app().database();
   const key = emailKey(email);
 

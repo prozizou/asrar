@@ -5,7 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import ViewState from '@/components/ViewState';
 import { useAuth } from '@/components/AuthProvider';
 import { apiPost } from '@/lib/api';
-import { SUB_PLANS } from '@/lib/plans';
+import { SUB_PLANS, FREE_FOR_ALL } from '@/lib/plans';
 import ModalUntyped from '@/components/Modal';
 import './compte.css';
 const Modal = ModalUntyped as any;
@@ -71,7 +71,7 @@ export default function ComptePage() {
       <section className="account-card" aria-labelledby="account-subscription"><h2 id="account-subscription">Mon abonnement</h2>
         <strong className="account-plan">{subscription.admin ? 'Administrateur' : subscription.vip ? 'Accès VIP' : subscription.allowed ? plan ? 'Forfait ' + plan.dur : 'Accès activé' : subscription.lastExpiresAt ? 'Abonnement expiré' : 'Aucun abonnement actif'}</strong>
         {subscription.expiresAt ? <p>Échéance : <time dateTime={new Date(subscription.expiresAt).toISOString()}>{date(subscription.expiresAt)}</time></p> : subscription.allowed ? <p>Accès sans échéance enregistrée.</p> : subscription.lastExpiresAt ? <p>Dernière échéance : {date(subscription.lastExpiresAt)}</p> : null}
-        <p>Les achats du Marché sont indépendants de cet abonnement.</p>
+        <p>{FREE_FOR_ALL ? 'L’application est gratuite : l’abonnement retire les publicités tant qu’il est valable. ' : ''}Les achats du Marché sont indépendants de cet abonnement.</p>
         <Link className="account-button" href="/commandes">Mes demandes et commandes</Link>
         {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact}>Contacter l’assistance pour mon abonnement</a>}
       </section>

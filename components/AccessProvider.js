@@ -13,7 +13,7 @@ const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
 
 export default function AccessProvider({ children }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const cacheAt = useRef(0);
   const cache = useRef(null); // équivalent de _accessStatus (cache borné à 60 s)
   const [gateOpen, setGateOpen] = useState(false);
@@ -22,6 +22,10 @@ export default function AccessProvider({ children }) {
   // module hors forfait 1 An) — voir lib/unityAds.js.
   const [gateAdEligible, setGateAdEligible] = useState(false);
   const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
+  // Abonnement valide → pas de publicité (components/AdsterraAds.js). Distinct
+  // de `allowed` quand l'app est gratuite pour tous (lib/plans.js FREE_FOR_ALL).
+  // null = inconnu (aucune pub tant que ce n'est pas résolu).
+  const [adFree, setAdFree] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null); // pour SubscriptionExpiryBanner
   // ensureAccess() en attente de la fermeture du portail : résolu true si une
   // publicité a débloqué l'utilisation, false si le portail est fermé.
@@ -80,6 +84,7 @@ export default function AccessProvider({ children }) {
   const refreshAccess = useCallback(async () => {
     if (!user) {
       setAllowed(false);
+      setAdFree(false);
       return false;
     }
     const cached = Date.now() - cacheAt.current < 60000 ? cache.current : null;
@@ -90,6 +95,7 @@ export default function AccessProvider({ children }) {
       if (!cached) cacheAt.current = Date.now();
     }
     setAllowed(status.allowed);
+    if (!status.unavailable) setAdFree(!!status.adFree);
     setExpiresAt(status.expiresAt ?? null);
     return status.allowed;
   }, [user]);
@@ -102,8 +108,11 @@ export default function AccessProvider({ children }) {
     cache.current = null;
     cacheAt.current = 0;
     setAllowed(null);
+    // Visiteur non connecté (session Firebase résolue) : jamais abonné, donc
+    // publicités. Pendant le chargement de la session : inconnu.
+    setAdFree(user || authLoading ? null : false);
     if (user) refreshAccess().catch(() => {});
-  }, [user, refreshAccess]);
+  }, [user, authLoading, refreshAccess]);
 
   // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
   // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL
@@ -149,7 +158,7 @@ export default function AccessProvider({ children }) {
   }, [refreshAccess]);
 
   return (
-    <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, refreshAccess }}>
+    <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, adFree, refreshAccess }}>
       {/* Avant {children} : en flux normal (voir .expiry-banner), doit apparaître
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />

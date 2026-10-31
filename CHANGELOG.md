@@ -1,3 +1,10 @@
+## SW v46.35 — Application gratuite avec publicités
+
+- Tous les modules (y compris premium) sont gratuits pour tous (`FREE_FOR_ALL`).
+- Les publicités s'affichent à tout visiteur sans abonnement valide, y compris non connecté ; un abonnement valide les retire.
+- Bouton « Retirer les publicités » sous les bannières : ouvre les formules, demande validée sur WhatsApp.
+- « Mon compte » affiche le vrai statut d'abonnement ; badge « Accès premium » et cadenas masqués dans le menu.
+
 ## SW v46.34 — Smartlink Adsterra
 
 - Lien « Sponsorisé » (Smartlink Adsterra) sur la page 404 et sous les résultats de Combinaisons, Wafq, Géomancie, Planète et Hijri. Mêmes règles que les autres pubs : site web uniquement, jamais pour un abonné.

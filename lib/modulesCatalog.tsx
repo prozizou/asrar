@@ -12,6 +12,7 @@
 // La logique de recherche, elle, vit dans lib/moduleSearch.js — sans JSX,
 // donc testable directement.
 import type { ReactNode } from 'react';
+import { FREE_FOR_ALL } from './plans';
 import {
   Scroll, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
   Feather, Grid3x3, Hash, Moon, Layers, Calendar,
@@ -57,7 +58,8 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     slug: 'sciences-traditionnelles',
     title: 'Sciences traditionnelles',
     icon: <Layers {...CAT_ICON} />,
-    badge: 'Accès premium',
+    // Pas de badge ni de cadenas tant que l'app est gratuite (FREE_FOR_ALL).
+    badge: FREE_FOR_ALL ? undefined : 'Accès premium',
     items: [
       { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
       { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Tirage géomantique', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },
