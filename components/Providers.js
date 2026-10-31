@@ -6,6 +6,7 @@
 import AuthProvider from './AuthProvider';
 import AccessProvider from './AccessProvider';
 import PendingDeepLink from './PendingDeepLink';
+import AdsterraAds from './AdsterraAds';
 
 export default function Providers({ children }) {
   return (
@@ -13,6 +14,7 @@ export default function Providers({ children }) {
       <AccessProvider>
         <PendingDeepLink />
         {children}
+        <AdsterraAds />
       </AccessProvider>
     </AuthProvider>
   );
