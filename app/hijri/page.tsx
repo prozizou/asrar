@@ -11,6 +11,7 @@ import { phaseOfDay, PHASE_ATTRACTION } from '@/lib/hijriPhases';
 import Moon from './Moon';
 import PlanetNow from './PlanetNow';
 import HijriReminders from './HijriReminders';
+import { SponsoredLink } from '@/components/AdsterraAds';
 
 type HijriToday = Awaited<ReturnType<typeof fetchHijriToday>>;
 
@@ -128,6 +129,7 @@ export default function HijriPage() {
 
       {data && !loading && <PlanetNow />}
       <HijriReminders />
+      <SponsoredLink />
       <p className="hijri-credit">Source : AlAdhan Islamic Calendar API</p>
     </div>
   );

@@ -38,6 +38,7 @@ import {
 import { SHIELD_LAYOUT, SHIELD_EDGES, STEPS, edgePoints } from '@/lib/geomancieLayout';
 import { addHistoryEntry, clearHistory, loadHistory, removeHistoryEntry } from '@/lib/geomancieHistory';
 import { buildEcuPdf, ecuShareText } from '@/lib/geomancieExport';
+import { SponsoredLink } from '@/components/AdsterraAds';
 const AccessibleModal = AccessibleModalUntyped as any;
 
 
@@ -480,6 +481,8 @@ export default function GeomanciePage() {
                 Nouveau calcul
               </button>
             </div>
+
+            <SponsoredLink />
           </section>
         )}
       </div>

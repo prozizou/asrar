@@ -59,6 +59,7 @@ import { WEB_OFFSET_CHOICES, planetSlug, planetFromSlug, ringingWebAlarms } from
 import { unlockAlarmAudio, startAlarmRing, stopAlarmRing } from '@/lib/alarmRinger';
 import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
 import { hourEntries, hourIdOf, selectedHourIdFrom } from '@/lib/planetHourSelection';
+import { SponsoredLink } from '@/components/AdsterraAds';
 const AccessibleModal = AccessibleModalUntyped as any;
 
 
@@ -499,6 +500,8 @@ export default function PlanetePage() {
             </ul>
           )}
         </section>
+
+        <SponsoredLink />
       </div>
 
       {placeSheet && (
