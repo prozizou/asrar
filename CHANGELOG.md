@@ -1,3 +1,8 @@
+## SW v46.33 — Publicités Adsterra
+
+- Publicités Adsterra sur le site web uniquement (jamais dans l'APK ni pour les abonnés) : Social Bar, Popunder, Native Banner, bandeaux 320x50 / 468x60 / 728x90 selon la largeur d'écran, pavé 300x250 et colonnes 160x300 / 160x600 sur grand écran. Pubs adultes désactivées.
+- CSP élargie aux domaines Adsterra (bicea.org, afders.org).
+
 ## 7.9.4 Android / SW v46.30
 
 - Réveil natif pour les heures planétaires sélectionnées : programmation locale exacte, sonnerie en boucle sur le volume des alarmes et arrêt depuis la notification.
