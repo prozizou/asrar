@@ -1,3 +1,7 @@
+## SW v46.40 — Mesure des pubs sautées
+
+- La fenêtre de compte à rebours relève si l'onglet de pub est fermé aussitôt (< 2 s), avant la fin des 5 s, ou laissé ouvert. Compteurs agrégés envoyés au plus toutes les 10 min (`/api/track`, type `ad_stats`), seulement si le compte a activé les statistiques, stockés dans `analytics/ads/{jour}` et renvoyés par les stats admin (`ads.today/week/month`).
+
 ## SW v46.39 — Compte à rebours de 5 s après chaque pub
 
 - Après la pub au clic, une fenêtre affiche une bannière Adsterra 300x250 et « Votre résultat arrive dans N s » ; le bouton « Continuer » n'apparaît qu'au bout de 5 s (temps passé sur l'onglet de pub compris). Fermer l'onglet de pub tout de suite ne fait donc gagner aucun temps.

@@ -10,8 +10,9 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { BANNERS, Banner } from './AdsterraBanner';
+import { AD_WAIT_MS, sampleAdTab } from '@/lib/actionAd';
 
-export const AD_WAIT_MS = 5000;
+export { AD_WAIT_MS };
 
 export default function AdCountdown({ start, onDone, onRemoveAds }) {
   const [now, setNow] = useState(() => Date.now());
@@ -22,6 +23,13 @@ export default function AdCountdown({ start, onDone, onRemoveAds }) {
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [left]);
+
+  // Mesure (lib/actionAd.ts) : relève la fermeture de l'onglet de pub tant que
+  // la fenêtre est affichée, y compris après la fin du décompte.
+  useEffect(() => {
+    const id = setInterval(sampleAdTab, 250);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <Modal className="sg-overlay" label="Publicité" onClose={left === 0 ? onDone : undefined}>
