@@ -1,23 +1,27 @@
 import { test, expect } from './fixtures';
 
 test.describe('Droits vérifiés avec Auth et RTDB réels en émulation', () => {
-  for (const [role, allowed, level] of [['free', false, 0], ['basic', true, 15000], ['premium', true, 45000], ['expired', false, 0]] as const) {
+  // App gratuite (lib/plans.js FREE_FOR_ALL) : accès total pour tous ;
+  // adFree porte le VRAI statut d'abonnement (un abonnement valide retire
+  // les publicités).
+  for (const [role, adFree] of [['free', false], ['basic', true], ['premium', true], ['expired', false]] as const) {
     test(`${role} reçoit son vrai statut`, async ({ postAs }) => {
       const response = await postAs(role, 'check-access');
       expect(response.status()).toBe(200);
-      expect(await response.json()).toMatchObject({ allowed, level });
+      expect(await response.json()).toMatchObject({ allowed: true, level: 999999, adFree });
     });
   }
-  test('le compte gratuit peut lire le catalogue, pas le contenu payant', async ({ postAs }) => {
+  test('le catalogue ne livre pas le contenu ; le détail est ouvert à tout compte (app gratuite)', async ({ postAs }) => {
     const list = await postAs('free', 'list-content', { kind: 'secret', cat: 'protection' });
     expect(list.status()).toBe(200);
     expect((await list.json()).items[0].sirr).toBeUndefined();
-    expect((await postAs('free', 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' })).status()).toBe(403);
-    const detail = await postAs('basic', 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' });
-    expect((await detail.json()).item.sirr).toBe('Contenu réservé aux abonnés');
+    for (const role of ['free', 'basic']) {
+      const detail = await postAs(role, 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' });
+      expect((await detail.json()).item.sirr).toBe('Contenu réservé aux abonnés');
+    }
   });
-  test('le thème premium refuse un abonné de base', async ({ postAs }) => {
-    expect((await postAs('basic', 'get-theme')).status()).toBe(403);
+  test('le thème premium est ouvert à tout compte (app gratuite)', async ({ postAs }) => {
+    expect((await postAs('basic', 'get-theme')).status()).toBe(200);
     expect((await postAs('premium', 'get-theme')).status()).toBe(200);
   });
   test('l’administration reste interdite au compte premium', async ({ postAs }) => {
