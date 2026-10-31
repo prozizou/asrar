@@ -8,6 +8,7 @@ import { consumeAdCredit, isUnityAdsAvailable } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
+import { openActionAd } from '@/lib/actionAd';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -124,6 +125,9 @@ export default function AccessProvider({ children }) {
   // en cache comme un refus d'abonnement ; l'utilisateur peut réessayer.
   const ensureAccess = useCallback(
     async (minLevel = 0) => {
+      // Pub au clic (lib/actionAd.js) — AVANT tout await : le
+      // navigateur n'autorise l'ouverture d'un onglet que pendant le clic.
+      if (adFree === false) openActionAd();
       if (!user) return false;
       let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
       if (!status) {
@@ -144,7 +148,7 @@ export default function AccessProvider({ children }) {
       });
       return result;
     },
-    [user, openGate, spendAdCredit]
+    [user, adFree, openGate, spendAdCredit]
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
