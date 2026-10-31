@@ -1,3 +1,7 @@
+## SW v46.36 — Fin de l'application Android
+
+- Dans l'APK uniquement : fenêtre « ASRAR PRO continue sur le web » invitant à installer la version web (PWA). Aucun nouvel APK requis (l'APK charge le site en direct). « Plus tard » la reporte au lendemain.
+
 ## SW v46.35 — Application gratuite avec publicités
 
 - Tous les modules (y compris premium) sont gratuits pour tous (`FREE_FOR_ALL`).
