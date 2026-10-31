@@ -314,6 +314,15 @@ async function getStats(db) {
     series: perDay.slice(0, 14).reverse() // 14 derniers jours, ordre chronologique
   };
 
+  // Pub au clic (lib/actionAd.ts) : onglet fermé aussitôt / avant la fin / laissé
+  // ouvert, par période. À zéro tant qu'aucun visiteur n'a été mesuré.
+  const adSnaps = await Promise.all(dates.slice(0, 30).map((d) => db.ref("analytics/ads/" + d).once("value")));
+  const adSum = (list) => list.reduce((a, s) => {
+    const d = s.val() || {};
+    return { opened: a.opened + (d.opened || 0), quick: a.quick + (d.quick || 0), closed: a.closed + (d.closed || 0), open: a.open + (d.open || 0) };
+  }, { opened: 0, quick: 0, closed: 0, open: 0 });
+  const ads = { today: adSum(adSnaps.slice(0, 1)), week: adSum(adSnaps.slice(0, 7)), month: adSum(adSnaps) };
+
   const [products, sellers, books, formations] = await Promise.all([
     countChildren(db, "det_produits"),
     db.ref("sellers").once("value"),
@@ -331,6 +340,7 @@ async function getStats(db) {
 
   return {
     visits,
+    ads,
     totals: { products, sellers: sellers.numChildren(), activeSellers, books, formations, secrets: secretCounts },
     recentActivity: await readFeed(db, "activity_feed", 30)
   };

@@ -1,6 +1,8 @@
 // api/track.js (Vercel) — Journalisation légère pour le tableau de bord admin.
 //
-// Body : { idToken, type, page?, productKey? }.
+// Body : { idToken, type, page?, productKey?, adStats? }.
+// type="ad_stats" : compteurs agrégés de la pub au clic (lib/actionAd.ts) —
+// ajoutés à analytics/ads/{jour}, sans visite ni entrée dans le fil d'activité.
 // Les statistiques de visites, vues et activité exigent account_settings.analytics=true.
 // La dernière session reste une donnée opérationnelle ; le pays est facultatif.
 // L'ancien type « order » est refusé (410) : seule /api/orders crée une demande
@@ -33,7 +35,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, type, page, productKey } = parseBody(req);
+  const { idToken, type, page, productKey, adStats } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -69,6 +71,18 @@ export default async function handler(req, res) {
     await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
     if (!analyticsEnabled) return res.status(200).json({ ok: true });
 
+    // 0) Compteurs de la pub au clic : un envoi groupé par session environ
+    // (lib/actionAd.ts). Valeurs bornées : un client ne peut pas gonfler les
+    // totaux au-delà de ce qu'un envoi légitime peut contenir.
+    if (kind === "ad_stats") {
+      const counts = adCounts(adStats);
+      if (counts) {
+        await Promise.all(Object.entries(counts).filter(([, n]) => n > 0).map(([k, n]) =>
+          db.ref("analytics/ads/" + date + "/" + k).transaction((c) => (c || 0) + n)));
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
     const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
     await vref.child("n").transaction((c) => (c || 0) + 1);
@@ -98,6 +112,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false });
   }
 };
+
+// Compteurs de pub : entiers 0..AD_COUNT_MAX, quick+closed+open ≤ opened.
+const AD_COUNT_MAX = 100;
+const AD_KEYS = ["opened", "quick", "closed", "open"];
+function adCounts(v) {
+  if (!v || typeof v !== "object") return null;
+  const out = {};
+  for (const k of AD_KEYS) out[k] = Math.max(0, Math.min(AD_COUNT_MAX, Math.floor(Number(v[k]) || 0)));
+  if (out.quick + out.closed + out.open > out.opened) return null;
+  return out;
+}
 
 // Clé Firebase valide (les clés produit ne contiennent jamais . # $ / [ ]).
 function safeKey(v) { return (v == null ? "" : String(v)).replace(/[.#$/[\]]/g, "").slice(0, 64); }

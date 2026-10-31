@@ -8,7 +8,8 @@ import { consumeAdCredit, isUnityAdsAvailable } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
-import { openActionAd } from '@/lib/actionAd';
+import { openActionAd, recordAdOutcome } from '@/lib/actionAd';
+import { apiPost } from '@/lib/api';
 import Modal from './Modal';
 import AdCountdown from './AdCountdown';
 
@@ -203,7 +204,14 @@ export default function AccessProvider({ children }) {
       {countdown && (
         <AdCountdown
           start={countdown.start}
-          onDone={() => { const { resolve } = countdown; setCountdown(null); resolve(); }}
+          onDone={() => {
+            const { resolve } = countdown;
+            // Envoi groupé et rare des compteurs (respecte le réglage « statistiques »
+            // du compte : le serveur les ignore sinon).
+            recordAdOutcome((adStats) => apiPost('track', { type: 'ad_stats', adStats }).catch(() => {}));
+            setCountdown(null);
+            resolve();
+          }}
           onRemoveAds={() => openGate('noads')}
         />
       )}
