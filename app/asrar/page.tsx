@@ -70,8 +70,9 @@ export default function AsrarPage() {
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
-  const { ensureAccess } = useAccess() as unknown as {
+  const { ensureAccess, requireActionAd } = useAccess() as unknown as {
     ensureAccess: (minLevel?: number) => Promise<boolean>;
+    requireActionAd: () => boolean;
   };
   const cacheRef = useRef<Record<string, SecretListItem[]>>({}); // secretsCache par catégorie
   const [currentCat, setCurrentCat] = useState<Category>(CATS[0]);
@@ -178,6 +179,9 @@ export default function AsrarPage() {
 
   const openSecret = useCallback(
     async (catId: string, key: string) => {
+      // Pub au clic AVANT l'appel réseau (le navigateur n'ouvre un onglet que
+      // pendant le clic) — ensureAccess() ci-dessous ne la rouvre pas.
+      if (!requireActionAd()) return;
       try {
         const offer = await apiPost('secret-purchases', { action: 'offer', cat: catId, key });
         if (offer.mode === 'individual') {
@@ -189,7 +193,7 @@ export default function AsrarPage() {
         if (ok) fetchDetail(catId, key);
       } catch { notify('Ce secret n’a pas pu être chargé. Réessayez.'); }
     },
-    [ensureAccess, fetchDetail, notify]
+    [ensureAccess, requireActionAd, fetchDetail, notify]
   );
 
   const switchCat = (cat: Category) => {

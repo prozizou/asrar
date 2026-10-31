@@ -9,6 +9,7 @@ import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
 import { openActionAd } from '@/lib/actionAd';
+import Modal from './Modal';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -18,6 +19,9 @@ export default function AccessProvider({ children }) {
   const cacheAt = useRef(0);
   const cache = useRef(null); // équivalent de _accessStatus (cache borné à 60 s)
   const [gateOpen, setGateOpen] = useState(false);
+  // Pub au clic bloquée par le navigateur (lib/actionAd.ts) : l'action est
+  // refusée et cette fenêtre explique comment autoriser les pop-ups.
+  const [adBlocked, setAdBlocked] = useState(false);
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   // Publicité récompensée proposée dans le portail (APK, sans abonnement,
   // module hors forfait 1 An) — voir lib/unityAds.js.
@@ -123,11 +127,20 @@ export default function AccessProvider({ children }) {
   // utilisation — un crédit déjà gagné est utilisé directement, sans portail.
   // Le cache expire après 60 s. Une panne réseau/serveur n'est jamais mise
   // en cache comme un refus d'abonnement ; l'utilisateur peut réessayer.
+  // Pub obligatoire au clic (lib/actionAd.ts) pour un visiteur sans
+  // abonnement valide : false si le navigateur a bloqué l'onglet — l'action
+  // ne doit alors PAS s'exécuter. À appeler AVANT tout await : le navigateur
+  // n'autorise l'ouverture d'un onglet que pendant le clic.
+  const requireActionAd = useCallback(() => {
+    if (adFree !== false) return true;
+    if (openActionAd() !== 'blocked') return true;
+    setAdBlocked(true);
+    return false;
+  }, [adFree]);
+
   const ensureAccess = useCallback(
     async (minLevel = 0) => {
-      // Pub au clic (lib/actionAd.js) — AVANT tout await : le
-      // navigateur n'autorise l'ouverture d'un onglet que pendant le clic.
-      if (adFree === false) openActionAd();
+      if (!requireActionAd()) return false;
       if (!user) return false;
       let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
       if (!status) {
@@ -148,7 +161,7 @@ export default function AccessProvider({ children }) {
       });
       return result;
     },
-    [user, adFree, openGate, spendAdCredit]
+    [user, requireActionAd, openGate, spendAdCredit]
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
@@ -162,11 +175,38 @@ export default function AccessProvider({ children }) {
   }, [refreshAccess]);
 
   return (
-    <AccessCtx.Provider value={{ ensureAccess, getLevel, openGate, closeGate, invalidate, allowed, adFree, refreshAccess }}>
+    <AccessCtx.Provider value={{ ensureAccess, requireActionAd, getLevel, openGate, closeGate, invalidate, allowed, adFree, refreshAccess }}>
       {/* Avant {children} : en flux normal (voir .expiry-banner), doit apparaître
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
+      {adBlocked && (
+        <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité bloquée">
+          <div className="sg-box">
+            <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setAdBlocked(false)}>
+              ✕
+            </button>
+            <div style={{ fontSize: '2.4rem' }}>📢</div>
+            <h2>Publicité bloquée</h2>
+            <p className="sg-sub">
+              ASRAR PRO est gratuit grâce à la publicité : chaque action ouvre une publicité dans un nouvel onglet.
+              Votre navigateur l’a bloquée. Autorisez les fenêtres pop-up pour asrarpro.com (icône à droite de la
+              barre d’adresse, ou Paramètres du site → Pop-ups et redirections), puis réessayez.
+            </p>
+            <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={() => setAdBlocked(false)}>
+              J’ai compris
+            </button>
+            <button
+              type="button"
+              className="sg-card"
+              style={{ width: '100%', marginTop: 8 }}
+              onClick={() => { setAdBlocked(false); openGate('noads'); }}
+            >
+              🚫 Retirer les publicités
+            </button>
+          </div>
+        </Modal>
+      )}
       <SubscriptionGate
         open={gateOpen}
         reason={gateReason}

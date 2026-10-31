@@ -24,6 +24,10 @@ import { driveDirectLink } from '@/lib/drive';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
 import CommentModal from './CommentModal';
+import ModalUntyped from '@/components/Modal';
+// Modal.js (non typé) : ses paramètres par défaut `undefined` seraient
+// inférés comme seuls types admis.
+const Modal = ModalUntyped as any;
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -54,10 +58,16 @@ export default function BibliothequePage() {
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
-  const { ensureAccess, openGate } = useAccess() as unknown as {
+  const { ensureAccess, openGate, adFree } = useAccess() as unknown as {
     ensureAccess: (minLevel?: number) => Promise<boolean>;
     openGate: (reason?: string | null) => void;
+    adFree: boolean | null;
   };
+  // Visiteur avec publicités : le clic ouvre déjà la pub dans un nouvel
+  // onglet (ensureAccess → lib/actionAd.ts), et le navigateur n'autorise
+  // qu'UN onglet par clic. Le document est donc proposé ensuite via ce
+  // bouton « Ouvrir le document » (un second clic, un second onglet).
+  const [readyBook, setReadyBook] = useState<{ title: string; link: string } | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [social, setSocial] = useState<Record<string, SocialStats>>({});
   const [loading, setLoading] = useState(true);
@@ -85,6 +95,20 @@ export default function BibliothequePage() {
 
   const openBook = useCallback(
     async (key: string) => {
+      if (adFree === false) {
+        const ok = await ensureAccess();
+        if (!ok) return;
+        try {
+          const { item } = await apiPost('get-content', { kind: 'book', key });
+          const link = driveDirectLink(item.pdf || item.pdfUrl || '');
+          if (!link) { notify('Lien du document indisponible.'); return; }
+          setReadyBook({ title: item.text || item.title || item.titre || 'Document', link });
+        } catch (e: any) {
+          if (e.status === 403) openGate();
+          else notify('Erreur : ' + e.message);
+        }
+        return;
+      }
       const destination = reserveExternalWindow();
       if (!destination) {
         notify("Autorisez l'ouverture d'une nouvelle fenêtre, puis réessayez.");
@@ -107,7 +131,7 @@ export default function BibliothequePage() {
         else notify('Erreur : ' + e.message);
       }
     },
-    [ensureAccess, openGate, notify]
+    [adFree, ensureAccess, openGate, notify]
   );
 
   const loadBooks = useCallback(async () => {
@@ -277,6 +301,28 @@ export default function BibliothequePage() {
       </div>
 
       {toast}
+      {readyBook && (
+        <Modal className="sg-overlay" onClose={() => setReadyBook(null)} label="Document prêt">
+          <div className="sg-box">
+            <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setReadyBook(null)}>
+              ✕
+            </button>
+            <div style={{ fontSize: '2.4rem' }}>📖</div>
+            <h2>Votre document est prêt</h2>
+            <p className="sg-sub" dir="auto">{readyBook.title}</p>
+            <a
+              className="sg-card best"
+              style={{ display: 'block', width: '100%', marginTop: 8, textDecoration: 'none' }}
+              href={readyBook.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setReadyBook(null)}
+            >
+              Ouvrir le document
+            </a>
+          </div>
+        </Modal>
+      )}
       {commentBook && (
         <CommentModal
           book={commentBook}
