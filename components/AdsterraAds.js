@@ -14,12 +14,19 @@
 //                                         468x60, 728x90, 160x300, 160x600.
 //  - NEXT_PUBLIC_ADSTERRA_BANNER_HOST   : domaine d'invoke.js si Adsterra en
 //                                         donne un autre (défaut ci-dessous).
+//  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
+//                                         (dernier segment) nomme le conteneur
+//                                         « container-<clé> » attendu par le
+//                                         script. Défaut : l'unité du site.
 import { useEffect, useRef } from 'react';
 import { useAccess } from './AccessProvider';
 
 const SOCIALBAR_SRC = process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC || '';
 const BANNER_KEY = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_KEY || '';
 const BANNER_SIZE = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_SIZE || '320x50';
+const NATIVE_SRC =
+  process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC ?? 'https://bicea.org/21/00684bfc5a8802ccbed95bf0c1fa25a3';
+const NATIVE_KEY = NATIVE_SRC.split('/').pop();
 const BANNER_HOST = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_HOST || 'www.highperformanceformat.com';
 
 function isNativeApp() {
@@ -56,6 +63,23 @@ function Banner() {
   );
 }
 
+// Native Banner : le script remplit <div id="container-<clé>">, qui doit donc
+// exister AVANT son exécution — d'où l'injection depuis l'effet, après rendu.
+function NativeBanner() {
+  const box = useRef(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const s = document.createElement('script');
+    s.src = NATIVE_SRC;
+    s.async = true;
+    s.setAttribute('data-cfasync', 'false');
+    el.before(s);
+    return () => { s.remove(); el.replaceChildren(); };
+  }, []);
+  return <div ref={box} id={`container-${NATIVE_KEY}`} aria-label="Publicité" style={{ margin: '16px auto', maxWidth: 728 }} />;
+}
+
 function SocialBar() {
   useEffect(() => {
     if (!SOCIALBAR_SRC) return undefined;
@@ -70,12 +94,13 @@ function SocialBar() {
 
 export default function AdsterraAds() {
   const access = useAccess();
-  if (!SOCIALBAR_SRC && !BANNER_KEY) return null;
+  if (!SOCIALBAR_SRC && !BANNER_KEY && !NATIVE_SRC) return null;
   if (typeof window !== 'undefined' && isNativeApp()) return null;
   if (!access || access.allowed !== false) return null;
   return (
     <>
       {SOCIALBAR_SRC ? <SocialBar /> : null}
+      {NATIVE_SRC ? <NativeBanner /> : null}
       {BANNER_KEY ? <Banner /> : null}
     </>
   );
