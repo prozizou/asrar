@@ -105,9 +105,9 @@ test('étoile vide, sept sommes instantanées, chiffres contenus, copie et expor
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
 });
 
-test('le générateur étoile conserve la vérification de l’accès premium', async ({ page, login }) => {
+test('le générateur étoile est ouvert à un compte gratuit (app gratuite)', async ({ page, login }) => {
   await login('free'); await page.goto('/wafq/carre/6');
   await page.getByRole('radio', { name: 'Étoile', exact: true }).check();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByLabel('Constante magique', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Constante magique', { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });

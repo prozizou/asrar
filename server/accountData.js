@@ -11,7 +11,10 @@ async function accountSummary(db, user, authUser, access) {
   return {
     account: { uid: user.uid, email: user.email, name: authUser.displayName || "", emailVerified: authUser.emailVerified,
       createdAt: authUser.metadata?.creationTime || null },
-    subscription: { allowed: access.allowed, admin: access.admin, vip: access.vip, level: access.level === Infinity ? 999999 : access.level,
+    // Vrai statut d'abonnement, même quand l'app est gratuite pour tous
+    // (adFree/subscriptionLevel — server/access.js, FREE_FOR_ALL).
+    subscription: { allowed: access.adFree ?? access.allowed, admin: access.admin, vip: access.vip,
+      level: (lvl => lvl === Infinity ? 999999 : lvl)(access.subscriptionLevel ?? access.level),
       expiresAt: access.expiresAt, lastExpiresAt: lastExpiry || null },
     settings: { analytics: settings.val()?.analytics === true, pushEnabled: settings.val()?.pushEnabled !== false },
     privacyRequest: request.val() || null,

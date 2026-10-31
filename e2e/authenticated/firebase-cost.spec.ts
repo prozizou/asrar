@@ -28,7 +28,7 @@ test('la discussion incrémentale ne renvoie que les nouveaux messages et revér
   expect((await postAs('premium', 'zikr', { action: 'messages', groupId: 'cost-chat', after: 'm200' })).status()).toBe(403);
 });
 
-test('le catalogue est invalidé après édition et le cache ne contourne ni identité ni abonnement', async ({ postAs }) => {
+test('le catalogue est invalidé après édition et le cache ne contourne pas l’identité', async ({ postAs }) => {
   await postAs('admin', 'admin', { action: 'save-book', key: 'cost-book', titre: 'Ancien titre', pdf: 'https://example.invalid/private.pdf' });
   const first = await (await postAs('free', 'list-content', { kind: 'book' })).json();
   expect(first.items.find((item: any) => item._key === 'cost-book').titre).toBe('Ancien titre');
@@ -37,7 +37,8 @@ test('le catalogue est invalidé après édition et le cache ne contourne ni ide
   expect(second.items.find((item: any) => item._key === 'cost-book').titre).toBe('Nouveau titre');
   expect(second.items.find((item: any) => item._key === 'cost-book').pdf).toBeUndefined();
   expect((await postAs('unverified', 'list-content', { kind: 'book' })).status()).toBe(403);
-  expect((await postAs('free', 'get-content', { kind: 'book', key: 'cost-book' })).status()).toBe(403);
+  // App gratuite (FREE_FOR_ALL) : le détail est ouvert à tout compte vérifié.
+  expect((await postAs('free', 'get-content', { kind: 'book', key: 'cost-book' })).status()).toBe(200);
 });
 
 test('le centre de notifications cesse de sonder quand la page est masquée', async ({ page, login }) => {

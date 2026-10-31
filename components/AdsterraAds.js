@@ -1,8 +1,9 @@
 'use client';
 // Publicités Adsterra — SITE WEB UNIQUEMENT. Montées dans Providers, donc sur
 // toutes les pages. Jamais dans l'APK/Capacitor (Google Play : l'APK utilise
-// Unity Ads, cf. lib/unityAds.js) et jamais pour un abonné (allowed === true).
-// allowed === null (accès pas encore résolu) : rien d'affiché, pour ne pas
+// Unity Ads, cf. lib/unityAds.js) et jamais pour un abonné valide
+// (adFree === true — l'app étant gratuite, l'abonnement retire les pubs).
+// adFree === null (statut pas encore résolu) : rien d'affiché, pour ne pas
 // montrer une pub une fraction de seconde à un abonné.
 //
 // Codes des unités du site asrarpro.com (tableau de bord Adsterra → Sites →
@@ -93,6 +94,7 @@ function Banners() {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, margin: '16px auto' }}>
         <Banner banner={strip} />
         <Banner banner={BANNERS.b300x250} />
+        <RemoveAdsButton />
       </div>
       {width >= SIDES_MIN_WIDTH ? (
         <>
@@ -101,6 +103,21 @@ function Banners() {
         </>
       ) : null}
     </>
+  );
+}
+
+// Offre « sans publicité » : ouvre le portail d'abonnement (paiement validé
+// sur WhatsApp, cf. components/SubscriptionGate.js, motif 'noads').
+function RemoveAdsButton() {
+  const access = useAccess();
+  return (
+    <button
+      type="button"
+      onClick={() => access?.openGate('noads')}
+      style={{ background: 'none', border: '1px solid var(--text-muted)', color: 'var(--text-muted)', borderRadius: 999, padding: '6px 14px', fontSize: 13, cursor: 'pointer' }}
+    >
+      🚫 Retirer les publicités
+    </button>
   );
 }
 
@@ -137,7 +154,7 @@ function useShowAds() {
   const access = useAccess();
   const [native, setNative] = useState(true);
   useEffect(() => { setNative(isNativeApp()); }, []);
-  return !native && !!access && access.allowed === false;
+  return !native && !!access && access.adFree === false;
 }
 
 export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {

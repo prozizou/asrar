@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { database, runtime, invoke } from './support/runtime';
 const user = { uid: 'tester', email: 'user@example.test' };
-function setup(initial = {}, { recent = true, admin = false } = {}) {
+function setup(initial = {}, { recent = true, admin = false, status = null } = {}) {
   const db = database(initial), load = runtime(db, { user, stubs: {
     'server/grant.js': { app: () => ({ database: () => db, auth: () => ({
       verifyIdToken: async () => ({ auth_time: Date.now() / 1000 - (recent ? 0 : 10000) }),
@@ -9,11 +9,16 @@ function setup(initial = {}, { recent = true, admin = false } = {}) {
       updateUser: async () => {},
     }) }) },
     'server/access.js': { verifyUser: async () => user, emailKey: (email) => email.replace(/\./g, ','), isAdmin: async () => admin,
-      getAccessStatus: async () => ({ allowed: true, admin, vip: false, level: 15000, expiresAt: Date.now() + 86400000, purchase: { token: 'must-stay-private' } }) },
+      getAccessStatus: async () => status || ({ allowed: true, admin, vip: false, level: 15000, expiresAt: Date.now() + 86400000, purchase: { token: 'must-stay-private' } }) },
   } });
   return { db, load, handler: load('pages/api/account.js').default };
 }
 describe('Compte et données personnelles', () => {
+  it('app gratuite : affiche le vrai abonnement, pas l’accès ouvert à tous', async () => {
+    const { handler } = setup({}, { status: { allowed: true, adFree: false, subscriptionLevel: 0, admin: false, vip: false, level: Infinity, expiresAt: null } });
+    const result = await invoke(handler);
+    expect(result.body.subscription).toMatchObject({ allowed: false, level: 0 });
+  });
   it('affiche le palier et la date sans livrer les jetons d’achat ou d’appareil', async () => {
     const { handler } = setup({ fcm_devices: { tester: { device: { token: 'private-device' } } } });
     const result = await invoke(handler);
