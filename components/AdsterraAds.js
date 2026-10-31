@@ -5,29 +5,29 @@
 // allowed === null (accès pas encore résolu) : rien d'affiché, pour ne pas
 // montrer une pub une fraction de seconde à un abonné.
 //
-// Les clés viennent du tableau de bord Adsterra (Sites → Ad Units) et se posent
-// dans les variables d'environnement Vercel (NEXT_PUBLIC_*, lues au build).
-// Variable absente = format désactivé, aucun script chargé :
-//  - NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC : URL complète du script Social Bar.
-//  - NEXT_PUBLIC_ADSTERRA_BANNER_KEY    : clé du Banner (invoke.js).
-//  - NEXT_PUBLIC_ADSTERRA_BANNER_SIZE   : « 320x50 » (défaut) ou 300x250,
-//                                         468x60, 728x90, 160x300, 160x600.
-//  - NEXT_PUBLIC_ADSTERRA_BANNER_HOST   : domaine d'invoke.js si Adsterra en
-//                                         donne un autre (défaut ci-dessous).
-//  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
-//                                         (dernier segment) nomme le conteneur
-//                                         « container-<clé> » attendu par le
-//                                         script. Défaut : l'unité du site.
-import { useEffect, useRef } from 'react';
+// Codes des unités du site asrarpro.com (tableau de bord Adsterra → Sites →
+// Ad Units), pubs adultes désactivées. Chaque valeur peut être remplacée par
+// une variable d'environnement Vercel (NEXT_PUBLIC_*, lue au build) ; une
+// variable définie à une chaîne VIDE désactive le format correspondant.
+//  - NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC  : URL du script Social Bar.
+//  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC     : URL du script Native Banner. Sa clé
+//                                          (dernier segment) nomme le conteneur
+//                                          « container-<clé> » attendu.
+//  - NEXT_PUBLIC_ADSTERRA_BANNER_MOBILE  : clé du Banner 320x50 (< 768 px).
+//  - NEXT_PUBLIC_ADSTERRA_BANNER_DESKTOP : clé du Banner 300x250 (≥ 768 px).
+import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
 
-const SOCIALBAR_SRC = process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC || '';
-const BANNER_KEY = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_KEY || '';
-const BANNER_SIZE = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_SIZE || '320x50';
-const NATIVE_SRC =
-  process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC ?? 'https://bicea.org/21/00684bfc5a8802ccbed95bf0c1fa25a3';
+const env = (value, fallback) => (value === undefined ? fallback : value);
+
+const AD_HOST = 'https://bicea.org';
+const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_HOST}/14/56ff6c976d7d264a3439f37c7d6ca8e5`);
+const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
 const NATIVE_KEY = NATIVE_SRC.split('/').pop();
-const BANNER_HOST = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_HOST || 'www.highperformanceformat.com';
+const BANNERS = {
+  mobile: { key: env(process.env.NEXT_PUBLIC_ADSTERRA_BANNER_MOBILE, '563c98782ed872bff3a559ced174eb4e'), width: 320, height: 50 },
+  desktop: { key: env(process.env.NEXT_PUBLIC_ADSTERRA_BANNER_DESKTOP, 'd691104dc0fe411adbaedd982a916508'), width: 300, height: 250 },
+};
 
 function isNativeApp() {
   try {
@@ -37,28 +37,33 @@ function isNativeApp() {
   }
 }
 
+// Un SEUL Banner par page : le script lit la variable GLOBALE atOptions à son
+// exécution, deux bannières chargées en parallèle se la disputeraient.
 function Banner() {
   const box = useRef(null);
+  const [banner, setBanner] = useState(null);
+
+  useEffect(() => {
+    setBanner(window.matchMedia('(min-width: 768px)').matches ? BANNERS.desktop : BANNERS.mobile);
+  }, []);
+
   useEffect(() => {
     const el = box.current;
-    if (!el || !BANNER_KEY) return undefined;
-    const [width, height] = BANNER_SIZE.split('x').map(Number);
-    // invoke.js lit window.atOptions au moment de son exécution : un script
-    // inline le pose juste avant, dans le même conteneur.
+    if (!el || !banner?.key) return undefined;
     const opts = document.createElement('script');
-    opts.text = `atOptions = {'key':'${BANNER_KEY}','format':'iframe','height':${height},'width':${width},'params':{}};`;
+    opts.text = `atOptions = {'key':'${banner.key}','format':'iframe','height':${banner.height},'width':${banner.width},'params':{}};`;
     const invoke = document.createElement('script');
-    invoke.src = `https://${BANNER_HOST}/${BANNER_KEY}/invoke.js`;
-    invoke.async = true;
+    invoke.src = `${AD_HOST}/22/${banner.key}`;
     el.append(opts, invoke);
     return () => { el.replaceChildren(); };
-  }, []);
-  const [w, h] = BANNER_SIZE.split('x').map(Number);
+  }, [banner]);
+
+  if (!banner?.key) return null;
   return (
     <div
       ref={box}
       aria-label="Publicité"
-      style={{ display: 'flex', justifyContent: 'center', minHeight: h, maxWidth: '100%', overflow: 'hidden', margin: '16px auto', width: w }}
+      style={{ display: 'flex', justifyContent: 'center', minHeight: banner.height, maxWidth: '100%', overflow: 'hidden', margin: '16px auto', width: banner.width }}
     />
   );
 }
@@ -82,10 +87,9 @@ function NativeBanner() {
 
 function SocialBar() {
   useEffect(() => {
-    if (!SOCIALBAR_SRC) return undefined;
     const s = document.createElement('script');
     s.src = SOCIALBAR_SRC;
-    s.async = true;
+    s.setAttribute('data-cfasync', 'false');
     document.body.appendChild(s);
     return () => { s.remove(); };
   }, []);
@@ -94,14 +98,15 @@ function SocialBar() {
 
 export default function AdsterraAds() {
   const access = useAccess();
-  if (!SOCIALBAR_SRC && !BANNER_KEY && !NATIVE_SRC) return null;
-  if (typeof window !== 'undefined' && isNativeApp()) return null;
-  if (!access || access.allowed !== false) return null;
+  const [native, setNative] = useState(true);
+  useEffect(() => { setNative(isNativeApp()); }, []);
+
+  if (native || !access || access.allowed !== false) return null;
   return (
     <>
       {SOCIALBAR_SRC ? <SocialBar /> : null}
       {NATIVE_SRC ? <NativeBanner /> : null}
-      {BANNER_KEY ? <Banner /> : null}
+      <Banner />
     </>
   );
 }
