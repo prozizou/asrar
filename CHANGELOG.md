@@ -1,3 +1,8 @@
+## SW v46.37 — Pub au clic sur les boutons d'action
+
+- Ouvrir un secret, un document, Calculer, Générer… ouvre une pub Adsterra (Smartlink) dans un nouvel onglet pour les visiteurs sans abonnement valide, sur le web uniquement, au plus une fois par minute (`NEXT_PUBLIC_ACTION_AD_INTERVAL_SECONDS`).
+- Le Popunder Adsterra « global » (n'importe quel clic) est désactivé par défaut pour éviter deux onglets au même clic (réactivable via `NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC`).
+
 ## SW v46.36 — Fin de l'application Android
 
 - Dans l'APK uniquement : fenêtre « ASRAR PRO continue sur le web » invitant à installer la version web (PWA). Aucun nouvel APK requis (l'APK charge le site en direct). « Plus tard » la reporte au lendemain.

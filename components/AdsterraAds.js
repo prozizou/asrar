@@ -11,25 +11,31 @@
 // une variable d'environnement Vercel (NEXT_PUBLIC_*, lue au build) ; une
 // variable définie à une chaîne VIDE désactive le format correspondant.
 //  - NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC : URL du script Social Bar.
-//  - NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC  : URL du script Popunder.
+//  - NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC  : URL du script Popunder « global »
+//                                         (n'importe quel clic). VIDE par
+//                                         défaut : remplacé par la pub au clic
+//                                         sur les boutons d'action
+//                                         (lib/actionAd.js) — les deux
+//                                         ouvriraient deux onglets au même clic.
 //  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
 //                                         (dernier segment) nomme le conteneur
 //                                         « container-<clé> » attendu.
 // Les clés des Banners sont dans BANNERS ci-dessous.
 import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
+import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
 
 const env = (value, fallback) => (value === undefined ? fallback : value);
 
 const AD_HOST = 'https://bicea.org';
 const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_HOST}/14/56ff6c976d7d264a3439f37c7d6ca8e5`);
-const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, 'https://afders.org/1/d5663adcf33b434a0bee2c6cd0625bb4');
+const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, '');
 const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
 const NATIVE_KEY = NATIVE_SRC.split('/').pop();
 // Smartlink : simple lien (pas de script), affiché par <SponsoredLink /> sur
 // la page 404 et sous les résultats des calculs (Combinaisons, Wafq,
 // Géomancie, Planète, Hijri). Jamais dans les achats ni les pages religieuses.
-export const ADSTERRA_SMARTLINK = 'https://arwf.org/4/c12b8f66b93c495d8d8a836d32401474';
+export { ADSTERRA_SMARTLINK };
 
 const BANNERS = {
   b320x50: { key: '563c98782ed872bff3a559ced174eb4e', width: 320, height: 50 },
