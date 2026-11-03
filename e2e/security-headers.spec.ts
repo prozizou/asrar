@@ -30,6 +30,8 @@ test.describe('En-têtes de sécurité (next.config.mjs)', () => {
     expect(csp).toContain('res.cloudinary.com'); // images boutique/marché
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'self'");
+    // Collecte des blocages (pages/api/csp-report.js).
+    expect(csp).toContain('report-uri /api/csp-report');
   });
 
   test('les assets statiques portent aussi les en-têtes (appliqués à /:path*)', async ({ request }) => {
