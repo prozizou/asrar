@@ -1,15 +1,16 @@
 'use client';
 // Fenêtre affichée après chaque action d'un visiteur avec publicités, pendant
 // AD_WAIT_MS à compter de l'ouverture de la pub au clic (lib/actionAd.ts) :
-//  - une bannière Adsterra 300x250 DANS notre page — elle ne peut pas être
-//    fermée avant la fin, contrairement à l'onglet de pub ;
+//  - une bannière Adsterra 300x250 DANS notre page (si les bannières sont
+//    activées, BANNERS_ENABLED), sinon un message de remerciement ; la fenêtre
+//    ne peut pas être fermée avant la fin, contrairement à l'onglet de pub ;
 //  - « Votre résultat arrive dans N s », puis le bouton « Continuer ».
 // Le temps passé sur l'onglet de pub compte : celui qui y reste 5 s retrouve
 // directement « Continuer ». Pas de fermeture possible avant la fin (ni ✕, ni
 // Échap — Modal n'appelle onClose que s'il est fourni).
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { BANNERS, Banner } from './AdsterraBanner';
+import { BANNERS, BANNERS_ENABLED, Banner } from './AdsterraBanner';
 import { AD_WAIT_MS, sampleAdTab } from '@/lib/actionAd';
 
 export { AD_WAIT_MS };
@@ -34,10 +35,20 @@ export default function AdCountdown({ start, onDone, onRemoveAds }) {
   return (
     <Modal className="sg-overlay" label="Publicité" onClose={left === 0 ? onDone : undefined}>
       <div className="sg-box">
-        <p className="sg-sub" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Publicité</p>
-        <div style={{ display: 'flex', justifyContent: 'center', minHeight: BANNERS.b300x250.height }}>
-          <Banner banner={BANNERS.b300x250} />
-        </div>
+        {BANNERS_ENABLED ? (
+          <>
+            <p className="sg-sub" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Publicité</p>
+            <div style={{ display: 'flex', justifyContent: 'center', minHeight: BANNERS.b300x250.height }}>
+              <Banner banner={BANNERS.b300x250} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: '2.4rem' }}>🙏</div>
+            <h2>Merci de votre patience</h2>
+            <p className="sg-sub">ASRAR PRO reste gratuit grâce à la publicité. Un abonnement la supprime.</p>
+          </>
+        )}
         {left > 0 ? (
           <p className="sg-sub" role="status" aria-live="polite" style={{ marginTop: 12 }}>
             ⏳ Votre résultat arrive dans {left} s
