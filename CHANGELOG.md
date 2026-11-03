@@ -1,3 +1,9 @@
+## SW v46.41 — Bannières coupées
+
+- Bannières Adsterra (bas des pages, colonnes latérales, fenêtre de 5 s) et Native Banner coupés : ils affichaient des annonces de casino et de paris et n'étaient presque pas comptés par Adsterra. Restent le Smartlink (pub au clic et lien « Sponsorisé ») et le Social Bar.
+- La fenêtre de 5 s affiche un message de remerciement à la place de la bannière.
+- Réactivables : `NEXT_PUBLIC_ADSTERRA_BANNERS=1` et `NEXT_PUBLIC_ADSTERRA_NATIVE_SRC=<url>`.
+
 ## SW v46.40 — Mesure des pubs sautées
 
 - La fenêtre de compte à rebours relève si l'onglet de pub est fermé aussitôt (< 2 s), avant la fin des 5 s, ou laissé ouvert. Compteurs agrégés envoyés au plus toutes les 10 min (`/api/track`, type `ad_stats`), seulement si le compte a activé les statistiques, stockés dans `analytics/ads/{jour}` et renvoyés par les stats admin (`ads.today/week/month`).

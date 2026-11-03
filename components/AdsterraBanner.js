@@ -7,6 +7,15 @@ import { useEffect, useRef } from 'react';
 
 export const AD_HOST = 'https://bicea.org';
 
+// Bannières COUPÉES par défaut : elles affichaient des annonces de casino et de
+// paris (inadaptées à une application islamique) et n'étaient presque pas
+// comptées par Adsterra (17 affichages pour ~240 sur le Smartlink). Pour les
+// réactiver, définir NEXT_PUBLIC_ADSTERRA_BANNERS=1 (variable Vercel, au
+// prochain déploiement) — à faire seulement une fois les catégories de jeux
+// d'argent bloquées chez Adsterra. Concerne le bas des pages, les colonnes
+// latérales et la fenêtre de compte à rebours.
+export const BANNERS_ENABLED = process.env.NEXT_PUBLIC_ADSTERRA_BANNERS === '1';
+
 export const BANNERS = {
   b320x50: { key: '563c98782ed872bff3a559ced174eb4e', width: 320, height: 50 },
   b468x60: { key: '4e6dae61157b6b11ee648226d05336c6', width: 468, height: 60 },
