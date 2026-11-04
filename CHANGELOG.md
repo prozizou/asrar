@@ -1,4 +1,6 @@
-## SW v46.47 — WhatsApp dans l'application Android
+## Android 8.0.1 / SW v46.47 — WhatsApp dans l'application Android
+
+- Application : version 8.0.1 (publication Google Play avec les pubs Unity plein écran de la 8.0.0, jamais publiée seule).
 
 - L'application Android (WebView) ne pouvait pas ouvrir de nouvelle fenêtre : les demandes WhatsApp (Marché, commandes, abonnement, assistance) ne partaient pas. Dans l'application, le lien est maintenant confié à Android (navigation principale vers wa.me, que Capacitor ouvre dans WhatsApp) ; les liens `/api/wa` sont d'abord résolus avec `format=json`. Sur le site, rien ne change (nouvel onglet).
 
