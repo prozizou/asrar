@@ -251,12 +251,10 @@ export default function AccessProvider({ children }) {
                 ? 'Vérification de votre abonnement en cours. Patientez puis réessayez l’action.'
                 : adBlocked.reason === 'update_required'
                 ? 'Mettez à jour l’application pour valider l’affichage des publicités, ou choisissez un abonnement sans publicités.'
-                : adBlocked.retryAfterMs
-                ? `La prochaine publicité sera disponible dans environ ${Math.ceil(adBlocked.retryAfterMs / 1000)} secondes. Patientez puis réessayez l’action, ou choisissez un abonnement sans publicités.`
-                : 'Aucune publicité n’a été validée pour cette action. Patientez puis réessayez, ou choisissez un abonnement sans publicités.'}
+                : 'La publicité n’a pas pu être affichée ou terminée. Réessayez l’action, ou choisissez un abonnement sans publicités.'}
             </p>
             <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={() => setAdBlocked(false)}>
-              Fermer et réessayer plus tard
+              Fermer et réessayer
             </button>
             <button
               type="button"
