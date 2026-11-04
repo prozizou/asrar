@@ -1,3 +1,9 @@
+## Android 8.0.2 / SW v46.48 — Abonnements WhatsApp et Wave
+
+- Retrait du SDK et du plugin Google Play Billing, ainsi que des achats individuels dans l’interface. Les anciennes demandes publiques de paiement répondent 410. Historique et remboursements conservés côté serveur.
+- Application toujours gratuite avec publicités. Abonnements sans publicités de 3 mois (15 000 FCFA), 6 mois (25 000 FCFA) et 1 an (45 000 FCFA), par WhatsApp ou liens marchands Wave.
+- Choix et renouvellement des formules dans Mon compte ; ouverture externe de Wave sur Android et confirmation WhatsApp personnalisée. Activation manuelle après vérification du paiement, sans déblocage au simple clic.
+
 ## Android 8.0.1 / SW v46.47 — WhatsApp dans l'application Android
 
 - Application : version 8.0.1 (publication Google Play avec les pubs Unity plein écran de la 8.0.0, jamais publiée seule).

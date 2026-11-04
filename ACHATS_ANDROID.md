@@ -1,3 +1,16 @@
+# Google Play Billing retiré en 8.0.2
+
+Le SDK et le plugin Billing Android, les boutons d’achat, la configuration
+administrateur et les nouvelles validations publiques ont été retirés.
+L’API `/api/secret-purchases` répond 410 aux anciens clients authentifiés.
+L’accès gratuit est conservé ; l’abonnement ne retire que les publicités.
+Les anciens reçus et le traitement serveur RTDN des transactions historiques
+sont conservés pour ne pas effacer l’historique ni ignorer des remboursements.
+Les instructions ci-dessous sont une archive, pas une configuration à activer.
+Voir `ABONNEMENTS_WHATSAPP_WAVE.md` pour le parcours actuel.
+
+---
+
 # Achats de secrets dans Android — Google Play Billing
 
 Le travail Android est isolé sur `feat/android-secret-purchases`.

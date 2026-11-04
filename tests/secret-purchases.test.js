@@ -87,18 +87,18 @@ describe('Achats individuels de secrets', () => {
     await db.ref('db_sirr_protection/second').set({ faida: 'Autre' });
     await expect(service.configure(db, cat, 'second', productId)).rejects.toThrow('déjà associé');
   });
-  it('garde les contenus verrouillés côté API et masque les images payantes dans le catalogue', async () => {
+  it('le catalogue reste sans texte protégé et les anciens réglages Billing ne contrôlent plus le contenu', async () => {
     const { load } = setup({ secret_billing: { settings: { enabled: true } } });
     const result = await invoke(load('pages/api/get-content.js').default, { kind: 'secret', cat, key });
-    expect(result.code).toBe(403); expect(result.body.code).toBe('SECRET_PURCHASE_REQUIRED'); expect(JSON.stringify(result.body)).not.toContain('confidentiel');
+    expect(result.code).toBe(403); expect(JSON.stringify(result.body)).not.toContain('confidentiel');
     const list = await invoke(load('pages/api/list-content.js').default, { kind: 'secret', cat });
-    expect(list.body.individualPurchases).toBe(true); expect(list.body.items[0].img).toBeUndefined(); expect(list.body.items[0].intro).toBeUndefined();
+    expect(list.body.individualPurchases).toBeUndefined(); expect(list.body.items[0].sirr).toBeUndefined();
   });
   it('n’expose jamais le jeton ou une erreur Google dans les réponses API', async () => {
     const { load, play } = setup(); play.getPurchase.mockRejectedValue(new Error('https://google/tokens/' + token));
     const result = await invoke(load('pages/api/secret-purchases.js').default, { action: 'verify', productId, purchaseToken: token });
-    expect(result.code).toBe(503); expect(JSON.stringify(result.body)).not.toContain(token);
-    const admin = await invoke(load('pages/api/secret-purchases.js').default, { action: 'activate' }); expect(admin.code).toBe(403);
+    expect(result.code).toBe(410); expect(JSON.stringify(result.body)).not.toContain(token); expect(play.getPurchase).not.toHaveBeenCalled();
+    const admin = await invoke(load('pages/api/secret-purchases.js').default, { action: 'activate' }); expect(admin.code).toBe(410);
   });
 });
 

@@ -94,7 +94,7 @@ jobs:
           echo "versionCode=$ASRAR_VERSION_CODE"
           npm run android:aab
 
-      - name: Vérifier signature et autorisation Billing
+      - name: Vérifier signature et absence de Google Play Billing
         run: |
           jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab
           python3 - <<'PYVERIFY'
@@ -104,8 +104,8 @@ jobs:
               names = bundle.namelist()
               assert any(re.fullmatch(r'META-INF/[^/]+\.(RSA|DSA|EC)', name) for name in names), 'Signature AAB absente'
               assert any(re.fullmatch(r'META-INF/[^/]+\.SF', name) for name in names), 'Manifeste de signature absent'
-              assert b'com.android.vending.BILLING' in bundle.read('base/manifest/AndroidManifest.xml'), 'Autorisation Billing absente'
-          print('AAB signé et autorisation Billing présents.')
+              assert b'com.android.vending.BILLING' not in bundle.read('base/manifest/AndroidManifest.xml'), 'Autorisation Billing encore présente'
+          print('AAB signé, sans autorisation Google Play Billing.')
           PYVERIFY
 
       - name: Nettoyage du keystore
