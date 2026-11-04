@@ -7,10 +7,8 @@
 // (voir lib/unityAds.js, server/adReward.js).
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { SUB_PLANS } from '@/lib/access';
-import { openAccess } from '@/lib/whatsapp';
 import { watchRewardedAd } from '@/lib/unityAds';
-import { useAuth } from './AuthProvider';
+import SubscriptionPlans from './SubscriptionPlans';
 
 const AD_MESSAGES = {
   no_fill: 'Aucune publicité disponible pour le moment. Réessayez dans quelques minutes.',
@@ -21,7 +19,6 @@ const AD_MESSAGES = {
 };
 
 export default function SubscriptionGate({ open, reason, adEligible, onAdRewarded, onAdPending, onClose }) {
-  const { user } = useAuth();
   const [adBusy, setAdBusy] = useState(false);
   const [adMessage, setAdMessage] = useState('');
 
@@ -52,7 +49,6 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
   // l'abonnement retire les publicités (bouton « Retirer les publicités »,
   // components/AdsterraAds.js).
   const isNoAdsGate = reason === 'noads';
-  const request = (planId) => openAccess({ planId, email: user?.email, noAds: isNoAdsGate });
 
   // reason === 'level' : l'utilisateur a déjà un abonnement actif, mais pas le
   // palier requis par ce module (Al Qalam / Géomancie → forfait 1 An uniquement).
@@ -92,7 +88,7 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
         <h2>{isNoAdsGate ? 'ASRAR PRO sans publicité' : isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
         <p className="sg-sub">
           {isNoAdsGate
-            ? "L'application reste gratuite. Avec un abonnement, plus aucune publicité tant qu'il est valable. Choisissez une formule, puis validez votre demande sur WhatsApp — l'administration l'active."
+            ? "L’application reste gratuite. Choisissez un abonnement sans publicités, par WhatsApp ou Wave. L’administration l’active après vérification du paiement."
             : isLevelGate
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
             : "Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration."}
@@ -107,23 +103,7 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
             <p className="sg-ad-or">ou abonnez-vous</p>
           </div>
         )}
-        <div className="sg-grid">
-          {SUB_PLANS.map((p) => (
-            <button
-              type="button"
-              key={p.id}
-              className={'sg-card' + (p.best ? ' best' : '') + (isLevelGate && !p.best ? ' sg-card-dim' : '')}
-              onClick={() => request(p.id)}
-            >
-              {p.badge && <span className="sg-badge">{p.badge}</span>}
-              <div className="sg-dur">{p.dur}</div>
-              <div className="sg-price">
-                {p.price} <small>FCFA</small>
-              </div>
-            </button>
-          ))}
-        </div>
-        <p className="sg-note">💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp.</p>
+        <SubscriptionPlans />
       </div>
     </Modal>
   );

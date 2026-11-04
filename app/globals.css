@@ -2105,3 +2105,21 @@ html[data-theme="light"] {
 .sr-form textarea { font-size: 16px; min-height: 88px; }
 .sr-submit { width: auto; margin: 0; min-height: 44px; color: var(--button-ink); }
 .sr-item-email, .sr-item-text { overflow-wrap: anywhere; }
+
+.subscription-plans { margin-top: 18px; }
+.subscription-plan { cursor: default; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 20px 12px 12px; }
+.subscription-plan h3, .subscription-plan p { margin: 0; }
+.subscription-plan button, .subscription-confirmation button { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--glass-border, #70607c); border-radius: 10px; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.subscription-plan .subscription-wave { background: #1dc6ed; color: #062e40; }
+.subscription-plan .subscription-whatsapp { background: var(--surface-2, #332741); color: var(--text-main, #fff); }
+.subscription-confirmation { margin-top: 12px; padding: 14px; border: 1px solid var(--glass-border, #70607c); border-radius: 12px; display: grid; gap: 12px; }
+.subscription-confirmation p { margin: 0; font-size: .9rem; line-height: 1.5; }
+.subscription-confirmation button { background: #ae8bfa; color: #190e2c; }
+.subscription-plans button:focus-visible, .account-subscription-plans summary:focus-visible { outline: 3px solid #ae8bfa; outline-offset: 3px; }
+.account-subscription-plans summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 600; }
+.account-subscription-plans .sg-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.account-subscription-plans .sg-note { color: var(--text-muted); }
+.sg-box .subscription-whatsapp { background: #332741; color: #fff; }
+.action-ad-area { display: flex; justify-content: center; margin: 12px auto; width: 300px; max-width: 100%; overflow: hidden; }
+.sg-box .action-ad-area + .sg-sub { margin-top: 12px; }
+.sg-box:has(.action-ad-area) > button { display: block; width: 100%; min-height: 44px; margin-top: 10px; }

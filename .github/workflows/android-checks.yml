@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-checks-${{ github.ref }}
+  group: android-checks-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

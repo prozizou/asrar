@@ -26,8 +26,6 @@ import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import SecretDetail from './SecretDetail';
-import SecretPurchaseDialog from './SecretPurchaseDialog';
-import SecretSalesAdmin from './SecretSalesAdmin';
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -65,14 +63,12 @@ const CATS: Category[] = [
 export default function AsrarPage() {
   const { notify, toast } = useToast();
   const [listError, setListError] = useState(false);
-  const [purchase, setPurchase] = useState<{cat: string; key: string} | null>(null);
   const listRequest = useRef(0);
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
-  const { ensureAccess, requireActionAd } = useAccess() as unknown as {
+  const { ensureAccess } = useAccess() as unknown as {
     ensureAccess: (minLevel?: number) => Promise<boolean>;
-    requireActionAd: () => boolean;
   };
   const cacheRef = useRef<Record<string, SecretListItem[]>>({}); // secretsCache par catégorie
   const [currentCat, setCurrentCat] = useState<Category>(CATS[0]);
@@ -163,7 +159,6 @@ export default function AsrarPage() {
         item.img = item.img || item.image || null;
         setCurrentSecret({ catId, key, data: item });
       } catch (e: any) {
-        if (e.status === 403 && e.code === 'SECRET_PURCHASE_REQUIRED') { setPurchase({ cat: catId, key }); return; }
         if (e.status === 403) {
           // paywall serveur : l'utilisateur a perdu l'accès entre-temps
           ensureAccess();
@@ -181,19 +176,12 @@ export default function AsrarPage() {
     async (catId: string, key: string) => {
       // Pub au clic AVANT l'appel réseau (le navigateur n'ouvre un onglet que
       // pendant le clic) — ensureAccess() ci-dessous ne la rouvre pas.
-      if (!requireActionAd()) return;
       try {
-        const offer = await apiPost('secret-purchases', { action: 'offer', cat: catId, key });
-        if (offer.mode === 'individual') {
-          if (offer.allowed) fetchDetail(catId, key);
-          else setPurchase({ cat: catId, key });
-          return;
-        }
         const ok = await ensureAccess();
         if (ok) fetchDetail(catId, key);
       } catch { notify('Ce secret n’a pas pu être chargé. Réessayez.'); }
     },
-    [ensureAccess, requireActionAd, fetchDetail, notify]
+    [ensureAccess, fetchDetail, notify]
   );
 
   const switchCat = (cat: Category) => {
@@ -353,9 +341,6 @@ export default function AsrarPage() {
         </div>
       </div>
 
-      {currentSecret && <SecretSalesAdmin cat={currentSecret.catId} secretKey={currentSecret.key} />}
-      {purchase && <SecretPurchaseDialog key={purchase.cat + ':' + purchase.key} cat={purchase.cat} secretKey={purchase.key}
-        onClose={() => { setPurchase(null); }} onUnlocked={() => { const selected = purchase; setPurchase(null); fetchDetail(selected.cat, selected.key); }} />}
       {loadingSecret && (
         <div id="secret-loading">
           <div className="sl-spin" />

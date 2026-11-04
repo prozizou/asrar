@@ -13,6 +13,7 @@
 
 const { app } = require("../../server/grant");
 const crypto = require("node:crypto");
+const { orderWhatsAppMessage } = require('../../lib/whatsappMessages');
 
 // Clé produit Firebase : alphanumérique + - _ uniquement.
 function safeKey(v) { return String(v == null ? "" : v).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
         if (current._private?.contactToken !== token || current.status === "cancelled" || current._private.contactUntil < at) return;
         return { ...current, contactOpenedAt: current.contactOpenedAt || at };
       }).then((result) => { if (!result.committed || !result.snapshot.exists()) throw new Error("Contact changé"); });
-      const message = `Assalamou aleykoum. Je souhaite vérifier la disponibilité de ${order.produit} auprès de ${order.vendeur}.\nPrix affiché : ${order.prix} ${order.devise}.\nRéférence : ${id}.\nMerci de confirmer la disponibilité, le paiement et la livraison. Cette demande ne confirme aucun achat.`;
+      const message = orderWhatsAppMessage(order, id);
       return sendWhatsApp(req, res, "https://wa.me/" + order._private.phone + "?text=" + encodeURIComponent(message));
     } catch { return htmlMessage(res, 503, "Le contact est temporairement indisponible. Réessayez depuis vos demandes."); }
   }

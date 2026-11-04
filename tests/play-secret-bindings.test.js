@@ -8,7 +8,7 @@ function setup(seed = {}) {
   const actual = runtime(db)('server/playBilling.js');
   const play = { ...actual, getPurchase: vi.fn(async () => ({ purchaseState: 0, consumptionState: 0, acknowledgementState: 1, obfuscatedExternalAccountId: actual.accountId(user.uid) })), acknowledge: vi.fn() };
   const load = runtime(db, { user, stubs: { 'server/playBilling.js': play, 'server/access.js': {
-    verifyUser: async () => user, getAccessStatus: async () => ({}), isAdmin: async () => true, emailKey: (v) => v.replace(/\./g, ','),
+    verifyUser: async () => user, getAccessStatus: async () => ({}), isAdmin: async () => true, hasActiveAccess: async () => true, emailKey: (v) => v.replace(/\./g, ','),
   } } });
   return { db, play, bindings: load('server/playSecretBindings.js'), service: load('server/secretPurchases.js'), load };
 }
@@ -60,9 +60,9 @@ it('refuse également les anciens liens inversés qui viseraient le mauvais secr
   await expect(badProduct.service.verify(badProduct.db, user, 'different_product', 'purchase-token-example')).rejects.toThrow('réservé');
   expect(badProduct.play.getPurchase).not.toHaveBeenCalled();
 });
-it('affiche la configuration administrateur sans révéler le texte du secret', async () => {
+it('retire aussi l’ancienne configuration administrateur sans révéler le secret', async () => {
   const { load } = setup();
   const response = await invoke(load('pages/api/secret-purchases.js').default, { action: 'configuration', cat, key });
-  expect(response.code).toBe(200); expect(response.body).toMatchObject({ productId, fixed: true });
+  expect(response.code).toBe(410); expect(response.body.code).toBe('PLAY_BILLING_RETIRED');
   expect(JSON.stringify(response.body)).not.toContain('Recette privée');
 });

@@ -1,4 +1,7 @@
-Nouveautés de la version 8.0.1 :
-• Correction de l’ouverture de WhatsApp sur Android pour le Marché, les commandes et l’assistance.
-• Accès gratuit aux fonctionnalités avec publicités. Les abonnements valides retirent les publicités.
-• Ouverture de l’application Android depuis le site web.
+Nouveautés de la version 8.0.2 :
+• Publicités Android avec la médiation LevelPlay.
+• Une publicité regardée débloque l’action. En cas d’indisponibilité, l’action reste en attente.
+• Retrait des achats Google Play ; abonnements actifs conservés.
+• Messages WhatsApp plus clairs : prix lisibles et références courtes.
+• Choix de confidentialité publicitaire dans Mon compte lorsqu’ils sont requis.
+• L’application reste gratuite avec publicités.

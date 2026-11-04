@@ -27,23 +27,51 @@ export const BANNERS = {
 // plusieurs bannières chargées en parallèle se la disputeraient. On les
 // charge donc l'une APRÈS l'autre (file d'attente partagée).
 let bannerQueue = Promise.resolve();
-function loadBanner(el, banner) {
+function loadBanner(el, banner, onError) {
   let cancelled = false;
+  let finish = () => {};
   bannerQueue = bannerQueue.then(() => new Promise((done) => {
     if (cancelled || !el.isConnected) return done();
     const opts = document.createElement('script');
     opts.text = `atOptions = {'key':'${banner.key}','format':'iframe','height':${banner.height},'width':${banner.width},'params':{}};`;
     const invoke = document.createElement('script');
     invoke.src = `${AD_HOST}/22/${banner.key}`;
-    invoke.onload = invoke.onerror = () => done();
+    const timer = setTimeout(() => { if (!cancelled) onError?.(); finish(); }, 12000);
+    finish = () => { clearTimeout(timer); done(); };
+    invoke.onload = finish;
+    invoke.onerror = () => { if (!cancelled) onError?.(); finish(); };
     el.append(opts, invoke);
   }));
-  return () => { cancelled = true; el.replaceChildren(); };
+  return () => { cancelled = true; finish(); el.replaceChildren(); };
 }
 
-export function Banner({ banner, style }) {
+export function Banner({ banner, style, onStateChange }) {
   const box = useRef(null);
-  useEffect(() => (box.current ? loadBanner(box.current, banner) : undefined), [banner]);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    let ready = false;
+    onStateChange?.('loading');
+    const error = () => { ready = false; onStateChange?.('error'); };
+    let timer = onStateChange ? setTimeout(error, 15000) : null;
+    const loaded = (event) => {
+      const frame = event.target;
+      if (frame?.tagName !== 'IFRAME' || !el.contains(frame) || !/^https?:\/\//.test(frame.src)) return;
+      const rect = frame.getBoundingClientRect();
+      if (rect.width < banner.width / 2 || rect.height < banner.height / 2) return;
+      ready = true; clearTimeout(timer); onStateChange?.('ready');
+    };
+    const observer = onStateChange ? new MutationObserver((records) => {
+      if (ready && !el.querySelector('iframe')) error();
+      else if (ready && records.some((record) => record.type === 'attributes' && record.attributeName === 'src')) {
+        ready = false; onStateChange('loading'); clearTimeout(timer); timer = setTimeout(error, 15000);
+      }
+    }) : null;
+    if (onStateChange) el.addEventListener('load', loaded, true);
+    observer?.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+    const cleanup = loadBanner(el, banner, error);
+    return () => { clearTimeout(timer); observer?.disconnect(); el.removeEventListener('load', loaded, true); cleanup(); };
+  }, [banner, onStateChange]);
   return (
     <div
       ref={box}

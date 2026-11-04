@@ -11,7 +11,10 @@ test('les demandes WhatsApp prennent le prix serveur et restent distinctes du pa
   expect(duplicate.order._key).toBe(id);
   const contact = await request.get(data.contactUrl, { maxRedirects: 0 });
   expect(contact.status()).toBe(302);
-  expect(contact.headers().location).toContain('1000');
+  const text = new URL(contact.headers().location).searchParams.get('text');
+  expect(text).toContain('*Prix affiché :* 1 000 FCFA');
+  expect(text).toContain('\n\n*DEMANDE DE DISPONIBILITÉ*\n\n');
+  expect(text).toContain('*Référence :* ' + id.slice(0, 12));
   expect((await app().database().ref('orders_v2/' + id + '/status').once('value')).val()).toBe('whatsapp_request');
   expect((await postAs('free', 'orders', { action: 'transition', orderId: id, status: 'paid' })).status()).toBe(403);
   expect((await postAs('premium', 'orders', { action: 'transition', orderId: id, status: 'confirmed' })).status()).toBe(403);
