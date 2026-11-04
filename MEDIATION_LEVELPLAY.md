@@ -56,7 +56,8 @@ activer les appareils de test dans LevelPlay/les régies, vérifier chaque rése
 l’Integration Helper/Test Suite et exercer : abandon, absence réseau, rotation,
 retour arrière, double clic, consentement refusé et récompense terminée.
 Aucune requête publicitaire réelle n’est effectuée par les tests automatisés.
-Aucune publication ni push de cette intégration n’est autorisé pour l’instant.
+La publication de la version Android 8.0.2 en production a été demandée explicitement
+par le propriétaire après les tests sur téléphone.
 
 Sources officielles :
 - https://docs.unity.com/en-us/grow/levelplay/sdk/android/sdk-integration
@@ -100,7 +101,8 @@ Installer l’APK, ouvrir « ASRAR — Test pubs », puis « Ouvrir le diagnosti
 Si Android demande l’autorisation d’installation pour le navigateur/téléchargement,
 la donner pour ce fichier. L’outil présente les réseaux et les formats ; transmettre
 les captures de leur état (ou du message d’erreur) pour poursuivre les corrections.
-Aucune publication GitHub ni Play Store n’est effectuée par cette préparation.
+Le diagnostic autonome reste un outil local ; seul le bundle du module app est
+destiné à la publication Play Store.
 
 Source : https://docs.unity.com/en-us/grow/levelplay/sdk/android/integration-test-suite
 

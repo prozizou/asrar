@@ -38,7 +38,10 @@ Avant une publication Play Store : la suppression du SDK Billing ne dispense
 pas des règles Google sur les abonnements numériques, y compris sans publicités.
 Les liens de paiement externes dans l’application doivent être autorisés pour
 le pays et le programme concernés. Le parcours web peut être déployé séparément.
-Aucune publication Play Store n’est déclenchée par ces modifications locales.
+Le propriétaire a demandé la publication Android 8.0.2 et confirmé expressément le
+maintien des boutons WhatsApp/Wave dans l’APK, après information sur les règles de
+paiement Google Play. Aucune inscription à un programme externe n’a été établie
+dans cette session ; ce parcours peut être refusé à l’examen Google Play.
 
 Validation locale : 869 tests unitaires réussis, lint et types validés.
 La suite authentifiée complète a validé 81 scénarios ; deux assertions sur le
