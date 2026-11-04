@@ -1,3 +1,7 @@
+## SW v46.47 — WhatsApp dans l'application Android
+
+- L'application Android (WebView) ne pouvait pas ouvrir de nouvelle fenêtre : les demandes WhatsApp (Marché, commandes, abonnement, assistance) ne partaient pas. Dans l'application, le lien est maintenant confié à Android (navigation principale vers wa.me, que Capacitor ouvre dans WhatsApp) ; les liens `/api/wa` sont d'abord résolus avec `format=json`. Sur le site, rien ne change (nouvel onglet).
+
 ## SW v46.46 — Pubs Adsterra dans l'application Android
 
 - L'application Android (qui charge le site) affiche désormais les bannières Adsterra et le Native Banner aux comptes sans abonnement, sans nouvelle version de l'application. Formats exclus dans l'application, pour respecter les règles Google Play : Social Bar (imite une notification), Popunder et onglet Smartlink (ouvrent le navigateur), offre « Retirer les publicités » par WhatsApp. Coupable sans code : `NEXT_PUBLIC_ADSTERRA_IN_APP=0`.

@@ -46,10 +46,7 @@ export default async function handler(req, res) {
         return { ...current, contactOpenedAt: current.contactOpenedAt || at };
       }).then((result) => { if (!result.committed || !result.snapshot.exists()) throw new Error("Contact changé"); });
       const message = `Assalamou aleykoum. Je souhaite vérifier la disponibilité de ${order.produit} auprès de ${order.vendeur}.\nPrix affiché : ${order.prix} ${order.devise}.\nRéférence : ${id}.\nMerci de confirmer la disponibilité, le paiement et la livraison. Cette demande ne confirme aucun achat.`;
-      res.statusCode = 302;
-      res.setHeader("Cache-Control", "no-store");
-      res.setHeader("Location", "https://wa.me/" + order._private.phone + "?text=" + encodeURIComponent(message));
-      return res.end();
+      return sendWhatsApp(req, res, "https://wa.me/" + order._private.phone + "?text=" + encodeURIComponent(message));
     } catch { return htmlMessage(res, 503, "Le contact est temporairement indisponible. Réessayez depuis vos demandes."); }
   }
   const q = (req.query && typeof req.query.text === "string") ? req.query.text : "";
@@ -81,8 +78,17 @@ export default async function handler(req, res) {
 
   const url = "https://wa.me/" + number + (text ? "?text=" + encodeURIComponent(text) : "");
 
+  return sendWhatsApp(req, res, url);
+};
+
+// Redirection vers WhatsApp, ou, avec format=json, l'adresse elle-même :
+// l'application Android (WebView) ne peut pas ouvrir de nouvelle fenêtre ;
+// elle demande l'adresse puis la confie à Android (lib/externalWindow.js).
+// Le numéro n'est pas plus exposé que par la redirection elle-même.
+function sendWhatsApp(req, res, url) {
+  res.setHeader("Cache-Control", "no-store");
+  if (req.query?.format === "json") return res.status(200).json({ url });
   res.statusCode = 302;
   res.setHeader("Location", url);
-  res.setHeader("Cache-Control", "no-store");
-  res.end();
-};
+  return res.end();
+}

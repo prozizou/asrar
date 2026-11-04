@@ -5,6 +5,8 @@ const env = {
   FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099', FIREBASE_DATABASE_EMULATOR_HOST: '127.0.0.1:9000',
   SITE_URL: 'http://127.0.0.1:3102', SUPER_ADMIN_EMAIL: 'root@asrar.test',
   CRON_SECRET: 'emulator-cron-only',
+  // Numéro fictif : les liens WhatsApp de l'assistance (/api/wa) sont testés.
+  WHATSAPP_NUMBER: '22100000000',
   FIREBASE_CLI_DISABLE_TELEMETRY: '1', NEXT_TELEMETRY_DISABLED: '1',
   // Les services locaux ne doivent pas passer par le proxy Internet du CI.
   NO_PROXY: [process.env.NO_PROXY, '127.0.0.1', 'localhost', '::1'].filter(Boolean).join(','),

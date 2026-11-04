@@ -30,7 +30,7 @@ function OrdersContent() {
     const destination = reserveExternalWindow();
     if (!destination) { setError('Autorisez l’ouverture d’une nouvelle fenêtre pour contacter la boutique.'); return; }
     setBusy(true);
-    try { destination.navigate((await apiPost('orders', { action: 'contact', orderId: order._key })).contactUrl); }
+    try { await destination.navigate((await apiPost('orders', { action: 'contact', orderId: order._key })).contactUrl); }
     catch (e: any) { destination.close(); setError(e.message); }
     finally { setBusy(false); }
   };

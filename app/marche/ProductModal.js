@@ -90,7 +90,7 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
         request.orderId = result.order._key;
         setVerifiedRequest(result.order);
       }
-      destination.navigate(result.contactUrl);
+      await destination.navigate(result.contactUrl);
     } catch (error) {
       destination.close(); setOrderError(error.message || 'La demande n’a pas pu être préparée. Réessayez.');
     } finally { setOrdering(false); }
