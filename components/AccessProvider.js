@@ -4,7 +4,7 @@
 // d'abonnement est rendu ici et piloté par un simple état React.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus } from '@/lib/access';
-import { consumeAdCredit, isUnityAdsAvailable } from '@/lib/unityAds';
+import { consumeAdCredit, isUnityAdsAvailable, showNativeActionAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
@@ -162,6 +162,9 @@ export default function AccessProvider({ children }) {
     async (minLevel = 0) => {
       if (!requireActionAd()) return false;
       await waitForAd();
+      // Application Android : publicité plein écran Unity (fréquence limitée,
+      // lib/unityAds.js) — sans effet sur le site, où la pub au clic s'applique.
+      if (adFree === false) await showNativeActionAd();
       if (!user) return false;
       let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
       if (!status) {
@@ -182,7 +185,7 @@ export default function AccessProvider({ children }) {
       });
       return result;
     },
-    [user, requireActionAd, waitForAd, openGate, spendAdCredit]
+    [user, adFree, requireActionAd, waitForAd, openGate, spendAdCredit]
   );
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);

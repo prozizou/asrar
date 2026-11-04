@@ -1,3 +1,9 @@
+## Android 8.0.0 / SW v46.44 — Retour de l'application Android
+
+- Site ouvert sur Android : redirection vers la page Google Play de l'application (une fois par visite ; « Ouvrir » si elle est installée, sinon « Installer »), puis fenêtre « Ouvrir l'application / Installer depuis Google Play » au retour, avec une sortie de 7 jours pour qui ne peut pas installer. iPhone, ordinateur, robots et l'application elle-même : aucun changement. Désactivable : `NEXT_PUBLIC_ANDROID_APP_REDIRECT=0`.
+- Le message « ASRAR PRO continue sur le web » de l'application est supprimé.
+- Application : lien d'ouverture `asrarpro://open` depuis le site ; publicité plein écran Unity (`Interstitial_Android`) aux actions des comptes sans abonnement, au plus une fois toutes les 3 minutes et jamais dans la première minute ; version 8.0.0.
+
 ## SW v46.43 — Bannières réactivées
 
 - Bannières Adsterra (bas des pages, colonnes latérales, fenêtre de 5 s) et Native Banner réactivés à la demande du propriétaire ; seules les pubs adultes restent bloquées chez Adsterra. Coupables sans code : `NEXT_PUBLIC_ADSTERRA_BANNERS=0`, `NEXT_PUBLIC_ADSTERRA_NATIVE_SRC=` (vide).
