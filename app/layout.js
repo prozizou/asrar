@@ -47,6 +47,7 @@ export const metadata = {
   // mobile-web-app-capable. On garde les deux (Safari lit encore l'ancienne).
   other: {
     'mobile-web-app-capable': 'yes',
+    'google-adsense-account': 'ca-pub-3895250961868134',
   },
   icons: {
     icon: '/assets/favicon.png',
