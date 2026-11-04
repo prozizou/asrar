@@ -56,9 +56,9 @@ public class UnityAdsPlugin extends Plugin {
     }
 
     /**
-     * Publicité plein écran (interstitielle) : résout { shown } quand elle est
+     * Publicité plein écran : résout { shown, completed } quand elle est
      * fermée, ou { shown: false, reason } si aucune n'est disponible — jamais
-     * d'erreur bloquante, l'action de l'utilisateur doit continuer.
+     * d’accès accordé en l’absence d’une publicité complètement regardée.
      */
     @PluginMethod
     public void showInterstitial(PluginCall call) {
@@ -96,7 +96,8 @@ public class UnityAdsPlugin extends Plugin {
 
                         @Override
                         public void onUnityAdsShowComplete(String id, UnityAds.UnityAdsShowCompletionState state) {
-                            resolveShown(call, true, null);
+                            boolean completed = state == UnityAds.UnityAdsShowCompletionState.COMPLETED;
+                            resolveShown(call, true, completed ? null : "skipped", completed);
                         }
                     }));
                 }
@@ -110,8 +111,13 @@ public class UnityAdsPlugin extends Plugin {
     }
 
     private void resolveShown(PluginCall call, boolean shown, String reason) {
+        resolveShown(call, shown, reason, false);
+    }
+
+    private void resolveShown(PluginCall call, boolean shown, String reason, boolean completed) {
         JSObject ret = new JSObject();
         ret.put("shown", shown);
+        ret.put("completed", completed);
         if (reason != null) ret.put("reason", reason);
         call.resolve(ret);
     }

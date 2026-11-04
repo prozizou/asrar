@@ -1,71 +1,57 @@
 'use client';
-// Fenêtre affichée après chaque action d'un visiteur avec publicités, pendant
-// AD_WAIT_MS à compter de l'ouverture de la pub au clic (lib/actionAd.ts) :
-//  - une bannière Adsterra 300x250 DANS notre page (si les bannières sont
-//    activées, BANNERS_ENABLED), sinon un message de remerciement ; la fenêtre
-//    ne peut pas être fermée avant la fin, contrairement à l'onglet de pub ;
-//  - « Votre résultat arrive dans N s », puis le bouton « Continuer ».
-// Le temps passé sur l'onglet de pub compte : celui qui y reste 5 s retrouve
-// directement « Continuer ». Pas de fermeture possible avant la fin (ni ✕, ni
-// Échap — Modal n'appelle onClose que s'il est fourni).
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from './Modal';
 import { BANNERS, BANNERS_ENABLED, Banner } from './AdsterraBanner';
 import { AD_WAIT_MS, sampleAdTab } from '@/lib/actionAd';
-
 export { AD_WAIT_MS };
 
-export default function AdCountdown({ start, onDone, onRemoveAds }) {
-  const [now, setNow] = useState(() => Date.now());
-  const left = Math.max(0, Math.ceil((start + AD_WAIT_MS - now) / 1000));
-
+// Only foreground time with a loaded, visible ad counts. A popup or a timer
+// alone never unlocks an action. Cross-origin content cannot be inspected.
+export default function AdCountdown({ onDone, onRemoveAds }) {
+  const [state, setState] = useState(BANNERS_ENABLED ? 'loading' : 'error');
+  const [elapsed, setElapsed] = useState(0), [attempt, setAttempt] = useState(0);
+  const area = useRef(null);
+  const updateState = useCallback((value) => { setState(value); if (value !== 'ready') setElapsed(0); }, []);
   useEffect(() => {
-    if (left === 0) return undefined;
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
-  }, [left]);
-
-  // Mesure (lib/actionAd.ts) : relève la fermeture de l'onglet de pub tant que
-  // la fenêtre est affichée, y compris après la fin du décompte.
-  useEffect(() => {
-    const id = setInterval(sampleAdTab, 250);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <Modal className="sg-overlay" label="Publicité" onClose={left === 0 ? onDone : undefined}>
-      <div className="sg-box">
-        {BANNERS_ENABLED ? (
-          <>
-            <p className="sg-sub" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Publicité</p>
-            <div style={{ display: 'flex', justifyContent: 'center', minHeight: BANNERS.b300x250.height }}>
-              <Banner banner={BANNERS.b300x250} />
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: '2.4rem' }}>🙏</div>
-            <h2>Merci de votre patience</h2>
-            <p className="sg-sub">ASRAR PRO reste gratuit grâce à la publicité. Un abonnement la supprime.</p>
-          </>
-        )}
-        {left > 0 ? (
-          <p className="sg-sub" role="status" aria-live="polite" style={{ marginTop: 12 }}>
-            ⏳ Votre résultat arrive dans {left} s
-          </p>
-        ) : (
-          <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 12 }} onClick={onDone} autoFocus>
-            Continuer
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onRemoveAds}
-          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 13, marginTop: 8, cursor: 'pointer', textDecoration: 'underline' }}
-        >
-          🚫 Retirer les publicités
-        </button>
-      </div>
-    </Modal>
-  );
+    let last = Date.now();
+    let visible = false;
+    const frame = Array.from(area.current?.querySelectorAll('iframe') || []).find((node) => {
+      const rect = node.getBoundingClientRect(); return rect.width >= 150 && rect.height >= 125;
+    });
+    const observer = frame && typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([entry]) => { visible = entry.isIntersecting && entry.intersectionRatio >= .5; }, { threshold: [0, .5, 1] }) : null;
+    if (frame) observer?.observe(frame);
+    const tick = () => {
+      const now = Date.now(), delta = Math.min(250, Math.max(0, now - last)); last = now;
+      sampleAdTab();
+      if (state !== 'ready' || document.visibilityState !== 'visible' || !frame?.isConnected || !visible) return;
+      const rect = frame.getBoundingClientRect(), style = getComputedStyle(frame);
+      if (rect.width < 150 || rect.height < 125 || style.visibility === 'hidden' || Number(style.opacity) === 0) return;
+      for (let node = frame.parentElement; node; node = node.parentElement) {
+        const parentStyle = getComputedStyle(node);
+        if (parentStyle.visibility === 'hidden' || Number(parentStyle.opacity) === 0) return;
+      }
+      const visiblePixels = Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0)) * Math.max(0, Math.min(rect.right, innerWidth) - Math.max(rect.left, 0));
+      if (visiblePixels / (rect.width * rect.height) < .5) return;
+      setElapsed((value) => Math.min(AD_WAIT_MS, value + delta));
+    };
+    const timer = setInterval(tick, 250);
+    const resetClock = () => { last = Date.now(); };
+    document.addEventListener('visibilitychange', resetClock);
+    return () => { observer?.disconnect(); clearInterval(timer); document.removeEventListener('visibilitychange', resetClock); };
+  }, [state]);
+  const left = Math.ceil((AD_WAIT_MS - elapsed) / 1000);
+  return <Modal className="sg-overlay" label="Publicité" onClose={() => onDone(false)}>
+    <div className="sg-box">
+      <h2>Une publicité pour cette action</h2>
+      <p className="sg-sub">L’action reste en attente jusqu’à l’affichage de la publicité.</p>
+      {BANNERS_ENABLED && <div ref={area} className="action-ad-area"><Banner key={attempt} banner={BANNERS.b300x250} onStateChange={updateState} /></div>}
+      <p role="status" aria-live="polite" className="sg-sub">
+        {state === 'loading' ? 'Chargement de la publicité…' : state === 'error' ? 'Aucune publicité disponible. Patientez puis réessayez, ou choisissez un abonnement sans publicités.' : left > 0 ? `Gardez la publicité visible pendant encore ${left} s.` : 'Publicité affichée. Vous pouvez continuer.'}
+      </p>
+      {state === 'ready' && left === 0 && <button type="button" className="sg-card best" onClick={() => onDone(true)}>Continuer</button>}
+      {state === 'error' && <button type="button" className="sg-card" onClick={() => { setElapsed(0); setState(BANNERS_ENABLED ? 'loading' : 'error'); setAttempt((value) => value + 1); }}>Réessayer la publicité</button>}
+      <button type="button" className="sg-card" onClick={onRemoveAds}>Choisir un abonnement sans publicités</button>
+      <button type="button" className="sg-card" onClick={() => onDone(false)}>Annuler l’action</button>
+    </div>
+  </Modal>;
 }

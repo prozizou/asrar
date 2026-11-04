@@ -1,3 +1,4 @@
+import { mockActionCreative } from './helpers/ad-creative';
 import { test, expect } from './fixtures';
 import { MAGIC_STAR_LINES } from '../../lib/magicStar';
 
@@ -105,13 +106,13 @@ test('étoile vide, sept sommes instantanées, chiffres contenus, copie et expor
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
 });
 
-test('compte gratuit : pub au clic, compte à rebours de 5 s, puis le générateur étoile', async ({ page, login }) => {
-  await login('free'); await page.goto('/wafq/carre/6');
+test('compte gratuit : bloc publicitaire visible avant le générateur étoile', async ({ page, login }) => {
+  await login('free'); await mockActionCreative(page); await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
   const popup = page.waitForEvent('popup');
   await page.getByRole('radio', { name: 'Étoile', exact: true }).check();
-  await popup;
+  await (await popup).close();
   const ad = page.getByRole('dialog', { name: 'Publicité' });
-  await expect(ad.getByRole('status')).toContainText('Votre résultat arrive dans');
+  await expect(ad.getByRole('status')).toContainText('Gardez la publicité visible');
   await expect(ad.getByRole('button', { name: 'Continuer' })).toHaveCount(0);
   await expect(page.getByLabel('Constante magique', { exact: true })).toHaveCount(0);
   await ad.getByRole('button', { name: 'Continuer' }).click({ timeout: 7000 });

@@ -3,7 +3,7 @@
 // fonctions ensureAccess()/getSubscriptionLevel() éparpillées. Le portail
 // d'abonnement est rendu ici et piloté par un simple état React.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { checkAccess, levelFromStatus } from '@/lib/access';
+import { checkAccess, levelFromStatus, isAccessCacheValid } from '@/lib/access';
 import { consumeAdCredit, isUnityAdsAvailable, showNativeActionAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
@@ -24,10 +24,12 @@ export default function AccessProvider({ children }) {
   // Pub au clic bloquée par le navigateur (lib/actionAd.ts) : l'action est
   // refusée et cette fenêtre explique comment autoriser les pop-ups.
   const [adBlocked, setAdBlocked] = useState(false);
-  // Pub ouverte par le clic en cours, pas encore « attendue » : ensureAccess()
-  // affiche alors AdCountdown (bannière 300x250 + compte à rebours) avant de
-  // laisser l'action s'exécuter. Valeur = instant d'ouverture de la pub.
+  // Une tentative publicitaire ne donne pas d’accès : le bloc chargé doit
+  // rester visible avant que l’action en cours puisse continuer.
   const pendingAdAt = useRef(0);
+  const actionBusy = useRef(false), adResolve = useRef(null), userRef = useRef(user);
+  const sessionVersion = useRef(0);
+  userRef.current = user;
   const [countdown, setCountdown] = useState(null); // { start, resolve } | null
   const [gateReason, setGateReason] = useState(null); // null | 'level' (palier insuffisant)
   // Publicité récompensée proposée dans le portail (APK, sans abonnement,
@@ -99,7 +101,7 @@ export default function AccessProvider({ children }) {
       setAdFree(false);
       return false;
     }
-    const cached = Date.now() - cacheAt.current < 60000 ? cache.current : null;
+    const cached = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
     const status = cached || (await checkAccess(user));
     // Ne met en cache QUE le résultat d'une lecture réussie — cf. ensureAccess.
     if (!status.unavailable) {
@@ -134,59 +136,71 @@ export default function AccessProvider({ children }) {
   // utilisation — un crédit déjà gagné est utilisé directement, sans portail.
   // Le cache expire après 60 s. Une panne réseau/serveur n'est jamais mise
   // en cache comme un refus d'abonnement ; l'utilisateur peut réessayer.
-  // Pub obligatoire au clic (lib/actionAd.ts) pour un visiteur sans
-  // abonnement valide : false si le navigateur a bloqué l'onglet — l'action
-  // ne doit alors PAS s'exécuter. À appeler AVANT tout await : le navigateur
-  // n'autorise l'ouverture d'un onglet que pendant le clic.
+  // Réserver l’onglet pendant le clic, puis valider séparément l’affichage
+  // dans la page. Un échec d’ouverture n’est jamais une autorisation.
   const requireActionAd = useCallback(() => {
-    if (adFree !== false) return true;
+    if (adFree === true) return true;
+    if (adFree === null) { setAdBlocked({ reason: 'checking' }); refreshAccess().catch(() => {}); return false; }
     const result = openActionAd();
-    if (result === 'opened') pendingAdAt.current = Date.now();
-    if (result !== 'blocked') return true;
-    setAdBlocked(true);
-    return false;
-  }, [adFree]);
+    // A blocked popup may fall back to the mandatory on-page ad. Neither
+    // result grants access: AdCountdown still requires a visible creative.
+    if (result !== 'native') pendingAdAt.current = Date.now();
+    return true;
+  }, [adFree, refreshAccess]);
 
-  // Délai minimal avant le résultat (AD_WAIT_MS, components/AdCountdown.js) :
-  // fermer l'onglet de pub tout de suite ne fait gagner aucun temps. Le temps
-  // passé sur la pub compte dans ce délai. Résout quand l'utilisateur touche
-  // « Continuer », à la fin du compte à rebours.
   const waitForAd = useCallback(() => {
     const start = pendingAdAt.current;
     pendingAdAt.current = 0;
-    if (!start) return Promise.resolve();
-    return new Promise((resolve) => setCountdown({ start, resolve }));
+    if (!start) { setAdBlocked({ reason: 'unavailable' }); return Promise.resolve(false); }
+    return new Promise((resolve) => { adResolve.current = resolve; setCountdown({ start, resolve }); });
   }, []);
 
-  const ensureAccess = useCallback(
-    async (minLevel = 0) => {
+  const ensureAccess = useCallback(async (minLevel = 0) => {
+    if (actionBusy.current || !user) return false;
+    actionBusy.current = true;
+    const session = sessionVersion.current;
+    try {
       if (!requireActionAd()) return false;
-      await waitForAd();
-      // Application Android : publicité plein écran Unity (fréquence limitée,
-      // lib/unityAds.js) — sans effet sur le site, où la pub au clic s'applique.
-      if (adFree === false) await showNativeActionAd();
-      if (!user) return false;
-      let status = Date.now() - cacheAt.current < 60000 ? cache.current : null;
+      let status = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
       if (!status) {
         status = await checkAccess(user);
-        if (!status.unavailable) { cache.current = status; cacheAt.current = Date.now(); }
+        if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
+        if (!status.unavailable) { cache.current = status; cacheAt.current = Date.now(); setAdFree(!!status.adFree); }
       }
+      if (status.unavailable) { pendingAdAt.current = 0; openGate('network'); return false; }
+      if (!status.adFree) {
+        const native = window.Capacitor?.isNativePlatform?.();
+        if (native) {
+          const shown = await showNativeActionAd();
+          if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
+          if (!shown.ok) { setAdBlocked(shown); return false; }
+        } else {
+          if (!pendingAdAt.current) pendingAdAt.current = Date.now();
+          if (!(await waitForAd())) return false;
+        }
+      } else { pendingAdAt.current = 0; }
+      if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
-      if (status.unavailable) {
-        openGate('network');
-        return false;
-      }
-      // Publicité : jamais pour un palier (forfait 1 An), ni pour un abonné.
       const adEligible = !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
       if (adEligible && status.adCredits > 0 && (await spendAdCredit())) return true;
-      const result = new Promise((resolve) => {
+      return await new Promise((resolve) => {
         openGate(status.allowed && minLevel ? 'level' : null, { adEligible });
         pendingGate.current = resolve;
       });
-      return result;
-    },
-    [user, adFree, requireActionAd, waitForAd, openGate, spendAdCredit]
-  );
+    } catch {
+      setAdBlocked({ reason: 'unavailable' });
+      return false;
+    } finally { actionBusy.current = false; }
+  }, [user, requireActionAd, waitForAd, openGate, spendAdCredit]);
+
+  useEffect(() => {
+    setCountdown(null); setAdBlocked(false); pendingAdAt.current = 0;
+    return () => {
+      sessionVersion.current += 1;
+      adResolve.current?.(false); adResolve.current = null;
+      pendingGate.current?.(false); pendingGate.current = null;
+    };
+  }, [user?.uid]);
 
   const getLevel = useCallback(() => levelFromStatus(cache.current), []);
   // Vide le cache ET redéclenche tout de suite le contrôle (ex. après un
@@ -206,33 +220,38 @@ export default function AccessProvider({ children }) {
       {children}
       {countdown && (
         <AdCountdown
-          start={countdown.start}
-          onDone={() => {
+          onDone={(completed) => {
             const { resolve } = countdown;
             // Envoi groupé et rare des compteurs (respecte le réglage « statistiques »
             // du compte : le serveur les ignore sinon).
             recordAdOutcome((adStats) => apiPost('track', { type: 'ad_stats', adStats }).catch(() => {}));
-            setCountdown(null);
-            resolve();
+            setCountdown(null); adResolve.current = null;
+            resolve(completed === true);
           }}
-          onRemoveAds={() => openGate('noads')}
+          onRemoveAds={() => { countdown.resolve(false); adResolve.current = null; setCountdown(null); openGate('noads'); }}
         />
       )}
       {adBlocked && (
-        <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité bloquée">
+        <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité nécessaire">
           <div className="sg-box">
             <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setAdBlocked(false)}>
               ✕
             </button>
             <div style={{ fontSize: '2.4rem' }}>📢</div>
-            <h2>Publicité bloquée</h2>
+            <h2>Une publicité est nécessaire</h2>
             <p className="sg-sub">
-              ASRAR PRO est gratuit grâce à la publicité : chaque action ouvre une publicité dans un nouvel onglet.
-              Votre navigateur l’a bloquée. Autorisez les fenêtres pop-up pour asrarpro.com (icône à droite de la
-              barre d’adresse, ou Paramètres du site → Pop-ups et redirections), puis réessayez.
+              {adBlocked.reason === 'blocked'
+                ? 'La publicité n’a pas pu être ouverte. Autorisez les fenêtres pop-up, puis réessayez l’action.'
+                : adBlocked.reason === 'checking'
+                ? 'Vérification de votre abonnement en cours. Patientez puis réessayez l’action.'
+                : adBlocked.reason === 'update_required'
+                ? 'Mettez à jour l’application pour valider l’affichage des publicités, ou choisissez un abonnement sans publicités.'
+                : adBlocked.retryAfterMs
+                ? `La prochaine publicité sera disponible dans environ ${Math.ceil(adBlocked.retryAfterMs / 1000)} secondes. Patientez puis réessayez l’action, ou choisissez un abonnement sans publicités.`
+                : 'Aucune publicité n’a été validée pour cette action. Patientez puis réessayez, ou choisissez un abonnement sans publicités.'}
             </p>
             <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={() => setAdBlocked(false)}>
-              J’ai compris
+              Fermer et réessayer plus tard
             </button>
             <button
               type="button"

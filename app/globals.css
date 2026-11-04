@@ -2120,3 +2120,6 @@ html[data-theme="light"] {
 .account-subscription-plans .sg-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
 .account-subscription-plans .sg-note { color: var(--text-muted); }
 .sg-box .subscription-whatsapp { background: #332741; color: #fff; }
+.action-ad-area { display: flex; justify-content: center; margin: 12px auto; width: 300px; max-width: 100%; overflow: hidden; }
+.sg-box .action-ad-area + .sg-sub { margin-top: 12px; }
+.sg-box:has(.action-ad-area) > button { display: block; width: 100%; min-height: 44px; margin-top: 10px; }
