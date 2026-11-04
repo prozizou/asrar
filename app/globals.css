@@ -2122,8 +2122,23 @@ html[data-theme="light"] {
 .subscription-plans .subscription-steps { list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 12px; padding: 0 0 18px; margin: 0 0 20px; border-bottom: 1px solid var(--glass-border); }
 .subscription-plans .subscription-steps li { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--text-muted); font-size: .8rem; }
 .subscription-steps li > span { display: grid; place-items: center; width: 23px; height: 23px; flex-shrink: 0; border-radius: 50%; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: .72rem; font-weight: 700; }
-.subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; align-items: start; }
-.subscription-plan { min-width: 0; padding: 20px; border: 1px solid var(--glass-border); border-radius: 18px; background: var(--surface-2); }
+.subscription-carousel-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; font-size: .85rem; font-weight: 600; }
+.subscription-carousel-count { color: var(--text-dim); font-size: .75rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+.subscription-carousel { display: flex; gap: 14px; align-items: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 8px; overscroll-behavior-x: contain; scrollbar-width: none; padding: 12px 8px 16px; margin-inline: -8px; border-radius: 18px; }
+.subscription-carousel::-webkit-scrollbar { display: none; }
+.subscription-plan { min-width: 0; flex: 0 0 72%; padding: 24px; scroll-snap-align: center; border: 1px solid var(--glass-border); border-radius: 18px; background: var(--surface-2); opacity: .68; transform: scale(.97); transform-origin: center; transition: transform .25s ease, opacity .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.subscription-plan.is-active { opacity: 1; transform: scale(1); border-color: color-mix(in srgb, var(--accent) 65%, var(--glass-border)); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 12%, transparent); }
+.subscription-plan:focus-within { opacity: 1; }
+.subscription-plans .subscription-carousel-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px; }
+.subscription-plans .subscription-carousel-arrow, .subscription-plans .subscription-carousel-dots button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-height: 44px; flex-shrink: 0; padding: 0; margin: 0; border: 1px solid var(--glass-border); border-radius: 50%; background: var(--surface-2); color: var(--text-main); }
+.subscription-plans .subscription-carousel-arrow:hover { transform: none; box-shadow: none; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.subscription-plans .subscription-carousel-arrow:disabled { opacity: .3; cursor: default; border-color: var(--glass-border); background: var(--surface-2); }
+.subscription-carousel-dots { display: flex; align-items: center; }
+.subscription-plans .subscription-carousel-dots button { border: 0; border-radius: 10px; background: transparent; }
+.subscription-plans .subscription-carousel-dots button:hover { transform: none; box-shadow: none; background: var(--surface-2); }
+.subscription-carousel-dots button > span { width: 7px; height: 7px; border-radius: 20px; background: var(--text-dim); opacity: .5; transition: width .25s ease, background .25s ease, opacity .25s ease; }
+.subscription-carousel-dots button[aria-pressed="true"] > span { width: 26px; opacity: 1; background: var(--accent); }
+.subscription-plans .subscription-carousel-hint { margin: 7px 0 0; color: var(--text-dim); font-size: .72rem; text-align: center; }
 .subscription-plan.best { border-color: var(--accent); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 9%, transparent), var(--surface-2)); }
 .subscription-plan.is-selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); border-color: var(--accent); }
 .subscription-plan h3, .subscription-plan p { margin: 0; }
@@ -2161,8 +2176,7 @@ html[data-theme="light"] {
 @media (max-width: 600px) {
   .app-dialog.sg-overlay:has(.subscription-dialog) { padding: calc(12px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal)); }
   .subscription-dialog { padding: 28px 16px 20px; border-radius: 20px; }
-  .subscription-grid { grid-template-columns: 1fr; gap: 12px; }
-  .subscription-plan { padding: 18px; }
+  .subscription-plan { flex-basis: 88%; padding: 18px; }
   .subscription-pricing { margin-top: 10px; }
   .subscription-plan .subscription-price { font-size: 1.8rem; }
 }

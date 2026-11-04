@@ -16,6 +16,30 @@ async function openPlans(page: any) {
   await page.getByText('Choisir ou renouveler un abonnement sans publicités', { exact: true }).click();
 }
 
+test('le carrousel mobile permet de comparer les formules avec les flèches, les repères et le clavier', async ({ page, login }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login('free'); await openPlans(page);
+  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
+  const previous = page.getByRole('button', { name: 'Formule précédente' });
+  const next = page.getByRole('button', { name: 'Formule suivante' });
+  await expect(previous).toBeDisabled();
+  await next.click();
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
+  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
+  await expect(next).toBeDisabled();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
+  await carousel.focus(); await page.keyboard.press('Home');
+  await expect(previous).toBeDisabled();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('End');
+  await expect(next).toBeDisabled();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await previous.click();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
+});
+
 test('les trois formules ouvrent les liens Wave exacts sans activer un abonnement', async ({ page, login, postAs }) => {
   await login('free'); await openPlans(page);
   await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Wave test</title>' }));
