@@ -16,7 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Publicités récompensées Unity Ads — alternative à l'abonnement (lib/unityAds.js).
+ * Publicités Unity Ads (lib/unityAds.js) : plein écran aux actions des
+ * visiteurs sans abonnement (showInterstitial), et récompensées (showRewarded).
  * Unity n'a pas de SDK web : la WebView appelle ce plugin, qui affiche la
  * publicité en plein écran et indique si elle a été regardée jusqu'au bout.
  *
@@ -52,6 +53,67 @@ public class UnityAdsPlugin extends Plugin {
             }
             loadAndShow(call, placementId, serverId);
         });
+    }
+
+    /**
+     * Publicité plein écran (interstitielle) : résout { shown } quand elle est
+     * fermée, ou { shown: false, reason } si aucune n'est disponible — jamais
+     * d'erreur bloquante, l'action de l'utilisateur doit continuer.
+     */
+    @PluginMethod
+    public void showInterstitial(PluginCall call) {
+        String gameId = call.getString("gameId");
+        String placementId = call.getString("placementId");
+        boolean testMode = Boolean.TRUE.equals(call.getBoolean("testMode", false));
+        if (gameId == null || gameId.isEmpty() || placementId == null || placementId.isEmpty()) {
+            call.reject("gameId et placementId sont requis", "invalid");
+            return;
+        }
+        ensureInitialized(gameId, testMode, (error) -> {
+            if (error != null) {
+                resolveShown(call, false, "init");
+                return;
+            }
+            UnityAds.load(placementId, new IUnityAdsLoadListener() {
+                @Override
+                public void onUnityAdsAdLoaded(String loadedPlacementId) {
+                    Activity activity = getActivity();
+                    if (activity == null) {
+                        resolveShown(call, false, "background");
+                        return;
+                    }
+                    activity.runOnUiThread(() -> UnityAds.show(activity, loadedPlacementId, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                        @Override
+                        public void onUnityAdsShowFailure(String id, UnityAds.UnityAdsShowError err, String message) {
+                            resolveShown(call, false, "show");
+                        }
+
+                        @Override
+                        public void onUnityAdsShowStart(String id) {}
+
+                        @Override
+                        public void onUnityAdsShowClick(String id) {}
+
+                        @Override
+                        public void onUnityAdsShowComplete(String id, UnityAds.UnityAdsShowCompletionState state) {
+                            resolveShown(call, true, null);
+                        }
+                    }));
+                }
+
+                @Override
+                public void onUnityAdsFailedToLoad(String failedPlacementId, UnityAds.UnityAdsLoadError err, String message) {
+                    resolveShown(call, false, err == UnityAds.UnityAdsLoadError.NO_FILL ? "no_fill" : "load");
+                }
+            });
+        });
+    }
+
+    private void resolveShown(PluginCall call, boolean shown, String reason) {
+        JSObject ret = new JSObject();
+        ret.put("shown", shown);
+        if (reason != null) ret.put("reason", reason);
+        call.resolve(ret);
     }
 
     private void ensureInitialized(String gameId, boolean testMode, InitCallback callback) {

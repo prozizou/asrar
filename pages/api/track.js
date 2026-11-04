@@ -14,6 +14,7 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { resolveCountry } = require("../../lib/countries");
+const { platformOf } = require("../../lib/platform");
 
 // Géolocalisation IP : Vercel ajoute ces en-têtes à toute requête passée par
 // son réseau edge (aucune clé/API tierce, aucun coût, aucune permission
@@ -86,7 +87,8 @@ export default async function handler(req, res) {
     // 1) Compteur de visite (unique par utilisateur et par jour, + total via n).
     const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
     await vref.child("n").transaction((c) => (c || 0) + 1);
-    await vref.update({ last: now, email: user.email, ...(countryCode ? { country, countryCode } : {}) });
+    // platform : catégorie d'appareil (lib/platform.js), lue par l'administration.
+    await vref.update({ last: now, email: user.email, platform: platformOf(req.headers["user-agent"]), ...(countryCode ? { country, countryCode } : {}) });
 
     // 2) Fil d'activité global (les N dernières actions visibles côté admin).
     await db.ref("activity_feed").push({

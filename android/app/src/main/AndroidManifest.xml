@@ -28,6 +28,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Ouverture depuis le site (components/AndroidAppGate.js,
+                 lib/androidApp.js) : intent://open#Intent;scheme=asrarpro;… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="asrarpro" android:host="open" />
+            </intent-filter>
         </activity>
 
         <!-- Petite icône des notifications push (barre de statut) : silhouette

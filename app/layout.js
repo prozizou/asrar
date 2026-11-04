@@ -18,7 +18,7 @@ import CosmicBackground from '@/components/CosmicBackground';
 import InstallBanner from '@/components/InstallBanner';
 import KeyboardInsets from '@/components/KeyboardInsets';
 import NativeUpdateGate from '@/components/NativeUpdateGate';
-import NativeWebRedirect from '@/components/NativeWebRedirect';
+import AndroidAppGate from '@/components/AndroidAppGate';
 
 // Site public — sert de base aux URLs ABSOLUES des balises Open Graph
 // ci-dessous (metadataBase) : sans ça, Next.js émettrait og:image en chemin
@@ -117,8 +117,8 @@ export default function RootLayout({ children }) {
         <KeyboardInsets />
         {/* Hors de PwaGate/Providers : bloque aussi avant connexion. */}
         <NativeUpdateGate />
-        {/* APK uniquement : invite à passer à la version web (PWA). */}
-        <NativeWebRedirect />
+        {/* Site ouvert sur Android : ouvrir l'application ou Google Play. */}
+        <AndroidAppGate />
         <PwaGate>
           <Providers>{children}</Providers>
         </PwaGate>
