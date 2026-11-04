@@ -1,3 +1,12 @@
+## SW v46.43 — Bannières réactivées
+
+- Bannières Adsterra (bas des pages, colonnes latérales, fenêtre de 5 s) et Native Banner réactivés à la demande du propriétaire ; seules les pubs adultes restent bloquées chez Adsterra. Coupables sans code : `NEXT_PUBLIC_ADSTERRA_BANNERS=0`, `NEXT_PUBLIC_ADSTERRA_NATIVE_SRC=` (vide).
+
+## SW v46.42 — Relevé des blocages de la politique de sécurité
+
+- La politique de sécurité (CSP, `lib/csp.js`) signale désormais chaque blocage (`report-uri /api/csp-report`) sans rien débloquer. `pages/api/csp-report.js` agrège par jour, type et domaine dans `analytics/csp/{jour}` (aucune URL complète, aucune donnée personnelle), avec limite de débit et plafond quotidien.
+- But : savoir quels domaines des régies publicitaires (Social Bar, mesures d'affichage des bannières…) sont bloqués chez les vrais visiteurs, avant d'assouplir la politique en connaissance de cause.
+
 ## SW v46.41 — Bannières coupées
 
 - Bannières Adsterra (bas des pages, colonnes latérales, fenêtre de 5 s) et Native Banner coupés : ils affichaient des annonces de casino et de paris et n'étaient presque pas comptés par Adsterra. Restent le Smartlink (pub au clic et lien « Sponsorisé ») et le Social Bar.

@@ -17,16 +17,12 @@
 //                                         sur les boutons d'action
 //                                         (lib/actionAd.js) — les deux
 //                                         ouvriraient deux onglets au même clic.
-//  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. COUPÉ par
-//                                         défaut (annonces de casino) ; pour le
-//                                         réactiver : https://bicea.org/21/
-//                                         00684bfc5a8802ccbed95bf0c1fa25a3. Sa clé
+//  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
 //                                         (dernier segment) nomme le conteneur
 //                                         « container-<clé> » attendu.
-//  - NEXT_PUBLIC_ADSTERRA_BANNERS=1     : réactive les bannières (coupées par
+//  - NEXT_PUBLIC_ADSTERRA_BANNERS=0     : coupe les bannières (actives par
 //                                         défaut, voir components/AdsterraBanner.js).
-// Restent actifs : le Smartlink (pub au clic et lien « Sponsorisé ») et le
-// Social Bar. Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
+// Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
 import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
 import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
@@ -36,7 +32,7 @@ const env = (value, fallback) => (value === undefined ? fallback : value);
 
 const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_HOST}/14/56ff6c976d7d264a3439f37c7d6ca8e5`);
 const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, '');
-const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, '');
+const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
 const NATIVE_KEY = NATIVE_SRC.split('/').pop();
 // Smartlink : simple lien (pas de script), affiché par <SponsoredLink /> sur
 // la page 404 et sous les résultats des calculs (Combinaisons, Wafq,
