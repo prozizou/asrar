@@ -6,7 +6,8 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 30000,
-  globalTimeout: 300000,
+  // Full coverage now includes 92 serial scenarios and visible ad countdowns.
+  globalTimeout: 600000,
   globalSetup: './e2e/authenticated/setup.cjs',
   reporter: process.env.CI ? [['github'], ['html', { outputFolder: 'playwright-report-auth', open: 'never' }]] : 'list',
   outputDir: 'test-results/authenticated',
