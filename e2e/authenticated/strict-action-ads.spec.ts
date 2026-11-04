@@ -84,15 +84,19 @@ for (const result of [{ shown: false, reason: 'no_fill' }, { shown: true, comple
       (window as any).Capacitor = {
         isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
         PluginHeaders: [{ name: 'UnityAds', methods: [{ name: 'showInterstitial', rtype: 'promise' }] }],
-        nativePromise: async () => reply,
+        nativePromise: async () => { (window as any).__nativeActionCalls = ((window as any).__nativeActionCalls || 0) + 1; return reply; },
       };
     }, result);
-    await calculator(page, login); await page.evaluate(() => { const original = Date.now; Date.now = () => original() + 61000; });
+    await calculator(page, login);
+    await page.evaluate(() => localStorage.setItem('asrar_native_ad_at', String(Date.now())));
     await page.getByRole('button', { name: 'Calculer', exact: true }).click();
     if (result.completed === true) {
       await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
+      const first = await page.locator('.kz-grid').innerText();
       await page.getByLabel('Nombre', { exact: true }).fill('222'); await page.getByRole('button', { name: 'Calculer', exact: true }).click();
-      await expect(page.getByRole('dialog', { name: 'Publicité nécessaire' })).toContainText('prochaine publicité');
+      await expect(page.locator('.kz-grid')).not.toHaveText(first);
+      await expect(page.getByRole('dialog', { name: 'Publicité nécessaire' })).toHaveCount(0);
+      expect(await page.evaluate(() => (window as any).__nativeActionCalls)).toBe(2);
     } else {
       await expect(page.getByRole('dialog', { name: 'Publicité nécessaire' })).toBeVisible(); await expect(page.locator('.kz-grid')).toHaveCount(0);
     }
