@@ -25,6 +25,11 @@ test('le compte désigné copie les parties numérotées et dispose d’une repr
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => { (window as any).copiedRecipe = text; } } });
   });
+  // A cold shared link must wait for the first access reply, even on a slow connection.
+  await page.route('**/api/check-access', async (route) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    await route.continue();
+  });
   await login('recipeOwner'); await page.goto('/asrar?cat=protection&item=copy-fixture');
   const copy = page.getByRole('button', { name: 'Copier la recette', exact: true });
   await expect(copy).toBeVisible(); await expect(page.getByRole('button', { name: 'PDF', exact: true })).toHaveCount(0);

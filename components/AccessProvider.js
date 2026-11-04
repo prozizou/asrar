@@ -138,15 +138,16 @@ export default function AccessProvider({ children }) {
   // en cache comme un refus d'abonnement ; l'utilisateur peut réessayer.
   // Réserver l’onglet pendant le clic, puis valider séparément l’affichage
   // dans la page. Un échec d’ouverture n’est jamais une autorisation.
-  const requireActionAd = useCallback(() => {
-    if (adFree === true) return true;
-    if (adFree === null) { setAdBlocked({ reason: 'checking' }); refreshAccess().catch(() => {}); return false; }
+  const requireActionAd = useCallback((knownStatus) => {
+    const status = knownStatus || (isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null);
+    if (!status || status.unavailable) { setAdBlocked({ reason: 'checking' }); refreshAccess().catch(() => {}); return false; }
+    if (status.adFree === true) return true;
     const result = openActionAd();
     // A blocked popup may fall back to the mandatory on-page ad. Neither
     // result grants access: AdCountdown still requires a visible creative.
     if (result !== 'native') pendingAdAt.current = Date.now();
     return true;
-  }, [adFree, refreshAccess]);
+  }, [refreshAccess]);
 
   const waitForAd = useCallback(() => {
     const start = pendingAdAt.current;
@@ -160,8 +161,11 @@ export default function AccessProvider({ children }) {
     actionBusy.current = true;
     const session = sessionVersion.current;
     try {
-      if (!requireActionAd()) return false;
       let status = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
+      // Reserve the popup synchronously when access is known. A fresh deep
+      // link must await its first subscription check instead of abandoning it.
+      const adPrepared = !!status;
+      if (adPrepared && !requireActionAd(status)) return false;
       if (!status) {
         status = await checkAccess(user);
         if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
@@ -169,6 +173,7 @@ export default function AccessProvider({ children }) {
       }
       if (status.unavailable) { pendingAdAt.current = 0; openGate('network'); return false; }
       if (!status.adFree) {
+        if (!adPrepared && !requireActionAd(status)) return false;
         const native = window.Capacitor?.isNativePlatform?.();
         if (native) {
           const shown = await showNativeActionAd();

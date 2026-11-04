@@ -1,5 +1,18 @@
 import { test, expect } from './fixtures';
 import { mockActionCreative } from './helpers/ad-creative';
+const { app } = require('../../server/grant');
+const { accounts } = require('./accounts.cjs');
+const freeKey = accounts.free.email.replace(/\./g, ',');
+const freePaths = ['purchased_user/' + freeKey, 'allowedUsers/' + freeKey];
+let savedFree: Record<string, unknown> = {};
+// Other suites exercise subscription activation with this fixture account.
+// Strict ad scenarios must begin with an actually unsubscribed account.
+test.beforeEach(async () => {
+  const db = app().database(); savedFree = {};
+  for (const path of freePaths) savedFree[path] = (await db.ref(path).once('value')).val();
+  await db.ref().update(Object.fromEntries(freePaths.map(path => [path, null])));
+});
+test.afterEach(async () => { await app().database().ref().update(savedFree); });
 
 async function calculator(page: any, login: any, role = 'free') {
   await login(role); await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');

@@ -2,6 +2,8 @@
 
 - Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Identifiants réels renseignés et médiation activée dans la configuration locale ; diffusion sur appareil à valider.
 
+- Les liens directs vers une recette attendent la vérification initiale de l’abonnement, sans bloquer un abonné au démarrage.
+
 - Publicité nécessaire avant chaque action contrôlée : aucune continuation sur absence, erreur ou vidéo interrompue. Contrôle de visibilité du bloc web, attente ou abonnement ; messages WhatsApp aérés et références courtes.
 
 - Retrait du SDK et du plugin Google Play Billing, ainsi que des achats individuels dans l’interface. Les anciennes demandes publiques de paiement répondent 410. Historique et remboursements conservés côté serveur.
