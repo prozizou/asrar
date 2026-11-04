@@ -41,6 +41,7 @@ on:
 
 permissions:
   contents: read
+  checks: read
 
 concurrency:
   group: android-release
@@ -118,6 +119,33 @@ jobs:
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Vérifier les contrôles de cette révision avant publication
+        if: github.event_name == 'push' || inputs.upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYCHECKS'
+          import json, os, subprocess, time
+          endpoint = f"repos/{os.environ['GITHUB_REPOSITORY']}/commits/{os.environ['GITHUB_SHA']}/check-runs?per_page=100"
+          required = {'checks', 'authenticated'}
+          for attempt in range(80):
+              runs = json.loads(subprocess.check_output(['gh', 'api', endpoint], text=True))['check_runs']
+              latest = {}
+              for run in runs:
+                  if run['name'] in required and run['name'] not in latest:
+                      latest[run['name']] = run
+              failed = [name for name, run in latest.items() if run['status'] == 'completed' and run['conclusion'] != 'success']
+              if failed:
+                  raise SystemExit('Publication bloquée : contrôles en échec : ' + ', '.join(failed))
+              if required <= latest.keys() and all(latest[name]['conclusion'] == 'success' for name in required):
+                  print('Contrôles web et parcours authentifiés réussis pour la révision signée.')
+                  break
+              print('Attente des contrôles de la révision signée...', flush=True)
+              time.sleep(15)
+          else:
+              raise SystemExit('Contrôles incomplets : aucune publication effectuée.')
+          PYCHECKS
 
       - name: Envoi sur la Play Console
         if: github.event_name == 'push' || inputs.upload
