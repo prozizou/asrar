@@ -84,11 +84,10 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
         <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
           ✕
         </button>
-        <p className="subscription-eyebrow">ASRAR PRO · ABONNEMENTS</p>
-        <h2>{isNoAdsGate ? 'ASRAR PRO sans publicité' : isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
+        <h2>{isNoAdsGate ? 'Retirer les publicités' : isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
         <p className="sg-sub">
           {isNoAdsGate
-            ? "Gardez tous vos modules, profitez-en sans interruption publicitaire. L’application reste gratuite avec publicités."
+            ? "Choisissez une durée, puis Wave ou WhatsApp."
             : isLevelGate
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
             : "Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration."}
