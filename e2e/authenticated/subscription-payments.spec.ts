@@ -16,6 +16,52 @@ async function openPlans(page: any) {
   await page.getByText('Choisir ou renouveler un abonnement sans publicités', { exact: true }).click();
 }
 
+test('le carrousel mobile permet de comparer les formules avec les flèches, les repères et le clavier', async ({ page, login }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login('free'); await openPlans(page);
+  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
+  const previous = page.getByRole('button', { name: 'Formule précédente' });
+  const next = page.getByRole('button', { name: 'Formule suivante' });
+  await expect(previous).toBeDisabled();
+  await next.click();
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
+  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
+  await expect(next).toBeDisabled();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
+  await carousel.focus(); await page.keyboard.press('Home');
+  await expect(previous).toBeDisabled();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('End');
+  await expect(next).toBeDisabled();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await previous.click();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
+});
+
+test('un balayage tactile peut être suivi immédiatement du choix d’une autre formule', async ({ page, login }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login('free'); await openPlans(page);
+  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
+  await carousel.scrollIntoViewIfNeeded();
+  const bounds = (await carousel.boundingBox())!;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+  const y = bounds.y + 85, start = bounds.x + bounds.width - 25, end = bounds.x + 30;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start, y }] });
+  for (let step = 1; step <= 12; step++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start + (end - start) * step / 12, y }] });
+    await new Promise((resolve) => setTimeout(resolve, 35));
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
+  await expect(page.getByRole('button', { name: 'Formule suivante' })).toBeDisabled();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
+});
+
 test('les trois formules ouvrent les liens Wave exacts sans activer un abonnement', async ({ page, login, postAs }) => {
   await login('free'); await openPlans(page);
   await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Wave test</title>' }));
