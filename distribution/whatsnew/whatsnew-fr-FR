@@ -1,2 +1,4 @@
-Version de test interne : ajout de Google Play Billing pour préparer les achats de secrets à l’unité.
-Cette version contient l’autorisation BILLING. Les ventes ne sont pas activées.
+Nouveautés de la version 8.0.1 :
+• Correction de l’ouverture de WhatsApp sur Android pour le Marché, les commandes et l’assistance.
+• Accès gratuit aux fonctionnalités avec publicités. Les abonnements valides retirent les publicités.
+• Ouverture de l’application Android depuis le site web.
