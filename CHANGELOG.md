@@ -1,6 +1,6 @@
 ## Android 8.0.2 / SW v46.48 — Abonnements WhatsApp et Wave
 
-- Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Activation suspendue au renseignement de l’App ID AdMob complet.
+- Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Identifiants réels renseignés et médiation activée dans la configuration locale ; diffusion sur appareil à valider.
 
 - Publicité nécessaire avant chaque action contrôlée : aucune continuation sur absence, erreur ou vidéo interrompue. Contrôle de visibilité du bloc web, attente ou abonnement ; messages WhatsApp aérés et références courtes.
 

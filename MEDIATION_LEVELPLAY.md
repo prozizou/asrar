@@ -11,7 +11,8 @@ complet : l’action attend affichage + récompense + fermeture.
 Les identifiants publics sont dans android/levelplay.properties (ou variables ASRAR_
 portant les mêmes noms). App Key 237ff501d, unité récompensée evijfgcicz1kfdt9.
 L’interstitiel tvah9k0xm07abinp reste dans la console pour un futur usage approprié.
-L’App ID AdMob complet reste à renseigner. Tant qu’il manque, l’activation est false.
+L’App ID AdMob est ca-app-pub-3895250961868134~5473242896.
+LEVELPLAY_ENABLED=true dans la configuration locale ; aucune publication effectuée.
 Le build refuse une activation avec des identifiants absents ou invalides.
 Aucun secret réseau, OAuth ou clé de rappel serveur n’est inclus dans l’APK.
 
@@ -70,3 +71,7 @@ La compilation de validation du chemin activé utilise ponctuellement l’App ID
 Google de démonstration via une variable de commande, sans modifier la configuration
 persistée et sans installer ni diffuser l’APK. Cet artefact n’est pas une version
 prête pour les utilisateurs. Recompiler avec les identifiants réels avant test appareil.
+
+Configuration réelle ensuite compilée en APK debug avec succès et tests Android réussis.
+App ID AdMob dans le manifeste APK et LEVELPLAY_ENABLED=true vérifiés.
+Le test de diffusion sur téléphone reste à effectuer ; aucun APK publié.
