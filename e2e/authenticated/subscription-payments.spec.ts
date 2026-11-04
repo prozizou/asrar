@@ -16,61 +16,34 @@ async function openPlans(page: any) {
   await page.getByText('Choisir ou renouveler un abonnement sans publicités', { exact: true }).click();
 }
 
-test('le carrousel mobile permet de comparer les formules avec les flèches, les repères et le clavier', async ({ page, login }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await login('free'); await openPlans(page);
-  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
-  const previous = page.getByRole('button', { name: 'Formule précédente' });
-  const next = page.getByRole('button', { name: 'Formule suivante' });
-  await expect(previous).toBeDisabled();
-  await next.click();
-  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
-  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
-  await expect(next).toBeDisabled();
-  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
-  await carousel.focus(); await page.keyboard.press('Home');
-  await expect(previous).toBeDisabled();
-  await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
-  await page.keyboard.press('End');
-  await expect(next).toBeDisabled();
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await previous.click();
-  await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
-});
-
-test('un balayage tactile peut être suivi immédiatement du choix d’une autre formule', async ({ page, login }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await login('free'); await openPlans(page);
-  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
-  await carousel.scrollIntoViewIfNeeded();
-  const bounds = (await carousel.boundingBox())!;
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
-  const y = bounds.y + 85, start = bounds.x + bounds.width - 25, end = bounds.x + 30;
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start, y }] });
-  for (let step = 1; step <= 12; step++) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start + (end - start) * step / 12, y }] });
-    await new Promise((resolve) => setTimeout(resolve, 35));
-  }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
-  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
-  await expect(page.getByRole('button', { name: 'Formule suivante' })).toBeDisabled();
-  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
+test('le dialogue mobile propose une seule durée et deux choix de paiement, sans défilement', async ({ page, login }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await login('free'); await page.goto('/menu');
+  await page.getByRole('button', { name: /Retirer les publicités/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Retirer les publicités', exact: true });
+  await expect(dialog.getByRole('combobox', { name: 'Durée et prix' })).toBeVisible();
+  const choices = dialog.getByRole('group', { name: 'Wave ou WhatsApp' });
+  await expect(choices.getByRole('button')).toHaveCount(2);
+  await expect(choices.getByRole('button', { name: 'Wave', exact: true })).toBeInViewport({ ratio: 1 });
+  await expect(choices.getByRole('button', { name: 'WhatsApp', exact: true })).toBeInViewport({ ratio: 1 });
+  const size = await page.locator('.subscription-dialog').evaluate((node) => ({ height: node.clientHeight, contentHeight: node.scrollHeight, width: node.clientWidth, contentWidth: node.scrollWidth }));
+  expect(size.contentHeight).toBeLessThanOrEqual(size.height);
+  expect(size.contentWidth).toBeLessThanOrEqual(size.width);
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
 });
 
 test('les trois formules ouvrent les liens Wave exacts sans activer un abonnement', async ({ page, login, postAs }) => {
   await login('free'); await openPlans(page);
   await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Wave test</title>' }));
-  for (const [duration, amount] of [['3 Mois', '15000'], ['6 Mois', '25000'], ['1 An', '45000']]) {
+  for (const [planId, amount] of [['sub_3m', '15000'], ['sub_6m', '25000'], ['sub_1y', '45000']]) {
+    await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption(planId);
     const popup = page.waitForEvent('popup');
-    await page.getByRole('button', { name: `Payer ${duration} avec Wave` }).click();
+    await page.getByRole('button', { name: 'Wave', exact: true }).click();
     const tab = await popup; await tab.waitForURL('https://pay.wave.com/m/M_sn_6W-tuxFYYkZa/c/sn/?amount=' + amount);
     await tab.close();
-    await expect(page.getByRole('button', { name: 'Faire vérifier mon paiement sur WhatsApp' })).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Après votre paiement Wave');
+    await expect(page.getByRole('group', { name: 'Wave ou WhatsApp' }).getByRole('button')).toHaveCount(2);
     const access = await (await postAs('free', 'check-access')).json(); expect(access.allowed).toBe(true); expect(access.adFree).toBe(false);
   }
 });
@@ -78,15 +51,23 @@ test('les trois formules ouvrent les liens Wave exacts sans activer un abonnemen
 test('la confirmation WhatsApp identifie le compte et la durée sans confirmer le paiement', async ({ page, login }) => {
   await login('free'); await openPlans(page);
   await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ body: 'Wave test' }));
-  let popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'Payer 6 Mois avec Wave' }).click();
+  await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption('sub_6m');
+  let popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'Wave', exact: true }).click();
   await (await popup).close();
   await page.context().route('**/api/wa?text=**', (route) => route.fulfill({ body: 'WhatsApp test' }));
-  popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'Faire vérifier mon paiement sur WhatsApp' }).click();
+  popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'WhatsApp', exact: true }).click();
   const tab = await popup;
   await tab.waitForURL(/\/api\/wa\?text=/);
   const text = new URL(tab.url()).searchParams.get('text') || '';
   expect(text).toContain('25 000 FCFA'); expect(text).toContain(accounts.free.email); expect(text).toContain('Paiement à vérifier : Wave');
   await tab.close();
+  await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption('sub_3m');
+  popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'WhatsApp', exact: true }).click();
+  const otherTab = await popup; await otherTab.waitForURL(/\/api\/wa\?text=/);
+  const otherText = new URL(otherTab.url()).searchParams.get('text') || '';
+  expect(otherText).toContain('15 000 FCFA');
+  expect(otherText).not.toContain('Paiement à vérifier : Wave');
+  await otherTab.close();
 });
 
 test('Android ouvre Wave par navigation externe sans demander le plugin Billing', async ({ page, login }) => {
@@ -97,7 +78,8 @@ test('Android ouvre Wave par navigation externe sans demander le plugin Billing'
   await login('free'); await openPlans(page);
   await page.route('https://pay.wave.com/**', (route) => route.fulfill({ body: 'Wave test' }));
   const popups: string[] = []; page.on('popup', (p) => popups.push(p.url()));
-  await page.getByRole('button', { name: 'Payer 1 An avec Wave' }).click();
+  await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption('sub_1y');
+  await page.getByRole('button', { name: 'Wave', exact: true }).click();
   await page.waitForURL('https://pay.wave.com/m/M_sn_6W-tuxFYYkZa/c/sn/?amount=45000');
   expect(popups).toEqual([]);
 });
@@ -116,11 +98,14 @@ test('les anciennes actions Billing répondent 410 et l’accès aux recettes re
 
 test('la demande WhatsApp directe conserve les trois tarifs et le portail fonctionne au clavier sur mobile', async ({ page, login }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await login('free'); await openPlans(page);
-  for (const duration of ['3 Mois', '6 Mois', '1 An']) await expect(page.getByRole('button', { name: `Demander ${duration} sur WhatsApp` })).toBeVisible();
   await page.context().route('**/api/wa?text=**', (route) => route.fulfill({ body: 'WhatsApp test' }));
-  const popup = page.waitForEvent('popup'); const button = page.getByRole('button', { name: 'Demander 3 Mois sur WhatsApp' });
-  await button.focus(); await page.keyboard.press('Enter');
-  const tab = await popup; await tab.waitForURL(/\/api\/wa\?text=/);
-  expect(new URL(tab.url()).searchParams.get('text')).toContain('15 000 FCFA'); await tab.close();
+  for (const [planId, price] of [['sub_3m', '15 000'], ['sub_6m', '25 000'], ['sub_1y', '45 000']]) {
+    await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption(planId);
+    const popup = page.waitForEvent('popup');
+    await page.getByRole('button', { name: 'WhatsApp', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    const tab = await popup; await tab.waitForURL(/\/api\/wa\?text=/);
+    expect(new URL(tab.url()).searchParams.get('text')).toContain(price + ' FCFA'); await tab.close();
+  }
   await page.screenshot({ path: test.info().outputPath('abonnements-mobile.png'), fullPage: true });
 });
