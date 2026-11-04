@@ -1,0 +1,72 @@
+# Médiation Android LevelPlay — préparation locale
+
+Le plugin Capacitor conserve son nom UnityAds pour rester compatible avec le site.
+Lorsque LEVELPLAY_ENABLED=true, showInterstitial affiche une **publicité récompensée
+LevelPlay**, après acceptation explicite de l’utilisateur. Le nom de méthode historique
+ne désigne plus le format utilisé. Un interstitiel fermé ne prouve pas un visionnage
+complet : l’action attend affichage + récompense + fermeture.
+
+## Configuration
+
+Les identifiants publics sont dans android/levelplay.properties (ou variables ASRAR_
+portant les mêmes noms). App Key 237ff501d, unité récompensée evijfgcicz1kfdt9.
+L’interstitiel tvah9k0xm07abinp reste dans la console pour un futur usage approprié.
+L’App ID AdMob complet reste à renseigner. Tant qu’il manque, l’activation est false.
+Le build refuse une activation avec des identifiants absents ou invalides.
+Aucun secret réseau, OAuth ou clé de rappel serveur n’est inclus dans l’APK.
+
+SDK 9.5.0 ; adaptateurs Unity Ads 5.15.0, Google AdMob 5.19.0, BIGO 5.15.0.
+Les SDK des réseaux sont fournis transitivement par les adaptateurs.
+Le compte ironSource doit être approuvé ; les instances doivent être configurées et
+actives pour l’unité Rewards dans LevelPlay. Le fichier app-ads.txt Google est déjà
+publié, mais la validation AdMob reste gérée par Google. Les éventuelles autres lignes
+app-ads.txt doivent provenir des régies concernées, jamais être inventées.
+
+## Consentement et cycle de vie
+
+UMP 4.0.0 actualise le consentement avant toute demande LevelPlay. Configurer les
+messages appropriés dans AdMob > Confidentialité et messages. Un échec sans choix
+valide empêche l’annonce. Les signaux TCF/consentement sont gérés par les SDK ; le code
+ne force pas un consentement positif. Le bouton de gestion des choix est disponible
+dans Mon compte lorsque UMP indique qu’il est requis.
+
+Un appel à la fois ; consentement/chargement bornés ; aucun affichage si l’activité
+n’est pas au premier plan ; fermeture/destruction annule la demande. Les callbacks
+anciens sont ignorés. Une récompense peut arriver après fermeture (attente 5 secondes).
+Aucun accès en cas d’erreur, absence d’annonce, abandon ou timeout.
+Le délai initial et la limite de fréquence JS existants sont conservés.
+
+## Crédits historiques
+
+Les récompenses de cette médiation débloquent l’action gratuite côté interface,
+comme le mécanisme précédent ; elles ne créent ni abonnement ni crédit serveur.
+Le protocole signé Unity S2S historique n’est pas interchangeable avec celui de
+LevelPlay. Son option reste disponible en mode Unity direct, mais est masquée en mode
+LevelPlay pour éviter une double initialisation du SDK et de faux crédits. Les crédits
+existants et les endpoints de réception historiques sont conservés. Le mode actuel
+FREE_FOR_ALL n’utilise pas cette ancienne offre de crédits pour ses actions gratuites.
+Une éventuelle remise en service de modules payants exige d’abord une intégration
+séparée des callbacks signés LevelPlay.
+
+## Validation avant diffusion
+
+Une compilation ne démontre pas la diffusion réelle. Installer un APK de test,
+activer les appareils de test dans LevelPlay/les régies, vérifier chaque réseau via
+l’Integration Helper/Test Suite et exercer : abandon, absence réseau, rotation,
+retour arrière, double clic, consentement refusé et récompense terminée.
+Aucune requête publicitaire réelle n’est effectuée par les tests automatisés.
+Aucune publication ni push de cette intégration n’est autorisé pour l’instant.
+
+Sources officielles :
+- https://docs.unity.com/en-us/grow/levelplay/sdk/android/sdk-integration
+- https://docs.unity.com/en-us/grow/levelplay/sdk/android/rewarded-ads-integration
+- https://docs.unity.com/en-us/grow/levelplay/sdk/android/mediation-networks
+
+## Vérifications locales effectuées
+
+Compilation Java, APK debug et tests Android : 20 tests réussis, dont 7 nouveaux
+cas de médiation. Compilation release optimisée R8 réussie (environ 8 minutes). Tests JS ciblés : 10 réussis ; typecheck et lint réussis.
+La compilation de validation du chemin activé utilise ponctuellement l’App ID
+Google de démonstration via une variable de commande, sans modifier la configuration
+persistée et sans installer ni diffuser l’APK. Cet artefact n’est pas une version
+prête pour les utilisateurs. Recompiler avec les identifiants réels avant test appareil.

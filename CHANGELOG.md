@@ -1,5 +1,7 @@
 ## Android 8.0.2 / SW v46.48 — Abonnements WhatsApp et Wave
 
+- Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Activation suspendue au renseignement de l’App ID AdMob complet.
+
 - Publicité nécessaire avant chaque action contrôlée : aucune continuation sur absence, erreur ou vidéo interrompue. Contrôle de visibilité du bloc web, attente ou abonnement ; messages WhatsApp aérés et références courtes.
 
 - Retrait du SDK et du plugin Google Play Billing, ainsi que des achats individuels dans l’interface. Les anciennes demandes publiques de paiement répondent 410. Historique et remboursements conservés côté serveur.

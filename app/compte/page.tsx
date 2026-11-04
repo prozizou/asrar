@@ -9,6 +9,7 @@ import { SUB_PLANS, FREE_FOR_ALL } from '@/lib/plans';
 import ModalUntyped from '@/components/Modal';
 import './compte.css';
 import SubscriptionPlans from '@/components/SubscriptionPlans';
+import NativeAdPrivacy from '@/components/NativeAdPrivacy';
 import { isNativeApp, openExternalInApp } from '@/lib/externalWindow';
 const Modal = ModalUntyped as any;
 const subscriptionContact = '/api/wa?text=Je%20souhaite%20v%C3%A9rifier%20ou%20renouveler%20mon%20abonnement%20ASRAR%20PRO.';
@@ -74,6 +75,7 @@ export default function ComptePage() {
         <strong className="account-plan">{subscription.admin ? 'Administrateur' : subscription.vip ? 'Accès VIP' : subscription.allowed ? plan ? 'Forfait ' + plan.dur : 'Accès activé' : subscription.lastExpiresAt ? 'Abonnement expiré' : 'Aucun abonnement actif'}</strong>
         {subscription.expiresAt ? <p>Échéance : <time dateTime={new Date(subscription.expiresAt).toISOString()}>{date(subscription.expiresAt)}</time></p> : subscription.allowed ? <p>Accès sans échéance enregistrée.</p> : subscription.lastExpiresAt ? <p>Dernière échéance : {date(subscription.lastExpiresAt)}</p> : null}
         <p>{FREE_FOR_ALL ? 'L’application est gratuite : l’abonnement retire les publicités tant qu’il est valable. ' : ''}Les achats du Marché sont indépendants de cet abonnement.</p>
+        <NativeAdPrivacy />
         {!subscription.admin && !subscription.vip && <details className="account-subscription-plans"><summary>Choisir ou renouveler un abonnement sans publicités</summary><SubscriptionPlans /></details>}
         <Link className="account-button" href="/commandes">Mes demandes et commandes</Link>
         {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact} onClick={(e) => { if (isNativeApp()) { e.preventDefault(); openExternalInApp(subscriptionContact).catch(() => { window.location.href = subscriptionContact; }); } }}>Contacter l’assistance pour mon abonnement</a>}
