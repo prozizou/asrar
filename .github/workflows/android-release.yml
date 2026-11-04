@@ -44,7 +44,7 @@ permissions:
   checks: read
 
 concurrency:
-  group: android-release
+  group: android-release-v2
   cancel-in-progress: false
 
 jobs:
