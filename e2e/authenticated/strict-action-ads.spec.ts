@@ -14,6 +14,18 @@ test.beforeEach(async () => {
 });
 test.afterEach(async () => { await app().database().ref().update(savedFree); });
 
+// These scenarios verify the creative gate, not Chromium popup focus handling.
+// Popup opening/blocking itself remains covered separately below and in unit tests.
+async function mockActionTab(page: any) {
+  await page.addInitScript(() => {
+    (window as any).__actionAdOpens = 0;
+    window.open = (() => {
+      (window as any).__actionAdOpens += 1;
+      return { opener: null, closed: false };
+    }) as any;
+  });
+}
+
 async function calculator(page: any, login: any, role = 'free') {
   await login(role); await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
   await page.getByLabel('Nombre', { exact: true }).fill('111');
@@ -31,9 +43,11 @@ test('une bannière absente et un onglet ouvert ne débloquent rien, même aprè
 });
 
 test('chaque calcul exige un nouvel affichage visible et les doubles clics ne partagent pas une autorisation', async ({ page, login }) => {
+  await mockActionTab(page);
   await login('free'); await mockActionCreative(page); await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
   await page.getByLabel('Nombre', { exact: true }).fill('111');
-  const popup = page.waitForEvent('popup'); await page.getByRole('button', { name: 'Calculer', exact: true }).dblclick(); await (await popup).close();
+  await page.getByRole('button', { name: 'Calculer', exact: true }).dblclick();
+  expect(await page.evaluate(() => (window as any).__actionAdOpens)).toBe(1);
   const ad = page.getByRole('dialog', { name: 'Publicité', exact: true });
   await expect(ad.getByRole('status')).toContainText('Gardez la publicité visible');
   await expect(page.locator('.kz-grid')).toHaveCount(0);
@@ -41,18 +55,21 @@ test('chaque calcul exige un nouvel affichage visible et les doubles clics ne pa
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
   const first = await page.locator('.kz-grid').innerText();
   await page.getByLabel('Nombre', { exact: true }).fill('222');
-  const second = page.waitForEvent('popup'); await page.getByRole('button', { name: 'Calculer', exact: true }).click(); await (await second).close();
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__actionAdOpens)).toBe(2);
   await expect(ad).toBeVisible(); expect(await page.locator('.kz-grid').innerText()).toBe(first);
   await ad.getByRole('button', { name: 'Continuer', exact: true }).click({ timeout: 10000 });
   await expect(page.locator('.kz-grid')).not.toHaveText(first);
 });
 
 test('le temps passé en arrière-plan ne compte pas comme une publicité regardée', async ({ page, login }) => {
+  await mockActionTab(page);
   await login('free'); await mockActionCreative(page); await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
   await page.evaluate(() => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (window as any).__adHidden ? 'hidden' : 'visible' }));
   await page.evaluate(() => { (window as any).__adHidden = true; });
-  await page.getByLabel('Nombre', { exact: true }).fill('111'); const popup = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Calculer', exact: true }).click(); await (await popup).close();
+  await page.getByLabel('Nombre', { exact: true }).fill('111');
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__actionAdOpens)).toBe(1);
   const ad = page.getByRole('dialog', { name: 'Publicité', exact: true }); await expect(ad.getByRole('status')).toContainText('Gardez');
   await page.waitForTimeout(5500); await expect(ad.getByRole('button', { name: 'Continuer', exact: true })).toHaveCount(0);
   await page.evaluate(() => { (window as any).__adHidden = false; });
