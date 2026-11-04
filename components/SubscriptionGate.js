@@ -80,15 +80,15 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
 
   return (
     <Modal className="sg-overlay" onClose={onClose} label={isNoAdsGate ? 'Retirer les publicités' : 'Abonnement'}>
-      <div className="sg-box">
+      <div className="sg-box subscription-dialog">
         <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
           ✕
         </button>
-        <div style={{ fontSize: '2.4rem' }}>{isNoAdsGate ? '🚫' : '🔒'}</div>
+        <p className="subscription-eyebrow">ASRAR PRO · ABONNEMENTS</p>
         <h2>{isNoAdsGate ? 'ASRAR PRO sans publicité' : isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
         <p className="sg-sub">
           {isNoAdsGate
-            ? "L’application reste gratuite. Choisissez un abonnement sans publicités, par WhatsApp ou Wave. L’administration l’active après vérification du paiement."
+            ? "Gardez tous vos modules, profitez-en sans interruption publicitaire. L’application reste gratuite avec publicités."
             : isLevelGate
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
             : "Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration."}

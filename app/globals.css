@@ -2106,20 +2106,66 @@ html[data-theme="light"] {
 .sr-submit { width: auto; margin: 0; min-height: 44px; color: var(--button-ink); }
 .sr-item-email, .sr-item-text { overflow-wrap: anywhere; }
 
-.subscription-plans { margin-top: 18px; }
-.subscription-plan { cursor: default; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 20px 12px 12px; }
+/* Abonnements : styles isolés des marges et dégradés des boutons globaux. */
+.subscription-dialog {
+  width: 100%; max-width: 820px; max-height: 100%; overflow-y: auto;
+  overscroll-behavior: contain; scrollbar-gutter: stable;
+  padding: 32px 24px 24px; background: var(--bg-deep); color: var(--text-main);
+  border-color: var(--glass-border); text-align: left;
+}
+.subscription-dialog .sg-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; margin: 0; top: 8px; right: 8px; border-radius: 12px; }
+.subscription-dialog .sg-close:hover { background: var(--surface-2); color: var(--text-main); box-shadow: none; transform: none; }
+.subscription-dialog .subscription-eyebrow { margin: 0 36px 12px 0; color: var(--accent); font-size: .72rem; font-weight: 700; letter-spacing: .1em; }
+.subscription-dialog h2 { margin: 0; padding-right: 12px; font-size: clamp(1.4rem, 4.5vw, 1.8rem); line-height: 1.2; letter-spacing: -.025em; }
+.subscription-dialog .sg-sub { margin: 12px 0 0; max-width: 60ch; color: var(--text-muted); line-height: 1.55; font-size: .95rem; }
+.subscription-plans { margin-top: 22px; text-align: left; color: var(--text-main); }
+.subscription-plans .subscription-steps { list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 12px; padding: 0 0 18px; margin: 0 0 20px; border-bottom: 1px solid var(--glass-border); }
+.subscription-plans .subscription-steps li { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--text-muted); font-size: .8rem; }
+.subscription-steps li > span { display: grid; place-items: center; width: 23px; height: 23px; flex-shrink: 0; border-radius: 50%; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: .72rem; font-weight: 700; }
+.subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; align-items: start; }
+.subscription-plan { min-width: 0; padding: 20px; border: 1px solid var(--glass-border); border-radius: 18px; background: var(--surface-2); }
+.subscription-plan.best { border-color: var(--accent); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 9%, transparent), var(--surface-2)); }
+.subscription-plan.is-selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); border-color: var(--accent); }
 .subscription-plan h3, .subscription-plan p { margin: 0; }
-.subscription-plan button, .subscription-confirmation button { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--glass-border, #70607c); border-radius: 10px; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
-.subscription-plan .subscription-wave { background: #1dc6ed; color: #062e40; }
-.subscription-plan .subscription-whatsapp { background: var(--surface-2, #332741); color: var(--text-main, #fff); }
-.subscription-confirmation { margin-top: 12px; padding: 14px; border: 1px solid var(--glass-border, #70607c); border-radius: 12px; display: grid; gap: 12px; }
-.subscription-confirmation p { margin: 0; font-size: .9rem; line-height: 1.5; }
-.subscription-confirmation button { background: #ae8bfa; color: #190e2c; }
-.subscription-plans button:focus-visible, .account-subscription-plans summary:focus-visible { outline: 3px solid #ae8bfa; outline-offset: 3px; }
+.subscription-plan-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; min-height: 26px; }
+.subscription-plan h3 { font-size: 1rem; line-height: 1.3; font-weight: 600; letter-spacing: 0; }
+.subscription-badge { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 6px; padding: 4px 7px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-size: .65rem; line-height: 1.2; font-weight: 700; white-space: nowrap; }
+.subscription-pricing { margin-top: 14px; }
+.subscription-plan .subscription-price { font-size: clamp(1.65rem, 4vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -.025em; color: var(--text-main); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.subscription-price small { font-size: .65rem; font-weight: 500; letter-spacing: .02em; color: var(--text-dim); }
+.subscription-plan .subscription-period { margin-top: 5px; font-size: .78rem; color: var(--text-muted); line-height: 1.4; }
+.subscription-plan .subscription-saving { display: flex; align-items: center; gap: 5px; margin-top: 12px; min-height: 20px; font-size: .75rem; line-height: 1.4; color: var(--text-muted); }
+.subscription-plan.best .subscription-saving { color: var(--accent); }
+.subscription-actions { display: grid; gap: 8px; margin-top: 18px; }
+.subscription-plans .subscription-plan button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin: 0; padding: 11px 10px; border: 1px solid var(--glass-border); border-radius: 11px; font: inherit; font-size: .85rem; line-height: 1.35; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s; }
+.subscription-plan button svg { flex-shrink: 0; }
+.subscription-plan button:hover { transform: none; box-shadow: none; }
+.subscription-plan .subscription-wave { background: #21c4e6; border-color: #21c4e6; color: #062c38; }
+.subscription-wave span { flex: 1; }
+.subscription-plan .subscription-wave:hover { background: #58d5ee; border-color: #58d5ee; }
+.subscription-plan .subscription-whatsapp { background: transparent; color: var(--text-muted); }
+.subscription-plan .subscription-whatsapp:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.subscription-confirmation { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--glass-border); display: grid; gap: 10px; }
+.subscription-confirmation strong { font-size: .85rem; color: var(--text-main); }
+.subscription-plans .subscription-confirmation p { margin: 0; font-size: .8rem; line-height: 1.5; color: var(--text-muted); }
+.subscription-confirmation button { background: var(--accent); color: var(--button-ink); border-color: var(--accent); }
+.subscription-assurance { display: flex; align-items: flex-start; gap: 10px; margin-top: 22px; }
+.subscription-assurance > svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+.subscription-plans .subscription-assurance p { display: grid; gap: 4px; margin: 0; font-size: .8rem; line-height: 1.5; color: var(--text-muted); }
+.subscription-assurance strong { font-size: .85rem; color: var(--text-main); font-weight: 600; }
+.subscription-plans .subscription-footnote { margin: 14px 0 0; font-size: .72rem; color: var(--text-dim); line-height: 1.5; }
+.subscription-footnote span { display: block; margin-top: 4px; }
+.subscription-error { padding: 12px; margin: 14px 0 0; border-radius: 10px; background: var(--status-danger-bg); color: var(--status-danger-text); line-height: 1.5; }
+.subscription-plans button:focus-visible, .account-subscription-plans summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .account-subscription-plans summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 600; }
-.account-subscription-plans .sg-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
-.account-subscription-plans .sg-note { color: var(--text-muted); }
-.sg-box .subscription-whatsapp { background: #332741; color: #fff; }
+@media (max-width: 600px) {
+  .app-dialog.sg-overlay:has(.subscription-dialog) { padding: calc(12px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal)); }
+  .subscription-dialog { padding: 28px 16px 20px; border-radius: 20px; }
+  .subscription-grid { grid-template-columns: 1fr; gap: 12px; }
+  .subscription-plan { padding: 18px; }
+  .subscription-pricing { margin-top: 10px; }
+  .subscription-plan .subscription-price { font-size: 1.8rem; }
+}
 .action-ad-area { display: flex; justify-content: center; margin: 12px auto; width: 300px; max-width: 100%; overflow: hidden; }
 .sg-box .action-ad-area + .sg-sub { margin-top: 12px; }
 .sg-box:has(.action-ad-area) > button { display: block; width: 100%; min-height: 44px; margin-top: 10px; }
