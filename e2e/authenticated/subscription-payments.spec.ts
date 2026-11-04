@@ -40,6 +40,28 @@ test('le carrousel mobile permet de comparer les formules avec les flèches, les
   await expect(carousel.getByRole('group', { name: 'Abonnement 6 Mois', exact: true })).toBeInViewport({ ratio: .95 });
 });
 
+test('un balayage tactile peut être suivi immédiatement du choix d’une autre formule', async ({ page, login }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login('free'); await openPlans(page);
+  const carousel = page.getByRole('region', { name: 'Formules d’abonnement' });
+  await carousel.scrollIntoViewIfNeeded();
+  const bounds = (await carousel.boundingBox())!;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+  const y = bounds.y + 85, start = bounds.x + bounds.width - 25, end = bounds.x + 30;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start, y }] });
+  for (let step = 1; step <= 12; step++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start + (end - start) * step / 12, y }] });
+    await new Promise((resolve) => setTimeout(resolve, 35));
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(page.getByRole('button', { name: 'Voir la formule 6 Mois' })).toHaveAttribute('aria-pressed', 'true');
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await page.getByRole('button', { name: 'Voir la formule 1 An' }).click();
+  await expect(page.getByRole('button', { name: 'Formule suivante' })).toBeDisabled();
+  await expect(carousel.getByRole('group', { name: 'Abonnement 1 An', exact: true })).toBeInViewport({ ratio: .95 });
+});
+
 test('les trois formules ouvrent les liens Wave exacts sans activer un abonnement', async ({ page, login, postAs }) => {
   await login('free'); await openPlans(page);
   await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Wave test</title>' }));

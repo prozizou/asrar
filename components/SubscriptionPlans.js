@@ -15,6 +15,7 @@ export default function SubscriptionPlans() {
   const [selected, setSelected] = useState(null), [error, setError] = useState('');
   const [active, setActive] = useState(0);
   const track = useRef(null);
+  const navigation = useRef(null);
   const carouselId = useId();
   useEffect(() => {
     const node = track.current;
@@ -34,13 +35,33 @@ export default function SubscriptionPlans() {
     node.addEventListener('scroll', update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(node);
-    return () => { node.removeEventListener('scroll', update); observer.disconnect(); cancelAnimationFrame(frame); };
+    return () => { navigation.current?.(); node.removeEventListener('scroll', update); observer.disconnect(); cancelAnimationFrame(frame); };
   }, []);
   const goTo = (index) => {
     const node = track.current, card = node?.children[index];
     if (!card) return;
+    navigation.current?.();
     const left = node.scrollLeft + card.getBoundingClientRect().left - node.getBoundingClientRect().left - (node.clientWidth - card.offsetWidth) / 2;
-    node.scrollTo({ left, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    const target = Math.max(0, Math.min(left, node.scrollWidth - node.clientWidth));
+    // Le snap d'un balayage peut sinon annuler la navigation demandée par un bouton.
+    node.style.scrollSnapType = 'none';
+    node.scrollTo({ left: node.scrollLeft, behavior: 'instant' });
+    let frame;
+    const deadline = performance.now() + 2000;
+    const finish = () => {
+      cancelAnimationFrame(frame);
+      node.style.removeProperty('scroll-snap-type');
+      node.removeEventListener('pointerdown', finish);
+      navigation.current = null;
+    };
+    const settle = () => {
+      if (Math.abs(node.scrollLeft - target) < 1 || performance.now() >= deadline) finish();
+      else frame = requestAnimationFrame(settle);
+    };
+    navigation.current = finish;
+    node.addEventListener('pointerdown', finish, { once: true });
+    node.scrollTo({ left: target, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    frame = requestAnimationFrame(settle);
   };
   const wave = async (plan) => {
     setError('');
