@@ -15,7 +15,9 @@ test('site : bannières, Native Banner, Social Bar et offre « Retirer les publi
 
 test('application Android : bannières et Native Banner, sans Social Bar ni offre WhatsApp', async ({ page, login }) => {
   await page.addInitScript(() => {
-    // Ce que voit le site dans l'application : le pont Capacitor natif.
+    // Ce que voit le site dans l'application : le pont natif Android, d'où
+    // @capacitor/core déduit la plateforme (getPlatformId → 'android').
+    (window as any).androidBridge = { postMessage: () => {} };
     (window as any).Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: () => false };
   });
   await login('free');
