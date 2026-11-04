@@ -1,3 +1,7 @@
+## SW v46.46 — Pubs Adsterra dans l'application Android
+
+- L'application Android (qui charge le site) affiche désormais les bannières Adsterra et le Native Banner aux comptes sans abonnement, sans nouvelle version de l'application. Formats exclus dans l'application, pour respecter les règles Google Play : Social Bar (imite une notification), Popunder et onglet Smartlink (ouvrent le navigateur), offre « Retirer les publicités » par WhatsApp. Coupable sans code : `NEXT_PUBLIC_ADSTERRA_IN_APP=0`.
+
 ## SW v46.45 — Relevé des appareils
 
 - À chaque visite (comptes ayant activé les statistiques), la catégorie d'appareil — application Android, site sur Android, iPhone / iPad, ordinateur — est ajoutée à `analytics/visits/{jour}/{uid}/platform` (`lib/platform.js`, `pages/api/track.js`). Jamais le user-agent lui-même. Lue par l'administration (Statistiques → Appareils).
