@@ -1,5 +1,7 @@
 Nouveautés de la version 8.0.2 :
-• Retrait des achats Google Play. Abonnements sans publicités par WhatsApp ou Wave.
-• Les actions attendent l’affichage de la publicité. Si aucune annonce n’est disponible, patientez ou choisissez un abonnement.
-• Messages WhatsApp plus clairs : rubriques, prix lisibles et références courtes.
+• Publicités Android avec la médiation LevelPlay.
+• Une publicité regardée débloque l’action. En cas d’indisponibilité, l’action reste en attente.
+• Retrait des achats Google Play ; abonnements actifs conservés.
+• Messages WhatsApp plus clairs : prix lisibles et références courtes.
+• Choix de confidentialité publicitaire dans Mon compte lorsqu’ils sont requis.
 • L’application reste gratuite avec publicités.

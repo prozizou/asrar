@@ -109,3 +109,16 @@ Validation diagnostic : assembleDebug et lintDebug réussis ; signature APK vér
 Android de l’application passent après retrait du mode test-suite de son parcours
 normal. Aucun téléphone connecté : l’exécution réelle du diagnostic reste à vérifier.
 APK disponible dans /workspace/shared/asrar-test-pubs.apk.
+
+## Résultats sur téléphone — 4 novembre 2026
+
+Le propriétaire a installé le diagnostic et confirmé le chargement, l’affichage et
+la fermeture des annonces récompensées ironSource et Unity Ads. Les captures de
+la Test Suite indiquent le succès de l’affichage pour Unity Ads.
+Google a renvoyé « Mediation No fill ». Son compte est en cours de validation.
+La fiche Play Store référençait un ancien domaine Blogger portant un autre
+identifiant éditeur. Le site développeur a été corrigé vers https://www.asrarpro.com
+et vérifié sur la fiche publique ; app-ads.txt fournit le bon identifiant. Le délai
+d’actualisation AdMob et son approbation restent à terminer. BIGO n’a pas encore été
+confirmé dans la Test Suite. Ces points n’empêchent pas les réseaux disponibles de
+participer à la médiation ; aucun eCPM ou revenu réel n’est garanti par ces tests.

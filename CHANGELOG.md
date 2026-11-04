@@ -1,4 +1,4 @@
-## Android 8.0.2 / SW v46.48 — Abonnements WhatsApp et Wave
+## Android 8.0.2 / SW v46.48 — Médiation LevelPlay, publicités et abonnements
 
 - Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Identifiants réels renseignés et médiation activée dans la configuration locale ; diffusion sur appareil à valider.
 

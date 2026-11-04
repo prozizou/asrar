@@ -14,8 +14,8 @@ def signingValue = { String prop, String env -> keystoreProps.getProperty(prop) 
 def releaseStoreFile = signingValue('storeFile', 'ASRAR_KEYSTORE_FILE')
 def hasReleaseSigning = releaseStoreFile && signingValue('storePassword', 'ASRAR_KEYSTORE_PASSWORD')
 
-// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 118 en local.
-def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '118')
+// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 121 en local.
+def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '121')
 
 // Identifiants publics de médiation ; aucune clé API secrète dans l'APK.
 def mediationProps = new Properties()
@@ -42,7 +42,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play Store : versionCode doit augmenter à CHAQUE envoi. La CI le fournit
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
-        // local, repli sur la valeur 118 définie plus haut. Dernier build CI publié : 117.
+        // local, repli sur la valeur 121 définie plus haut. Dernier build CI publié : 120.
         versionCode asrarVersionCode
         versionName "8.0.2"
         buildConfigField 'boolean', 'LEVELPLAY_ENABLED', levelPlayEnabled.toString()
