@@ -97,7 +97,6 @@ final class LevelPlayActionAds {
         deadline(request, 60_000, "timeout");
         if (initialized) { load(request); return; }
         try {
-            if (BuildConfig.DEBUG) LevelPlay.setMetaData("is_test_suite", "enable");
             LevelPlay.init(activity.get().getApplicationContext(),
                 new LevelPlayInitRequest.Builder(BuildConfig.LEVELPLAY_APP_KEY).build(),
                 new LevelPlayInitListener() {

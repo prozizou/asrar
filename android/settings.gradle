@@ -3,3 +3,5 @@ include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
 
 apply from: 'capacitor.settings.gradle'
+// APK de diagnostic indépendant de la version Play Store.
+include ":mediation-test"

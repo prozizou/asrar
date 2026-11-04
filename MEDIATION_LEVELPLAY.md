@@ -75,3 +75,37 @@ prête pour les utilisateurs. Recompiler avec les identifiants réels avant test
 Configuration réelle ensuite compilée en APK debug avec succès et tests Android réussis.
 App ID AdMob dans le manifeste APK et LEVELPLAY_ENABLED=true vérifiés.
 Le test de diffusion sur téléphone reste à effectuer ; aucun APK publié.
+
+## Diagnostic autonome sur téléphone
+
+`./gradlew :mediation-test:assembleDebug` construit un APK signé avec la clé de test
+Android, paquet `com.Asrar.mediationtest`, intitulé « ASRAR — Test pubs ».
+Il s’installe à côté de l’application Play Store, sans la désinstaller ni utiliser
+sa signature de production. Aucun compte ASRAR, connexion Firebase, achat, abonnement
+ou message n’est traité par ce diagnostic.
+
+Il actualise UMP puis initialise uniquement LevelPlay en mode `is_test_suite`, et
+ouvre l’outil officiel avec le contexte application. Il n’appelle pas les méthodes
+de chargement/affichage habituelles. Le mode test-suite est retiré du parcours
+normal de l’application : il est réservé à ce diagnostic.
+
+Les versions SDK/adaptateurs et les identifiants publics sont ceux de la préparation
+Android. Le paquet du diagnostic diffère du paquet Play Store : il sert d’abord à
+vérifier les SDK et la configuration des régies. Il ne démontre pas le fonctionnement
+de l’authentification, du déblocage métier, de l’exemption des abonnés ni la diffusion
+dans le paquet de production ; ceux-ci exigent ensuite le test de l’application
+complète, idéalement signée via la piste interne de Google Play.
+
+Installer l’APK, ouvrir « ASRAR — Test pubs », puis « Ouvrir le diagnostic LevelPlay ».
+Si Android demande l’autorisation d’installation pour le navigateur/téléchargement,
+la donner pour ce fichier. L’outil présente les réseaux et les formats ; transmettre
+les captures de leur état (ou du message d’erreur) pour poursuivre les corrections.
+Aucune publication GitHub ni Play Store n’est effectuée par cette préparation.
+
+Source : https://docs.unity.com/en-us/grow/levelplay/sdk/android/integration-test-suite
+
+Validation diagnostic : assembleDebug et lintDebug réussis ; signature APK vérifiée
+(apksigner v2) ; paquet indépendant com.Asrar.mediationtest confirmé. Les 20 tests
+Android de l’application passent après retrait du mode test-suite de son parcours
+normal. Aucun téléphone connecté : l’exécution réelle du diagnostic reste à vérifier.
+APK disponible dans /workspace/shared/asrar-test-pubs.apk.

@@ -1,0 +1,30 @@
+// Diagnostic séparé, sans compte ASRAR, données utilisateur ou accès aux paiements.
+apply plugin: 'com.android.application'
+def mediationProps = new Properties()
+rootProject.file('levelplay.properties').withInputStream { mediationProps.load(it) }
+def appKey = mediationProps.getProperty('LEVELPLAY_APP_KEY', '')
+def admobId = mediationProps.getProperty('ADMOB_APP_ID', '')
+if (!appKey || !admobId) throw new GradleException('Identifiants LevelPlay et AdMob requis pour le diagnostic.')
+android {
+    namespace 'com.asrarpro.mediationtest'
+    compileSdk rootProject.ext.compileSdkVersion
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    buildFeatures { buildConfig true }
+    defaultConfig {
+        applicationId 'com.Asrar.mediationtest'
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName '1.0-test'
+        buildConfigField 'String', 'LEVELPLAY_APP_KEY', groovy.json.JsonOutput.toJson(appKey)
+        manifestPlaceholders.admobAppId = admobId
+    }
+    buildTypes { release { minifyEnabled false } }
+}
+dependencies {
+    implementation 'com.unity3d.ads-mediation:mediation-sdk:9.5.0'
+    implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'
+    implementation 'com.unity3d.ads-mediation:admob-adapter:5.19.0'
+    implementation 'com.unity3d.ads-mediation:bigo-adapter:5.15.0'
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
+}
