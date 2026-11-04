@@ -1,3 +1,7 @@
+## SW v46.45 — Relevé des appareils
+
+- À chaque visite (comptes ayant activé les statistiques), la catégorie d'appareil — application Android, site sur Android, iPhone / iPad, ordinateur — est ajoutée à `analytics/visits/{jour}/{uid}/platform` (`lib/platform.js`, `pages/api/track.js`). Jamais le user-agent lui-même. Lue par l'administration (Statistiques → Appareils).
+
 ## Android 8.0.0 / SW v46.44 — Retour de l'application Android
 
 - Site ouvert sur Android : redirection vers la page Google Play de l'application (une fois par visite ; « Ouvrir » si elle est installée, sinon « Installer »), puis fenêtre « Ouvrir l'application / Installer depuis Google Play » au retour, avec une sortie de 7 jours pour qui ne peut pas installer. iPhone, ordinateur, robots et l'application elle-même : aucun changement. Désactivable : `NEXT_PUBLIC_ANDROID_APP_REDIRECT=0`.
