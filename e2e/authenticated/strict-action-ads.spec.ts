@@ -147,11 +147,13 @@ test('un abonné valide continue sans publicité ni attente', async ({ page, log
 });
 
 test('le chargement du script sans création de publicité ne suffit pas', async ({ page, login }) => {
+  await mockActionTab(page);
   await login('free');
   await page.route('https://bicea.org/22/**', (route) => route.fulfill({ contentType: 'application/javascript', body: '/* aucune annonce */' }));
   await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
-  await page.getByLabel('Nombre', { exact: true }).fill('111'); const popup = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Calculer', exact: true }).click(); await (await popup).close();
+  await page.getByLabel('Nombre', { exact: true }).fill('111');
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__actionAdOpens)).toBe(1);
   const dialog = page.getByRole('dialog', { name: 'Publicité', exact: true });
   await page.waitForTimeout(5500); await expect(dialog.getByRole('button', { name: 'Continuer', exact: true })).toHaveCount(0);
   await expect(page.locator('.kz-grid')).toHaveCount(0);
