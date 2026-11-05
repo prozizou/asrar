@@ -56,10 +56,10 @@ apksigner sign --ks prozizou.jks --ks-key-alias prozizou --out app-release.apk a
 - Package publié : **`com.Asrar`** (`applicationId` dans
   `android/app/build.gradle` et `appId` dans `capacitor.config.ts`) — ne
   jamais le modifier, sinon le Play Store le traite comme une autre app.
-- `versionName "7.9.5"`. Le `versionCode` envoyé par la CI est calculé
+- `versionName "8.0.3"`. Le `versionCode` envoyé par la CI est calculé
   automatiquement (`100 + numéro d'exécution du workflow`, variable
   `ASRAR_VERSION_CODE`) : il augmente à chaque build. Dernière version
-  publiée : 101 (7.9.1). Sans la variable (build local), repli sur 117.
+  publiée : 124 (8.0.2). Sans la variable (build local), repli sur 125.
 - L'AAB doit être signé avec la clé d'importation (upload key) enregistrée
   pour `com.Asrar` dans la Play Console.
 
@@ -172,5 +172,28 @@ Aucune permission de notification plein écran ou de contournement de Ne pas
 déranger n'est demandée. Publier l'AAB signé avec la même clé que l'application
 existante. Le workflow `Android release` accepte la piste `production` et
 `upload=true` ; l'envoi nécessite `PLAY_SERVICE_ACCOUNT_JSON`. Le nom de version
-est 7.9.5 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
+est 8.0.3 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
 versions précédentes du même workflow).
+
+
+## Publicités préparées en avance (8.0.3)
+
+Le pont `UnityAds.prepareActionAd` prépare une annonce LevelPlay dès que le
+compte est confirmé sans abonnement. La prochaine annonce est téléchargée
+pendant la lecture de la vidéo en cours. Une annonce préparée attend toujours
+le choix explicite **Regarder** ; le bouton reste désactivé avec une indication
+de chargement tant qu’aucune annonce n’est prête.
+
+La préparation respecte le consentement UMP, est désactivée à la déconnexion
+ou pour un compte sans publicités, et les annonces en cache sont retirées lors
+d’un changement des choix de confidentialité. Le succès exige toujours les
+trois événements affichage, récompense et fermeture pour la même annonce.
+Les anciens APK ignorent cette méthode optionnelle et continuent à fonctionner.
+
+Vérification sur téléphone : vérifier le consentement lors d’une première
+utilisation, ouvrir une action puis **Regarder** quand le bouton est disponible,
+regarder la vidéo jusqu’au bout, puis ouvrir une deuxième action. Vérifier aussi
+l’annulation pendant le chargement, une connexion indisponible et un compte
+abonné. Le premier téléchargement et la disponibilité des annonces restent
+tributaires du réseau et des régies : les tests automatisés ne mesurent pas
+la latence réelle d’un fournisseur publicitaire.

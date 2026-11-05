@@ -1,3 +1,11 @@
+## Android 8.0.3 / SW v46.52 — Préchargement des publicités
+
+- Préparation d’une annonce pour les comptes gratuits avant le clic et de la suivante pendant la vidéo en cours.
+- Bouton « Regarder » disponible lorsqu’une annonce est prête ; chargement indiqué dans le dialogue.
+- Respect du consentement publicitaire, retrait des annonces préparées après changement de confidentialité ou déconnexion.
+- Validation conservée : affichage, récompense et fermeture de la même publicité sont requis pour débloquer une action.
+- Compatibilité du site avec les anciens APK et maintien du dialogue simple Wave / WhatsApp.
+
 ## Android 8.0.2 / SW v46.48 — Médiation LevelPlay, publicités et abonnements
 
 - Préparation locale de LevelPlay : adaptateurs Unity Ads, Google et BIGO ; consentement UMP ; visionnage récompensé confirmé avant déblocage. Identifiants réels renseignés et médiation activée dans la configuration locale ; diffusion sur appareil à valider.

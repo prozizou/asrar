@@ -4,7 +4,7 @@
 // d'abonnement est rendu ici et piloté par un simple état React.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus, isAccessCacheValid } from '@/lib/access';
-import { consumeAdCredit, isUnityAdsAvailable, showNativeActionAd } from '@/lib/unityAds';
+import { consumeAdCredit, isUnityAdsAvailable, prepareNativeActionAd, showNativeActionAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
@@ -127,6 +127,15 @@ export default function AccessProvider({ children }) {
     setAdFree(user || authLoading ? null : false);
     if (user) refreshAccess().catch(() => {});
   }, [user, authLoading, refreshAccess]);
+
+  useEffect(() => {
+    if (authLoading || (user && adFree === null) || !window.Capacitor?.isNativePlatform?.()) return undefined;
+    const enabled = !!user && adFree === false;
+    void prepareNativeActionAd(enabled);
+    const resume = () => { if (enabled && document.visibilityState === 'visible') void prepareNativeActionAd(true); };
+    document.addEventListener('visibilitychange', resume);
+    return () => { document.removeEventListener('visibilitychange', resume); void prepareNativeActionAd(false); };
+  }, [user, authLoading, adFree]);
 
   // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
   // est fourni, si le palier de l'utilisateur l'atteint — ex. PREMIUM_LEVEL

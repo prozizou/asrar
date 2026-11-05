@@ -84,7 +84,7 @@ for (const result of [{ shown: false, reason: 'no_fill' }, { shown: true, comple
       (window as any).Capacitor = {
         isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
         PluginHeaders: [{ name: 'UnityAds', methods: [{ name: 'showInterstitial', rtype: 'promise' }] }],
-        nativePromise: async () => { (window as any).__nativeActionCalls = ((window as any).__nativeActionCalls || 0) + 1; return reply; },
+        nativePromise: async (_plugin: string, method: string) => { if (method === 'getCapabilities') return { actionAdPreload: false }; (window as any).__nativeActionCalls = ((window as any).__nativeActionCalls || 0) + 1; return reply; },
       };
     }, result);
     await calculator(page, login);
@@ -103,6 +103,43 @@ for (const result of [{ shown: false, reason: 'no_fill' }, { shown: true, comple
   });
 }
 
+async function mockPreloadBridge(page: any) {
+  await page.addInitScript(() => {
+    (window as any).__preparations = [];
+    (window as any).__nativeShows = 0;
+    (window as any).androidBridge = { postMessage: () => {} };
+    (window as any).Capacitor = {
+      isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
+      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showInterstitial'].map(name => ({ name, rtype: 'promise' })) }],
+      nativePromise: async (_plugin: string, method: string, options: any) => {
+        if (method === 'getCapabilities') return { actionAdPreload: true, legacyRewards: false };
+        if (method === 'prepareActionAd') { (window as any).__preparations.push(options.enabled); return {}; }
+        if (method === 'showInterstitial') { (window as any).__nativeShows++; return { shown: true, completed: true }; }
+        return {};
+      },
+    };
+  });
+}
+
+test('Android prépare la publicité avant le clic sans afficher ni débloquer une action', async ({ page, login }) => {
+  await mockPreloadBridge(page); await calculator(page, login);
+  await expect.poll(() => page.evaluate(() => (window as any).__preparations)).toContain(true);
+  expect(await page.evaluate(() => (window as any).__nativeShows)).toBe(0);
+  await expect(page.locator('.kz-grid')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
+  expect(await page.evaluate(() => (window as any).__nativeShows)).toBe(1);
+});
+
+test('Android ne prépare pas de publicité pour un compte abonné', async ({ page, login }) => {
+  await mockPreloadBridge(page); await calculator(page, login, 'premium');
+  await expect.poll(() => page.evaluate(() => (window as any).__preparations)).toContain(false);
+  expect(await page.evaluate(() => (window as any).__preparations)).not.toContain(true);
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
+  expect(await page.evaluate(() => (window as any).__nativeShows)).toBe(0);
+});
+
 test('un abonné valide continue sans publicité ni attente', async ({ page, login }) => {
   await calculator(page, login, 'premium'); const popups: string[] = []; page.on('popup', (tab) => popups.push(tab.url()));
   await page.getByRole('button', { name: 'Calculer', exact: true }).click(); await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
@@ -110,11 +147,13 @@ test('un abonné valide continue sans publicité ni attente', async ({ page, log
 });
 
 test('le chargement du script sans création de publicité ne suffit pas', async ({ page, login }) => {
+  await mockActionTab(page);
   await login('free');
   await page.route('https://bicea.org/22/**', (route) => route.fulfill({ contentType: 'application/javascript', body: '/* aucune annonce */' }));
   await page.goto('/wafq/carre/6'); await page.waitForLoadState('networkidle');
-  await page.getByLabel('Nombre', { exact: true }).fill('111'); const popup = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Calculer', exact: true }).click(); await (await popup).close();
+  await page.getByLabel('Nombre', { exact: true }).fill('111');
+  await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__actionAdOpens)).toBe(1);
   const dialog = page.getByRole('dialog', { name: 'Publicité', exact: true });
   await page.waitForTimeout(5500); await expect(dialog.getByRole('button', { name: 'Continuer', exact: true })).toHaveCount(0);
   await expect(page.locator('.kz-grid')).toHaveCount(0);
