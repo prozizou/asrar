@@ -37,10 +37,29 @@ public class UnityAdsPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("mediation", BuildConfig.LEVELPLAY_ENABLED ? "levelplay" : "unity-direct");
         result.put("legacyRewards", !BuildConfig.LEVELPLAY_ENABLED);
+        result.put("actionAdPreload", BuildConfig.LEVELPLAY_ENABLED);
         result.put("privacyRequired", BuildConfig.LEVELPLAY_ENABLED &&
             com.google.android.ump.UserMessagingPlatform.getConsentInformation(getContext()).getPrivacyOptionsRequirementStatus()
                 == com.google.android.ump.ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void prepareActionAd(PluginCall call) {
+        if (!BuildConfig.LEVELPLAY_ENABLED) { call.resolve(); return; }
+        Activity host = getActivity();
+        if (host == null || host.isFinishing() || host.isDestroyed()) { call.resolve(); return; }
+        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", true));
+        host.runOnUiThread(() -> {
+            if (enabled) {
+                if (mediated == null) mediated = new LevelPlayActionAds(this::getActivity);
+                mediated.preload();
+            } else if (mediated != null) {
+                mediated.destroy();
+                mediated = null;
+            }
+            call.resolve();
+        });
     }
 
     @PluginMethod
@@ -53,6 +72,12 @@ public class UnityAdsPlugin extends Plugin {
         host.runOnUiThread(() -> {
             if (!BuildConfig.LEVELPLAY_ENABLED) { call.reject("Médiation non configurée", "unavailable"); return; }
             com.google.android.ump.UserMessagingPlatform.showPrivacyOptionsForm(getActivity(), error -> {
+                // Discard any ad prepared with the previous privacy choices.
+                if (mediated != null) {
+                    mediated.destroy();
+                    mediated = new LevelPlayActionAds(this::getActivity);
+                    mediated.preload();
+                }
                 if (error != null) call.reject("Options publicitaires indisponibles pour le moment", "unavailable");
                 else call.resolve();
             });

@@ -1,7 +1,6 @@
-Nouveautés de la version 8.0.2 :
-• Publicités Android avec la médiation LevelPlay.
-• Une publicité regardée débloque l’action. En cas d’indisponibilité, l’action reste en attente.
-• Retrait des achats Google Play ; abonnements actifs conservés.
-• Messages WhatsApp plus clairs : prix lisibles et références courtes.
-• Choix de confidentialité publicitaire dans Mon compte lorsqu’ils sont requis.
-• L’application reste gratuite avec publicités.
+Nouveautés de la version 8.0.3 :
+• Préchargement des publicités avant les actions.
+• Préparation de l’annonce suivante pendant la vidéo en cours.
+• Bouton Regarder disponible quand l’annonce est prête, avec indication de chargement.
+• Dialogue d’abonnement simplifié : durée, prix, Wave ou WhatsApp.
+• Maintien des choix de confidentialité et de l’accès sans publicités pour les abonnés.
