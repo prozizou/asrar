@@ -1,3 +1,9 @@
+## SW v46.55 — Étoile à 15 cases, constantes paires et impaires
+
+- Modèle à 15 cases proposé par défaut dans l’étoile à cinq branches : cinq entiers par ligne, tous positifs et différents, pour toute constante entière à partir de 38.
+- Une case supplémentaire sur chaque ligne, distinguée en violet dans les exports ; exemple 903 conforme à l’aperçu validé.
+- Modèle original à dix cases conservé dans le choix du modèle, avec ses constantes paires. Chiffres orientaux, copie, exports PNG/SVG et contrôle d’accès conservés.
+
 ## SW v46.54 — Hatim étoile à cinq branches
 
 - Nouveau choix « Étoile 5 branches » dans les hatims 5×5, avec dix nombres et cinq alignements de même somme.
