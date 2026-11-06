@@ -58,9 +58,9 @@ export function magicStar(constant: number) {
 
 export type MagicStar = ReturnType<typeof magicStar>;
 
-export function magicStarText(star: MagicStar) {
+export function magicStarText(star: Pick<MagicStar, 'constant' | 'values' | 'lines' | 'sums'>, title = 'Étoile magique à 18 cases') {
   return [
-    `Étoile magique à 18 cases — S = ${star.constant}`,
+    `${title} — S = ${star.constant}`,
     ...star.values.map((value, i) => `Case ${i + 1} : ${value}`),
     '',
     ...star.lines.map((line, i) => `${line.map((index) => star.values[index - 1]).join(' + ')} = ${star.sums[i]}`),
