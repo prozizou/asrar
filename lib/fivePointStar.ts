@@ -26,4 +26,3 @@ export function fivePointStar(constant: number) {
 }
 
 export type FivePointStar = ReturnType<typeof fivePointStar>;
-
