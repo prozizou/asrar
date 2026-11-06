@@ -1,3 +1,9 @@
+## SW v46.54 — Hatim étoile à cinq branches
+
+- Nouveau choix « Étoile 5 branches » dans les hatims 5×5, avec dix nombres et cinq alignements de même somme.
+- Disposition du modèle reproduite pour la constante 24 ; constantes paires à partir de 24, chiffres latins ou orientaux, copie et exports PNG/SVG.
+- Contrôle d’accès existant conservé et méthodes Base / Askandria toujours disponibles.
+
 ## SW v46.53 — Politique de confidentialité publique
 
 - Page publique `/confidentialite.html`, accessible sans connexion ni redirection Android.

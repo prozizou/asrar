@@ -4,6 +4,7 @@
 import '../carre.css';
 import { useState } from 'react';
 import MethodSelector from '../_components/MethodSelector';
+import MagicStarGenerator from '../_components/MagicStarGenerator';
 import Link from 'next/link';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -15,11 +16,12 @@ import Field from '../_components/Field';
 import { carre5Base, carre5Askandria, SQUARE5_LAYOUT, type Square5 } from '@/lib/kanzouWafq';
 import type { NumeralSystem } from '@/lib/kanzouNumerals';
 
-type Mode = 'base' | 'askandria';
+type Mode = 'base' | 'askandria' | 'star';
 
 const METHODS: Record<Mode, { label: string }> = {
   base: { label: 'Base' },
   askandria: { label: 'Askandria' },
+  star: { label: 'Étoile 5 branches' },
 };
 
 export default function Carre5Page() {
@@ -30,6 +32,8 @@ export default function Carre5Page() {
   const [error, setError] = useState<string | null>(null);
   const [numerals, setNumerals] = useState<NumeralSystem>('latin');
   const [scale, setScale] = useState(1);
+  const [checking, setChecking] = useState(false);
+  const [starReady, setStarReady] = useState(false);
 
   // Mode Base
   const [base, setBase] = useState('');
@@ -63,10 +67,18 @@ export default function Carre5Page() {
     }
   }
 
-  function handleModeChange(next: Mode) {
-    setMode(next);
-    setSquare(null);
-    setError(null);
+  async function handleModeChange(next: Mode) {
+    if (checking || next === mode) return;
+    setMode(next); setSquare(null); setError(null); setStarReady(false);
+    if (next !== 'star') return;
+    setChecking(true);
+    try {
+      const ok = await ensureAccess(PREMIUM_LEVEL);
+      setStarReady(ok);
+      if (!ok) setMode('base');
+    } catch {
+      setMode('base'); setError('Impossible de vérifier votre accès. Réessayez.');
+    } finally { setChecking(false); }
   }
 
   return (
@@ -75,9 +87,11 @@ export default function Carre5Page() {
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 5 × 5</h1>
 
-        <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} />
+        <MethodSelector value={mode} options={METHODS} onChange={handleModeChange} disabled={checking} />
+        {checking && <p role="status">Vérification de l’accès…</p>}
+        {mode === 'star' && starReady && <MagicStarGenerator fiveBranches />}
 
-        <div className="kz-fields">
+        {mode !== 'star' && <div className="kz-fields">
           {mode === 'base' && (
             <>
               <label className="kz-field">
@@ -109,9 +123,9 @@ export default function Carre5Page() {
 
           <button type="button" className="kz-compute-btn" onClick={handleCompute}>Calculer</button>
           {error && <p role="alert" className="kz-error">{error}</p>}
-        </div>
+        </div>}
 
-        {square && (
+        {mode !== 'star' && square && (
           <div className="kz-result">
             <div className="kz-result-toolbar">
               <NumeralToggle value={numerals} onChange={setNumerals} />

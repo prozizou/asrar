@@ -5,25 +5,30 @@ import { magicStar, magicStarText, type MagicStar } from '@/lib/magicStar';
 import { magicStarImage } from '@/lib/magicStarExport';
 import { formatNumeral, type NumeralSystem } from '@/lib/kanzouNumerals';
 import MagicStarDiagram from './MagicStarDiagram';
+import FivePointStarDiagram from './FivePointStarDiagram';
+import { fivePointStar, type FivePointStar } from '@/lib/fivePointStar';
 
-export default function MagicStarGenerator() {
+export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranches?: boolean }) {
   const [input, setInput] = useState('');
   const [numerals, setNumerals] = useState<NumeralSystem>('latin');
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
   const svg = useRef<SVGSVGElement>(null);
-  let star: MagicStar | null = null;
+  const title = fiveBranches ? 'Étoile à 5 branches' : 'Étoile magique à 18 cases';
+  const filename = fiveBranches ? 'etoile-5-branches' : 'etoile-magique';
+  const starText = (value: MagicStar | FivePointStar) => magicStarText(value, title);
+  let star: MagicStar | FivePointStar | null = null;
   let error = '';
   if (input.trim()) {
     try {
       if (!/^\d+$/.test(input.trim())) throw new Error('Saisissez un entier positif, sans décimales.');
-      star = magicStar(Number(input));
+      star = fiveBranches ? fivePointStar(Number(input)) : magicStar(Number(input));
     } catch (cause) { error = (cause as Error).message; }
   }
 
   async function copy() {
     if (!star) return;
-    try { await navigator.clipboard.writeText(magicStarText(star)); setFeedback('copied'); }
+    try { await navigator.clipboard.writeText(starText(star)); setFeedback('copied'); }
     catch { setFeedback('manual'); }
   }
 
@@ -34,7 +39,7 @@ export default function MagicStarGenerator() {
       const blob = await magicStarImage(svg.current, format);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url; link.download = `etoile-magique-${star.constant}.${format}`;
+      link.href = url; link.download = `${filename}-${star.constant}.${format}`;
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setFeedback('downloaded');
@@ -48,7 +53,7 @@ export default function MagicStarGenerator() {
         <label className="kz-field" htmlFor="magic-star-constant"><span>Constante magique</span></label>
         <div className="kz-star-entry-row">
           <input className="kz-star-input" id="magic-star-constant" type="text" inputMode="numeric" maxLength={32}
-            placeholder="Entrer le nombre" value={input} aria-invalid={!!error} aria-describedby={error ? 'magic-star-error' : undefined}
+            placeholder={fiveBranches ? "Exemple : 24" : "Entrer le nombre"} value={input} aria-invalid={!!error} aria-describedby={error ? 'magic-star-error' : undefined}
             onChange={(e) => { setInput(e.target.value); setFeedback(''); }} />
           <select className="kz-star-input" aria-label="Chiffres" value={numerals} onChange={(e) => setNumerals(e.target.value as NumeralSystem)}>
             <option value="latin">123</option><option value="eastern">۱۲۳</option>
@@ -56,8 +61,11 @@ export default function MagicStarGenerator() {
         </div>
         {error && <p id="magic-star-error" role="alert" className="kz-error">{error}</p>}
       </div>
+      {fiveBranches && <p className="kz-note">Constante paire à partir de 24. Chaque ligne contient quatre nombres.</p>}
       <div className="kz-star-scroll" tabIndex={0} role="region" aria-label="Diagramme de l’étoile magique">
-        <MagicStarDiagram ref={svg} star={star} numerals={numerals} />
+        {fiveBranches
+          ? <FivePointStarDiagram ref={svg} star={star as FivePointStar | null} numerals={numerals} />
+          : <MagicStarDiagram ref={svg} star={star as MagicStar | null} numerals={numerals} />}
       </div>
       <div className="kz-star-actions" aria-busy={busy}>
         <button type="button" className="kz-export-btn" disabled={!star || busy} onClick={copy}>Copier</button>
@@ -68,10 +76,10 @@ export default function MagicStarGenerator() {
       {feedback === 'downloaded' && <p role="status">Étoile exportée.</p>}
       {feedback === 'export-error' && <p role="alert" className="kz-error">L’export a échoué. Réessayez.</p>}
       {star && feedback === 'manual' && <div className="kz-note"><p role="alert">La copie automatique est indisponible. Sélectionnez le texte ci-dessous.</p>
-        <textarea aria-label="Étoile à copier manuellement" readOnly rows={8} value={magicStarText(star)} onFocus={(e) => e.target.select()} />
+        <textarea aria-label="Étoile à copier manuellement" readOnly rows={8} value={starText(star)} onFocus={(e) => e.target.select()} />
       </div>}
       {star && <details className="kz-star-checks">
-        <summary>7 sommes vérifiées</summary>
+        <summary>{star.lines.length} sommes vérifiées</summary>
         <ol>{star.lines.map((line, i) => <li key={i}>
           <span>{line.map((index) => formatNumeral(star.values[index - 1], numerals)).join(' + ')} = <strong>{formatNumeral(star.sums[i], numerals)}</strong></span>
         </li>)}</ol>

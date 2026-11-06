@@ -6,7 +6,7 @@ for (const size of [3, 5, 8]) {
     await page.goto(`/wafq/carre/${size}`);
     const methods = page.getByRole('group', { name: 'Méthode' });
     const radios = methods.getByRole('radio');
-    await expect(radios).toHaveCount(size === 3 ? 4 : 2);
+    await expect(radios).toHaveCount(size === 3 ? 4 : size === 5 ? 3 : 2);
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 850 });
       for (const theme of ['dark', 'light']) {
