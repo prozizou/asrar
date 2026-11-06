@@ -20,6 +20,16 @@ test('un canal audio non configuré ne demande pas la permission du micro', asyn
   await expect(page.locator('.zk-chat-panel').getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
   expect(await page.evaluate(() => (window as any).microphoneRequested)).toBe(false);
   await expect(page.getByPlaceholder('Écrire un message…')).toBeEnabled();
+  // Une lecture réussie de nouveaux messages ne doit pas effacer l'erreur
+  // d'une action du compositeur (course observée dans la suite CI).
+  await page.route('**/api/zikr', async (route) => {
+    if (route.request().postDataJSON()?.action !== 'messages') return route.continue();
+    await route.fulfill({ json: { messages: [{ id: 'audio-refresh-check', uid: 'other-fixture-user',
+      text: 'Actualisation audio confirmée', at: Date.now() }], incremental: true, changes: [] } });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByText('Actualisation audio confirmée', { exact: true })).toBeVisible();
+  await expect(page.locator('.zk-chat-panel').getByRole('alert')).toContainText('L’envoi de vocaux n’est pas activé');
 });
 
 test('un vocal dont l’envoi échoue peut être sauvegardé avant de quitter la page', async ({ page, login, postAs }) => {

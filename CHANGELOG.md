@@ -3,6 +3,7 @@
 - Modèle à 15 cases proposé par défaut dans l’étoile à cinq branches : cinq entiers par ligne, tous positifs et différents, pour toute constante entière à partir de 38.
 - Une case supplémentaire sur chaque ligne, distinguée en violet dans les exports ; exemple 903 conforme à l’aperçu validé.
 - Modèle original à dix cases conservé dans le choix du modèle, avec ses constantes paires. Chiffres orientaux, copie, exports PNG/SVG et contrôle d’accès conservés.
+- Les actualisations de la discussion Zikr n’effacent plus les avertissements d’envoi de vocaux ; correction d’une course révélée par les contrôles automatiques.
 
 ## SW v46.54 — Hatim étoile à cinq branches
 
