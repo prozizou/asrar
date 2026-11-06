@@ -1,3 +1,9 @@
+## SW v46.53 — Politique de confidentialité publique
+
+- Page publique `/confidentialite.html`, accessible sans connexion ni redirection Android.
+- Coordonnées actualisées : asrarlilahi66@gmail.com, +221 77 350 05 95 et www.asrarpro.com.
+- Description des données du compte, contenus, localisation, publicités, prestataires et demandes de suppression ; liens depuis la connexion et Mon compte.
+
 ## Android 8.0.3 / SW v46.52 — Préchargement des publicités
 
 - Préparation d’une annonce pour les comptes gratuits avant le clic et de la suivante pendant la vidéo en cours.

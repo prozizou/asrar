@@ -1000,6 +1000,10 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   font-size: .78rem;
   color: var(--login-ink-faint);
 }
+.login-privacy-link {
+  display: block; min-height: 44px; padding: 10px; margin-top: 4px;
+  color: var(--login-ink); font-size: .875rem; text-align: center; text-underline-offset: 3px;
+}
 .login-error {
   display: flex; align-items: center; justify-content: center;
   margin-top: 14px;
