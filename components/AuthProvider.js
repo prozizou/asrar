@@ -191,6 +191,7 @@ function LoginScreen({ onLogin, status, error }) {
             <Lock size={12} strokeWidth={2.5} aria-hidden="true" /> Connexion sécurisée
           </p>
         )}
+        <a className="login-privacy-link" href="/confidentialite.html">Politique de confidentialité</a>
       </div>
     </div>
   );

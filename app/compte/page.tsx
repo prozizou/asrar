@@ -87,6 +87,7 @@ export default function ComptePage() {
         <p className="account-muted">Désactiver retire vos appareils enregistrés. Après réactivation, reconnectez l’appareil pour le réabonner. L’historique reste disponible dans l’application.</p>
       </section>
       <section className="account-card" aria-labelledby="account-data"><h2 id="account-data">Mes données personnelles</h2>
+        <a className="account-button account-secondary" href="/confidentialite.html">Politique de confidentialité</a>
         <p>Téléchargez les informations disponibles sur votre compte, votre abonnement, vos commandes, vos préférences et vos notifications.</p>
         <button disabled={busy} onClick={exportData}>Télécharger mes données disponibles</button>
         <button className="account-secondary" disabled={busy || pending} onClick={() => void privacy('export')}>Demander un export complet</button>

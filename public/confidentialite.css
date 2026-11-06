@@ -1,0 +1,44 @@
+:root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #282235; background: #f6f4fb; line-height: 1.75; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 24px; }
+body { margin: 0; }
+a { color: #5934a3; text-underline-offset: 3px; overflow-wrap: anywhere; }
+a:hover { color: #351970; }
+a:focus-visible { outline: 3px solid #8960d6; outline-offset: 4px; border-radius: 3px; }
+.skip { position: absolute; left: 12px; top: -90px; padding: 10px 16px; background: white; z-index: 1; }
+.skip:focus { top: 12px; }
+.site-head, main, footer { width: min(100% - 40px, 860px); margin-inline: auto; }
+.site-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding-block: 28px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; color: #282235; font-weight: 750; letter-spacing: .06em; text-decoration: none; }
+.brand img { border-radius: 12px; }
+.intro { padding-block: 28px 16px; }
+.eyebrow { color: #5934a3; font-size: .8rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+h1 { font-size: clamp(2rem, 6vw, 3.25rem); line-height: 1.15; letter-spacing: -.035em; margin: 12px 0 20px; }
+h2 { font-size: 1.4rem; line-height: 1.4; margin: 0 0 16px; }
+h3 { font-size: 1.06rem; margin: 28px 0 8px; }
+p { margin: 12px 0; }
+.updated { color: #686075; font-size: .92rem; }
+section { padding: 32px 0; border-bottom: 1px solid #ddd6e8; scroll-margin-top: 12px; }
+.contact-card { background: #fff; border: 1px solid #ddd6e8; border-radius: 20px; padding: 26px; margin: 20px 0; box-shadow: 0 8px 30px #39265808; }
+.contact-list { list-style: none; margin: 20px 0 0; padding: 0; }
+.contact-list li { margin: 10px 0; }
+.contact-list strong { display: block; font-size: .85rem; color: #686075; }
+.contents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; padding: 24px 0; }
+ul { padding-left: 22px; }
+li { margin: 12px 0; }
+footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 28px 0 40px; font-size: .9rem; color: #686075; }
+@media (max-width: 520px) {
+  .site-head, main, footer { width: calc(100% - 32px); }
+  .site-head { padding-block: 20px; }
+  .contents { grid-template-columns: 1fr; gap: 8px; }
+  .contact-card { padding: 20px; }
+  section { padding-block: 26px; }
+}
+@media print {
+  :root { background: #fff; color: #000; font-size: 11pt; }
+  .site-head, main, footer { width: 100%; }
+  .contents, .skip, footer > a { display: none; }
+  .contact-card { box-shadow: none; }
+  a { color: #000; }
+  section { break-inside: avoid; }
+}
