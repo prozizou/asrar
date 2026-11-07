@@ -130,8 +130,12 @@ export default function AccessProvider({ children }) {
   }, [user, authLoading, refreshAccess]);
 
   useEffect(() => {
-    if (authLoading || (user && adFree === null) || !window.Capacitor?.isNativePlatform?.()) return undefined;
-    const enabled = !ADS_PAUSED && !!user && adFree === false;
+    if (!window.Capacitor?.isNativePlatform?.()) return undefined;
+    // Arrêter aussi une préparation lancée par l’ancien écran, sans attendre
+    // que la session ou l’abonnement soient résolus.
+    if (ADS_PAUSED) { void prepareNativeActionAd(false); return undefined; }
+    if (authLoading || (user && adFree === null)) return undefined;
+    const enabled = !!user && adFree === false;
     void prepareNativeActionAd(enabled);
     const resume = () => { if (enabled && document.visibilityState === 'visible') void prepareNativeActionAd(true); };
     document.addEventListener('visibilitychange', resume);
