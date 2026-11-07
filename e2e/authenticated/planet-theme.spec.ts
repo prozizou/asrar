@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 test('Planète suit le thème global jusque dans ses fenêtres et garde des boutons contrastés', async ({ page, login }) => {
-  await page.setViewportSize({ width: 360, height: 850 }); await login('free');
+  await page.setViewportSize({ width: 360, height: 850 }); await login('basic');
   await page.evaluate(() => localStorage.setItem('asrar_planete_place', JSON.stringify({ name: 'Dakar', lat: 14.7167, lng: -17.4677, timeZone: 'Africa/Dakar' })));
   await page.goto('/planete');
   const root = page.locator('.planete-page'); const card = page.locator('.pm-card').first();

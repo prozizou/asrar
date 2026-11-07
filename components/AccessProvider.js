@@ -12,6 +12,7 @@ import { openActionAd, recordAdOutcome } from '@/lib/actionAd';
 import { apiPost } from '@/lib/api';
 import Modal from './Modal';
 import AdCountdown from './AdCountdown';
+import { ADS_PAUSED } from '@/lib/plans';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -130,7 +131,7 @@ export default function AccessProvider({ children }) {
 
   useEffect(() => {
     if (authLoading || (user && adFree === null) || !window.Capacitor?.isNativePlatform?.()) return undefined;
-    const enabled = !!user && adFree === false;
+    const enabled = !ADS_PAUSED && !!user && adFree === false;
     void prepareNativeActionAd(enabled);
     const resume = () => { if (enabled && document.visibilityState === 'visible') void prepareNativeActionAd(true); };
     document.addEventListener('visibilitychange', resume);
@@ -148,6 +149,7 @@ export default function AccessProvider({ children }) {
   // Réserver l’onglet pendant le clic, puis valider séparément l’affichage
   // dans la page. Un échec d’ouverture n’est jamais une autorisation.
   const requireActionAd = useCallback((knownStatus) => {
+    if (ADS_PAUSED) return true; // L’accès reste vérifié par ensureAccess.
     const status = knownStatus || (isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null);
     if (!status || status.unavailable) { setAdBlocked({ reason: 'checking' }); refreshAccess().catch(() => {}); return false; }
     if (status.adFree === true) return true;
@@ -173,7 +175,7 @@ export default function AccessProvider({ children }) {
       let status = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
       // Reserve the popup synchronously when access is known. A fresh deep
       // link must await its first subscription check instead of abandoning it.
-      const adPrepared = !!status;
+      const adPrepared = !ADS_PAUSED && !!status;
       if (adPrepared && !requireActionAd(status)) return false;
       if (!status) {
         status = await checkAccess(user);
@@ -181,7 +183,7 @@ export default function AccessProvider({ children }) {
         if (!status.unavailable) { cache.current = status; cacheAt.current = Date.now(); setAdFree(!!status.adFree); }
       }
       if (status.unavailable) { pendingAdAt.current = 0; openGate('network'); return false; }
-      if (!status.adFree) {
+      if (!ADS_PAUSED && !status.adFree) {
         if (!adPrepared && !requireActionAd(status)) return false;
         const native = window.Capacitor?.isNativePlatform?.();
         if (native) {
@@ -195,14 +197,15 @@ export default function AccessProvider({ children }) {
       } else { pendingAdAt.current = 0; }
       if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
-      const adEligible = !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
+      const adEligible = !ADS_PAUSED && !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
       if (adEligible && status.adCredits > 0 && (await spendAdCredit())) return true;
       return await new Promise((resolve) => {
         openGate(status.allowed && minLevel ? 'level' : null, { adEligible });
         pendingGate.current = resolve;
       });
     } catch {
-      setAdBlocked({ reason: 'unavailable' });
+      if (ADS_PAUSED) openGate('network');
+      else setAdBlocked({ reason: 'unavailable' });
       return false;
     } finally { actionBusy.current = false; }
   }, [user, requireActionAd, waitForAd, openGate, spendAdCredit]);
@@ -232,7 +235,7 @@ export default function AccessProvider({ children }) {
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
-      {countdown && (
+      {!ADS_PAUSED && countdown && (
         <AdCountdown
           onDone={(completed) => {
             const { resolve } = countdown;
@@ -245,7 +248,7 @@ export default function AccessProvider({ children }) {
           onRemoveAds={() => { countdown.resolve(false); adResolve.current = null; setCountdown(null); openGate('noads'); }}
         />
       )}
-      {adBlocked && (
+      {!ADS_PAUSED && adBlocked && (
         <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité nécessaire">
           <div className="sg-box">
             <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setAdBlocked(false)}>

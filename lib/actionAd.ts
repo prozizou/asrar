@@ -1,4 +1,5 @@
 'use client';
+import { ADS_PAUSED } from './plans';
 // Une ouverture d’onglet est une tentative publicitaire, jamais une preuve
 // d’affichage. AccessProvider exige ensuite un bloc chargé et visible.
 
@@ -74,6 +75,7 @@ export function recordAdOutcome(flush?: (stats: AdStats) => void) {
 }
 
 export function openActionAd(): ActionAdResult {
+  if (ADS_PAUSED) return 'blocked';
   try {
     if ((window as any).Capacitor?.isNativePlatform?.()) return 'native';
     if (!ADSTERRA_SMARTLINK || (navigator.userActivation && !navigator.userActivation.isActive)) return 'blocked';

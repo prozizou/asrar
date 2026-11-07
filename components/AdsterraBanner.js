@@ -4,6 +4,7 @@
 // (components/AdsterraAds.js) qu'à la fenêtre de compte à rebours des actions
 // (components/AccessProvider.js), sans import circulaire.
 import { useEffect, useRef } from 'react';
+import { ADS_PAUSED } from '@/lib/plans';
 
 export const AD_HOST = 'https://bicea.org';
 
@@ -12,7 +13,7 @@ export const AD_HOST = 'https://bicea.org';
 // réactivées à la demande du propriétaire (seules les pubs adultes restent
 // bloquées chez Adsterra). Pour les couper sans toucher au code :
 // NEXT_PUBLIC_ADSTERRA_BANNERS=0 (variable Vercel, au prochain déploiement).
-export const BANNERS_ENABLED = process.env.NEXT_PUBLIC_ADSTERRA_BANNERS !== '0';
+export const BANNERS_ENABLED = !ADS_PAUSED && process.env.NEXT_PUBLIC_ADSTERRA_BANNERS !== '0';
 
 export const BANNERS = {
   b320x50: { key: '563c98782ed872bff3a559ced174eb4e', width: 320, height: 50 },
@@ -48,6 +49,7 @@ function loadBanner(el, banner, onError) {
 export function Banner({ banner, style, onStateChange }) {
   const box = useRef(null);
   useEffect(() => {
+    if (ADS_PAUSED) return undefined;
     const el = box.current;
     if (!el) return undefined;
     let ready = false;
@@ -72,6 +74,7 @@ export function Banner({ banner, style, onStateChange }) {
     const cleanup = loadBanner(el, banner, error);
     return () => { clearTimeout(timer); observer?.disconnect(); el.removeEventListener('load', loaded, true); cleanup(); };
   }, [banner, onStateChange]);
+  if (ADS_PAUSED) return null;
   return (
     <div
       ref={box}

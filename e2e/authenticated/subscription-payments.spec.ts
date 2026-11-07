@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import { ADS_PAUSED, FREE_FOR_ALL } from '../../lib/plans';
 const { app } = require('../../server/grant');
 const { accounts } = require('./accounts.cjs');
 const freeKey = accounts.free.email.replace(/\./g, ',');
@@ -13,14 +14,20 @@ test.afterEach(async () => { await app().database().ref().update(saved); });
 
 async function openPlans(page: any) {
   await page.goto('/compte');
-  await page.getByText('Choisir ou renouveler un abonnement sans publicités', { exact: true }).click();
+  await page.getByText('Choisir ou renouveler mon abonnement', { exact: true }).click();
 }
 
 test('le dialogue mobile propose une seule durée et deux choix de paiement, sans défilement', async ({ page, login }) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  await login('free'); await page.goto('/menu');
-  await page.getByRole('button', { name: /Retirer les publicités/ }).click();
-  const dialog = page.getByRole('dialog', { name: 'Retirer les publicités', exact: true });
+  await login('free');
+  if (ADS_PAUSED) {
+    await page.goto('/wafq/carre/6');
+    await page.getByLabel('Nombre', { exact: true }).fill('111');
+    await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+  } else {
+    await page.goto('/menu'); await page.getByRole('button', { name: /Retirer les publicités/ }).click();
+  }
+  const dialog = page.getByRole('dialog', { name: ADS_PAUSED ? 'Abonnement' : 'Retirer les publicités', exact: true });
   await expect(dialog.getByRole('combobox', { name: 'Durée et prix' })).toBeVisible();
   const choices = dialog.getByRole('group', { name: 'Wave ou WhatsApp' });
   await expect(choices.getByRole('button')).toHaveCount(2);
@@ -44,7 +51,7 @@ test('les trois formules ouvrent les liens Wave exacts sans activer un abonnemen
     await tab.close();
     await expect(page.getByRole('status')).toContainText('Après votre paiement Wave');
     await expect(page.getByRole('group', { name: 'Wave ou WhatsApp' }).getByRole('button')).toHaveCount(2);
-    const access = await (await postAs('free', 'check-access')).json(); expect(access.allowed).toBe(true); expect(access.adFree).toBe(false);
+    const access = await (await postAs('free', 'check-access')).json(); expect(access.allowed).toBe(FREE_FOR_ALL); expect(access.adFree).toBe(false);
   }
 });
 
@@ -84,15 +91,15 @@ test('Android ouvre Wave par navigation externe sans demander le plugin Billing'
   expect(popups).toEqual([]);
 });
 
-test('les anciennes actions Billing répondent 410 et l’accès aux recettes reste gratuit', async ({ postAs }) => {
+test('les anciennes actions Billing restent retirées et les recettes demandent un abonnement', async ({ postAs }) => {
   await app().database().ref('secret_billing/settings').set({ enabled: true });
   try {
     for (const action of ['offer', 'verify', 'activate', 'configuration', 'configure']) {
       const response = await postAs('free', 'secret-purchases', { action }); expect(response.status()).toBe(410);
     }
     const detail = await postAs('free', 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' });
-    expect(detail.status()).toBe(200);
-    const access = await (await postAs('free', 'check-access')).json(); expect(access).toMatchObject({ allowed: true, adFree: false });
+    expect(detail.status()).toBe(FREE_FOR_ALL ? 200 : 403);
+    const access = await (await postAs('free', 'check-access')).json(); expect(access).toMatchObject({ allowed: FREE_FOR_ALL, adFree: false });
   } finally { await app().database().ref('secret_billing').remove(); }
 });
 

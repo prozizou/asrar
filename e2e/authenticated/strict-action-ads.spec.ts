@@ -1,5 +1,9 @@
 import { test, expect } from './fixtures';
 import { mockActionCreative } from './helpers/ad-creative';
+import { ADS_PAUSED } from '../../lib/plans';
+
+test.describe('Publicités après reprise', () => {
+  test.skip(ADS_PAUSED, 'Publicités mises en pause par l’éditeur.');
 const { app } = require('../../server/grant');
 const { accounts } = require('./accounts.cjs');
 const freeKey = accounts.free.email.replace(/\./g, ',');
@@ -170,4 +174,6 @@ test('un popup bloqué ne suffit jamais, mais un bloc réellement chargé et vis
   await expect(page.locator('.kz-grid')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continuer', exact: true }).click({ timeout: 10000 });
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
+});
+
 });

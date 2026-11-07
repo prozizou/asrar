@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { watchRewardedAd } from '@/lib/unityAds';
 import SubscriptionPlans from './SubscriptionPlans';
+import { ADS_PAUSED } from '@/lib/plans';
 
 const AD_MESSAGES = {
   no_fill: 'Aucune publicité disponible pour le moment. Réessayez dans quelques minutes.',
@@ -48,7 +49,7 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
   // reason === 'noads' : l'app est gratuite (lib/plans.js FREE_FOR_ALL),
   // l'abonnement retire les publicités (bouton « Retirer les publicités »,
   // components/AdsterraAds.js).
-  const isNoAdsGate = reason === 'noads';
+  const isNoAdsGate = !ADS_PAUSED && reason === 'noads';
 
   // reason === 'level' : l'utilisateur a déjà un abonnement actif, mais pas le
   // palier requis par ce module (Al Qalam / Géomancie → forfait 1 An uniquement).
@@ -90,9 +91,9 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
             ? "Choisissez une durée, puis Wave ou WhatsApp."
             : isLevelGate
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
-            : "Choisissez une formule, puis validez votre demande sur WhatsApp. L'accès est activé par l'administration."}
+            : "Choisissez une durée, puis Wave ou WhatsApp. Votre abonnement sera activé après vérification du paiement."}
         </p>
-        {adEligible && !isLevelGate && !isNoAdsGate && (
+        {!ADS_PAUSED && adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
             <button type="button" className="sg-ad-btn" onClick={watchAd} disabled={adBusy}>
               {adBusy ? 'Publicité en cours…' : '🎬 Regarder une publicité'}

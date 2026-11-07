@@ -7,7 +7,7 @@ const { app } = require("./grant");
 // Source unique (partagée avec lib/access.js côté client) : SUPER_ADMIN_EMAIL,
 // PREMIUM_LEVEL et parseAllowed() ne sont plus dupliqués ni à resynchroniser
 // manuellement entre client et serveur — voir lib/plans.js.
-const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL } = require("../lib/plans");
+const { SUPER_ADMIN_EMAIL, PREMIUM_LEVEL, FREE_FOR_ALL, ADS_PAUSED } = require("../lib/plans");
 
 // Même super-admin que lib/plans.js (surchargé possible par variable d'env, serveur only).
 const { effectiveAccess } = require("../lib/accessStatus");
@@ -106,6 +106,9 @@ async function getAccessStatus({ uid, email }) {
   // abonnement valide retire les publicités), de même que admin/vip et
   // expiresAt (rappel d'expiration de l'abonnement sans publicité).
   // subscriptionLevel : palier réellement payé (page « Mon compte »).
+  // Les abonnements actifs conservent tous les modules pendant la pause.
+  // Le palier payé reste disponible pour le compte et les renouvellements.
+  if (ADS_PAUSED) return { ...real, level: real.allowed ? Infinity : 0, adFree: real.allowed, subscriptionLevel: real.level };
   if (FREE_FOR_ALL) return { ...real, allowed: true, level: Infinity, adFree: real.allowed, subscriptionLevel: real.level };
   return { ...real, adFree: real.allowed };
 }

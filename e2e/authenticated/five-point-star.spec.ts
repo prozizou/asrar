@@ -1,3 +1,4 @@
+import { ADS_PAUSED } from '../../lib/plans';
 import { test, expect } from './fixtures';
 import { mockActionCreative } from './helpers/ad-creative';
 
@@ -81,6 +82,7 @@ test('Hatim 5×5 : modèle cinq branches, constantes, chiffres, copie, exports e
 });
 
 test('Hatim cinq branches : le générateur attend la validation publicitaire du compte gratuit', async ({ page, login }) => {
+  test.skip(ADS_PAUSED, 'Accès remplacé par le paiement pendant la pause.');
   await login('free'); await mockActionCreative(page);
   await page.goto('/wafq/carre/5'); await page.waitForLoadState('networkidle');
   const popup = page.waitForEvent('popup');

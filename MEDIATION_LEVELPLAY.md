@@ -1,5 +1,18 @@
 # Médiation Android LevelPlay — préparation locale
 
+## Pause de diffusion
+
+`ADS_PAUSED=true` dans `lib/plans.js` suspend les annonces du site et de
+l’application, les préchargements, bannières et liens sponsorisés. Les actions
+protégées demandent un abonnement actif via le dialogue Wave/WhatsApp ; tous les
+abonnés actifs conservent leurs modules. Les anciens passes publicitaires ne
+donnent pas accès au contenu réservé pendant cette pause.
+
+Les SDK, identifiants et déclarations app-ads.txt restent disponibles pour la
+reprise. Après confirmation des régies et essais dans l’APK séparé ASRAR Test pubs,
+repasser `ADS_PAUSED` à `false` puis déployer le site pour réactiver le parcours
+publicitaire. La pause se déploie sur le site chargé par l’APK existant.
+
 Le plugin Capacitor conserve son nom UnityAds pour rester compatible avec le site.
 Lorsque LEVELPLAY_ENABLED=true, showInterstitial affiche une **publicité récompensée
 LevelPlay**, après acceptation explicite de l’utilisateur. Le nom de méthode historique
