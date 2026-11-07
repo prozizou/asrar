@@ -1,3 +1,9 @@
+## SW v46.58 — Panneau de paiement mobile
+
+- Dialogue présenté en panneau blanc au bas de l’écran mobile, avec cartes Wave/WhatsApp sélectionnables et bouton Continuer.
+- Choisir un moyen ne lance aucun paiement : seule la confirmation ouvre Wave ou WhatsApp. Durées, tarifs et vérification du paiement conservés.
+- Pause des publicités et accès des abonnés inchangés.
+
 ## SW v46.57 — Pause des publicités, accès par abonnement
 
 - Publicités, préchargements, bannières et liens sponsorisés en pause sur le site et dans l’application. Intégration conservée pour réactivation après confirmation des régies.

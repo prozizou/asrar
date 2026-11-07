@@ -29,7 +29,7 @@ for (const native of [false, true]) {
       if (role === 'free') {
         const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
         await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole('group', { name: 'Wave ou WhatsApp' }).getByRole('button')).toHaveCount(2);
+        await expect(dialog.getByRole('radiogroup', { name: 'Wave ou WhatsApp' }).getByRole('radio')).toHaveCount(2);
         await expect(dialog.getByRole('button', { name: /Regarder/ })).toHaveCount(0);
         await expect(page.locator('.kz-grid')).toHaveCount(0);
         await page.keyboard.press('Escape');
@@ -63,8 +63,9 @@ test('la recette et le modèle étoile proposent aussi Wave ou WhatsApp', async 
   await page.getByRole('button', { name: /Secret de test/i }).click();
   const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('group', { name: 'Wave ou WhatsApp' }).getByRole('button')).toHaveCount(2);
+  await expect(dialog.getByRole('radiogroup', { name: 'Wave ou WhatsApp' }).getByRole('radio')).toHaveCount(2);
   await expect(page.locator('.secret-detail')).toHaveCount(0);
+  await expect.poll(() => page.locator('.subscription-dialog').evaluate(node => getComputedStyle(node).opacity)).toBe('1');
   await page.screenshot({ path: test.info().outputPath('abonnement-action-mobile.png'), fullPage: true });
   await page.keyboard.press('Escape');
   await page.goto('/wafq/carre/5');
