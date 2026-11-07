@@ -27,7 +27,7 @@ const FivePointStarDiagram = forwardRef<SVGSVGElement, {
   const svg = useRef<SVGSVGElement>(null);
   useImperativeHandle(ref, () => svg.current!);
   useLayoutEffect(() => {
-    svg.current?.querySelectorAll<SVGTextElement>('[data-case], [data-constant]').forEach((text) => {
+    svg.current?.querySelectorAll<SVGTextElement>('[data-case], [data-constant], [data-middle]').forEach((text) => {
       text.setAttribute('font-size', text.dataset.fontSize!);
       text.setAttribute('y', text.dataset.center!);
       const box = text.getBBox();
@@ -38,10 +38,11 @@ const FivePointStarDiagram = forwardRef<SVGSVGElement, {
     });
   }, [star, numerals, complete]);
   const points = complete ? [...POINTS, ...EXTRA_POINTS] : POINTS;
+  const middleSum = star && complete ? star.values.slice(5, 10).reduce((sum, value) => sum + value, 0) : null;
   return <svg ref={svg} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 670" className="kz-star-svg"
     role="img" aria-labelledby={`${id}-title ${id}-desc`}>
     <title id={`${id}-title`}>{star ? `Étoile à 5 branches, ${points.length} cases, somme ${star.constant}` : `Étoile à 5 branches vide, ${points.length} cases`}</title>
-    <desc id={`${id}-desc`}>{star ? `${star.values.map((v, i) => `Case ${i + 1} : ${v}`).join(' ; ')}. Les cinq lignes ont pour somme ${star.constant}.` : complete ? 'Quinze emplacements : cinq sommets, cinq intersections et cinq cases supplémentaires.' : 'Dix emplacements : cinq sommets et cinq intersections.'}</desc>
+    <desc id={`${id}-desc`}>{star ? `${star.values.map((v, i) => `Case ${i + 1} : ${v}`).join(' ; ')}. Les cinq lignes ont pour somme ${star.constant}.${complete ? ` Le tour du milieu a pour somme ${middleSum}.` : ''}` : complete ? 'Quinze emplacements : cinq sommets, cinq intersections et cinq cases supplémentaires.' : 'Dix emplacements : cinq sommets et cinq intersections.'}</desc>
     <rect width="640" height="670" fill="var(--star-surface, #fff)" />
     <path d="M320 45 490 570 50 245 590 245 150 570Z" fill="none" stroke="var(--star-ink, #151515)" strokeWidth={complete ? 8 : 18} strokeLinejoin="round" />
     {points.map(([x, y], index) => <g key={index}>
@@ -51,9 +52,13 @@ const FivePointStarDiagram = forwardRef<SVGSVGElement, {
         <title>{`Case ${index + 1} : ${star.values[index]}`}</title>{formatNumeral(star.values[index], numerals)}
       </text>}
     </g>)}
-    {star && <text x="320" y="637" data-constant="true" data-center="637" data-width="588" data-height="34" data-font-size="28"
+    {star && <text x="320" y={complete ? 623 : 637} data-constant="true" data-center={complete ? 623 : 637} data-width="588" data-height={complete ? 30 : 34} data-font-size="28"
       textAnchor="middle" dominantBaseline="central" fill="var(--star-ink, #151515)" fontSize="28" fontWeight="700" fontFamily="Georgia, serif">
       Constante magique : {formatNumeral(star.constant, numerals)}
+    </text>}
+    {middleSum !== null && <text x="320" y="655" data-middle="true" data-center="655" data-width="588" data-height="22" data-font-size="20"
+      textAnchor="middle" dominantBaseline="central" fill="var(--star-ink, #151515)" fontSize="20" fontFamily="Georgia, serif">
+      Tour du milieu : {formatNumeral(middleSum, numerals)}
     </text>}
   </svg>;
 });

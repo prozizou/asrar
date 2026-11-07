@@ -19,7 +19,7 @@ export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranc
   const complete = fiveBranches && model === '15';
   const title = fiveBranches ? complete ? 'Étoile à 5 branches (15 cases)' : 'Étoile à 5 branches' : 'Étoile magique à 18 cases';
   const filename = fiveBranches ? complete ? 'etoile-5-branches-15-cases' : 'etoile-5-branches' : 'etoile-magique';
-  const starText = (value: MagicStar | FivePointStar | FivePointStar15) => magicStarText(value, title);
+  const starText = (value: MagicStar | FivePointStar | FivePointStar15) => magicStarText(value, title, complete ? ['', '', '', '', '', 'Tour du milieu'] : []);
   let star: MagicStar | FivePointStar | FivePointStar15 | null = null;
   let error = '';
   if (input.trim()) {
@@ -72,7 +72,7 @@ export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranc
         {error && <p id="magic-star-error" role="alert" className="kz-error">{error}</p>}
       </div>
       {fiveBranches && <p className="kz-note">{complete
-        ? 'Constante entière à partir de 38, paire ou impaire. Cinq nombres par ligne, tous les nombres sont différents.'
+        ? 'Constante entière à partir de 38, paire ou impaire. Les cinq lignes et le tour du milieu ont la même somme. Tous les nombres sont différents.'
         : 'Constante paire à partir de 24. Chaque ligne contient quatre nombres.'}</p>}
       <div className="kz-star-scroll" tabIndex={0} role="region" aria-label="Diagramme de l’étoile magique">
         {fiveBranches
@@ -93,7 +93,7 @@ export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranc
       {star && <details className="kz-star-checks">
         <summary>{star.lines.length} sommes vérifiées</summary>
         <ol>{star.lines.map((line, i) => <li key={i}>
-          <span>{line.map((index) => formatNumeral(star.values[index - 1], numerals)).join(' + ')} = <strong>{formatNumeral(star.sums[i], numerals)}</strong></span>
+          <span>{complete && i === 5 && 'Tour du milieu : '}{line.map((index) => formatNumeral(star.values[index - 1], numerals)).join(' + ')} = <strong>{formatNumeral(star.sums[i], numerals)}</strong></span>
         </li>)}</ol>
       </details>}
     </section>
