@@ -28,6 +28,7 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
   const [quoteUpdates, setQuoteUpdates] = useState<Record<string, Message>>({});
   const [text, setText] = useState(''); const [reply, setReply] = useState<Message | null>(null);
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [hasOlder, setHasOlder] = useState(false); const [loadingOlder, setLoadingOlder] = useState(false);
   const [newBelow, setNewBelow] = useState(0);
   const [menu, setMenu] = useState<Message | null>(null); const [copyText, setCopyText] = useState('');
@@ -74,10 +75,10 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
       const changes: Message[] = data.changes || [];
       setMessages((previous) => merge(merge(previous, incoming), changes.filter((change) => previous.some((item) => item.id === change.id) || incoming.some((item) => item.id === change.id))));
       setQuoteUpdates((previous) => Object.fromEntries(merge(Object.values(previous), changes).map((message) => [message.id, message])));
-      setError('');
+      setLoadError('');
     } catch (failure: any) {
       if (!alive.current) return;
-      setError(failure.message || 'Impossible de charger la discussion.');
+      setLoadError(failure.message || 'Impossible de charger la discussion.');
       if (failure.status === 403) { clearChatCache(uid, groupId); state.after = null; state.fullAt = 0; state.initialized = false; setMessages([]); setQuoteUpdates({}); }
     }
   }, [groupId, uid, onUnread]);
@@ -306,7 +307,7 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
       })}
     </div>
     {newBelow > 0 && <button className="zk-new-messages" type="button" onClick={() => { if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight; nearBottom.current = true; setNewBelow(0); }}><ArrowDown size={16} /> {newBelow} nouveau{newBelow > 1 ? 'x' : ''} message{newBelow > 1 ? 's' : ''}</button>}
-    {error && !menu && !confirmDelete && !editing && !forwarding && !info && <p role="alert" className="zk-chat-feedback">{error}</p>}
+    {(error || loadError) && !menu && !confirmDelete && !editing && !forwarding && !info && <p role="alert" className="zk-chat-feedback">{error || loadError}</p>}
     {reply && <div className="zk-compose-reply"><div><strong>Répondre à {chatDisplayName(reply.email, reply.name)}</strong><p>{preview(reply)}</p></div><button type="button" aria-label="Annuler la réponse" onClick={() => setReply(null)}><X size={18} /></button></div>}
     {voiceChecking && <p role="status" className="zk-muted">Vérification de l’envoi de vocaux…</p>}
     {unsent && <div className="zk-unsent-voice"><p>Votre vocal est conservé dans cette page. Enregistrez-le avant de la quitter.</p>

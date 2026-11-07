@@ -15,8 +15,14 @@ function intersection(a: Point, b: Point, c: Point, d: Point): Point {
 }
 const POINTS = [...OUTER, ...[[0, 3, 4, 1], [0, 2, 4, 1], [0, 2, 1, 3], [2, 4, 1, 3], [0, 3, 2, 4]]
   .map(([a, b, c, d]) => intersection(OUTER[a], OUTER[b], OUTER[c], OUTER[d]))];
+const EXTRA_POINTS: Point[] = [[0, 6], [2, 8], [4, 5], [1, 7], [3, 9]].map(([a, b]) =>
+  [(POINTS[a][0] + POINTS[b][0]) / 2, (POINTS[a][1] + POINTS[b][1]) / 2]);
 
-const FivePointStarDiagram = forwardRef<SVGSVGElement, { star: FivePointStar | null; numerals: NumeralSystem }>(function FivePointStarDiagram({ star, numerals }, ref) {
+const FivePointStarDiagram = forwardRef<SVGSVGElement, {
+  star: Pick<FivePointStar, 'constant' | 'values'> | null;
+  numerals: NumeralSystem;
+  complete?: boolean;
+}>(function FivePointStarDiagram({ star, numerals, complete = false }, ref) {
   const id = useId();
   const svg = useRef<SVGSVGElement>(null);
   useImperativeHandle(ref, () => svg.current!);
@@ -30,17 +36,18 @@ const FivePointStarDiagram = forwardRef<SVGSVGElement, { star: FivePointStar | n
       const fitted = text.getBBox();
       text.setAttribute('y', String(Number(text.dataset.center) - (fitted.y + fitted.height / 2 - Number(text.dataset.center))));
     });
-  }, [star, numerals]);
+  }, [star, numerals, complete]);
+  const points = complete ? [...POINTS, ...EXTRA_POINTS] : POINTS;
   return <svg ref={svg} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 670" className="kz-star-svg"
     role="img" aria-labelledby={`${id}-title ${id}-desc`}>
-    <title id={`${id}-title`}>{star ? `Étoile à 5 branches, somme ${star.constant}` : 'Étoile à 5 branches vide'}</title>
-    <desc id={`${id}-desc`}>{star ? `${star.values.map((v, i) => `Case ${i + 1} : ${v}`).join(' ; ')}. Les cinq lignes ont pour somme ${star.constant}.` : 'Dix emplacements : cinq sommets et cinq intersections.'}</desc>
+    <title id={`${id}-title`}>{star ? `Étoile à 5 branches, ${points.length} cases, somme ${star.constant}` : `Étoile à 5 branches vide, ${points.length} cases`}</title>
+    <desc id={`${id}-desc`}>{star ? `${star.values.map((v, i) => `Case ${i + 1} : ${v}`).join(' ; ')}. Les cinq lignes ont pour somme ${star.constant}.` : complete ? 'Quinze emplacements : cinq sommets, cinq intersections et cinq cases supplémentaires.' : 'Dix emplacements : cinq sommets et cinq intersections.'}</desc>
     <rect width="640" height="670" fill="var(--star-surface, #fff)" />
-    <path d="M320 45 490 570 50 245 590 245 150 570Z" fill="none" stroke="var(--star-ink, #151515)" strokeWidth="18" strokeLinejoin="round" />
-    {POINTS.map(([x, y], index) => <g key={index}>
-      <circle data-region={index + 1} cx={x} cy={y} r="32" fill="var(--star-surface, #fff)" stroke="var(--star-ink, #151515)" strokeWidth="4" />
+    <path d="M320 45 490 570 50 245 590 245 150 570Z" fill="none" stroke="var(--star-ink, #151515)" strokeWidth={complete ? 8 : 18} strokeLinejoin="round" />
+    {points.map(([x, y], index) => <g key={index}>
+      <circle data-region={index + 1} cx={x} cy={y} r="32" fill="var(--star-surface, #fff)" stroke={index >= 10 ? 'var(--star-extra, #6d28d9)' : 'var(--star-ink, #151515)'} strokeWidth="4" />
       {star && <text data-case={index + 1} x={x} y={y} data-center={y} data-width="48" data-height="36" data-font-size="46"
-        textAnchor="middle" dominantBaseline="central" fill="var(--star-ink, #151515)" fontSize="46" fontWeight="700" fontFamily="Georgia, serif">
+        textAnchor="middle" dominantBaseline="central" fill={index >= 10 ? 'var(--star-extra, #6d28d9)' : 'var(--star-ink, #151515)'} fontSize="46" fontWeight="700" fontFamily="Georgia, serif">
         <title>{`Case ${index + 1} : ${star.values[index]}`}</title>{formatNumeral(star.values[index], numerals)}
       </text>}
     </g>)}

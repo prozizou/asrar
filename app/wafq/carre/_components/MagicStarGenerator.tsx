@@ -7,22 +7,25 @@ import { formatNumeral, type NumeralSystem } from '@/lib/kanzouNumerals';
 import MagicStarDiagram from './MagicStarDiagram';
 import FivePointStarDiagram from './FivePointStarDiagram';
 import { fivePointStar, type FivePointStar } from '@/lib/fivePointStar';
+import { fivePointStar15, type FivePointStar15 } from '@/lib/fivePointStar15';
 
 export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranches?: boolean }) {
   const [input, setInput] = useState('');
   const [numerals, setNumerals] = useState<NumeralSystem>('latin');
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
+  const [model, setModel] = useState('15');
   const svg = useRef<SVGSVGElement>(null);
-  const title = fiveBranches ? 'Étoile à 5 branches' : 'Étoile magique à 18 cases';
-  const filename = fiveBranches ? 'etoile-5-branches' : 'etoile-magique';
-  const starText = (value: MagicStar | FivePointStar) => magicStarText(value, title);
-  let star: MagicStar | FivePointStar | null = null;
+  const complete = fiveBranches && model === '15';
+  const title = fiveBranches ? complete ? 'Étoile à 5 branches (15 cases)' : 'Étoile à 5 branches' : 'Étoile magique à 18 cases';
+  const filename = fiveBranches ? complete ? 'etoile-5-branches-15-cases' : 'etoile-5-branches' : 'etoile-magique';
+  const starText = (value: MagicStar | FivePointStar | FivePointStar15) => magicStarText(value, title);
+  let star: MagicStar | FivePointStar | FivePointStar15 | null = null;
   let error = '';
   if (input.trim()) {
     try {
       if (!/^\d+$/.test(input.trim())) throw new Error('Saisissez un entier positif, sans décimales.');
-      star = fiveBranches ? fivePointStar(Number(input)) : magicStar(Number(input));
+      star = fiveBranches ? complete ? fivePointStar15(Number(input)) : fivePointStar(Number(input)) : magicStar(Number(input));
     } catch (cause) { error = (cause as Error).message; }
   }
 
@@ -49,11 +52,18 @@ export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranc
 
   return (
     <section className="kz-star-generator" aria-label="Générateur d’étoile magique">
+      {fiveBranches && <label className="kz-field">
+        <span>Modèle de l’étoile</span>
+        <select className="kz-star-input" value={model} onChange={(e) => { setModel(e.target.value); setFeedback(''); }}>
+          <option value="15">15 cases — nombres pairs et impairs</option>
+          <option value="10">10 cases — modèle original</option>
+        </select>
+      </label>}
       <div className="kz-star-entry">
         <label className="kz-field" htmlFor="magic-star-constant"><span>Constante magique</span></label>
         <div className="kz-star-entry-row">
           <input className="kz-star-input" id="magic-star-constant" type="text" inputMode="numeric" maxLength={32}
-            placeholder={fiveBranches ? "Exemple : 24" : "Entrer le nombre"} value={input} aria-invalid={!!error} aria-describedby={error ? 'magic-star-error' : undefined}
+            placeholder={fiveBranches ? complete ? "Exemple : 903" : "Exemple : 24" : "Entrer le nombre"} value={input} aria-invalid={!!error} aria-describedby={error ? 'magic-star-error' : undefined}
             onChange={(e) => { setInput(e.target.value); setFeedback(''); }} />
           <select className="kz-star-input" aria-label="Chiffres" value={numerals} onChange={(e) => setNumerals(e.target.value as NumeralSystem)}>
             <option value="latin">123</option><option value="eastern">۱۲۳</option>
@@ -61,10 +71,12 @@ export default function MagicStarGenerator({ fiveBranches = false }: { fiveBranc
         </div>
         {error && <p id="magic-star-error" role="alert" className="kz-error">{error}</p>}
       </div>
-      {fiveBranches && <p className="kz-note">Constante paire à partir de 24. Chaque ligne contient quatre nombres.</p>}
+      {fiveBranches && <p className="kz-note">{complete
+        ? 'Constante entière à partir de 38, paire ou impaire. Cinq nombres par ligne, tous les nombres sont différents.'
+        : 'Constante paire à partir de 24. Chaque ligne contient quatre nombres.'}</p>}
       <div className="kz-star-scroll" tabIndex={0} role="region" aria-label="Diagramme de l’étoile magique">
         {fiveBranches
-          ? <FivePointStarDiagram ref={svg} star={star as FivePointStar | null} numerals={numerals} />
+          ? <FivePointStarDiagram ref={svg} star={star} numerals={numerals} complete={complete} />
           : <MagicStarDiagram ref={svg} star={star as MagicStar | null} numerals={numerals} />}
       </div>
       <div className="kz-star-actions" aria-busy={busy}>
