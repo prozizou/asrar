@@ -14,8 +14,8 @@ def signingValue = { String prop, String env -> keystoreProps.getProperty(prop) 
 def releaseStoreFile = signingValue('storeFile', 'ASRAR_KEYSTORE_FILE')
 def hasReleaseSigning = releaseStoreFile && signingValue('storePassword', 'ASRAR_KEYSTORE_PASSWORD')
 
-// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 125 en local.
-def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '125')
+// versionCode : fourni par la CI (ASRAR_VERSION_CODE), repli 127 en local.
+def asrarVersionCode = Integer.parseInt(System.getenv('ASRAR_VERSION_CODE') ?: '127')
 
 // Identifiants publics de médiation ; aucune clé API secrète dans l'APK.
 def mediationProps = new Properties()
@@ -42,9 +42,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play Store : versionCode doit augmenter à CHAQUE envoi. La CI le fournit
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
-        // local, repli sur la valeur 125 définie plus haut. Dernier build CI publié : 124.
+        // local, repli sur la valeur 127 définie plus haut.
         versionCode asrarVersionCode
-        versionName "8.0.3"
+        versionName "8.0.4"
         buildConfigField 'boolean', 'LEVELPLAY_ENABLED', levelPlayEnabled.toString()
         buildConfigField 'String', 'LEVELPLAY_APP_KEY', groovy.json.JsonOutput.toJson(levelPlayAppKey)
         buildConfigField 'String', 'LEVELPLAY_REWARDED_ID', groovy.json.JsonOutput.toJson(levelPlayRewardedId)
@@ -109,6 +109,7 @@ dependencies {
     implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'
     implementation 'com.unity3d.ads-mediation:admob-adapter:5.19.0'
     implementation 'com.unity3d.ads-mediation:bigo-adapter:5.15.0'
+    implementation 'com.unity3d.ads-mediation:chartboost-adapter:5.12.0'
     implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.robolectric:robolectric:4.16.1"

@@ -73,6 +73,7 @@ public class DiagnosticActivity extends Activity {
     private void initialize(int id) {
         status.setText("Initialisation de LevelPlay…");
         LevelPlay.setMetaData("is_test_suite", "enable");
+        LevelPlay.setMetaData("CHARTBOOST_COPPA", "NO");
         LevelPlay.init(getApplicationContext(), new LevelPlayInitRequest.Builder(BuildConfig.LEVELPLAY_APP_KEY).build(), new LevelPlayInitListener() {
             @Override public void onInitSuccess(LevelPlayConfiguration config) {
                 if (!active(id)) return;

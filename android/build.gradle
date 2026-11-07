@@ -7,7 +7,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.0'
+        // Chartboost 9.14.1 utilise Kotlin 2.3 : R8 8.13.19 requis.
+        classpath 'com.android.tools.build:gradle:8.13.2'
         classpath 'com.google.gms:google-services:4.4.4'
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -21,6 +22,13 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url 'https://cboost.jfrog.io/artifactory/chartboost-ads/'
+            content {
+                includeGroup 'com.chartboost'
+                includeGroup 'com.iab.omid.library'
+            }
+        }
     }
 }
 
