@@ -1,3 +1,9 @@
+## SW v46.56 — Somme du milieu de l’étoile à quinze cases
+
+- Les cinq cases du milieu donnent désormais la même constante que chacune des cinq lignes, avec quinze entiers positifs différents.
+- Nouvelles combinaisons couvrant toutes les constantes entières à partir de 38, paires comme impaires ; six sommes vérifiées.
+- Tour du milieu identifié dans la copie, les vérifications et les exports PNG/SVG. Pour 158 : 29 + 32 + 33 + 34 + 30 = 158.
+
 ## SW v46.55 — Étoile à 15 cases, constantes paires et impaires
 
 - Modèle à 15 cases proposé par défaut dans l’étoile à cinq branches : cinq entiers par ligne, tous positifs et différents, pour toute constante entière à partir de 38.

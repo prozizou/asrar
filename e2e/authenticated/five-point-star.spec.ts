@@ -96,7 +96,7 @@ test('Hatim cinq branches : le générateur attend la validation publicitaire du
   await expect(page.locator('[data-case]')).toHaveCount(15);
 });
 
-test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et exports', async ({ page, login }) => {
+test('étoile 15 cases : cinq lignes et milieu à 903 et 158, entiers, mobile et exports', async ({ page, login }) => {
   await login('premium');
   await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
     configurable: true, value: { writeText: async (value: string) => { (window as any).copiedStar = value; } },
@@ -111,7 +111,7 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
   await expect(diagram.locator('circle')).toHaveCount(15);
   await input.fill('903');
   const values = await diagram.locator('[data-case]').evaluateAll((nodes) => nodes.map((node) => Number(node.lastChild!.textContent)));
-  expect(values).toEqual([174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 192, 184, 191, 188, 190]);
+  expect(values).toEqual([174, 175, 176, 177, 180, 178, 181, 182, 183, 179, 190, 185, 189, 186, 195]);
   const geometry = await diagram.locator('svg').evaluate((svg) => {
     const nodes = Array.from(svg.querySelectorAll<SVGCircleElement>('[data-region]')).map((circle) => ({
       x: circle.cx.baseVal.value, y: circle.cy.baseVal.value,
@@ -124,16 +124,18 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
     });
   });
   expect(geometry).toEqual(Array(5).fill({ count: 5, sum: 903 }));
-  await page.getByText('5 sommes vérifiées', { exact: true }).click();
-  await expect(page.locator('.kz-star-checks li')).toHaveCount(5);
-  await expect(page.locator('.kz-star-checks')).toContainText('174 + 192 + 180 + 181 + 176 = 903');
+  await page.getByText('6 sommes vérifiées', { exact: true }).click();
+  await expect(page.locator('.kz-star-checks li')).toHaveCount(6);
+  await expect(page.locator('.kz-star-checks')).toContainText('174 + 190 + 181 + 182 + 176 = 903');
   await page.getByRole('button', { name: 'Copier', exact: true }).click();
   expect(await page.evaluate(() => (window as any).copiedStar)).toContain('Étoile à 5 branches (15 cases) — S = 903');
+  expect(await page.evaluate(() => (window as any).copiedStar)).toContain('Tour du milieu : 178 + 181 + 182 + 183 + 179 = 903');
+  await input.fill('158');
   for (const format of ['SVG', 'PNG']) {
     const event = page.waitForEvent('download');
     await page.getByRole('button', { name: `Exporter en ${format}`, exact: true }).click();
     const download = await event;
-    expect(download.suggestedFilename()).toBe(`etoile-5-branches-15-cases-903.${format.toLowerCase()}`);
+    expect(download.suggestedFilename()).toBe(`etoile-5-branches-15-cases-158.${format.toLowerCase()}`);
     const stream = await download.createReadStream(); const chunks: Buffer[] = [];
     for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks);
@@ -141,9 +143,10 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
       expect(bytes.toString().match(/data-case=/g)).toHaveLength(15);
       expect(bytes.toString()).toContain('--star-surface:#fff');
       expect(bytes.toString()).toContain('var(--star-extra, #6d28d9)');
+      expect(bytes.toString()).toContain('Tour du milieu : 158');
     } else {
       expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
-      await download.saveAs(test.info().outputPath('etoile-15-cases-903.png'));
+      await download.saveAs(test.info().outputPath('etoile-15-cases-158.png'));
     }
   }
   for (const width of [320, 390, 768]) {
@@ -152,7 +155,7 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
       await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
       for (const numerals of ['latin', 'eastern']) {
         await page.getByRole('combobox', { name: 'Chiffres', exact: true }).selectOption(numerals);
-        for (const constant of ['38', '39', '903', '904', '9007199254740991']) {
+        for (const constant of ['38', '39', '40', '41', '42', '158', '159', '903', '904', '9007199254740991']) {
           await input.fill(constant);
           const outside = await diagram.locator('[data-case]').evaluateAll((nodes: SVGTextElement[]) => nodes.flatMap((text) => {
             const box = text.getBBox();
@@ -161,6 +164,21 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
               .every(([x, y]) => circle.isPointInFill(new DOMPoint(x, y))) ? [] : [text.dataset.case];
           }));
           expect(outside).toEqual([]);
+          const sums = await diagram.locator('svg').evaluate((svg) => {
+            const texts = Array.from(svg.querySelectorAll<SVGTextElement>('[data-case]'));
+            const eastern = '۰۱۲۳۴۵۶۷۸۹';
+            const value = (text: SVGTextElement) => BigInt(text.lastChild!.textContent!.replace(/[۰-۹]/g, (c) => String(eastern.indexOf(c))));
+            return [texts.slice(5, 10).reduce((sum, text) => sum + value(text), 0n).toString(),
+              (svg.querySelector('[data-middle]')!.textContent || '').replace(/[۰-۹]/g, (c) => String(eastern.indexOf(c)))];
+          });
+          expect(sums).toEqual([constant, 'Tour du milieu : ' + constant]);
+          const captionsFit = await diagram.locator('svg').evaluate((svg) => {
+            const constant = svg.querySelector<SVGTextElement>('[data-constant]')!.getBBox();
+            const middle = svg.querySelector<SVGTextElement>('[data-middle]')!.getBBox();
+            return [constant, middle].every((b) => b.x >= 0 && b.y >= 603 && b.x + b.width <= 640 && b.y + b.height <= 670) &&
+              constant.y + constant.height <= middle.y;
+          });
+          expect(captionsFit).toBe(true);
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         }
       }
@@ -169,6 +187,12 @@ test('étoile 15 cases : cinq lignes géométriques à 903, entiers, mobile et e
       await page.screenshot({ path: test.info().outputPath(`etoile-15-${width}-${theme}.png`), fullPage: true });
     }
   }
+  await input.fill('158');
+  await expect(page.locator('.kz-star-checks li').last()).toContainText('Tour du milieu : 29 + 32 + 33 + 34 + 30 = 158');
+  await page.getByRole('button', { name: 'Copier', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).copiedStar)).toContain('Tour du milieu : 29 + 32 + 33 + 34 + 30 = 158');
+  await diagram.screenshot({ path: test.info().outputPath('etoile-milieu-158.png') });
+  await input.fill('903');
   await model.selectOption('10');
   await expect(input).toHaveValue('903');
   await expect(input).toHaveAttribute('aria-invalid', 'true');
