@@ -12,16 +12,46 @@ Les identifiants publics sont dans android/levelplay.properties (ou variables AS
 portant les mêmes noms). App Key 237ff501d, unité récompensée evijfgcicz1kfdt9.
 L’interstitiel tvah9k0xm07abinp reste dans la console pour un futur usage approprié.
 L’App ID AdMob est ca-app-pub-3895250961868134~5473242896.
-LEVELPLAY_ENABLED=true dans la configuration locale ; aucune publication effectuée.
+LEVELPLAY_ENABLED=true dans la configuration. L’ajout Chartboost ci-dessous est
+préparé pour Android 8.0.4 ; cette nouvelle version n’est pas encore publiée.
 Le build refuse une activation avec des identifiants absents ou invalides.
 Aucun secret réseau, OAuth ou clé de rappel serveur n’est inclus dans l’APK.
 
-SDK 9.5.0 ; adaptateurs Unity Ads 5.15.0, Google AdMob 5.19.0, BIGO 5.15.0.
+SDK 9.5.0 ; adaptateurs Unity Ads 5.15.0, Google AdMob 5.19.0, BIGO 5.15.0,
+Chartboost 5.12.0 (SDK Chartboost 9.14.1).
 Les SDK des réseaux sont fournis transitivement par les adaptateurs.
 Le compte ironSource doit être approuvé ; les instances doivent être configurées et
 actives pour l’unité Rewards dans LevelPlay. Le fichier app-ads.txt Google est déjà
 publié, mais la validation AdMob reste gérée par Google. Les éventuelles autres lignes
 app-ads.txt doivent provenir des régies concernées, jamais être inventées.
+
+## Préparation Chartboost — Android 8.0.4
+
+L’adaptateur est inclus dans l’application complète et le diagnostic séparé.
+Le dépôt Maven officiel Chartboost est limité aux groupes du SDK et de son OM SDK.
+AGP 8.13.2 fournit R8 8.13.19, requis pour la dépendance Kotlin 2.3.0 du SDK.
+Le signal `CHARTBOOST_COPPA=NO` est transmis avant l’initialisation de LevelPlay,
+conformément à la politique du service non destiné aux moins de 13 ans.
+Les App ID, App Signature et ad locations Chartboost restent configurés dans
+LevelPlay ; aucun secret Chartboost n’est ajouté au dépôt ou à l’APK.
+
+La console Chartboost indique « Pending: Waiting for SDK integration and ad
+request submission ». Installer la nouvelle version native puis vérifier une
+requête via LevelPlay sur téléphone avec le compte et l’application configurés.
+La compilation seule ne confirme ni la réception de la requête, ni la validation
+du compte, ni la disponibilité d’une annonce.
+
+Le fichier public `app-ads.txt` conserve les déclarations existantes. Les lignes
+Chartboost restent à récupérer dans Monetization > Tools > App-ads.txt, une fois
+l’application éligible, ou auprès du support Chartboost. Le Publisher ID doit
+provenir du compte : l’App ID ne peut pas le remplacer. Publier les lignes complètes
+avec les éventuels revendeurs, puis relancer le scan. Un ajout au fichier texte
+n’installe pas l’adaptateur dans les versions Android déjà diffusées.
+
+Sources :
+- https://docs.unity.com/en-us/grow/levelplay/sdk/android/networks/guides/chartboost
+- https://developer.android.com/build/releases/agp-8-13-0-release-notes
+- https://docs.chartboost.com/en/monetization/publishing/app-ads-txt/
 
 ## Consentement et cycle de vie
 
@@ -35,7 +65,8 @@ Un appel à la fois ; consentement/chargement bornés ; aucun affichage si l’a
 n’est pas au premier plan ; fermeture/destruction annule la demande. Les callbacks
 anciens sont ignorés. Une récompense peut arriver après fermeture (attente 5 secondes).
 Aucun accès en cas d’erreur, absence d’annonce, abandon ou timeout.
-Le délai initial et la limite de fréquence JS existants sont conservés.
+Le préchargement prépare les annonces en amont ; aucune attente liée à un intervalle
+JS n’est imposée lorsqu’une annonce est prête.
 
 ## Crédits historiques
 

@@ -1,3 +1,10 @@
+## Android 8.0.4 — Préparation Chartboost
+
+- Adaptateur Chartboost 5.12.0 / SDK 9.14.1 dans l’application et le diagnostic LevelPlay ; dépôt Maven officiel limité aux dépendances Chartboost.
+- AGP 8.13.2 pour la compatibilité R8 avec Kotlin 2.3 ; signal non destiné aux enfants transmis à Chartboost avant initialisation, selon la politique du service.
+- Nouvelle version native à publier pour activer cette intégration sur les appareils ; validation et première requête Chartboost sur téléphone à effectuer.
+- Déclarations `app-ads.txt` Chartboost encore attendues du compte éditeur ; aucune ligne ni aucun identifiant inventé.
+
 ## SW v46.56 — Somme du milieu de l’étoile à quinze cases
 
 - Les cinq cases du milieu donnent désormais la même constante que chacune des cinq lignes, avec quinze entiers positifs différents.

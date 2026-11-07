@@ -65,6 +65,8 @@ final class LevelPlayAdPlatform implements LevelPlayActionAds.Platform {
         if (destroyed) return;
         if (initialized) { callback.done(null); return; }
         try {
+            // Cohérent avec /confidentialite.html : service non destiné aux moins de 13 ans.
+            LevelPlay.setMetaData("CHARTBOOST_COPPA", "NO");
             LevelPlay.init(activity.get().getApplicationContext(),
                 new LevelPlayInitRequest.Builder(BuildConfig.LEVELPLAY_APP_KEY).build(),
                 new LevelPlayInitListener() {
