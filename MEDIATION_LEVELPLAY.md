@@ -12,8 +12,9 @@ Les identifiants publics sont dans android/levelplay.properties (ou variables AS
 portant les mêmes noms). App Key 237ff501d, unité récompensée evijfgcicz1kfdt9.
 L’interstitiel tvah9k0xm07abinp reste dans la console pour un futur usage approprié.
 L’App ID AdMob est ca-app-pub-3895250961868134~5473242896.
-LEVELPLAY_ENABLED=true dans la configuration. L’ajout Chartboost ci-dessous est
-préparé pour Android 8.0.4 ; cette nouvelle version n’est pas encore publiée.
+LEVELPLAY_ENABLED=true dans la configuration. Android 8.0.4 (code 128), avec
+Chartboost, a été envoyé sur la piste production de Google Play ; sa disponibilité
+sur le Store reste à vérifier après le traitement de Google.
 Le build refuse une activation avec des identifiants absents ou invalides.
 Aucun secret réseau, OAuth ou clé de rappel serveur n’est inclus dans l’APK.
 
@@ -41,12 +42,17 @@ requête via LevelPlay sur téléphone avec le compte et l’application configu
 La compilation seule ne confirme ni la réception de la requête, ni la validation
 du compte, ni la disponibilité d’une annonce.
 
-Le fichier public `app-ads.txt` conserve les déclarations existantes. Les lignes
-Chartboost restent à récupérer dans Monetization > Tools > App-ads.txt, une fois
-l’application éligible, ou auprès du support Chartboost. Le Publisher ID doit
-provenir du compte : l’App ID ne peut pas le remplacer. Publier les lignes complètes
-avec les éventuels revendeurs, puis relancer le scan. Un ajout au fichier texte
-n’installe pas l’adaptateur dans les versions Android déjà diffusées.
+Le fichier public `app-ads.txt` conserve les déclarations Google et BIGO existantes
+et inclut les 766 déclarations Chartboost fournies par l’éditeur, dont 145 étaient
+déjà présentes. Les 621 lignes manquantes portent le total à 1 294 déclarations
+uniques. Le Publisher ID fourni est `6aee950ef78154dc70ef45e7` :
+`chartboost.com, 6aee950ef78154dc70ef45e7, DIRECT`.
+Après déploiement, vérifier https://www.asrarpro.com/app-ads.txt puis relancer le
+scan dans Chartboost. Le fichier doit rester accessible sans connexion ni
+redirection vers le Play Store. La présence des lignes ne confirme pas à elle
+seule l’approbation du compte ni la réception d’une requête publicitaire.
+Un ajout au fichier texte n’installe pas l’adaptateur dans les versions Android
+déjà diffusées.
 
 Sources :
 - https://docs.unity.com/en-us/grow/levelplay/sdk/android/networks/guides/chartboost

@@ -1,3 +1,9 @@
+## Publication app-ads.txt — Chartboost
+
+- Ajout des 621 déclarations Chartboost manquantes à partir des 766 lignes fournies par l’éditeur ; 145 étaient déjà présentes.
+- Publisher ID `6aee950ef78154dc70ef45e7` déclaré en DIRECT ; conservation de toutes les lignes Google et BIGO, soit 1 294 déclarations uniques au total.
+- Mise à jour du fichier public sans nouvel envoi Android ; un nouveau scan Chartboost reste à effectuer après déploiement.
+
 ## Android 8.0.4 — Préparation Chartboost
 
 - Adaptateur Chartboost 5.12.0 / SDK 9.14.1 dans l’application et le diagnostic LevelPlay ; dépôt Maven officiel limité aux dépendances Chartboost.
