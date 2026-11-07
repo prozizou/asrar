@@ -1,3 +1,8 @@
+## ASRAR Test pubs 1.1 — Chartboost
+
+- Chartboost affiché parmi les réseaux du diagnostic LevelPlay ; adaptateur 5.12.0 et SDK 9.14.1 déjà inclus.
+- Version du diagnostic portée à `1.1-test` (code 2), avec le même identifiant `com.Asrar.mediationtest` pour mettre à jour l’APK de test séparé.
+
 ## Publication app-ads.txt — Chartboost
 
 - Ajout des 621 déclarations Chartboost manquantes à partir des 766 lignes fournies par l’éditeur ; 145 étaient déjà présentes.

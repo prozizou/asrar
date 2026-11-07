@@ -14,8 +14,8 @@ android {
         applicationId 'com.Asrar.mediationtest'
         minSdk rootProject.ext.minSdkVersion
         targetSdk rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName '1.0-test'
+        versionCode 2
+        versionName '1.1-test'
         buildConfigField 'String', 'LEVELPLAY_APP_KEY', groovy.json.JsonOutput.toJson(appKey)
         manifestPlaceholders.admobAppId = admobId
     }

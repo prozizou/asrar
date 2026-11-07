@@ -37,7 +37,7 @@ public class DiagnosticActivity extends Activity {
         heading.setText("ASRAR — Test des publicités"); heading.setTextSize(24);
         layout.addView(heading);
         TextView explanation = new TextView(this);
-        explanation.setText("Diagnostic LevelPlay : Unity Ads, Google et BIGO.\n\nCette application de test est séparée d’ASRAR PRO. Elle sert à vérifier les régies et ne modifie ni vos abonnements ni vos messages.\n\nDans l’outil LevelPlay, testez les formats Rewarded et Interstitial de chaque réseau.\n");
+        explanation.setText("Diagnostic LevelPlay : Unity Ads, Google, BIGO et Chartboost.\n\nCette application de test est séparée d’ASRAR PRO. Elle sert à vérifier les régies et ne modifie ni vos abonnements ni vos messages.\n\nDans l’outil LevelPlay, testez les formats Rewarded et Interstitial de chaque réseau.\n");
         explanation.setTextSize(17); layout.addView(explanation);
         open = new Button(this); open.setText("Ouvrir le diagnostic LevelPlay");
         open.setOnClickListener(v -> startDiagnostic()); layout.addView(open);
