@@ -6,6 +6,7 @@
 // uniquement) — une publicité regardée en entier débloque UNE utilisation
 // (voir lib/unityAds.js, server/adReward.js).
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import Modal from './Modal';
 import { watchRewardedAd } from '@/lib/unityAds';
 import SubscriptionPlans from './SubscriptionPlans';
@@ -80,18 +81,18 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
   }
 
   return (
-    <Modal className="sg-overlay" onClose={onClose} label={isNoAdsGate ? 'Retirer les publicités' : 'Abonnement'}>
+    <Modal className="sg-overlay subscription-sheet-overlay" onClose={onClose} label={isNoAdsGate ? 'Retirer les publicités' : 'Abonnement'}>
       <div className="sg-box subscription-dialog">
         <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
-          ✕
+          <X size={20} strokeWidth={1.8} aria-hidden="true" />
         </button>
-        <h2>{isNoAdsGate ? 'Retirer les publicités' : isLevelGate ? 'Réservé au forfait 1 An' : 'Abonnement requis'}</h2>
+        <h2>{isNoAdsGate ? 'Retirer les publicités' : isLevelGate ? 'Forfait 1 An' : 'Votre abonnement'}</h2>
         <p className="sg-sub">
           {isNoAdsGate
-            ? "Choisissez une durée, puis Wave ou WhatsApp."
+            ? "Choisissez votre moyen de paiement."
             : isLevelGate
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
-            : "Choisissez une durée, puis Wave ou WhatsApp. Votre abonnement sera activé après vérification du paiement."}
+            : "Choisissez votre moyen de paiement."}
         </p>
         {!ADS_PAUSED && adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">

@@ -2110,32 +2110,71 @@ html[data-theme="light"] {
 .sr-submit { width: auto; margin: 0; min-height: 44px; color: var(--button-ink); }
 .sr-item-email, .sr-item-text { overflow-wrap: anywhere; }
 
-/* Abonnements : une durée, deux moyens de contact/paiement. */
-.subscription-dialog {
-  width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto;
-  overscroll-behavior: contain; padding: 28px 24px 24px;
-  background: var(--bg-deep); color: var(--text-main);
-  border-color: var(--glass-border); text-align: left;
+/* Abonnement : panneau de paiement mobile et cartes sélectionnables. */
+.app-dialog.sg-overlay.subscription-sheet-overlay {
+  align-items: flex-end; padding: 0; background: rgba(9, 15, 26, .38);
+  backdrop-filter: blur(3px);
 }
-.subscription-dialog .sg-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; margin: 0; top: 6px; right: 6px; border-radius: 12px; }
-.subscription-dialog .sg-close:hover { background: var(--surface-2); color: var(--text-main); box-shadow: none; transform: none; }
-.subscription-dialog h2 { margin: 0; padding-right: 32px; font-size: 1.4rem; line-height: 1.25; letter-spacing: -.015em; }
-.subscription-dialog .sg-sub { margin: 12px 0 0; color: var(--text-muted); line-height: 1.5; font-size: 1rem; }
-.subscription-simple { display: grid; gap: 12px; margin-top: 20px; text-align: left; color: var(--text-main); }
-.subscription-simple > label { margin: 0; font-size: .95rem; font-weight: 600; }
-.subscription-simple > select { display: block; width: 100%; min-width: 0; min-height: 52px; margin: 0; padding: 12px; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--bg-deep); color: var(--text-main); font: inherit; font-size: 1rem; }
-.subscription-payment-choices { display: grid; gap: 12px; margin-top: 4px; }
-.subscription-simple .subscription-payment-choices button { display: block; width: 100%; min-height: 52px; padding: 12px 16px; margin: 0; border: 1px solid transparent; border-radius: 10px; font: inherit; font-size: 1.05rem; font-weight: 700; line-height: 1.4; cursor: pointer; }
-.subscription-simple .subscription-wave { background: #21c4e6; color: #062c38; }
-.subscription-simple button.subscription-whatsapp { background: var(--surface-2); border-color: var(--glass-border); color: var(--text-main); }
-.subscription-simple button:hover { transform: none; box-shadow: none; filter: brightness(1.06); }
-.subscription-simple .subscription-simple-note { margin: 0; color: var(--text-muted); font-size: .85rem; line-height: 1.5; }
-.subscription-simple .subscription-error { padding: 12px; margin: 0; border-radius: 10px; background: var(--status-danger-bg); color: var(--status-danger-text); line-height: 1.5; }
-.subscription-simple :is(button, select):focus-visible, .account-subscription-plans summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.subscription-dialog {
+  color-scheme: light; width: 100%; max-width: 460px;
+  max-height: calc(100dvh - var(--sat) - 12px); overflow-y: auto;
+  overscroll-behavior: contain; text-align: left;
+  padding: 54px max(22px, var(--sar)) calc(22px + var(--sab)) max(22px, var(--sal));
+  border: 0; border-radius: 26px 26px 0 0;
+  background: #fff; color: #17212e; box-shadow: 0 -8px 48px rgba(15, 25, 40, .12);
+}
+.subscription-dialog .sg-close {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  top: 6px; left: 9px; right: auto; padding: 0; margin: 0;
+  border: 0; border-radius: 50%; color: #75808e; background: transparent;
+}
+.subscription-dialog .sg-close:hover { background: #f2f5f8; color: #17212e; box-shadow: none; transform: none; }
+.subscription-dialog h2 { margin: 0; padding: 0; font-size: 1.3rem; font-weight: 700; line-height: 1.25; letter-spacing: -.025em; }
+.subscription-dialog .sg-sub { margin: 6px 0 0; color: #637082; font-size: .9rem; line-height: 1.45; }
+.subscription-simple { display: grid; gap: 12px; margin-top: 20px; min-width: 0; text-align: left; color: #17212e; color-scheme: light; }
+.subscription-simple > label { margin: 0 0 -5px; font-size: .8rem; font-weight: 600; color: #637082; }
+.subscription-plan-picker { position: relative; min-width: 0; }
+.subscription-plan-picker select {
+  appearance: none; display: block; width: 100%; min-width: 0; min-height: 46px;
+  margin: 0; padding: 11px 40px 11px 14px; border: 1px solid #e6ebf1;
+  border-radius: 11px; background: #f6f8fb; color: #263244; font: inherit; font-size: 1rem; font-weight: 600;
+}
+.subscription-plan-picker > svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #75808e; pointer-events: none; }
+.subscription-payment-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 6px 0 10px; }
+.subscription-method {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  min-width: 0; min-height: 92px; padding: 12px 8px; margin: 0; border: 1.5px solid #e0e6ee;
+  border-radius: 12px; color: #263244; background: #fff; cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.subscription-method input { position: absolute; width: 1px; height: 1px; padding: 0; margin: 0; border: 0; opacity: 0; }
+.subscription-method:has(input:checked) { border-color: #0873e5; background: #f5faff; box-shadow: 0 0 0 .5px #0873e5; }
+.subscription-method:focus-within { outline: 3px solid #0873e5; outline-offset: 3px; }
+.subscription-method:hover { border-color: #8dbbf2; }
+.subscription-method-icon { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 10px; }
+.subscription-method-wave .subscription-method-icon { color: #087daf; background: #e1f5fd; }
+.subscription-method-whatsapp .subscription-method-icon { color: #168544; background: #e6f7ed; }
+.subscription-method-name { font-size: .92rem; font-weight: 600; line-height: 1.2; }
+.subscription-method-check { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: #0873e5; color: #fff; }
+.subscription-simple button.subscription-continue {
+  width: 100%; min-height: 48px; padding: 12px 16px; margin: 0; border: 0; border-radius: 10px;
+  background: #0870db; color: #fff; font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.4; cursor: pointer;
+}
+.subscription-simple button.subscription-continue:hover { background: #0664c5; transform: none; box-shadow: none; }
+.subscription-simple button.subscription-continue:disabled { opacity: .65; cursor: wait; }
+.subscription-simple .subscription-simple-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 0; color: #637082; font-size: .75rem; line-height: 1.45; text-align: center; }
+.subscription-simple-note > svg { flex-shrink: 0; margin-top: 2px; }
+.subscription-simple .subscription-error { padding: 10px 12px; margin: 0; border-radius: 10px; background: #fff1ef; color: #b42318; font-size: .85rem; line-height: 1.5; }
+.subscription-simple :is(button, select):focus-visible, .subscription-dialog .sg-close:focus-visible { outline: 3px solid #0873e5; outline-offset: 3px; }
 .account-subscription-plans summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 600; }
-@media (max-width: 600px) {
-  .app-dialog.sg-overlay:has(.subscription-dialog) { padding: calc(12px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal)); }
-  .subscription-dialog { padding: 28px 20px 20px; border-radius: 16px; }
+.account-subscription-plans .subscription-simple { padding: 18px; border: 1px solid #e6ebf1; border-radius: 16px; background: #fff; }
+@media (min-width: 640px) {
+  .app-dialog.sg-overlay.subscription-sheet-overlay { align-items: center; padding: 24px; }
+  .subscription-dialog { border-radius: 24px; padding-bottom: 24px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .subscription-sheet-overlay .subscription-dialog { animation: subscription-sheet-in .22s ease-out; }
+  @keyframes subscription-sheet-in { from { opacity: .6; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 }
 .action-ad-area { display: flex; justify-content: center; margin: 12px auto; width: 300px; max-width: 100%; overflow: hidden; }
 .sg-box .action-ad-area + .sg-sub { margin-top: 12px; }
