@@ -1,6 +1,6 @@
 'use client';
 import { useId, useState } from 'react';
-import { SUB_PLANS } from '@/lib/plans';
+import { SUB_PLANS, ADS_PAUSED } from '@/lib/plans';
 import { subscriptionWaveUrl } from '@/lib/subscriptionPayments';
 import { reserveExternalWindow } from '@/lib/externalWindow';
 import { openAccess } from '@/lib/whatsapp';
@@ -30,7 +30,7 @@ export default function SubscriptionPlans() {
     </select>
     <div className="subscription-payment-choices" role="group" aria-label="Wave ou WhatsApp">
       <button type="button" className="subscription-wave" onClick={wave}>Wave</button>
-      <button type="button" className="subscription-whatsapp" onClick={() => openAccess({ planId: plan.id, email: user?.email, noAds: true, paidVia: fromWave ? 'wave' : undefined })}>WhatsApp</button>
+      <button type="button" className="subscription-whatsapp" onClick={() => openAccess({ planId: plan.id, email: user?.email, noAds: !ADS_PAUSED, paidVia: fromWave ? 'wave' : undefined })}>WhatsApp</button>
     </div>
     <p className="subscription-simple-note" role="status">{fromWave ? 'Après votre paiement Wave, envoyez la confirmation sur WhatsApp. Activation après vérification.' : 'L’abonnement sera activé après vérification du paiement.'}</p>
     {error && <p className="subscription-error" role="alert">{error}</p>}

@@ -1,26 +1,26 @@
 import { test, expect } from './fixtures';
+import { FREE_FOR_ALL } from '../../lib/plans';
 
 test.describe('Droits vérifiés avec Auth et RTDB réels en émulation', () => {
-  // App gratuite (lib/plans.js FREE_FOR_ALL) : accès total pour tous ;
-  // adFree porte le VRAI statut d'abonnement (un abonnement valide retire
-  // les publicités).
+  // La pause impose un abonnement, en conservant les accès des abonnés.
   for (const [role, adFree] of [['free', false], ['basic', true], ['premium', true], ['expired', false]] as const) {
     test(`${role} reçoit son vrai statut`, async ({ postAs }) => {
       const response = await postAs(role, 'check-access');
       expect(response.status()).toBe(200);
-      expect(await response.json()).toMatchObject({ allowed: true, level: 999999, adFree });
+      expect(await response.json()).toMatchObject({ allowed: FREE_FOR_ALL || adFree, level: FREE_FOR_ALL || adFree ? 999999 : 0, adFree, adsEnabled: false, adCredits: 0 });
     });
   }
-  test('le catalogue ne livre pas le contenu ; le détail est ouvert à tout compte (app gratuite)', async ({ postAs }) => {
+  test('le catalogue est visible et le détail exige un abonnement actif', async ({ postAs }) => {
     const list = await postAs('free', 'list-content', { kind: 'secret', cat: 'protection' });
     expect(list.status()).toBe(200);
     expect((await list.json()).items[0].sirr).toBeUndefined();
     for (const role of ['free', 'basic']) {
       const detail = await postAs(role, 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' });
-      expect((await detail.json()).item.sirr).toBe('Contenu réservé aux abonnés');
+      if (role === 'free' && !FREE_FOR_ALL) expect(detail.status()).toBe(403);
+      else expect((await detail.json()).item.sirr).toBe('Contenu réservé aux abonnés');
     }
   });
-  test('le thème premium est ouvert à tout compte (app gratuite)', async ({ postAs }) => {
+  test('les abonnés conservent leur accès aux thèmes', async ({ postAs }) => {
     expect((await postAs('basic', 'get-theme')).status()).toBe(200);
     expect((await postAs('premium', 'get-theme')).status()).toBe(200);
   });

@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import { FREE_FOR_ALL } from '../../lib/plans';
 const { app } = require('../../server/grant');
 
 test('le badge indexé conserve les notifications anciennes non lues sans renvoyer l’historique', async ({ postAs }) => {
@@ -37,8 +38,9 @@ test('le catalogue est invalidé après édition et le cache ne contourne pas l�
   expect(second.items.find((item: any) => item._key === 'cost-book').titre).toBe('Nouveau titre');
   expect(second.items.find((item: any) => item._key === 'cost-book').pdf).toBeUndefined();
   expect((await postAs('unverified', 'list-content', { kind: 'book' })).status()).toBe(403);
-  // App gratuite (FREE_FOR_ALL) : le détail est ouvert à tout compte vérifié.
-  expect((await postAs('free', 'get-content', { kind: 'book', key: 'cost-book' })).status()).toBe(200);
+  // Le cache du catalogue ne contourne pas le paiement du détail.
+  expect((await postAs('free', 'get-content', { kind: 'book', key: 'cost-book' })).status()).toBe(FREE_FOR_ALL ? 200 : 403);
+  expect((await postAs('basic', 'get-content', { kind: 'book', key: 'cost-book' })).status()).toBe(200);
 });
 
 test('le centre de notifications cesse de sonder quand la page est masquée', async ({ page, login }) => {

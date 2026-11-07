@@ -29,6 +29,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
 import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
+import { ADS_PAUSED } from '@/lib/plans';
 import { AD_HOST, BANNERS, BANNERS_ENABLED, Banner } from './AdsterraBanner';
 
 const env = (value, fallback) => (value === undefined ? fallback : value);
@@ -136,7 +137,7 @@ function useAdPlace() {
   const access = useAccess();
   const [native, setNative] = useState(null);
   useEffect(() => { setNative(isNativeApp()); }, []);
-  if (native === null || !access || access.adFree !== false) return null;
+  if (ADS_PAUSED || native === null || !access || access.adFree !== false) return null;
   if (!native) return 'web';
   return IN_APP_ENABLED ? 'app' : null;
 }

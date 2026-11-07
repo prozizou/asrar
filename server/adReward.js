@@ -14,6 +14,7 @@
 // l'app consomme le crédit (consumeAdCredit) au moment d'ouvrir le module.
 
 const { app } = require("./grant");
+const { ADS_PAUSED } = require("../lib/plans");
 const {
   newNonce, buildServerId, parseServerId, verifyUnityCallback, offerKey,
   countCredits, pickCredit, canReward, staleNonces,
@@ -23,7 +24,7 @@ const {
 // Secret des rappels server-to-server, fourni par Unity (variable Vercel).
 // Absent : les publicités restent désactivées (l'app n'affiche pas l'option).
 const secret = () => process.env.UNITY_ADS_S2S_SECRET || "";
-const adsEnabled = () => !!secret();
+const adsEnabled = () => !ADS_PAUSED && !!secret();
 
 const rewardsRef = (uid) => app().database().ref("adRewards/" + uid);
 
@@ -94,6 +95,7 @@ async function countAdCredits(uid) {
 
 // Consomme un crédit et ouvre le passe à usage unique (get-content).
 async function consumeAdCredit(uid) {
+  if (ADS_PAUSED) return false;
   const now = Date.now();
   const nonce = pickCredit(await readRewards(uid), now);
   if (!nonce) return false;
@@ -109,6 +111,7 @@ async function consumeAdCredit(uid) {
 
 // Utilise le passe (une seule fois) : appelé par get-content sans abonnement.
 async function consumeAdPass(uid) {
+  if (ADS_PAUSED) return false;
   const now = Date.now();
   return txOnExisting(
     app().database().ref("adPass/" + uid),

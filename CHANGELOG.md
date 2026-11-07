@@ -1,3 +1,9 @@
+## SW v46.57 — Pause des publicités, accès par abonnement
+
+- Publicités, préchargements, bannières et liens sponsorisés en pause sur le site et dans l’application. Intégration conservée pour réactivation après confirmation des régies.
+- Actions protégées proposées via le dialogue simple Wave/WhatsApp ; accès activé après vérification du paiement.
+- Vérification serveur maintenue : pas de contenu réservé ni de passe publicitaire pendant la pause ; les abonnés actifs gardent tous leurs modules.
+
 ## Publication app-ads.txt — Chartboost
 
 - Ajout des 621 déclarations Chartboost manquantes à partir des 766 lignes fournies par l’éditeur ; 145 étaient déjà présentes.

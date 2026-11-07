@@ -1,6 +1,8 @@
 // Pubs Adsterra : formats du site et formats de l'application Android, qui
 // charge ce même site (components/AdsterraAds.js).
 import { test, expect } from './fixtures';
+import { ADS_PAUSED } from '../../lib/plans';
+test.skip(ADS_PAUSED, 'Les formats publicitaires sont en pause ; couverture dans ads-paused.spec.ts.');
 
 const SOCIAL_BAR = 'script[src*="/14/56ff6c976d7d264a3439f37c7d6ca8e5"]';
 const NATIVE_BANNER = '#container-00684bfc5a8802ccbed95bf0c1fa25a3';
