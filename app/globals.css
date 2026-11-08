@@ -2140,7 +2140,7 @@ html[data-theme="light"] {
   border-radius: 11px; background: #f6f8fb; color: #263244; font: inherit; font-size: 1rem; font-weight: 600;
 }
 .subscription-plan-picker > svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #75808e; pointer-events: none; }
-.subscription-payment-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 6px 0 10px; }
+.subscription-payment-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
 .subscription-method {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   min-width: 0; min-height: 92px; padding: 12px 8px; margin: 0; border: 1.5px solid #e0e6ee;
@@ -2154,14 +2154,24 @@ html[data-theme="light"] {
 .subscription-method-icon { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 10px; }
 .subscription-method-wave .subscription-method-icon { color: #087daf; background: #e1f5fd; }
 .subscription-method-whatsapp .subscription-method-icon { color: #168544; background: #e6f7ed; }
-.subscription-method-name { font-size: .92rem; font-weight: 600; line-height: 1.2; }
+.subscription-method-pispi .subscription-method-icon { color: #8a5c0a; background: #fff3d6; }
+.subscription-method-name { font-size: .85rem; font-weight: 600; line-height: 1.2; }
 .subscription-method-check { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: #0873e5; color: #fff; }
 .subscription-simple button.subscription-continue {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; min-height: 48px; padding: 12px 16px; margin: 0; border: 0; border-radius: 10px;
   background: #0870db; color: #fff; font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.4; cursor: pointer;
 }
 .subscription-simple button.subscription-continue:hover { background: #0664c5; transform: none; box-shadow: none; }
 .subscription-simple button.subscription-continue:disabled { opacity: .65; cursor: wait; }
+.subscription-pispi { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid #eee1c4; border-radius: 12px; background: #fffaf0; }
+.subscription-simple .subscription-pispi p { margin: 0; color: #62605a; font-size: .8rem; line-height: 1.5; }
+.subscription-simple .subscription-pispi-amount { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.subscription-pispi-amount strong { color: #17212e; }
+.subscription-pispi label { margin: 0; color: #62605a; font-size: .75rem; font-weight: 600; }
+.subscription-pispi textarea { display: block; width: 100%; min-width: 0; min-height: 56px; margin: 0; padding: 9px 10px; border: 1px solid #e4d8bf; border-radius: 8px; background: #fff; color: #263244; font-family: monospace; font-size: .8rem; line-height: 1.5; resize: none; overflow-wrap: anywhere; user-select: text; }
+.subscription-simple button.subscription-proof { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; width: 100%; margin: 0; padding: 10px 12px; border: 1px solid #dce5ee; border-radius: 10px; background: #fff; color: #126738; font: inherit; font-size: .85rem; font-weight: 600; line-height: 1.4; }
+.subscription-simple button.subscription-proof:hover { background: #f1faf5; transform: none; box-shadow: none; }
 .subscription-simple .subscription-simple-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 0; color: #637082; font-size: .75rem; line-height: 1.45; text-align: center; }
 .subscription-simple-note > svg { flex-shrink: 0; margin-top: 2px; }
 .subscription-simple .subscription-error { padding: 10px 12px; margin: 0; border-radius: 10px; background: #fff1ef; color: #b42318; font-size: .85rem; line-height: 1.5; }
