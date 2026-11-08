@@ -64,7 +64,6 @@ const RAW_CATEGORIES: ModuleCategory[] = [
       { icon: <Feather {...ICON} />, label: 'Al Qalam', desc: 'Verset en calligraphie', href: '/alqalam', keywords: ['calligraphie', 'ecriture', 'qalam', 'verset'] },
       { icon: <Grid3x3 {...ICON} />, label: 'Géomancie', desc: 'Tirage géomantique', href: '/geomancie', keywords: ['tourab', 'tirage', 'raml', 'khatt'] },
       { icon: <Hash {...ICON} />, label: 'Hatims', desc: 'Carrés numériques', href: '/wafq/carre', keywords: ['carre magique', 'kanzou', 'wafq', 'carres numeriques', 'export word', 'word'] },
-      // Wafq reste accessible par lien direct et conserve son accès à Hatims.
     ],
   },
   {
