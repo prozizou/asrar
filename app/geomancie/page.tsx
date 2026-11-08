@@ -1,9 +1,9 @@
 'use client';
 // Module « Géomancie (Tourab) » — port de geomancie/tourab.html.
 // Écran 1 : étapes de dérivation, saisie des 4 Mères, historique local des écus.
-// Écran 2 : organigramme M1–M16 (flèches de dérivation), parité, vœu, repérage,
+// Écran 2 : organigramme M1–M16 (flèches de dérivation), parité, repérage,
 // export PDF / partage. Calcul de l'écu (16 Maisons),
-// figures binaires, بزدح, parité du Juge, synthèse (vœu / repérage) et modale
+// figures binaires, بزدح, parité du Juge, synthèse (figure de repérage) et modale
 // d'interprétation par maison. La logique vit dans lib/geomancie.js ; ici l'UI
 // React et les données premium (via /api/get-theme, réservées au forfait 1 An —
 // PREMIUM_LEVEL — vérifié côté client (ensureAccess) ET côté serveur (get-theme)).
@@ -254,7 +254,6 @@ export default function GeomanciePage() {
       houses,
       names: houses.map((h) => getCleanName(figToKey(h), fbData)),
       parity: checkJudgeParity(houses),
-      voeu: { fig: s.voeuFig, name: getCleanName(s.voeuKey, fbData) },
       rep: { fig: s.repFig, name: getCleanName(s.repKey, fbData) },
     };
   };
@@ -457,11 +456,6 @@ export default function GeomanciePage() {
 
             {synth && (
               <div className="synthesis-container">
-                <button type="button" className="synthesis-card" onClick={() => highlightFigure(synth.voeuKey)}>
-                  <h4>Le vœu</h4>
-                  <MiniFigure fig={synth.voeuFig} />
-                  <p>{getCleanName(synth.voeuKey, fbData)}</p>
-                </button>
                 <button type="button" className="synthesis-card" onClick={() => highlightFigure(synth.repKey)}>
                   <h4>Figure de Repérage</h4>
                   <MiniFigure fig={synth.repFig} />
