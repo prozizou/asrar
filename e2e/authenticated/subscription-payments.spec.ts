@@ -213,3 +213,37 @@ for (const fallbackWorks of [true, false]) {
     const access = await (await postAs('free', 'check-access')).json(); expect(access.adFree).toBe(false);
   });
 }
+
+test('Ma Boutique : formule unique à 5 000 FCFA par mois, payable par Wave, PI-SPI ou WhatsApp', async ({ page, login, postAs }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } });
+  });
+  await login('premium'); await page.goto('/boutique');
+  await page.context().route('https://pay.wave.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Wave test</title>' }));
+  await page.context().route('**/api/wa?text=**', route => route.fulfill({ body: 'WhatsApp test' }));
+  const payment = page.locator('.bq-payment');
+  await expect(payment).toContainText('1 Mois');
+  await expect(payment).toContainText('5 000 FCFA');
+  await expect(page.getByRole('combobox', { name: 'Durée et prix' })).toHaveCount(0);
+  await expect(payment.getByRole('radiogroup', { name: 'Moyen de paiement' }).getByRole('radio')).toHaveCount(3);
+
+  let popup = page.waitForEvent('popup');
+  await confirmMethod(page, 'Wave');
+  let tab = await popup; await tab.waitForURL('https://pay.wave.com/m/M_sn_6W-tuxFYYkZa/c/sn/?amount=5000');
+  await tab.close();
+
+  await page.getByRole('radio', { name: 'PI-SPI', exact: true }).check();
+  await expect(page.getByRole('region', { name: 'Paiement par PI-SPI' })).toContainText('5 000 FCFA');
+  await page.getByRole('button', { name: 'Copier l’alias PI-SPI', exact: true }).click();
+  popup = page.waitForEvent('popup');
+  await page.getByRole('button', { name: 'Envoyer le justificatif sur WhatsApp', exact: true }).click();
+  tab = await popup; await tab.waitForURL(/\/api\/wa\?text=/);
+  const message = new URL(tab.url()).searchParams.get('text') || '';
+  expect(message).toContain('Boutique 1 Mois'); expect(message).toContain('5 000 FCFA');
+  expect(message).toContain('Boutique vendeur (Marché)'); expect(message).toContain('Paiement à vérifier : PI-SPI');
+  expect(message).not.toContain('sans publicité');
+  await tab.close();
+  expect((await postAs('premium', 'shop', { action: 'save-shop', shop: { name: 'Interdit' } })).status()).toBe(403);
+  await page.screenshot({ path: test.info().outputPath('boutique-payment-360.png'), fullPage: true });
+});

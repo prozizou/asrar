@@ -2134,6 +2134,8 @@ html[data-theme="light"] {
 .subscription-simple { display: grid; gap: 12px; margin-top: 20px; min-width: 0; text-align: left; color: #17212e; color-scheme: light; }
 .subscription-simple > label { margin: 0 0 -5px; font-size: .8rem; font-weight: 600; color: #637082; }
 .subscription-plan-picker { position: relative; min-width: 0; }
+.subscription-simple .subscription-fixed-price { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; padding: 12px 14px; border: 1px solid #e6ebf1; border-radius: 11px; background: #f6f8fb; color: #263244; font-weight: 600; }
+.subscription-fixed-price strong { font-size: 1.1rem; color: #17212e; }
 .subscription-plan-picker select {
   appearance: none; display: block; width: 100%; min-width: 0; min-height: 46px;
   margin: 0; padding: 11px 40px 11px 14px; border: 1px solid #e6ebf1;

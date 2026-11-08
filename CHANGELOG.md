@@ -1,3 +1,8 @@
+## Boutique à 5 000 FCFA par mois
+
+- « Ma Boutique » : une seule formule, 5 000 FCFA par mois (fin des formules 1 mois à 10 000 et 3 mois à 25 000 FCFA).
+- Mêmes moyens de paiement que l’abonnement : Wave (lien marchand à 5 000 FCFA), PI-SPI (copie de l’alias) ou WhatsApp, puis justificatif sur WhatsApp. Activation manuelle de la boutique après vérification, comme avant.
+
 ## Site accessible sur Android
 
 - Le verrou qui redirigeait les visiteurs Android du site vers Google Play (fenêtre « Ouvrir l’application / Installer ») est supprimé : le site s’utilise normalement dans le navigateur Android, comme sur iPhone et ordinateur. L’application reste disponible. La variable `NEXT_PUBLIC_ANDROID_APP_REDIRECT` n’est plus utilisée.

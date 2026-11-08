@@ -19,7 +19,8 @@ import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
-import { openAccess } from '@/lib/whatsapp';
+import SubscriptionPlansUntyped from '@/components/SubscriptionPlans';
+import { BOUTIQUE_PLAN } from '@/lib/plans';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
@@ -28,6 +29,7 @@ import ProductForm from './ProductForm';
 const Modal = ModalUntyped as any;
 const SmartImage = SmartImageUntyped as any;
 const Spinner = SpinnerUntyped as any;
+const SubscriptionPlans = SubscriptionPlansUntyped as any;
 
 type View = 'loading' | 'gate' | 'shop' | 'error';
 
@@ -55,11 +57,6 @@ interface Stats {
   totalOrders: number;
   perProduct: Record<string, { views: number; likes: number; comments: number; orders: number }>;
 }
-
-const PLANS = [
-  { id: 'boutique_1m', dur: '1 Mois', price: '10 000' },
-  { id: 'boutique_3m', dur: '3 Mois', price: '25 000', best: true, badge: 'Économique' },
-];
 
 export default function BoutiquePage() {
   const { notify, toast } = useToast();
@@ -144,11 +141,6 @@ export default function BoutiquePage() {
     };
   }, [products, view]);
 
-  const souscrire = (planId: string) => {
-    const email = seller?.email;
-    openAccess({ planId, email, section: 'Boutique vendeur (Marché)' });
-  };
-
   const onLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -216,24 +208,15 @@ export default function BoutiquePage() {
         {view === 'gate' && (
           <div>
             <p className="bq-intro">
-              Pour ouvrir votre boutique, choisissez une formule. Chaque boutique est liée à votre compte Google (un
-              compte = une boutique unique).
+              Pour ouvrir votre boutique, réglez l’abonnement de <strong>{BOUTIQUE_PLAN.price} FCFA par mois</strong>. Chaque
+              boutique est liée à votre compte Google (un compte = une boutique unique).
             </p>
-            <div className="bq-plans">
-              {PLANS.map((p) => (
-                <div key={p.id} className={'bq-plan' + (p.best ? ' best' : '')}>
-                  {p.badge && <span className="bq-badge">{p.badge}</span>}
-                  <div className="bq-plan-dur">{p.dur}</div>
-                  <div className="bq-plan-price">
-                    {p.price} <small>FCFA</small>
-                  </div>
-                  <button type="button" className="bq-plan-btn" onClick={() => souscrire(p.id)} aria-label={"Choisir la formule " + p.dur}>Choisir</button>
-                </div>
-              ))}
+            <div className="bq-payment">
+              <SubscriptionPlans plans={[BOUTIQUE_PLAN]} section="Boutique vendeur (Marché)" noAds={false} />
             </div>
             <p className="bq-note">
-              💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp. L'administration activera votre
-              boutique.
+              Payez par Wave ou PI-SPI, puis envoyez votre justificatif sur WhatsApp. L’administration activera votre
+              boutique après vérification. Pour prolonger, renouvelez chaque mois.
             </p>
           </div>
         )}

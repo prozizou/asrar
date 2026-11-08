@@ -52,8 +52,7 @@ Site statique + fonctions Vercel (`/api`). RTDB Firebase.
 | sub_3m   | 3 Mois        | 15 000 FCFA |
 | sub_6m   | 6 Mois        | 25 000 FCFA |
 | sub_1y   | 1 An          | 45 000 FCFA |
-| boutique_1m | Boutique 1 Mois | 10 000 FCFA |
-| boutique_3m | Boutique 3 Mois | 25 000 FCFA |
+| boutique_1m | Boutique 1 Mois (formule unique, Wave / PI-SPI / WhatsApp) | 5 000 FCFA |
 
 Les libellés/prix affichés dans le portail proviennent de `SUB_PLANS`
 (`js/firebase-config.js`, `Benefits/access.js`). Le message WhatsApp est enrichi
