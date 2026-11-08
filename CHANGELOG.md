@@ -1,31 +1,33 @@
-## Nouveau style épuré, thèmes clair et sombre
+## SW v46.60 — Style épuré clair/sombre, boutique à 5 000 FCFA et partage, site Android
+
+### Nouveau style épuré, thèmes clair et sombre
 
 - Palette commune refaite pour les deux thèmes : fond neutre uni (gris très foncé / gris très clair), cartes pleines et nettes, ombres discrètes, un seul accent orange (contrastes AA, texte foncé sur l’orange en sombre, blanc en clair).
 - Fond animé (nébuleuse, étoiles) et halos retirés.
 - Marché, Al-Qalam, Combinaisons, Géomancie, Rouwhanes, menu, fenêtres d’abonnement et de paiement : couleurs violettes/bleues codées en dur remplacées par la palette commune ; le panneau de paiement suit désormais le thème (sombre en sombre, blanc en clair).
 - La bascule clair/sombre reste dans le menu latéral.
 
-## Pages adaptées à toutes les largeurs d’écran
+### Pages adaptées à toutes les largeurs d’écran
 
 - Planète débordait sur les petits écrans (320–360 px) : l’étiquette de nature passe désormais sous la planète quand la place manque.
 - La page des combinaisons (99 Noms) se réduisait à la largeur de son contenu et laissait de grandes marges vides : elle occupe désormais toute la largeur de l’écran. Un test vérifie que chaque vue prend toute la largeur d’un téléphone.
 
-## Planète : heure en cours réservée aux abonnés
+### Planète : heure en cours réservée aux abonnés
 
 - Sans abonnement, la carte « Heure planétaire actuelle » est floutée : seul un gabarit fictif est affiché (planète, horaires, nature, temps restant et heure suivante ne sont jamais envoyés à l’écran), avec « Débloquer avec l’abonnement ».
 - L’activation des alertes de changement d’heure dans l’application Android demande aussi l’abonnement. Horloge, période jour/nuit, régent du jour, lever et coucher restent visibles.
 
-## Partage des boutiques sur les réseaux sociaux
+### Partage des boutiques sur les réseaux sociaux
 
 - « Partager ma boutique » dans Ma Boutique et « Partager cette boutique » sur la page d'une boutique du Marché : feuille de partage du téléphone (WhatsApp, Facebook, TikTok…) ou copie du lien.
 - Lien `/s?k=shop&i=<vendorKey>` : aperçu avec le nom et le logo de la boutique, puis ouverture du Marché directement sur la boutique (`/?shop=`). Le code de parrainage de celui qui partage est ajouté au lien.
 
-## Boutique à 5 000 FCFA par mois
+### Boutique à 5 000 FCFA par mois
 
 - « Ma Boutique » : une seule formule, 5 000 FCFA par mois (fin des formules 1 mois à 10 000 et 3 mois à 25 000 FCFA).
 - Mêmes moyens de paiement que l’abonnement : Wave (lien marchand à 5 000 FCFA), PI-SPI (copie de l’alias) ou WhatsApp, puis justificatif sur WhatsApp. Activation manuelle de la boutique après vérification, comme avant.
 
-## Site accessible sur Android
+### Site accessible sur Android
 
 - Le verrou qui redirigeait les visiteurs Android du site vers Google Play (fenêtre « Ouvrir l’application / Installer ») est supprimé : le site s’utilise normalement dans le navigateur Android, comme sur iPhone et ordinateur. L’application reste disponible. La variable `NEXT_PUBLIC_ANDROID_APP_REDIRECT` n’est plus utilisée.
 
