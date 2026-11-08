@@ -1,167 +1,154 @@
 # ASRAR PRO
 
-App Next.js (App Router) + React. **La migration est terminée** : tous les
-modules (*Marché*, *Secrets*, *Ma Boutique*,
-*Bibliothèque*, *Abajad*, *Parrainage*, *Combinaisons*, *Planète*,
-*Rouwhanes*, *Géomancie*, *Al Qalam*…) sont des routes React sous `app/`,
-reliées par le tableau de bord `/menu` en navigation SPA instantanée. Il
-n'existe plus de site statique séparé dans ce dépôt — voir `ANALYSE.md` pour
-l'état courant (forces, faiblesses, améliorations).
+Sciences mystiques et marché spirituel : secrets, bibliothèque, géomancie,
+calligraphie, carrés numériques, heures planétaires, zikr collectif et
+boutiques en ligne.
 
-## Ce que cette architecture apporte (par rapport à l'ancien site statique)
+- **Site** : https://www.asrarpro.com (Next.js, hébergé sur Vercel).
+- **Application Android** : `com.Asrar` sur Google Play — coquille Capacitor
+  qui charge le site. Toute mise à jour du site arrive dans l'application sans
+  republier sur le Play Store (voir [ANDROID.md](ANDROID.md)).
+- **Données** : Firebase (Auth Google, Realtime Database) ; images et audios
+  sur Cloudinary.
 
-| Avant (ex-site statique) | Après (cette app) |
+## Fonctionnalités
+
+L'accueil (`/`) est le **Marché**. Le tableau de bord `/menu` regroupe les
+modules par famille.
+
+| Famille | Module | Route |
+|---|---|---|
+| Marché | Marché (produits, boutiques, avis, partage, demande WhatsApp) | `/` |
+| | Ma Boutique (espace vendeur, produits, statistiques, partage) | `/boutique` |
+| | Demandes et commandes | `/commandes` |
+| Spiritualité | Zikr collectif (groupes, compteur, discussion, avertissements) | `/zikr` |
+| | Rouwhanes (noms des anges et noms d'Allah) | `/rouwhania` |
+| Sciences traditionnelles | Al Qalam (calligraphie, export Word) | `/alqalam` |
+| | Géomancie (écu, parité du Juge, figure de repérage, PDF) | `/geomancie` |
+| | Hatims — carrés numériques 3×3 à 11×11 (export Word) | `/wafq/carre` |
+| Ressources | Bibliothèque Almaqtab (livres PDF) | `/bibliotheque` |
+| | Secret Mystique | `/asrar` |
+| Outils | Combinaisons des 99 Noms (poids Abjad) | `/combinaisons` |
+| | Planète (heures planétaires, alarmes) | `/planete` |
+| | Date du jour (hijri / grégorien) | `/hijri` |
+| | Parrainage | `/parrainage` |
+| Compte | Mon compte, Notifications | `/compte`, `/notifications` |
+
+Autres points :
+
+- **Thèmes clair et sombre** (style épuré, accent orange), bascule dans le menu
+  latéral ; pages adaptées de 320 px à l'ordinateur.
+- **Partage** : liens courts `/s?k=…` avec aperçu (secret, livre, produit,
+  boutique, zikr) et code de parrainage (voir
+  [PARTAGE_ET_PARRAINAGE.md](PARTAGE_ET_PARRAINAGE.md)).
+- **Notifications** : web push, notifications Android (FCM) et file serveur
+  (voir [NOTIFICATIONS.md](NOTIFICATIONS.md)).
+- **WhatsApp** : le numéro reste côté serveur (`/api/wa`). Dans l'application
+  et sur le site Android, WhatsApp s'ouvre directement avec le message
+  prérempli ; ailleurs, dans un nouvel onglet.
+- Les anciennes adresses (`.html`, modules retirés comme `/tafsir`, `/wafq`,
+  `/abajad`) sont redirigées (`next.config.mjs`).
+
+## Accès et paiements
+
+Tout utilisateur se connecte avec Google. Les publicités sont **en pause**
+(`ADS_PAUSED` dans `lib/plans.js`) : les modules demandent un abonnement actif.
+
+| Formule | Prix |
 |---|---|
-| Chaque page recharge Firebase, `theme.js`, `share.js`, `firebase-config.js`… dans son `<head>` (×17) | **Une seule coquille** (`components/Providers`) : auth, accès, thème montés une fois |
-| Auth via `requireAuth()` + redirection en dur | Contexte `useAuth()` + écran de connexion Google intégré |
-| Paywall : cache global `_accessStatus` + injection DOM du portail | `useAccess()` + `<SubscriptionGate>` piloté par l'état |
-| Likes/commentaires : `ref.on(...)` + nettoyage manuel des écouteurs | Hook `useSecretRealtime()` (attache/détache via `useEffect`) |
-| Vues liste/détail masquées via `style.display` | Rendu conditionnel React |
-| `innerHTML` + `escapeHtml` partout | JSX (`<MixedText>`), plus d'injection HTML |
-| Navigation = rechargement complet | Navigation SPA instantanée (`next/link`) |
+| Abonnement 3 mois / 6 mois / 1 an | 15 000 / 25 000 / 45 000 FCFA |
+| Ma Boutique (vendre sur le Marché) | 5 000 FCFA par mois |
+
+- **Sciences traditionnelles** (Al Qalam, Géomancie, Hatims) : palier 1 an.
+- **Planète** : l'heure planétaire en cours est floutée sans abonnement.
+- **Paiement** : Wave, PI-SPI ou WhatsApp, puis justificatif sur WhatsApp ;
+  **activation manuelle** par l'administration (voir
+  [ABONNEMENTS_WHATSAPP_WAVE.md](ABONNEMENTS_WHATSAPP_WAVE.md)).
+- Les achats du Marché se règlent directement avec chaque boutique.
+
+La barrière réelle est côté serveur (`server/access.js`) ; `lib/plans.js` est
+la source unique des paliers, partagée avec le client.
 
 ## Architecture
 
 ```
-.
-├─ app/
-│  ├─ layout.js         Coquille racine + init thème anti-FOUC
-│  ├─ globals.css       Feuille partagée + styles composants
-│  ├─ page.js           Accueil = Marché Mystique (module le plus utilisé, cf. son en-tête de fichier)
-│  ├─ menu/            Tableau de bord (liste des modules) + compte/thème/déconnexion
-│  │  └─ page.js
-│  ├─ abajad/          MODULE MIGRÉ — Calculateur Abjad ésotérique
-│  │  └─ page.js        Calcul temps réel, zodiaque, facteurs (logique → lib/abjad)
-│  ├─ parrainage/      MODULE MIGRÉ — Parrainage (points, lien, conversion)
-│  │  └─ page.js
-│  ├─ combinaisons/    MODULE MIGRÉ — Combinaisons des 99 Noms par poids Abjad
-│  │  └─ page.js        Recherche (backtracking + élagage), filtre, pagination,
-│  │                    calculatrice, restauration (logique → lib/combinaisons)
-│  ├─ planete/         MODULE MIGRÉ — Horloge & heures planétaires chaldéennes
-│  │  └─ page.js        GPS + horloge 1 s + soleil NOAA hors-ligne (→ lib/planete)
-│  ├─ rouwhania/       MODULE MIGRÉ — Rouwhanes (noms des anges + noms d'Allah)
-│  │  └─ page.js        Poids Abjad (3 méthodes), génération, vœu (→ lib/rouwhania)
-│  ├─ geomancie/       MODULE MIGRÉ — Écu géomantique (Tourab)
-│  │  └─ page.js        4 Mères → 16 Maisons, بزدح, juge, synthèse, modale
-│  │                    d'interprétation (logique → lib/geomancie)
-│  ├─ alqalam/         MODULE MIGRÉ — Al-Qalam (calligraphie)
-│  │  └─ page.js        Aperçu coloré live, mode Rasm, intercalation, cumul,
-│  │                    export Word .docx (logique → lib/alqalam)
-│  ├─ asrar/            MODULE MIGRÉ — Secrets
-│  │  ├─ page.js        Liste par catégorie + orchestration
-│  │  ├─ SecretDetail.js  Vue détail (like/commentaire/favori/partage/PDF)
-│  │  ├─ CommentSheet.js  Bottom-sheet commentaires
-│  │  └─ asrar.css      Styles du module (copie de asrar/asrar.css)
-│  ├─ marche/           MODULE MIGRÉ — Marché
-│  │  ├─ page.js        Produits, vendeurs, filtres/recherche, tri popularité
-│  │  ├─ ProductModal.js  Modale produit (galerie, social, commande WhatsApp)
-│  │  ├─ VendorShop.js    Vue boutique d'un vendeur
-│  │  └─ marche.css     Styles du module (copie de marche/marche.css)
-│  ├─ boutique/         MODULE MIGRÉ — Ma Boutique (espace vendeur)
-│  │  ├─ page.js        Statut vendeur, gate d'ouverture, édition + CRUD produits
-│  │  ├─ ProductForm.js   Modale produit (galerie 2–5, validation, upload)
-│  │  └─ boutique.css   Styles du module (copie de boutique/boutique.css)
-│  └─ bibliotheque/     MODULE MIGRÉ — Bibliothèque Almaqtab
-│     ├─ page.js        Grille de livres, social, ouverture PDF, partage
-│     ├─ CommentModal.js  Modale commentaires
-│     └─ bibliotheque.css Styles (extraits des <style> inline du HTML)
-├─ components/          Coquille partagée réutilisable
-│  ├─ Providers.js      Auth + Accès + Thème
-│  ├─ AuthProvider.js   useAuth() + connexion Google
-│  ├─ AccessProvider.js useAccess() + portail d'abonnement
-│  ├─ SubscriptionGate.js
-│  ├─ ThemeToggle.js
-│  ├─ MixedText.js      Rendu FR/arabe en segments
-│  ├─ useSecretRealtime.js  Likes & commentaires temps réel (secrets)
-│  ├─ useProductSocial.js   Likes & commentaires temps réel (produits)
-│  ├─ useToast.js       Toast léger piloté par l'état
-│  └─ useTasbih.js      Compteur de dhikr (séries, progression, localStorage)
-└─ lib/                 Logique non-UI — un module par rubrique (abjad, combinaisons,
-                        geomancie, planete, rouwhania, alqalam…) + utilitaires transverses
-                        (firebase, api, access, share, whatsapp, format, pdf, market,
-                        cloudinary, benefits, audio…). Couverte par des tests (lib/*.test.js)
-                        et un typecheck incrémental (tsconfig.lib.json) — cf. ANALYSE.md.
-                        Trois fichiers SANS 'use client', importables aussi côté serveur
-                        (require(), interop CommonJS/ESM) :
-   ├─ plans.js     Paliers d'accès (SUB_PLANS/PREMIUM_LEVEL) — source unique
-   │                partagée avec server/access.js (plus de duplication à resynchroniser)
-   ├─ csp.js       Content-Security-Policy — source unique partagée avec next.config.mjs
-   │                (en-têtes statiques ; compatibilité Google Auth)
-   └─ rateLimit.js Limitation de fréquence en mémoire (par instance, cf. son en-tête)
+app/          Routes (App Router) : une page par module, styles scopés par module
+  layout.js   Coquille racine : thème anti-FOUC, Providers, bannières
+  globals.css Palette clair/sombre et styles partagés
+components/   Coquille partagée : AuthProvider, AccessProvider, SubscriptionGate,
+              SubscriptionPlans (paiements), Modal, MoreMenu, notifications…
+lib/          Logique sans interface, un module par rubrique (geomancie,
+              combinaisons, planete, kanzouWafq, zikr…) + utilitaires (api,
+              access, plans, share, whatsapp, externalWindow, csp…)
+pages/api/    Fonctions serveur (29) : contenu, accès, social, boutique,
+              commandes, zikr, notifications, partage /s, WhatsApp /api/wa,
+              tâches planifiées (cron/)
+server/       Socle serveur : Firebase Admin, accès, commandes, notifications,
+              zikr, cache du catalogue public
+rules/        Règles Realtime Database
+android/      Application Capacitor (versionName 8.0.4)
+public/       Service worker (sw.js, SW_VERSION), manifeste, politique de
+              confidentialité, app-ads.txt
+e2e/, tests/  Tests Playwright (publics et authentifiés) et tests serveur
 ```
 
-La CSP est définie dans `lib/csp.js` et appliquée par `next.config.mjs`.
-Le choix `unsafe-inline` reste documenté dans ce module pour la compatibilité
-Google Auth ; aucun middleware à nonce n'est actif.
-
-## Backend intégré (app unifiée)
-
-Les fonctions serverless (`/api/*` : paywall, likes, partage, parrainage, thème…)
-vivent désormais **dans cette app** :
-
-- `pages/api/*.js` — les 13 fonctions (handlers `(req, res)`),
-- `server/*.js` — leur socle partagé (`grant` = init Firebase Admin, `access`,
-  `http`, `sellers`, `sources`, `log` = point d'accroche suivi d'erreurs),
-- `lib/*.js` — utilitaires importables des deux côtés (client ET serveur, via
-  l'interop CommonJS/ESM du bundler Next) : `plans` (paliers d'accès, source
-  unique), `csp` (Content-Security-Policy), `rateLimit` (limitation de
-  fréquence en mémoire).
-
-L'API est **same-origin** (pas de proxy externe). `next.config.mjs` conserve le
-lien court **`/s`** (aperçu Open Graph + redirection + comptage parrainage) et
-**redirige les anciennes URLs `.html`** de l'ex-site statique vers les routes
-React — donc **tous les liens déjà partagés** (`/s?…`, pages) continuent de
-fonctionner.
-
-Les **secrets serveur** (compte de service Firebase Admin, WhatsApp, Cloudinary,
-`SITE_URL`…) sont des **variables d'environnement du projet Vercel** (voir
-`.env.example`), jamais commitées.
+- L'API est sur la même origine que le site (pas de proxy).
+- La Content-Security-Policy est définie dans `lib/csp.js` et appliquée par
+  `next.config.mjs`.
+- Le service worker ne met rien en cache ; chaque déploiement qui change le
+  code client incrémente `SW_VERSION` dans `public/sw.js` (v46.61 → v46.62…)
+  pour que les pages et l'application ouvertes rechargent le nouveau code. L'historique est dans
+  [CHANGELOG.md](CHANGELOG.md).
 
 ## Démarrer
 
+Node **24.x** (voir `.nvmrc`).
+
 ```bash
 npm install
-cp .env.example .env.local   # ajuster les variables au besoin
+cp .env.example .env.local   # renseigner les variables
 npm run dev                  # http://localhost:3000
 ```
 
-Connectez-vous avec Google (même projet Firebase que la prod).
+Variables (`.env.example`, jamais commitées ; en production : projet Vercel) :
+`FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_DB_URL`, `SITE_URL`, `SUPER_ADMIN_EMAIL`,
+`WHATSAPP_NUMBER`, `CLOUDINARY_*`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, `ERROR_WEBHOOK_URL`.
 
-Utiliser Node **24.x** (24.12 minimum) (`nvm use`) ; les dépendances Firebase du verrou nécessitent Node 24.12 au minimum.
-
-## Qualité / CI
+## Qualité et CI
 
 ```bash
-npm run lint        # ESLint (next/core-web-vitals)
-npm run typecheck    # TypeScript incrémental (checkJs), scopé à lib/
-npm test             # Vitest — logique pure de lib/ (calculs ésotériques, accès…)
-npm run build         # build de production (échoue si lint/types cassent)
-npm run test:runtime  # après build : chargement API avec les options Vercel
-npm run test:auth     # Auth + RTDB locaux, Node 24.12+ / Java 21
-npm run test:e2e      # Playwright — voir e2e/README.md (nécessite npm run build avant)
+npm run lint          # ESLint, aucun avertissement toléré
+npm run typecheck     # TypeScript (lib/)
+npm test              # Vitest : logique de lib/ et tests serveur de tests/
+npm run build         # build de production
+npm run test:runtime  # après build : chargement des API comme sur Vercel
+npm run test:auth     # build + émulateurs Firebase + Playwright authentifié (Java 21)
+npm run test:e2e      # Playwright public (après npm run build), voir e2e/README.md
 ```
 
-Ces contrôles tournent sur les PR et les pushes vers `main` dans le job
-`checks` de `.github/workflows/ci.yml`. Les régressions serveur dans `tests/`
-couvrent aussi les droits authentifiés, doubles appels et reprises après
-panne, avec une base simulée. Voir `e2e/README.md` pour les limites des tests
-navigateur et [DEPLOIEMENT_SECURITE.md](DEPLOIEMENT_SECURITE.md) pour la recette,
-les presets Cloudinary et les tâches de déploiement indispensables.
-Le job `authenticated` lance les émulateurs sans secrets de production.
-Voir [NOTIFICATIONS.md](NOTIFICATIONS.md) pour la file et son exploitation.
-Voir [COUTS_FIREBASE.md](COUTS_FIREBASE.md) pour les sondages, le cache public,
-les index nécessaires et les mesures de réduction des transferts RTDB.
+GitHub Actions :
 
-Voir [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) pour les commandes et les
-demandes de données, et [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md) pour les SDK
-et les alertes restantes limitées aux outils de développement.
+| Workflow | Rôle |
+|---|---|
+| `ci.yml` | `checks` (lint, types, tests, build) et `authenticated` (e2e sur émulateurs, sans secret de production) sur chaque PR et push vers `main` |
+| `android-checks.yml` | compilation de l'application Android sur les PR qui touchent `android/` ou Capacitor |
+| `android-release.yml` | AAB signé pour le Play Store (tag `android-v*` ou lancement manuel) |
+| `notifications-cron.yml`, `reminders-cron.yml` | appel régulier des tâches `/api/cron/*` (le cron Vercel ne tourne qu'une fois par jour) |
 
-## Modules migrés
+## Documentation
 
-Chaque module garde sa **logique pure dans `lib/`** (testable hors UI, cf.
-`lib/*.test.js`) et ses **styles scopés** pour éviter toute fuite entre pages.
-L'ex-site statique n'existe plus dans ce dépôt ; les anciennes URLs `.html`
-restent redirigées (voir ci-dessus) pour ne pas casser les liens déjà partagés.
-
-La revue des vues et le périmètre du premier lot sont documentés dans
-[QUALITE_VUES.md](QUALITE_VUES.md).
+| Sujet | Fichier |
+|---|---|
+| Application Android, signature, publication | [ANDROID.md](ANDROID.md), [ACHATS_ANDROID.md](ACHATS_ANDROID.md) |
+| Abonnements, paiements, WhatsApp | [ABONNEMENTS_WHATSAPP_WAVE.md](ABONNEMENTS_WHATSAPP_WAVE.md), [INTEGRATION_PAIEMENT.md](INTEGRATION_PAIEMENT.md), [DEPLOIEMENT_WHATSAPP.md](DEPLOIEMENT_WHATSAPP.md) |
+| Publicités (en pause) | [PUBLICITES_ET_WHATSAPP.md](PUBLICITES_ET_WHATSAPP.md), [MEDIATION_LEVELPLAY.md](MEDIATION_LEVELPLAY.md) |
+| Commandes et données personnelles | [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) |
+| Zikr (discussion, audio) | [MESSAGERIE_ZIKR.md](MESSAGERIE_ZIKR.md), [AUDIO_ZIKR.md](AUDIO_ZIKR.md) |
+| Notifications | [NOTIFICATIONS.md](NOTIFICATIONS.md) |
+| Partage et parrainage | [PARTAGE_ET_PARRAINAGE.md](PARTAGE_ET_PARRAINAGE.md) |
+| Déploiement, sécurité, Cloudinary | [DEPLOIEMENT_SECURITE.md](DEPLOIEMENT_SECURITE.md) |
+| Planète (refonte de l'interface) | [INSTALLATION.md](INSTALLATION.md), [CHANGELOG_PLANETE_UI.md](CHANGELOG_PLANETE_UI.md) |
+| Coûts Firebase, SDK | [COUTS_FIREBASE.md](COUTS_FIREBASE.md), [MIGRATION_FIREBASE.md](MIGRATION_FIREBASE.md) |
+| État du code, revues | [ANALYSE.md](ANALYSE.md), [REVUE.md](REVUE.md), [QUALITE_VUES.md](QUALITE_VUES.md) |
+| Historique des versions | [CHANGELOG.md](CHANGELOG.md) |
