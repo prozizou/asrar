@@ -1,3 +1,7 @@
+## Combinaisons : page en pleine largeur sur téléphone
+
+- La page des combinaisons (99 Noms) se réduisait à la largeur de son contenu et laissait de grandes marges vides : elle occupe désormais toute la largeur de l’écran. Un test vérifie que chaque vue prend toute la largeur d’un téléphone.
+
 ## Planète : heure en cours réservée aux abonnés
 
 - Sans abonnement, la carte « Heure planétaire actuelle » est floutée : seul un gabarit fictif est affiché (planète, horaires, nature, temps restant et heure suivante ne sont jamais envoyés à l’écran), avec « Débloquer avec l’abonnement ».

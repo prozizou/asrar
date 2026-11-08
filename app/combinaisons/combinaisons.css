@@ -6,6 +6,10 @@
    sur .cc-page. */
 
 .cc-page {
+  /* body est un flex centré (app/globals.css) : sans largeur explicite, la
+     page se réduisait à la largeur de son contenu et laissait de grandes
+     marges vides sur téléphone. */
+  width: 100%;
   --gold: var(--accent);
   --gold-light: #f472b6;
   --gold-pale: rgba(255, 255, 255, 0.06);
