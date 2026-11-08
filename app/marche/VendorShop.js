@@ -6,6 +6,8 @@ import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import ReviewsSection from '@/components/ReviewsSection';
 import ProductPrice from './ProductPrice';
+import { Share2 } from 'lucide-react';
+import { shareShop } from '@/lib/share';
 
 export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProduct }) {
   const [imgErrors, setImgErrors] = useState({}); // { [productKey]: true } — image indisponible → repli 🔮
@@ -53,6 +55,10 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
           <p style={{ color: 'var(--mk-gold)' }}>{vendor.bio || 'Spécialiste ésotérique'}</p>
         </div>
       </div>
+
+      <button type="button" className="vendor-share-btn" onClick={() => shareShop(vendor, isOwn)}>
+        <Share2 size={17} aria-hidden="true" /> {isOwn ? 'Partager ma boutique' : 'Partager cette boutique'}
+      </button>
 
       {/* La note moyenne était un champ statique saisi à la main
           (vendeurNote, jamais fiable) — remplacée par de vrais avis (étoiles

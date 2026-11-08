@@ -1,3 +1,17 @@
+## Partage des boutiques sur les réseaux sociaux
+
+- « Partager ma boutique » dans Ma Boutique et « Partager cette boutique » sur la page d'une boutique du Marché : feuille de partage du téléphone (WhatsApp, Facebook, TikTok…) ou copie du lien.
+- Lien `/s?k=shop&i=<vendorKey>` : aperçu avec le nom et le logo de la boutique, puis ouverture du Marché directement sur la boutique (`/?shop=`). Le code de parrainage de celui qui partage est ajouté au lien.
+
+## Boutique à 5 000 FCFA par mois
+
+- « Ma Boutique » : une seule formule, 5 000 FCFA par mois (fin des formules 1 mois à 10 000 et 3 mois à 25 000 FCFA).
+- Mêmes moyens de paiement que l’abonnement : Wave (lien marchand à 5 000 FCFA), PI-SPI (copie de l’alias) ou WhatsApp, puis justificatif sur WhatsApp. Activation manuelle de la boutique après vérification, comme avant.
+
+## Site accessible sur Android
+
+- Le verrou qui redirigeait les visiteurs Android du site vers Google Play (fenêtre « Ouvrir l’application / Installer ») est supprimé : le site s’utilise normalement dans le navigateur Android, comme sur iPhone et ordinateur. L’application reste disponible. La variable `NEXT_PUBLIC_ANDROID_APP_REDIRECT` n’est plus utilisée.
+
 ## SW v46.59 — Paiement PI-SPI avec activation manuelle
 
 - PI-SPI proposé à côté de Wave et WhatsApp dans le dialogue d’abonnement et Mon compte.

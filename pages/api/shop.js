@@ -17,6 +17,7 @@
 // peut écrire/supprimer, et uniquement SES propres produits.
 
 const { verifyUser } = require("../../server/access");
+const { vendorKey } = require("../../lib/market");
 const { app } = require("../../server/grant");
 const { getSeller, isActiveSeller, getBoutiqueByEmail } = require("../../server/sellers");
 const { setCors, parseBody, safeUrl } = require("../../server/http");
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
     if (action === "me") {
       const products = await myProducts(db, user.uid, user.email);
       if (activeSeller) {
-        return res.status(200).json({ active: true, seller, products, mode: "seller" });
+        return res.status(200).json({ active: true, seller, products, mode: "seller", vendorKey: vendorKey({ email: user.email }) });
       }
       if (boutique) {
         // Lie/resynchronise l'uid de la fiche boutique avec le compte réellement
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
           viaBoutique: true,
           boutiqueId: boutique._id
         };
-        return res.status(200).json({ active: true, seller: synth, products, mode: "boutique" });
+        return res.status(200).json({ active: true, seller: synth, products, mode: "boutique", vendorKey: vendorKey({ email: user.email }) });
       }
       return res.status(200).json({ active: false, seller: null, products });
     }

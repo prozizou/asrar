@@ -18,6 +18,7 @@ https://<site>/s?r=<code parrain>            ← lien simple de l'application
 | `secret`  | Secret Mystique | `/asrar/asrar.html` | oui (`deblocage`, `domptage`, `ilham`, `protection`, `ouverture`) |
 | `book`    | Ouvrage Almaqtab | `/bibliotheque/bibliotheque.html` | non |
 | `product` | Produit du Marché | `/marche/marche.html` | non |
+| `shop`    | Boutique d'un vendeur (`i` = vendorKey) | `/?shop=<vendorKey>` (Marché ouvert sur la boutique) | non |
 
 ### Ce qui se passe au clic
 
@@ -46,7 +47,10 @@ toujours par `ensureAccess()` + `/api/get-content` (vérification serveur).
 
 - **Secrets** : `📤 Partager` dans la barre du détail et du lecteur plein écran.
 - **Bibliothèque** : bouton 📤 sur chaque carte livre.
-- **Marché** : bouton 📤 dans la modale produit.
+- **Marché** : bouton 📤 dans la modale produit ; « Partager cette boutique » sur la page d'une boutique.
+- **Ma Boutique** : « Partager ma boutique » pour le vendeur (dès qu'un produit ou une fiche boutique existe).
+  L'aperçu affiche le nom et le logo de la boutique (fiche `profile_clients`, sinon `sellers/{uid}.shop`
+  ou les champs vendeur du produit) — jamais l'e-mail ni le téléphone.
 
 Ils utilisent l'API **Web Share** native (WhatsApp, Messenger, TikTok… apparaissent
 dans la feuille de partage Android/iOS) avec repli **copie du lien**.

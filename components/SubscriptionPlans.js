@@ -7,10 +7,12 @@ import { reserveExternalWindow } from '@/lib/externalWindow';
 import { openAccess } from '@/lib/whatsapp';
 import { useAuth } from './AuthProvider';
 
-export default function SubscriptionPlans() {
+// plans : formules proposées (abonnements par défaut). Une seule formule →
+// prix fixe affiché, sans choix. section : rubrique du message WhatsApp.
+export default function SubscriptionPlans({ plans = SUB_PLANS, section = undefined, noAds = !ADS_PAUSED }) {
   const { user } = useAuth();
   const selectId = useId();
-  const [planId, setPlanId] = useState(SUB_PLANS[0].id);
+  const [planId, setPlanId] = useState(plans[0].id);
   const [paymentAttempt, setPaymentAttempt] = useState(null);
   const [method, setMethod] = useState('wave');
   const [copied, setCopied] = useState(false);
@@ -18,7 +20,7 @@ export default function SubscriptionPlans() {
   const opening = useRef(false);
   const aliasInput = useRef(null);
   const [error, setError] = useState('');
-  const plan = SUB_PLANS.find((item) => item.id === planId);
+  const plan = plans.find((item) => item.id === planId) || plans[0];
   const paidVia = paymentAttempt?.planId === planId ? paymentAttempt.method : undefined;
   const isPiSpi = method === 'pispi';
   const wave = async () => {
@@ -56,18 +58,20 @@ export default function SubscriptionPlans() {
     try {
       if (isPiSpi) await copyAlias();
       else if (method === 'wave') await wave();
-      else openAccess({ planId: plan.id, email: user?.email, noAds: !ADS_PAUSED, paidVia });
+      else openAccess({ planId: plan.id, email: user?.email, noAds, section, paidVia });
     } catch { setError('Ce moyen de paiement n’a pas pu être ouvert. Réessayez.'); }
     finally { opening.current = false; setBusy(false); }
   };
   return <div className="subscription-simple">
-    <label htmlFor={selectId}>Durée et prix</label>
-    <div className="subscription-plan-picker">
-      <select id={selectId} value={planId} disabled={busy} onChange={(event) => { setPlanId(event.target.value); setPaymentAttempt(null); setCopied(false); setError(''); }}>
-        {SUB_PLANS.map((item) => <option key={item.id} value={item.id}>{item.dur} — {item.price} FCFA</option>)}
-      </select>
-      <ChevronDown size={18} aria-hidden="true" />
-    </div>
+    {plans.length > 1 ? <>
+      <label htmlFor={selectId}>Durée et prix</label>
+      <div className="subscription-plan-picker">
+        <select id={selectId} value={planId} disabled={busy} onChange={(event) => { setPlanId(event.target.value); setPaymentAttempt(null); setCopied(false); setError(''); }}>
+          {plans.map((item) => <option key={item.id} value={item.id}>{item.dur} — {item.price} FCFA</option>)}
+        </select>
+        <ChevronDown size={18} aria-hidden="true" />
+      </div>
+    </> : <p className="subscription-fixed-price"><span>{plan.dur}</span><strong>{plan.price} FCFA</strong></p>}
     <div className="subscription-payment-choices" role="radiogroup" aria-label="Moyen de paiement">
       {[{ id: 'wave', name: 'Wave', Icon: Wallet }, { id: 'pispi', name: 'PI-SPI', Icon: Landmark }, { id: 'whatsapp', name: 'WhatsApp', Icon: MessageCircle }].map(({ id, name, Icon }) => <label key={id} className={`subscription-method subscription-method-${id}`}>
         <input type="radio" name={`${selectId}-method`} value={id} aria-label={name} checked={method === id} disabled={busy} onChange={() => { setMethod(id); setCopied(false); setError(''); }} />
@@ -86,7 +90,7 @@ export default function SubscriptionPlans() {
       {isPiSpi && <Copy size={17} aria-hidden="true" />}
       {busy ? (isPiSpi ? 'Copie…' : 'Ouverture…') : isPiSpi ? 'Copier l’alias PI-SPI' : `Continuer avec ${method === 'wave' ? 'Wave' : 'WhatsApp'}`}
     </button>
-    {isPiSpi && <button type="button" className="subscription-proof" disabled={busy} onClick={() => openAccess({ planId: plan.id, email: user?.email, noAds: !ADS_PAUSED, paidVia: 'pispi' })}>
+    {isPiSpi && <button type="button" className="subscription-proof" disabled={busy} onClick={() => openAccess({ planId: plan.id, email: user?.email, noAds, section, paidVia: 'pispi' })}>
       <MessageCircle size={17} aria-hidden="true" /> Envoyer le justificatif sur WhatsApp
     </button>}
     <p className="subscription-simple-note" role="status"><LockKeyhole size={13} aria-hidden="true" /><span>{isPiSpi

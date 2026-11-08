@@ -460,6 +460,12 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   box-shadow: none;
 }
 :where(.market-page) .vendor-like:hover { transform: none; box-shadow: none; }
+:where(.market-page) .vendor-share-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; min-height: 44px;
+  margin: 0 0 1.25rem; padding: 10px 16px; border: 1px solid color-mix(in srgb, var(--mk-gold) 45%, transparent);
+  border-radius: 999px; background: var(--mk-surface-2, transparent); color: var(--mk-gold); font: inherit; font-weight: 600; cursor: pointer;
+}
+:where(.market-page) .vendor-share-btn:hover { transform: none; box-shadow: none; border-color: var(--mk-gold); }
 :where(.market-page) .vendor-like.liked { color: #e11d48; border-color: color-mix(in srgb, #e11d48 40%, transparent); }
 :where(.market-page) .vendor-card-add .vendor-avatar { font-size: 1.4rem; }
 

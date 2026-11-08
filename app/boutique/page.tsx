@@ -19,7 +19,10 @@ import { apiPost } from '@/lib/api';
 import { uploadImage } from '@/lib/cloudinary';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
-import { openAccess } from '@/lib/whatsapp';
+import SubscriptionPlansUntyped from '@/components/SubscriptionPlans';
+import { BOUTIQUE_PLAN } from '@/lib/plans';
+import { Share2 } from 'lucide-react';
+import { shareShop } from '@/lib/share';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
@@ -28,6 +31,7 @@ import ProductForm from './ProductForm';
 const Modal = ModalUntyped as any;
 const SmartImage = SmartImageUntyped as any;
 const Spinner = SpinnerUntyped as any;
+const SubscriptionPlans = SubscriptionPlansUntyped as any;
 
 type View = 'loading' | 'gate' | 'shop' | 'error';
 
@@ -56,11 +60,6 @@ interface Stats {
   perProduct: Record<string, { views: number; likes: number; comments: number; orders: number }>;
 }
 
-const PLANS = [
-  { id: 'boutique_1m', dur: '1 Mois', price: '10 000' },
-  { id: 'boutique_3m', dur: '3 Mois', price: '25 000', best: true, badge: 'Économique' },
-];
-
 export default function BoutiquePage() {
   const { notify, toast } = useToast();
   const [savingShop, setSavingShop] = useState(false);
@@ -70,6 +69,7 @@ export default function BoutiquePage() {
   const [view, setView] = useState<View>('loading');
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [vendorKey, setVendorKey] = useState('');
 
   // Champs de la fiche boutique
   const [shopName, setShopName] = useState('');
@@ -96,6 +96,7 @@ export default function BoutiquePage() {
         const shop = (data.seller && data.seller.shop) || {};
         setSeller(data.seller);
         setProducts(data.products || []);
+        setVendorKey(typeof data.vendorKey === 'string' ? data.vendorKey : '');
         setShopName(shop.name || '');
         setShopDesc(shop.description || '');
         setShopPhone(shop.phone || '');
@@ -143,11 +144,6 @@ export default function BoutiquePage() {
       cancelled = true;
     };
   }, [products, view]);
-
-  const souscrire = (planId: string) => {
-    const email = seller?.email;
-    openAccess({ planId, email, section: 'Boutique vendeur (Marché)' });
-  };
 
   const onLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -216,24 +212,15 @@ export default function BoutiquePage() {
         {view === 'gate' && (
           <div>
             <p className="bq-intro">
-              Pour ouvrir votre boutique, choisissez une formule. Chaque boutique est liée à votre compte Google (un
-              compte = une boutique unique).
+              Pour ouvrir votre boutique, réglez l’abonnement de <strong>{BOUTIQUE_PLAN.price} FCFA par mois</strong>. Chaque
+              boutique est liée à votre compte Google (un compte = une boutique unique).
             </p>
-            <div className="bq-plans">
-              {PLANS.map((p) => (
-                <div key={p.id} className={'bq-plan' + (p.best ? ' best' : '')}>
-                  {p.badge && <span className="bq-badge">{p.badge}</span>}
-                  <div className="bq-plan-dur">{p.dur}</div>
-                  <div className="bq-plan-price">
-                    {p.price} <small>FCFA</small>
-                  </div>
-                  <button type="button" className="bq-plan-btn" onClick={() => souscrire(p.id)} aria-label={"Choisir la formule " + p.dur}>Choisir</button>
-                </div>
-              ))}
+            <div className="bq-payment">
+              <SubscriptionPlans plans={[BOUTIQUE_PLAN]} section="Boutique vendeur (Marché)" noAds={false} />
             </div>
             <p className="bq-note">
-              💬 Cliquez sur une formule pour envoyer votre demande via WhatsApp. L'administration activera votre
-              boutique.
+              Payez par Wave ou PI-SPI, puis envoyez votre justificatif sur WhatsApp. L’administration activera votre
+              boutique après vérification. Pour prolonger, renouvelez chaque mois.
             </p>
           </div>
         )}
@@ -244,6 +231,20 @@ export default function BoutiquePage() {
               <span className="bq-dot" /> Boutique active{expiry && ' · expire le ' + expiry}
               <button type="button" className="bq-renew" onClick={() => setView('gate')}>Prolonger</button>
             </div>
+
+            {/* Le Marché ne liste une boutique qu'avec une fiche (profile_clients)
+                ou au moins un produit : sans eux, le lien partagé mènerait
+                à « boutique indisponible ». */}
+            {vendorKey && (products.length > 0 || seller?.viaBoutique) ? (
+              <div className="bq-share">
+                <button type="button" className="bq-btn" onClick={() => shareShop({ id: vendorKey, name: shopName.trim() || seller?.shop?.name }, true)}>
+                  <Share2 size={17} aria-hidden="true" /> Partager ma boutique
+                </button>
+                <p>WhatsApp, Facebook, TikTok… Le lien affiche le nom et le logo de votre boutique et ouvre vos produits sur le Marché.</p>
+              </div>
+            ) : vendorKey ? (
+              <p className="bq-share-hint">Ajoutez un premier produit pour pouvoir partager votre boutique sur les réseaux sociaux.</p>
+            ) : null}
 
             {stats && (
               <div className="bq-stats">

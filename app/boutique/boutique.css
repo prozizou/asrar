@@ -39,28 +39,11 @@
 :where(.boutique-page) .bq-error  { color: var(--danger); text-align: center; }
 :where(.boutique-page) .bq-intro, :where(.boutique-page) .bq-note { color: var(--bq-text-dim); font-size: .88rem; line-height: 1.5; }
 :where(.boutique-page) .bq-note { margin-top: 12px; text-align: center; }
-
-/* Plans */
-:where(.boutique-page) .bq-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 1rem 0; }
-:where(.boutique-page) .bq-plan {
-  position: relative; background: var(--bq-surface-2); border: 1px solid var(--bq-border);
-  border-radius: 16px; padding: 20px 14px; text-align: center; cursor: pointer;
-  transition: transform .2s, border-color .2s;
-}
-:where(.boutique-page) .bq-plan:hover { transform: translateY(-3px); border-color: var(--bq-gold); }
-:where(.boutique-page) .bq-plan.best { border-color: var(--bq-gold); }
-:where(.boutique-page) .bq-plan-dur { font-size: 1.1rem; font-weight: 600; color: var(--bq-text); }
-:where(.boutique-page) .bq-plan-price { margin-top: 6px; font-size: 1.4rem; font-weight: 700; color: var(--bq-gold); }
-:where(.boutique-page) .bq-plan-price small { font-size: .7rem; color: var(--bq-text-dim); }
-:where(.boutique-page) .bq-plan-btn {
-  margin-top: 12px; width: 100%; background: var(--bq-gold); color: var(--text-on-accent); border: none;
-  border-radius: 10px; padding: 8px; font-weight: 700; cursor: pointer;
-}
-:where(.boutique-page) .bq-badge {
-  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  background: var(--bq-gold); color: var(--text-on-accent); font-size: .62rem; font-weight: 700;
-  padding: 3px 10px; border-radius: 20px; white-space: nowrap;
-}
+:where(.boutique-page) .bq-payment { margin: 1rem 0; padding: 4px 16px 16px; border-radius: 16px; background: #fff; }
+:where(.boutique-page) .bq-share { display: grid; gap: 6px; margin: 0 0 1.25rem; }
+:where(.boutique-page) .bq-share .bq-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+:where(.boutique-page) .bq-share p, :where(.boutique-page) .bq-share-hint { margin: 0 0 1.25rem; color: var(--bq-text-dim); font-size: .82rem; line-height: 1.45; }
+:where(.boutique-page) .bq-share p { margin: 0; }
 
 /* Statut */
 :where(.boutique-page) .bq-status {
@@ -404,9 +387,6 @@
   .boutique-page.container { padding: .75rem; }
   :where(.boutique-page) .glass-panel { padding: 1.1rem; border-radius: 16px; }
 
-  /* Plans : 2 par ligne minimum même sur petit écran */
-  :where(.boutique-page) .bq-plans { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-
   /* La ligne de statut : le lien « renouveler » repasse sous le texte */
   :where(.boutique-page) .bq-renew { margin-left: 0; }
 
@@ -420,12 +400,7 @@
      au-dessus de ce seuil-ci). */
 }
 
-@media (max-width: 380px) {
-  :where(.boutique-page) .bq-plans { grid-template-columns: 1fr; }
-  :where(.boutique-page) .bq-plan-price { font-size: 1.25rem; }
-}
-
-:where(.boutique-page) .bq-plan-btn, :where(.boutique-page) .bq-renew { min-height: 44px; }
+:where(.boutique-page) .bq-renew { min-height: 44px; }
 :where(.boutique-page) .bq-renew { width: auto; margin: 0 0 0 auto; padding: 8px 12px; color: var(--accent); background: var(--surface-2); border: 1px solid var(--border); }
 :where(.boutique-page) .bq-prod-body { min-width: 0; overflow-wrap: anywhere; }
 :where(.boutique-page) .bq-prod-actions button { width: 44px; min-height: 44px; margin: 0; padding: 8px; }

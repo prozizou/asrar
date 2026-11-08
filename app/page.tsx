@@ -29,7 +29,7 @@ import Link from 'next/link';
 import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
-import { deepLink, cleanUrl } from '@/lib/share';
+import { deepLink, shopDeepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, emailVendorKey, safeKey, formatCount, formatProductCount, extractVendors, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
 import { optimImg } from '@/lib/img';
@@ -212,10 +212,15 @@ export default function Home() {
         loadVendorLikes(vendors);
 
         const deep = deepLink();
+        const sharedShop = shopDeepLink();
         if (deep && deep.key) {
           cleanUrl();
           if (products.some((p) => p._key === deep.key)) gatedOpenProduct(deep.key, products);
           else notify("Ce produit n'est plus disponible.");
+        } else if (sharedShop) {
+          cleanUrl();
+          if (vendors.some((v) => v.id === sharedShop)) setVendorShopId(sharedShop);
+          else notify("Cette boutique n'est plus disponible.");
         }
       } catch (e: any) {
         setLoading(false);
