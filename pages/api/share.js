@@ -22,6 +22,7 @@ const { app } = require("../../server/grant");
 const { SOURCES } = require("../../server/sources");
 const { reportError } = require("../../server/log");
 const { normalizeSiteUrl } = require("../../lib/site");
+const { vendorKey } = require("../../lib/market");
 
 const SHARE_SHOW_TITLES = true;
 
@@ -34,7 +35,12 @@ const TARGETS = {
   secret:  { page: "/asrar",                 rubrique: "Secrets Mystiques" },
   book:    { page: "/bibliotheque",   rubrique: "Bibliothèque Almaqtab" },
   product: { page: "/",                     rubrique: "Marché Mystique" },
-  zikr:    { page: "/zikr",                 rubrique: "Zikr collectif" }
+  zikr:    { page: "/zikr",                 rubrique: "Zikr collectif" },
+  // shop : boutique d'un vendeur du Marché, identifiée par sa vendorKey
+  // (lib/market.js). Pas de SOURCES[kind] : le nom et le logo sont lus dans la
+  // fiche boutique (profile_clients) ou l'abonnement vendeur (sellers) — voir
+  // readShop. Ouvre le Marché sur cette boutique (?shop=, app/page.tsx).
+  shop:    { page: "/",                     rubrique: "Boutiques du Marché" }
 };
 
 const TITLE_FIELDS = ["faida", "title", "titre", "text", "produit", "name"];
@@ -54,6 +60,7 @@ export default async function handler(req, res) {
   const target = TARGETS[kind];
   const src    = SOURCES[kind];
   const isZikr = kind === "zikr"; // pas de SOURCES[kind] pour ce type — voir TARGETS ci-dessus
+  const isShop = kind === "shop"; // idem : fiche boutique lue par readShop
 
   // Destination par défaut : l'application (lien de parrainage simple).
   // Image par défaut : la même carte de partage « professionnelle » que le
@@ -72,21 +79,26 @@ export default async function handler(req, res) {
   let itemTitle = null;
   let itemImage = null;
   let rubrique  = null;
-  const hasItem = !!(target && key && (isZikr || (src && (!src.cats || src.cats.includes(cat)))));
+  const hasItem = !!(target && key && (isZikr || isShop || (src && (!src.cats || src.cats.includes(cat)))));
 
   if (hasItem) {
-    dest = target.page + "?item=" + encodeURIComponent(key) + (!isZikr && cat ? "&cat=" + encodeURIComponent(cat) : "");
+    dest = isShop
+      ? target.page + "?shop=" + encodeURIComponent(key)
+      : target.page + "?item=" + encodeURIComponent(key) + (!isZikr && cat ? "&cat=" + encodeURIComponent(cat) : "");
     desc = isZikr
       ? "Zikr collectif · ASRAR PRO — Rejoignez ce dhikr partagé."
-      : target.rubrique + " · ASRAR PRO — Ouvrez le lien pour consulter cet élément.";
+      : isShop
+        ? "Boutique du Marché ASRAR PRO — Découvrez ses produits spirituels."
+        : target.rubrique + " · ASRAR PRO — Ouvrez le lien pour consulter cet élément.";
     rubrique = target.rubrique;
 
     if (SHARE_SHOW_TITLES) {
       try {
-        const snap = isZikr
-          ? await app().database().ref("zikr_groups/" + key).once("value")
-          : await app().database().ref(src.ref(cat) + "/" + key).once("value");
-        const item = snap.val();
+        const item = isShop
+          ? await readShop(key)
+          : (await (isZikr
+            ? app().database().ref("zikr_groups/" + key).once("value")
+            : app().database().ref(src.ref(cat) + "/" + key).once("value"))).val();
         if (item) {
           const t = pick(item, TITLE_FIELDS);
           const i = pick(item, IMG_FIELDS);
@@ -308,6 +320,33 @@ export default async function handler(req, res) {
 </html>`
   );
 };
+
+// ── Boutique partagée : nom et logo publics seulement ─────────
+// Même résolution que le Marché (lib/market.js, extractVendors) : la fiche
+// boutique (profile_clients) prime ; sinon un produit du vendeur donne son uid,
+// puis le nom/logo de son abonnement vendeur (sellers/{uid}.shop) ou, à défaut,
+// les champs vendeur* du produit. Jamais l'e-mail ni le téléphone : seuls un
+// titre et une image sont renvoyés, au format lu par pick() ci-dessus.
+async function readShop(key) {
+  const db = app().database();
+  const profiles = await db.ref("profile_clients").once("value");
+  let found = null;
+  profiles.forEach((c) => {
+    const v = c.val();
+    if (!found && v && vendorKey(v) === key) found = { name: v.profile_name || "Boutique", img: v.img || "" };
+  });
+  if (found) return found;
+  const products = await db.ref("det_produits").once("value");
+  let product = null;
+  products.forEach((c) => {
+    const v = c.val();
+    if (!product && v && vendorKey(v) === key) product = v;
+  });
+  if (!product) return null;
+  const seller = product.uid ? (await db.ref("sellers/" + safeKey(product.uid)).once("value")).val() : null;
+  const shop = (seller && seller.shop) || {};
+  return { name: shop.name || product.vendeur || "Boutique", img: shop.logo || product.vendeurAvatar || "" };
+}
 
 // ── Compteur de clics pour le tableau de bord parrainage ──────
 async function countClick(code) {

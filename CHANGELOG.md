@@ -1,3 +1,8 @@
+## Partage des boutiques sur les réseaux sociaux
+
+- « Partager ma boutique » dans Ma Boutique et « Partager cette boutique » sur la page d'une boutique du Marché : feuille de partage du téléphone (WhatsApp, Facebook, TikTok…) ou copie du lien.
+- Lien `/s?k=shop&i=<vendorKey>` : aperçu avec le nom et le logo de la boutique, puis ouverture du Marché directement sur la boutique (`/?shop=`). Le code de parrainage de celui qui partage est ajouté au lien.
+
 ## Boutique à 5 000 FCFA par mois
 
 - « Ma Boutique » : une seule formule, 5 000 FCFA par mois (fin des formules 1 mois à 10 000 et 3 mois à 25 000 FCFA).

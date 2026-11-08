@@ -21,6 +21,8 @@ import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
 import SubscriptionPlansUntyped from '@/components/SubscriptionPlans';
 import { BOUTIQUE_PLAN } from '@/lib/plans';
+import { Share2 } from 'lucide-react';
+import { shareShop } from '@/lib/share';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
 import SpinnerUntyped from '@/components/Spinner';
@@ -67,6 +69,7 @@ export default function BoutiquePage() {
   const [view, setView] = useState<View>('loading');
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [vendorKey, setVendorKey] = useState('');
 
   // Champs de la fiche boutique
   const [shopName, setShopName] = useState('');
@@ -93,6 +96,7 @@ export default function BoutiquePage() {
         const shop = (data.seller && data.seller.shop) || {};
         setSeller(data.seller);
         setProducts(data.products || []);
+        setVendorKey(typeof data.vendorKey === 'string' ? data.vendorKey : '');
         setShopName(shop.name || '');
         setShopDesc(shop.description || '');
         setShopPhone(shop.phone || '');
@@ -227,6 +231,20 @@ export default function BoutiquePage() {
               <span className="bq-dot" /> Boutique active{expiry && ' · expire le ' + expiry}
               <button type="button" className="bq-renew" onClick={() => setView('gate')}>Prolonger</button>
             </div>
+
+            {/* Le Marché ne liste une boutique qu'avec une fiche (profile_clients)
+                ou au moins un produit : sans eux, le lien partagé mènerait
+                à « boutique indisponible ». */}
+            {vendorKey && (products.length > 0 || seller?.viaBoutique) ? (
+              <div className="bq-share">
+                <button type="button" className="bq-btn" onClick={() => shareShop({ id: vendorKey, name: shopName.trim() || seller?.shop?.name }, true)}>
+                  <Share2 size={17} aria-hidden="true" /> Partager ma boutique
+                </button>
+                <p>WhatsApp, Facebook, TikTok… Le lien affiche le nom et le logo de votre boutique et ouvre vos produits sur le Marché.</p>
+              </div>
+            ) : vendorKey ? (
+              <p className="bq-share-hint">Ajoutez un premier produit pour pouvoir partager votre boutique sur les réseaux sociaux.</p>
+            ) : null}
 
             {stats && (
               <div className="bq-stats">
