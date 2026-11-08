@@ -1,3 +1,9 @@
+## SW v46.60 — Accès au site depuis Android
+
+- Suppression de la redirection automatique vers Google Play et de l’écran imposant l’application aux navigateurs Android.
+- Site accessible dès la première visite, après rechargement et depuis les liens directs ; installation facultative.
+- Connexion, abonnements et paiements Wave / PI-SPI / WhatsApp conservés.
+
 ## SW v46.59 — Paiement PI-SPI avec activation manuelle
 
 - PI-SPI proposé à côté de Wave et WhatsApp dans le dialogue d’abonnement et Mon compte.
