@@ -32,6 +32,7 @@ import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import MoreMenuUntyped from '@/components/MoreMenu';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
+import { handleExternalLinkClick } from '@/lib/externalWindow';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
   progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX,
@@ -358,6 +359,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
                   <span className="zk-req-actions">
                     {r.phone && (
                       <a className="zk-mini wa" href={waContactUrl(r.phone, r.group.name)} target="_blank" rel="noopener noreferrer"
+                        onClick={(event) => handleExternalLinkClick(event, waContactUrl(r.phone!, r.group.name))}
                         title={`Contacter ${reqName} par WhatsApp avant d’accepter sa demande`}>
                         <Phone size={12} strokeWidth={2.5} aria-hidden="true" /> WhatsApp
                       </a>

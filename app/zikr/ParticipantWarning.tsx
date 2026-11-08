@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import ModalUntyped from '@/components/Modal';
+import { handleExternalLinkClick } from '@/lib/externalWindow';
 const Modal = ModalUntyped as any;
 import { warnMember } from '@/lib/zikrCollectif';
 import { zikrWarningMessage, ZIKR_WARNING_MAX } from '@/lib/zikrWarning';
@@ -39,7 +40,7 @@ export default function ParticipantWarning({ groupId, group, member, onClose, on
       {saved && <p role="status">Avertissement enregistré. Échéance : {new Date(deadline).toLocaleString('fr-FR')}. Le message reste à envoyer dans WhatsApp.</p>}
       <div className="zk-warning-actions">
         <button type="submit" className="view-button" disabled={busy || !text.trim()}>{busy ? 'Enregistrement…' : 'Enregistrer l’avertissement'}</button>
-        {whatsapp && <a className="view-button view-button-secondary" href={whatsapp} target="_blank" rel="noopener noreferrer">Ouvrir WhatsApp</a>}
+        {whatsapp && <a className="view-button view-button-secondary" href={whatsapp} target="_blank" rel="noopener noreferrer" onClick={(event) => handleExternalLinkClick(event, whatsapp)}>Ouvrir WhatsApp</a>}
       </div>
       {!member.phone && <p className="zk-muted">Pas de numéro WhatsApp enregistré : le membre recevra l’avertissement dans l’application.</p>}
     </form>

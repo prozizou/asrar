@@ -1,3 +1,8 @@
+## SW v46.61 — WhatsApp s’ouvre directement dans l’application
+
+- Application Android : les contacts WhatsApp (demande au Marché, assistance abonnement, paiements, boutique, Zikr) ouvrent directement la discussion préremplie dans WhatsApp (`whatsapp://send`), sans passer par la page web « Ouvrir l’application / Télécharger » de WhatsApp. Les emojis du message ne sont plus abîmés.
+- Si WhatsApp n’est pas installé, repli automatique sur le lien wa.me après 2,5 s. Site web : inchangé.
+
 ## SW v46.60 — Style épuré clair/sombre, boutique à 5 000 FCFA et partage, site Android
 
 ### Nouveau style épuré, thèmes clair et sombre
