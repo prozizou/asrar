@@ -14,7 +14,6 @@ import './globals.css';
 import { normalizeSiteUrl } from '@/lib/site';
 import Providers from '@/components/Providers';
 import PwaGate from '@/components/PwaGate';
-import CosmicBackground from '@/components/CosmicBackground';
 import InstallBanner from '@/components/InstallBanner';
 import KeyboardInsets from '@/components/KeyboardInsets';
 import NativeUpdateGate from '@/components/NativeUpdateGate';
@@ -83,7 +82,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1a1712',
+  themeColor: '#121212',
   // Sans ceci, `env(safe-area-inset-*)` résout à 0 sur iOS même en mode PWA
   // installé (statusBarStyle "black-translucent" ci-dessus ne suffit pas à
   // lui seul) — les CSS qui s'appuient dessus pour dégager le cran-d'oreille/
@@ -109,7 +108,6 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
-        <CosmicBackground />
         {/* Hors de PwaGate/Providers : la proposition d'installation doit
             aussi s'afficher AVANT connexion, pour un visiteur qui arrive
             sur un lien partagé et n'a pas encore de compte. */}

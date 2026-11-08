@@ -27,11 +27,8 @@
 
     /* Fond étoilé assourdi sur ce module (revue design, point 10 : « le fond
        est visuellement chargé » combiné aux images manuscrites et aux
-       dégradés des cartes). --star-opacity pilote .cosmic-stars
-       (components/CosmicBackground.js, monté globalement dans
-       app/layout.js — voir globals.css) : cette redéfinition n'a d'effet
-       QUE pendant que asrar.css est chargée (donc uniquement sur ce
-       module), sans toucher le fond des autres pages. */
+       dégradés des cartes). Le fond animé global a depuis été retiré (style épuré) ;
+       --star-opacity n'a plus d'effet. */
     --star-opacity: 0.32;
 }
 

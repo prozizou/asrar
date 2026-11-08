@@ -6,13 +6,18 @@
    sur .cc-page. */
 
 .cc-page {
+  /* body est un flex centré (app/globals.css) : sans largeur explicite, la
+     page se réduisait à la largeur de son contenu et laissait de grandes
+     marges vides sur téléphone. */
+  width: 100%;
   --gold: var(--accent);
-  --gold-light: #f472b6;
-  --gold-pale: rgba(255, 255, 255, 0.06);
+  /* Palette commune : un seul accent (orange), surfaces neutres. */
+  --gold-light: var(--accent);
+  --gold-pale: var(--surface);
   --gold-border: var(--border);
-  --deep: #1a1030;
-  --deep2: #2e1d47;
-  --lapis: #c9a8f5;
+  --deep: var(--accent);
+  --deep2: var(--accent-hover);
+  --lapis: var(--accent);
   --cream: transparent;
   --ink: var(--text-main);
   --muted: var(--text-dim);
@@ -25,24 +30,6 @@
   font-family: var(--font-ui);
   color: var(--ink);
   line-height: 1.5;
-}
-
-html[data-theme='light'] .cc-page {
-  --gold: #1d4ed8;
-  --gold-light: #2563eb;
-  --gold-pale: #e6eefb;
-  --gold-border: #a9c4f2;
-  --deep: #12284f;
-  --deep2: #1d3a74;
-  --lapis: #2f6fe0;
-  --cream: #eaf2fc;
-  --ink: #111827;
-  --muted: #6b7280;
-  --red: #991b1b;
-  --card-bg: #ffffff;
-  --shadow: 0 2px 16px rgba(18, 58, 53, 0.1);
-  --cc-heading: #123a35;
-  --cc-soft: #f0e4c8;
 }
 
 .cc-page *, .cc-page *::before, .cc-page *::after { box-sizing: border-box; }
@@ -61,7 +48,9 @@ html[data-theme='light'] .cc-page {
 /* HEADER — hauteur réduite d'environ 30% (revue design v2) : le bandeau
    restait élégant mais bien trop haut pour ce qu'il affichait. */
 .cc-page header {
-  background: linear-gradient(160deg, #0f1d3a 0%, #1a2e5a 50%, #243872 100%);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   padding: 1.5rem 1.5rem 1.3rem;
   text-align: center;
   position: relative;
@@ -73,7 +62,7 @@ html[data-theme='light'] .cc-page {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), var(--gold-light), transparent);
+  background: var(--accent);
 }
 .cc-page .bismillah {
   font-family: var(--font-ar);
@@ -86,7 +75,7 @@ html[data-theme='light'] .cc-page {
 .cc-page header h1 {
   font-size: clamp(1.4rem, 3.6vw, 2.1rem);
   font-weight: 700;
-  color: #fff;
+  color: var(--text-main);
   letter-spacing: -0.01em;
   margin-bottom: 0.4rem;
 }
@@ -101,8 +90,8 @@ html[data-theme='light'] .cc-page {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--gold-light);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 99px;
   padding: 0.25em 0.9em;
   margin-bottom: 0.5rem;
@@ -110,7 +99,7 @@ html[data-theme='light'] .cc-page {
 /* Contraste renforcé (0.55 → 0.72 d'opacité) — le sous-titre décrit ce que
    fait la page, il n'a pas besoin d'être aussi discret qu'une mention
    légale. */
-.cc-page .subtitle { color: rgba(255, 255, 255, 0.72); font-size: 0.85rem; font-weight: 300; }
+.cc-page .subtitle { color: var(--text-dim); font-size: 0.85rem; font-weight: 300; }
 
 /* LAYOUT — marges resserrées (revue design v2 : « beaucoup trop d'espace
    vide ») : la page gagne en compacité sans perdre en lisibilité. */
@@ -200,7 +189,7 @@ html[data-theme='light'] .cc-page {
 }
 .cc-page .field input:focus, .cc-page .field select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(184, 137, 42, 0.15);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .cc-page .field input[type='number'] { text-align: center; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.05em; }
 .cc-page .field select option { color: #1b2634; }
@@ -209,8 +198,8 @@ html[data-theme='light'] .cc-page {
 .cc-page .btn-primary {
   flex: 1;
   padding: 0.7rem 1.5rem;
-  background: linear-gradient(135deg, var(--deep) 0%, var(--lapis) 100%);
-  color: #fff;
+  background: var(--accent);
+  color: var(--button-ink);
   border: none;
   border-radius: 9px;
   font-family: var(--font-ui);
@@ -404,8 +393,8 @@ html[data-theme='light'] .cc-page {
 }
 .cc-page .name-sheet-actions { display: flex; flex-direction: column; gap: 0.6rem; }
 .cc-page .name-sheet-use {
-  background: linear-gradient(135deg, var(--deep) 0%, var(--lapis) 100%);
-  color: #fff;
+  background: var(--accent);
+  color: var(--button-ink);
   border: none;
   border-radius: 9px;
   padding: 0.7rem 1rem;
@@ -457,7 +446,7 @@ html[data-theme='light'] .cc-page {
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.cc-page .results-search-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184, 137, 42, 0.15); }
+.cc-page .results-search-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--accent-glow); }
 .cc-page .search-icon-wrap { position: relative; flex: 1; display: flex; align-items: center; }
 .cc-page .search-icon { position: absolute; left: 0.75rem; color: var(--gold); font-size: 0.9rem; pointer-events: none; }
 .cc-page .results-search-clear {
@@ -472,8 +461,8 @@ html[data-theme='light'] .cc-page {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: linear-gradient(135deg, var(--deep) 0%, var(--lapis) 100%);
-  color: var(--gold-light);
+  background: var(--accent);
+  color: var(--button-ink);
   font-size: 0.65rem;
   font-weight: 700;
   padding: 0.15em 0.55em;
@@ -510,7 +499,7 @@ html[data-theme='light'] .cc-page {
 }
 .cc-page .page-btn:hover:not(:disabled) { background: var(--cc-soft); border-color: var(--gold); }
 .cc-page .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.cc-page .page-btn.active { background: var(--deep); color: var(--gold-light); border-color: var(--deep); }
+.cc-page .page-btn.active { background: var(--accent); color: var(--button-ink); border-color: var(--accent); }
 .cc-page .page-info { font-size: 0.75rem; color: var(--muted); }
 
 .cc-page details summary {
@@ -563,7 +552,7 @@ html[data-theme='light'] .cc-page {
 .cc-page .rb-text { flex: 1; }
 .cc-page .rb-text strong { color: var(--gold); }
 .cc-page .rb-btn { padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; font-family: var(--font-ui); }
-.cc-page .rb-btn-restore { background: var(--deep); color: var(--gold-light); }
+.cc-page .rb-btn-restore { background: var(--accent); color: var(--button-ink); }
 .cc-page .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid var(--gold-border); }
 
 .cc-page input:not([type="checkbox"]), .cc-page select { min-height: 44px; font-size: 16px; }

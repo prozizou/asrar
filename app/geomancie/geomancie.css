@@ -3,20 +3,20 @@
    classes génériques — le scoping évite toute fuite dans la SPA. */
 
 .geo-page {
-  --bg: #0d0818;
-  --surface: #181028;
-  --surface2: #21163a;
-  --surface3: #2b1d4a;
-  --line: rgba(255, 255, 255, 0.09);
-  --text: #f1edf9;
-  --text2: #b4abc9;
-  --gold: #b79cff;
-  --gold2: #cdbbff;
-  --accent: #b79cff;
-  --danger: #c0392b;
+  /* Palette commune (thèmes clair/sombre, accent orange). */
+  --bg: var(--bg-deep);
+  --surface: var(--glass-bg);
+  --surface2: color-mix(in srgb, var(--text-main) 5%, var(--glass-bg));
+  --surface3: color-mix(in srgb, var(--text-main) 10%, var(--glass-bg));
+  --line: var(--border);
+  --text: var(--text-main);
+  --text2: var(--text-dim);
+  --gold: var(--accent);
+  --gold2: var(--accent-hover);
+  --danger: var(--status-danger-text);
   --radius: 18px;
   --radius-sm: 12px;
-  --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   --font: var(--font-ui);
   --transition: 0.2s ease;
   --glass-border: var(--line);
@@ -37,17 +37,7 @@
 }
 
 html[data-theme='light'] .geo-page {
-  --bg: #f4f1fb;
-  --surface: #ffffff;
-  --surface2: #f0ebfa;
-  --surface3: #e5dcf6;
-  --line: rgba(60, 30, 120, 0.14);
-  --text: #1f1538;
-  --text2: #5b4f78;
-  --gold: #6d3fd1;
-  --gold2: #5a2fb8;
-  --accent: #6d3fd1;
-  --shadow: 0 4px 16px rgba(60, 30, 120, 0.12);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .geo-page * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -140,9 +130,8 @@ html[data-theme='light'] .geo-page {
 }
 .geo-page .btn:hover { background: var(--surface3); border-color: var(--gold); }
 .geo-page .btn:disabled { opacity: 0.6; cursor: default; }
-.geo-page .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a0f33; }
+.geo-page .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--button-ink); }
 .geo-page .btn.primary:hover { background: var(--gold2); border-color: var(--gold2); }
-html[data-theme='light'] .geo-page .btn.primary { color: #fff; }
 
 /* Écu : organigramme sur grille de 16 colonnes (voir SHIELD_LAYOUT) ; les
    flèches (SVG) sont tracées d'après la position mesurée des cases. */
@@ -223,8 +212,8 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
 }
 @keyframes geo-fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .geo-modal {
-  background: #1a1030;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px 20px;
   max-width: 650px;
@@ -233,24 +222,24 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
   overflow-y: auto;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   position: relative;
-  color: #e0dcd0;
+  color: var(--text-main);
   font-family: var(--font-ui);
-  --gold: #a78bfa;
-  --text2: #b8b4a8;
-  --glass-border: rgba(255, 255, 255, 0.15);
+  --gold: var(--accent);
+  --text2: var(--text-dim);
+  --glass-border: var(--border);
 }
-.geo-modal p { color: #e0dcd0; }
+.geo-modal p { color: var(--text-main); }
 .geo-modal h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 6px; font-family: var(--font-display); }
 .geo-modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text2); font-size: 1.5rem; cursor: pointer; padding: 4px 10px; border-radius: 50%; transition: 0.25s; }
-.geo-modal .close-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.geo-modal .close-btn:hover { color: var(--text-main); background: var(--surface); }
 .geo-modal .copulation-steps { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin: 12px 0; font-size: 0.9rem; }
-.geo-modal .step-fig { background: rgba(255, 255, 255, 0.09); border-radius: 10px; padding: 10px; text-align: center; min-width: 55px; }
+.geo-modal .step-fig { background: var(--surface); border-radius: 10px; padding: 10px; text-align: center; min-width: 55px; }
 .geo-modal .mini-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .geo-modal .mini-row { display: flex; gap: 3px; justify-content: center; }
-.geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
+.geo-modal .mini-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 50%, transparent); }
 .geo-modal .modal-block { border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
-.geo-modal .modal-block.blue { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); }
-.geo-modal .modal-block.gold { background: rgba(183, 156, 255, 0.08); border: 1px solid rgba(183, 156, 255, 0.35); }
+.geo-modal .modal-block.blue { background: var(--surface-2); border: 1px solid var(--glass-border); }
+.geo-modal .modal-block.gold { background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 .geo-modal .modal-block h4 { margin: 0 0 8px 0; font-size: 0.95rem; }
 
 .geo-toast {
@@ -258,9 +247,9 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
   bottom: calc(24px + var(--sab));
   left: 50%;
   transform: translateX(-50%);
-  background: #1a1030;
-  border: 1px solid #a78bfa;
-  color: #a78bfa;
+  background: var(--glass-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
   padding: 10px 22px;
   border-radius: 12px;
   font-weight: 600;
@@ -294,7 +283,7 @@ html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
   transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.25s;
 }
 .geo-page .step.current .step-dot { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent); }
-.geo-page .step.done .step-dot { background: var(--gold); border-color: var(--gold); color: #1a0f33; transform: scale(1.05); }
+.geo-page .step.done .step-dot { background: var(--gold); border-color: var(--gold); color: var(--button-ink); transform: scale(1.05); }
 html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
 .geo-page .step-label { font-size: 0.78rem; font-weight: 600; color: var(--text2); margin-top: 4px; transition: color 0.25s; }
 .geo-page .step.current .step-label,

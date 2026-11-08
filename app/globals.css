@@ -21,58 +21,56 @@
     --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
     --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
 
-    /* Fonds & surfaces — sombre profond à halo violet (maquette de référence),
-       remplace le dégradé bleu-sarcelle précédent. */
-    --bg-gradient:    linear-gradient(135deg, #0c0713, #180d28, #241639);
-    --bg-deep:        #09050f;
-    --bg-alt:         #000000;
-    --surface:        rgba(255, 255, 255, 0.1);
-    --surface-2:      rgba(255, 255, 255, 0.05);
-    --surface-3:      rgba(0, 0, 0, 0.3);
-    --surface-input:  rgba(0, 0, 0, 0.2);
+    /* Fonds & surfaces — style épuré : fond neutre uni, cartes nettes,
+       aucun halo. Un seul accent (orange) pour toute l'application. */
+    --bg-gradient:    #121212;
+    --bg-deep:        #121212;
+    --bg-alt:         #0b0b0c;
+    --surface:        rgba(255, 255, 255, 0.07);
+    --surface-2:      rgba(255, 255, 255, 0.04);
+    --surface-3:      rgba(0, 0, 0, 0.35);
+    --surface-input:  rgba(255, 255, 255, 0.05);
 
     /* Bordures */
-    --border:         rgba(255, 255, 255, 0.2);
-    --border-strong:  rgba(255, 255, 255, 0.4);
-    --border-soft:    rgba(255, 255, 255, 0.15);
+    --border:         rgba(255, 255, 255, 0.11);
+    --border-strong:  rgba(255, 255, 255, 0.24);
+    --border-soft:    rgba(255, 255, 255, 0.07);
 
     /* Texte */
-    --text-main:      #ffffff;
-    --text-muted:     #e0e0e0;
-    --text-dim:       #b0b0b0;
-    --text-faint:     #888888;
-    --text-on-accent: #ffffff;
+    --text-main:      #f4f4f5;
+    --text-muted:     #cfcfd4;
+    --text-dim:       #a8a8b0;
+    --text-faint:     #8c8c95;
+    --text-on-accent: #1a1209;
 
-    /* Accents génériques — dégradé violet → rose magenta (maquette de
-       référence), remplace le bleu-cyan précédent. */
-    --accent:         #a78bfa;
-    --accent-hover:   #f472b6;
-    --accent-glow:    rgba(167, 139, 250, 0.4);
+    /* Accent unique : orange (contraste 7:1 sur les cartes sombres, texte
+       foncé dessus). */
+    --accent:         #fb923c;
+    --accent-hover:   #fdba74;
+    --accent-glow:    rgba(251, 146, 60, 0.28);
 
-    /* Or / mystique (asrar, boutique, marche, geomancie, Benefits) — aligné
-       sur le même violet-magenta pour une identité cohérente dans toute
-       l'app, plutôt qu'un accent doré séparé. */
-    --gold:           #a78bfa;
-    --gold-hover:     #f472b6;
-    --gold-soft:      #c9a8f5;
-    --gold-ink:       #2d1f10;
+    /* Ancien « or / mystique » : même accent, une seule identité. */
+    --gold:           #fb923c;
+    --gold-hover:     #fdba74;
+    --gold-soft:      #fdba74;
+    --gold-ink:       #1a1209;
 
     /* Sémantique */
-    --success:        #38d66b;
-    --danger:         #d9534f;
+    --success:        #4ade80;
+    --danger:         #f87171;
 
     /* Cartes (Benefits, rouwhania) */
-    --card-bg:        #241639;
-    --card-border:    #a78bfa;
-    --card-text:      #ecf0f1;
-    --card-accent:    #2e1d47;
-    --card-green-bg:  #2e4a3a;
-    --card-green-text:#2ecc71;
+    --card-bg:        #1e1e20;
+    --card-border:    #fb923c;
+    --card-text:      #ececee;
+    --card-accent:    #2a2a2d;
+    --card-green-bg:  #183324;
+    --card-green-text:#4ade80;
 
-    /* Verre / ombres */
-    --glass-bg:       var(--surface);
-    --glass-border:   var(--border);
-    --glass-shadow:   0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    /* Cartes pleines et ombre discrète (plus d'effet verre) */
+    --glass-bg:       #1c1c1e;
+    --glass-border:   rgba(255, 255, 255, 0.09);
+    --glass-shadow:   0 1px 2px rgba(0, 0, 0, 0.45);
 
     /* ─── Système typographique unifié (partagé par tout le projet) ───
        TOUTE l'app est en Calibri (corps ET titres) — auparavant Poppins pour
@@ -115,69 +113,56 @@
     --space-5:        24px;
     --space-6:        32px;
 
-    /* Ciel étoilé du fond animé (components/CosmicBackground.js) : bien
-       visible sur le violet profond, discret en clair (voir override plus
-       bas) pour ne pas ternir le fond menthe/lavande. */
-    --star-opacity:   .6;
+    /* Fond animé retiré (style épuré) : conservé à 0 pour les anciennes règles. */
+    --star-opacity:   0;
 }
 
 /* ───────────── html[data-theme="light"] = MODE CLAIR ─────────────
-   Fond doux bleu/lavande à halo bleu (remplace la menthe/turquoise
-   précédente). */
+   Fond gris très clair uni, cartes blanches, même accent orange (assombri
+   pour garder 5:1 de contraste, texte blanc dessus compris). */
 html[data-theme="light"] {
-    --bg-gradient:    linear-gradient(135deg, #eaf2fc, #e8edf8, #e6e8f6);
-    --bg-deep:        #edf3fb;
-    --bg-alt:         #f5f8fd;
-    --surface:        rgba(255, 255, 255, 0.8);
-    --surface-2:      rgba(255, 255, 255, 0.58);
-    --surface-3:      rgba(20, 40, 80, 0.06);
-    --surface-input:  rgba(255, 255, 255, 0.88);
+    --bg-gradient:    #f4f4f5;
+    --bg-deep:        #f4f4f5;
+    --bg-alt:         #ffffff;
+    --surface:        #ffffff;
+    --surface-2:      #fafafa;
+    --surface-3:      rgba(0, 0, 0, 0.05);
+    --surface-input:  #ffffff;
 
-    --border:         rgba(20, 40, 80, 0.14);
-    --border-strong:  rgba(20, 40, 80, 0.26);
-    --border-soft:    rgba(20, 40, 80, 0.09);
+    --border:         rgba(0, 0, 0, 0.11);
+    --border-strong:  rgba(0, 0, 0, 0.22);
+    --border-soft:    rgba(0, 0, 0, 0.06);
 
-    --text-main:      #15223a;
-    --text-muted:     #41546f;
-    --text-dim:       #54688a;
-    --text-faint:     #7b8fae;
+    --text-main:      #18181b;
+    --text-muted:     #4b4b52;
+    --text-dim:       #5c5c66;
+    --text-faint:     #71717a;
     --text-on-accent: #ffffff;
 
-    /* Bleu (#2563eb, contraste 5,2:1 sur blanc, texte blanc dessus compris)
-       — remplace le turquoise (#14b8a6, 2,5:1, trop pâle pour du texte). */
-    --accent:         #2563eb;
-    --accent-hover:   #1d4ed8;
-    --accent-glow:    rgba(37, 99, 235, 0.3);
+    --accent:         #c2410c;
+    --accent-hover:   #9a3412;
+    --accent-glow:    rgba(194, 65, 12, 0.2);
 
-    /* Or / mystique : aligné sur le même bleu pour une identité
-       cohérente dans toute l'app, plutôt qu'un accent doré séparé. */
-    --gold:           #2563eb;
-    --gold-hover:     #1d4ed8;
-    --gold-soft:      #60a5fa;
-    --gold-ink:       #fdf7e6;
+    --gold:           #c2410c;
+    --gold-hover:     #9a3412;
+    --gold-soft:      #fb923c;
+    --gold-ink:       #ffffff;
 
-    --success:        #2c9c54;
-    --danger:         #b53a37;
+    --success:        #15803d;
+    --danger:         #b91c1c;
 
-    --card-bg:        #fffef9;
-    --card-border:    #2563eb;
-    --card-text:      #2d3436;
-    --card-accent:    #e6eefb;
-    --card-green-bg:  #e8f8f5;
-    --card-green-text:#27ae60;
+    --card-bg:        #ffffff;
+    --card-border:    #c2410c;
+    --card-text:      #27272a;
+    --card-accent:    #fff7ed;
+    --card-green-bg:  #ecfdf3;
+    --card-green-text:#15803d;
 
-    --glass-bg:       rgba(255, 255, 255, 0.82);
-    /* Bordure/ombre renforcées (0.12 → 0.22 ; flou 32px → 22px) : sur le
-       fond clair menthe/lavande, l'ancienne bordure quasi invisible laissait
-       les cartes se fondre dans l'arrière-plan — un flou d'ombre plus serré
-       (au lieu de plus large) donne un bord net plutôt qu'une simple brume
-       sous la carte, sans pour autant l'assombrir. */
-    --glass-border:   rgba(20, 40, 80, 0.22);
-    --glass-shadow:   0 6px 22px rgba(20, 40, 80, 0.16);
+    --glass-bg:       #ffffff;
+    --glass-border:   rgba(0, 0, 0, 0.08);
+    --glass-shadow:   0 1px 3px rgba(0, 0, 0, 0.06);
 
-    /* Fond menthe/lavande déjà clair : un ciel étoilé aussi marqué qu'en
-       sombre le ternirait, on le garde en filigrane. */
-    --star-opacity:   .22;
+    --star-opacity:   0;
 }
 
 /* ───────────── Reset & typo ───────────── */
@@ -769,78 +754,77 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
 }
 .sg-box {
-  background: #150c24; border: 1px solid rgba(255,255,255,.2);
+  background: var(--glass-bg); border: 1px solid var(--border);
   border-radius: 20px; padding: 30px 24px; text-align: center; max-width: 560px;
-  width: 100%; position: relative; font-family: var(--font-ui); color: #fff;
+  width: 100%; position: relative; font-family: var(--font-ui); color: var(--text-main);
 }
 .sg-close {
   position: absolute; top: 14px; right: 16px; cursor: pointer;
-  font-size: 1.4rem; color: #cfd8dc; line-height: 1;
+  font-size: 1.4rem; color: var(--text-dim); line-height: 1;
 }
-.sg-close:hover { color: #fff; }
+.sg-close:hover { color: var(--text-main); }
 .sg-box h2 { margin: 6px 0; font-weight: 600; letter-spacing: 1px; }
-.sg-box .sg-sub { color: #cfd8dc; margin-bottom: 20px; font-size: .95rem; }
+.sg-box .sg-sub { color: var(--text-dim); margin-bottom: 20px; font-size: .95rem; }
 .sg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
 .sg-card {
-  background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.2);
+  background: var(--surface-2); border: 1px solid var(--border);
   border-radius: 16px; padding: 20px 14px; cursor: pointer; position: relative;
   transition: transform .25s, box-shadow .25s, border-color .25s;
 }
 .sg-card:hover {
-  transform: translateY(-4px); border-color: #a78bfa;
-  box-shadow: 0 8px 22px rgba(167,139,250,.35);
+  transform: none; border-color: var(--accent);
+  box-shadow: none;
 }
-.sg-card.best { border-color: #f472b6; }
+.sg-card.best { border-color: var(--accent); }
 /* Palier insuffisant pour le module demandé (voir SubscriptionGate reason='level') :
    les formules qui ne suffisent pas sont estompées, seule « best » reste mise en avant. */
 .sg-card-dim { opacity: .45; }
 .sg-dur { font-size: 1.1rem; font-weight: 600; }
 .sg-price {
   margin-top: 8px; font-size: 1.3rem; font-weight: 700;
-  background: -webkit-linear-gradient(45deg, #a78bfa, #f472b6);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
-.sg-price small { font-size: .7rem; color: #cfd8dc; -webkit-text-fill-color: #cfd8dc; }
+.sg-price small { font-size: .7rem; color: var(--text-dim); -webkit-text-fill-color: var(--text-dim); }
 .sg-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  background: linear-gradient(45deg, #a78bfa, #f472b6); color: #fff; font-size: .62rem;
+  background: var(--accent); color: var(--button-ink); font-size: .62rem;
   font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
-.sg-note { margin-top: 18px; font-size: .82rem; color: #cfd8dc; min-height: 18px; }
+.sg-note { margin-top: 18px; font-size: .82rem; color: var(--text-dim); min-height: 18px; }
 /* Mise à jour obligatoire d'un APK trop ancien (components/NativeUpdateGate.js) :
    au-dessus de tout, sans bouton de fermeture. */
 .nug-overlay {
   position: fixed; inset: 0; z-index: 2147483000; display: flex;
   align-items: center; justify-content: center;
   padding: calc(20px + var(--sat)) calc(20px + var(--sar)) calc(20px + var(--sab)) calc(20px + var(--sal));
-  background: rgba(9, 5, 15, .96);
+  background: rgba(12, 12, 13, .96);
 }
 .nug-box {
   width: 100%; max-width: 420px; padding: 30px 24px; text-align: center;
-  background: #150c24; border: 1px solid rgba(255,255,255,.2); border-radius: 20px;
-  color: #fff; font-family: var(--font-ui);
+  background: #1c1c1e; border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
+  color: #f4f4f5; font-family: var(--font-ui);
 }
 .nug-icon { font-size: 2.4rem; }
 .nug-box h2 { margin: 8px 0; font-weight: 600; }
 .nug-box p { margin: 0 0 20px; color: #cfd8dc; font-size: .95rem; line-height: 1.5; }
 .nug-btn {
   display: block; padding: 14px 18px; border-radius: 14px; text-decoration: none;
-  background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; font-weight: 700;
+  background: var(--accent); color: var(--button-ink); font-weight: 700;
 }
 
 /* Alternative publicitaire (Unity Ads, APK) : au-dessus des formules. */
 .sg-ad { margin-bottom: 18px; }
 .sg-ad-btn {
   width: 100%; margin: 0; padding: 14px 18px; border-radius: 14px; cursor: pointer;
-  border: 1px solid #a78bfa; background: rgba(167,139,250,.16); color: #fff;
+  border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text-main);
   font: 600 1rem var(--font-ui);
 }
 .sg-ad-btn:disabled { opacity: .6; cursor: wait; }
-.sg-ad-hint { margin: 8px 0 0; font-size: .8rem; color: #cfd8dc; }
-.sg-ad-msg { margin: 10px 0 0; font-size: .85rem; color: #fcd34d; }
+.sg-ad-hint { margin: 8px 0 0; font-size: .8rem; color: var(--text-dim); }
+.sg-ad-msg { margin: 10px 0 0; font-size: .85rem; color: var(--accent); }
 .sg-ad-or {
   margin: 16px 0 0; font-size: .75rem; letter-spacing: 1px; text-transform: uppercase;
-  color: #9aa5b1;
+  color: var(--text-faint);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -860,14 +844,12 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   --login-ink-faint:    rgba(200, 212, 240, .5);
   position: fixed;
   inset: 0;
-  z-index: 1000; /* au-dessus du fond animé (CosmicBackground), sous #asrar-loader (999999) */
+  z-index: 1000; /* sous #asrar-loader (999999) */
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
-/* Arrière-plan assombri + flouté (« léger glassmorphism ») — le fond animé
-   (CosmicBackground, monté hors de AuthProvider donc déjà visible derrière)
-   reste deviné plutôt qu'effacé net. */
+/* Arrière-plan assombri + légèrement flouté derrière la fenêtre de connexion. */
 .login-backdrop {
   position: absolute;
   inset: 0;
@@ -1620,80 +1602,6 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   .install-banner-cta { padding: 9px 13px; font-size: .8rem; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Fond animé — nébuleuse + ciel étoilé (components/CosmicBackground.js)
-   Direction ajoutée par la maquette Claude Design « Asrar Mystic » : fixé
-   derrière toute l'app (z-index négatif, cf. règle de peinture CSS — un
-   enfant `position:fixed` à z-index négatif se peint AVANT le contenu
-   statique normal du <body>, donc bien en arrière-plan) pour que le violet
-   profond / menthe-lavande de --bg-gradient ne soit plus tout à fait plat,
-   sans toucher au rendu d'aucune page. Purement décoratif, respecte
-   « prefers-reduced-motion » via la règle générique plus haut.
-   ═══════════════════════════════════════════════════════════════════════ */
-.cosmic-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-.cosmic-blob {
-  position: absolute;
-  border-radius: 50%;
-  /* Flou renforcé (30px → 44px) en compensation de l'intensité réduite
-     ci-dessous : le halo reste "extrêmement diffus" (deux taches de couleur
-     à peine perceptibles) plutôt que de disparaître complètement. */
-  filter: blur(44px);
-}
-.cosmic-blob-a {
-  width: 260px; height: 260px; left: -70px; top: -40px;
-  /* Mix réduit d'environ 60% (40% → 16%) : le halo turquoise/violet
-     donnait une impression de brume sur toute la carte de connexion. */
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
-  animation: cosmicBlobDrift1 14s ease-in-out infinite;
-}
-.cosmic-blob-b {
-  width: 220px; height: 220px; right: -60px; bottom: 80px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-hover) 13%, transparent), transparent 70%);
-  animation: cosmicBlobDrift2 16s ease-in-out infinite;
-}
-@keyframes cosmicBlobDrift1 {
-  0%, 100% { transform: translate(-10%, -10%) scale(1); }
-  50%      { transform: translate(12%, 16%) scale(1.18); }
-}
-@keyframes cosmicBlobDrift2 {
-  0%, 100% { transform: translate(14%, 10%) scale(1.1); }
-  50%      { transform: translate(-12%, -14%) scale(0.92); }
-}
-/* Couleur des étoiles : --accent, PAS --text-main (bug corrigé ici) —
-   --text-main est blanc en sombre (de vraies étoiles, l'effet voulu) mais
-   devient #16302c (quasi noir) en thème clair : le "ciel étoilé" se
-   transformait alors en petits points gris/noirs qui lisaient comme de la
-   poussière/un artefact de rendu plutôt qu'une texture voulue — sur le fond
-   menthe/lavande clair, aucun humain ne les lit comme des étoiles. --accent
-   les rend cohérents avec le reste de l'identité (turquoise en clair, violet
-   en sombre) dans les deux thèmes. */
-.cosmic-stars {
-  position: absolute;
-  inset: 0;
-  opacity: var(--star-opacity);
-  animation: cosmicStarTwinkle 4.5s ease-in-out infinite;
-  background-image:
-    radial-gradient(1px 1px at 20% 30%, color-mix(in srgb, var(--accent) 60%, transparent), transparent),
-    radial-gradient(1px 1px at 70% 20%, color-mix(in srgb, var(--accent) 53%, transparent), transparent),
-    radial-gradient(1px 1px at 40% 80%, color-mix(in srgb, var(--accent) 47%, transparent), transparent),
-    radial-gradient(1px 1px at 85% 65%, color-mix(in srgb, var(--accent) 60%, transparent), transparent),
-    radial-gradient(1px 1px at 55% 45%, color-mix(in srgb, var(--accent) 40%, transparent), transparent),
-    radial-gradient(1px 1px at 10% 70%, color-mix(in srgb, var(--accent) 53%, transparent), transparent),
-    radial-gradient(1px 1px at 30% 12%, color-mix(in srgb, var(--accent) 47%, transparent), transparent),
-    radial-gradient(1px 1px at 92% 40%, color-mix(in srgb, var(--accent) 40%, transparent), transparent);
-}
-@keyframes cosmicStarTwinkle {
-  0%, 100% { opacity: .55; }
-  50%      { opacity: 1; }
-}
-
-
 /* ── Avis (étoiles) : components/StarRating.js + components/ReviewsSection.js
    — partagé Marché (boutiques) et Formation mystique, voir lib/reviews.js.
    Un avis EST un commentaire qui porte `stars` (1-5) : pas de nœud RTDB
@@ -1840,7 +1748,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   background: #b07a1f; color: #fff;
   border: 2px solid var(--bg-alt, #fff);
 }
-html:not([data-theme="light"]) .menu-item-lock { background: #d9a441; color: #1a1030; border-color: #1a1030; }
+html:not([data-theme="light"]) .menu-item-lock { background: var(--accent); color: var(--button-ink); border-color: var(--glass-bg); }
 
 
 /* ═════════ Accueil (/menu) — finitions « Android premium » ═════════
@@ -1855,16 +1763,16 @@ html:not([data-theme="light"]) .menu-item-lock { background: #d9a441; color: #1a
   --mh-radius: 18px;
   --mh-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   --mh-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-  --mh-card: color-mix(in srgb, var(--accent) 9%, #130a25);
-  --mh-line: color-mix(in srgb, var(--accent) 26%, transparent);
-  --mh-shadow: 0 8px 22px rgba(8, 3, 22, .5);
+  --mh-card: #1c1c1e;
+  --mh-line: var(--border);
+  --mh-shadow: none;
   /* Haut : sous la barre d'état (edge-to-edge) ; bas : au-dessus de la barre gestuelle. */
   padding: calc(10px + var(--mh-safe-top)) var(--mh-gutter) calc(24px + var(--mh-safe-bottom));
 }
 html[data-theme="light"] .container.menu-home {
   --mh-card: #ffffff;
-  --mh-line: var(--border-strong);
-  --mh-shadow: 0 4px 14px rgba(20, 40, 80, .09);
+  --mh-line: var(--border);
+  --mh-shadow: 0 1px 3px rgba(0, 0, 0, .06);
 }
 
 /* En-tête : logo — titre — cloche — avatar, tous centrés sur le même axe. */
@@ -1972,7 +1880,7 @@ html[data-theme="light"] .menu-home .family-badge { color: #8a5d12; background: 
 .app-dialog{position:fixed;inset:0;margin:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;color:inherit;box-sizing:border-box}
 .app-dialog:not([open]){display:none!important}
 .app-dialog::backdrop{background:transparent}
-.app-dialog :focus-visible,.account-page :focus-visible{outline:3px solid var(--accent,#a78bfa);outline-offset:3px}
+.app-dialog :focus-visible,.account-page :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 button.sg-close,button.modal-close{background:transparent;border:0;color:inherit;font:inherit}
 button.sg-card{font:inherit;color:inherit;cursor:pointer}
 .app-dialog.drawer-overlay{padding:0}
@@ -1981,7 +1889,7 @@ button.sg-card{font:inherit;color:inherit;cursor:pointer}
 
 /* États et en-têtes communs des parcours personnels. */
 :root {
-  --button-ink: #180e28;
+  --button-ink: #1a1209;
   --status-danger-text: #fca5a5;
   --status-success-text: #86efac;
   --status-danger-bg: rgba(185, 28, 28, .10);
@@ -2112,74 +2020,73 @@ html[data-theme="light"] {
 
 /* Abonnement : panneau de paiement mobile et cartes sélectionnables. */
 .app-dialog.sg-overlay.subscription-sheet-overlay {
-  align-items: flex-end; padding: 0; background: rgba(9, 15, 26, .38);
+  align-items: flex-end; padding: 0; background: rgba(0, 0, 0, .45);
   backdrop-filter: blur(3px);
 }
 .subscription-dialog {
-  color-scheme: light; width: 100%; max-width: 460px;
+  width: 100%; max-width: 460px;
   max-height: calc(100dvh - var(--sat) - 12px); overflow-y: auto;
   overscroll-behavior: contain; text-align: left;
   padding: 54px max(22px, var(--sar)) calc(22px + var(--sab)) max(22px, var(--sal));
-  border: 0; border-radius: 26px 26px 0 0;
-  background: #fff; color: #17212e; box-shadow: 0 -8px 48px rgba(15, 25, 40, .12);
+  border: 1px solid var(--glass-border); border-bottom: 0; border-radius: 26px 26px 0 0;
+  background: var(--glass-bg); color: var(--text-main); box-shadow: 0 -8px 40px rgba(0, 0, 0, .18);
 }
 .subscription-dialog .sg-close {
   display: grid; place-items: center; width: 44px; height: 44px;
   top: 6px; left: 9px; right: auto; padding: 0; margin: 0;
-  border: 0; border-radius: 50%; color: #75808e; background: transparent;
+  border: 0; border-radius: 50%; color: var(--text-dim); background: transparent;
 }
-.subscription-dialog .sg-close:hover { background: #f2f5f8; color: #17212e; box-shadow: none; transform: none; }
+.subscription-dialog .sg-close:hover { background: var(--surface); color: var(--text-main); box-shadow: none; transform: none; }
 .subscription-dialog h2 { margin: 0; padding: 0; font-size: 1.3rem; font-weight: 700; line-height: 1.25; letter-spacing: -.025em; }
-.subscription-dialog .sg-sub { margin: 6px 0 0; color: #637082; font-size: .9rem; line-height: 1.45; }
-.subscription-simple { display: grid; gap: 12px; margin-top: 20px; min-width: 0; text-align: left; color: #17212e; color-scheme: light; }
-.subscription-simple > label { margin: 0 0 -5px; font-size: .8rem; font-weight: 600; color: #637082; }
+.subscription-dialog .sg-sub { margin: 6px 0 0; color: var(--text-dim); font-size: .9rem; line-height: 1.45; }
+/* Paiement (abonnement, boutique) : palette commune clair/sombre, accent orange. */
+.subscription-simple { display: grid; gap: 12px; margin-top: 20px; min-width: 0; text-align: left; color: var(--text-main); }
+.subscription-simple > label { margin: 0 0 -5px; font-size: .8rem; font-weight: 600; color: var(--text-dim); }
 .subscription-plan-picker { position: relative; min-width: 0; }
-.subscription-simple .subscription-fixed-price { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; padding: 12px 14px; border: 1px solid #e6ebf1; border-radius: 11px; background: #f6f8fb; color: #263244; font-weight: 600; }
-.subscription-fixed-price strong { font-size: 1.1rem; color: #17212e; }
+.subscription-simple .subscription-fixed-price { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-2); color: var(--text-main); font-weight: 600; }
+.subscription-fixed-price strong { font-size: 1.1rem; color: var(--text-main); }
 .subscription-plan-picker select {
   appearance: none; display: block; width: 100%; min-width: 0; min-height: 46px;
-  margin: 0; padding: 11px 40px 11px 14px; border: 1px solid #e6ebf1;
-  border-radius: 11px; background: #f6f8fb; color: #263244; font: inherit; font-size: 1rem; font-weight: 600;
+  margin: 0; padding: 11px 40px 11px 14px; border: 1px solid var(--border);
+  border-radius: 11px; background: var(--surface-2); color: var(--text-main); font: inherit; font-size: 1rem; font-weight: 600;
 }
-.subscription-plan-picker > svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #75808e; pointer-events: none; }
+.subscription-plan-picker select option { color: #18181b; background: #fff; }
+.subscription-plan-picker > svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
 .subscription-payment-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
 .subscription-method {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  min-width: 0; min-height: 92px; padding: 12px 8px; margin: 0; border: 1.5px solid #e0e6ee;
-  border-radius: 12px; color: #263244; background: #fff; cursor: pointer;
+  min-width: 0; min-height: 92px; padding: 12px 8px; margin: 0; border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text-main); background: var(--surface-2); cursor: pointer;
   transition: border-color .15s ease, background .15s ease;
 }
 .subscription-method input { position: absolute; width: 1px; height: 1px; padding: 0; margin: 0; border: 0; opacity: 0; }
-.subscription-method:has(input:checked) { border-color: #0873e5; background: #f5faff; box-shadow: 0 0 0 .5px #0873e5; }
-.subscription-method:focus-within { outline: 3px solid #0873e5; outline-offset: 3px; }
-.subscription-method:hover { border-color: #8dbbf2; }
-.subscription-method-icon { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 10px; }
-.subscription-method-wave .subscription-method-icon { color: #087daf; background: #e1f5fd; }
-.subscription-method-whatsapp .subscription-method-icon { color: #168544; background: #e6f7ed; }
-.subscription-method-pispi .subscription-method-icon { color: #8a5c0a; background: #fff3d6; }
+.subscription-method:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: 0 0 0 .5px var(--accent); }
+.subscription-method:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
+.subscription-method:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.subscription-method-icon { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .subscription-method-name { font-size: .85rem; font-weight: 600; line-height: 1.2; }
-.subscription-method-check { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: #0873e5; color: #fff; }
+.subscription-method-check { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--glass-bg); border-radius: 50%; background: var(--accent); color: var(--button-ink); }
 .subscription-simple button.subscription-continue {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; min-height: 48px; padding: 12px 16px; margin: 0; border: 0; border-radius: 10px;
-  background: #0870db; color: #fff; font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.4; cursor: pointer;
+  background: var(--accent); color: var(--button-ink); font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.4; cursor: pointer;
 }
-.subscription-simple button.subscription-continue:hover { background: #0664c5; transform: none; box-shadow: none; }
+.subscription-simple button.subscription-continue:hover { background: var(--accent-hover); transform: none; box-shadow: none; }
 .subscription-simple button.subscription-continue:disabled { opacity: .65; cursor: wait; }
-.subscription-pispi { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid #eee1c4; border-radius: 12px; background: #fffaf0; }
-.subscription-simple .subscription-pispi p { margin: 0; color: #62605a; font-size: .8rem; line-height: 1.5; }
+.subscription-pispi { display: grid; gap: 8px; min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.subscription-simple .subscription-pispi p { margin: 0; color: var(--text-dim); font-size: .8rem; line-height: 1.5; }
 .subscription-simple .subscription-pispi-amount { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
-.subscription-pispi-amount strong { color: #17212e; }
-.subscription-pispi label { margin: 0; color: #62605a; font-size: .75rem; font-weight: 600; }
-.subscription-pispi textarea { display: block; width: 100%; min-width: 0; min-height: 56px; margin: 0; padding: 9px 10px; border: 1px solid #e4d8bf; border-radius: 8px; background: #fff; color: #263244; font-family: monospace; font-size: .8rem; line-height: 1.5; resize: none; overflow-wrap: anywhere; user-select: text; }
-.subscription-simple button.subscription-proof { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; width: 100%; margin: 0; padding: 10px 12px; border: 1px solid #dce5ee; border-radius: 10px; background: #fff; color: #126738; font: inherit; font-size: .85rem; font-weight: 600; line-height: 1.4; }
-.subscription-simple button.subscription-proof:hover { background: #f1faf5; transform: none; box-shadow: none; }
-.subscription-simple .subscription-simple-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 0; color: #637082; font-size: .75rem; line-height: 1.45; text-align: center; }
+.subscription-pispi-amount strong { color: var(--text-main); }
+.subscription-pispi label { margin: 0; color: var(--text-dim); font-size: .75rem; font-weight: 600; }
+.subscription-pispi textarea { display: block; width: 100%; min-width: 0; min-height: 56px; margin: 0; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-input); color: var(--text-main); font-family: monospace; font-size: .8rem; line-height: 1.5; resize: none; overflow-wrap: anywhere; user-select: text; }
+.subscription-simple button.subscription-proof { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; width: 100%; margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--status-success-text); font: inherit; font-size: .85rem; font-weight: 600; line-height: 1.4; }
+.subscription-simple button.subscription-proof:hover { background: var(--status-success-bg); transform: none; box-shadow: none; }
+.subscription-simple .subscription-simple-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 0; color: var(--text-dim); font-size: .75rem; line-height: 1.45; text-align: center; }
 .subscription-simple-note > svg { flex-shrink: 0; margin-top: 2px; }
-.subscription-simple .subscription-error { padding: 10px 12px; margin: 0; border-radius: 10px; background: #fff1ef; color: #b42318; font-size: .85rem; line-height: 1.5; }
-.subscription-simple :is(button, select):focus-visible, .subscription-dialog .sg-close:focus-visible { outline: 3px solid #0873e5; outline-offset: 3px; }
+.subscription-simple .subscription-error { padding: 10px 12px; margin: 0; border-radius: 10px; background: var(--status-danger-bg); color: var(--status-danger-text); font-size: .85rem; line-height: 1.5; }
+.subscription-simple :is(button, select):focus-visible, .subscription-dialog .sg-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .account-subscription-plans summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 600; }
-.account-subscription-plans .subscription-simple { padding: 18px; border: 1px solid #e6ebf1; border-radius: 16px; background: #fff; }
+.account-subscription-plans .subscription-simple { padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
 @media (min-width: 640px) {
   .app-dialog.sg-overlay.subscription-sheet-overlay { align-items: center; padding: 24px; }
   .subscription-dialog { border-radius: 24px; padding-bottom: 24px; }

@@ -4,53 +4,33 @@
    globaux) et emploie des classes génériques — le scoping évite toute fuite. */
 
 .rw-page {
-  --bg-gradient-start: #0c0713;
-  --bg-gradient-end: #241639;
-  --glass-bg: rgba(60, 40, 80, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --text-primary: #f0f0f0;
-  --text-secondary: #b0b0b0;
-  --btn-primary: #a78bfa;
-  --btn-disabled: #aaa;
-  --result-bg: rgba(255, 255, 255, 0.08);
-  --stat-bg: rgba(255, 255, 255, 0.1);
-  --border-color: rgba(255, 255, 255, 0.2);
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --card-bg: #241639;
-  --card-border: #a78bfa;
-  --card-title: #a78bfa;
-  --card-text: #ecf0f1;
-  --card-accent: #2e1d47;
-  --card-green-bg: #2e4a3a;
-  --card-green-text: #2ecc71;
+  /* Tokens du module rebranchés sur la palette commune (thèmes clair/sombre). */
+  --bg-gradient-start: var(--bg-deep);
+  --bg-gradient-end: var(--bg-deep);
+  --glass-bg: var(--surface);
+  --glass-border: var(--border);
+  --glass-shadow: none;
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-dim);
+  --btn-primary: var(--accent);
+  --btn-disabled: #8c8c95;
+  --result-bg: var(--surface-2);
+  --stat-bg: var(--surface);
+  --border-color: var(--border);
+  --shadow-sm: none;
+  --card-bg: var(--glass-bg);
+  --card-border: var(--accent);
+  --card-title: var(--accent);
+  --card-text: var(--text-main);
+  --card-accent: var(--surface);
+  --card-green-bg: var(--status-success-bg);
+  --card-green-text: var(--status-success-text);
 
   color: var(--text-primary);
   font-family: var(--font-ui);
 }
 
-html[data-theme='light'] .rw-page {
-  --bg-gradient-start: #eaf2fc;
-  --bg-gradient-end: #cdd8e0;
-  --glass-bg: rgba(255, 255, 255, 0.25);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  --text-primary: #2d3436;
-  --text-secondary: #636e72;
-  --btn-primary: #1d4ed8;
-  --btn-disabled: #aaa;
-  --result-bg: rgba(255, 255, 255, 0.7);
-  --stat-bg: rgba(255, 255, 255, 0.4);
-  --border-color: rgba(0, 0, 0, 0.1);
-  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
-  --card-bg: #fffef9;
-  --card-border: #1d4ed8;
-  --card-title: #1d4ed8;
-  --card-text: #2d3436;
-  --card-accent: #ecf0f1;
-  --card-green-bg: #e8f8f5;
-  --card-green-text: #27ae60;
-}
+html[data-theme='light'] .rw-page { --btn-disabled: #a1a1aa; }
 
 .rw-page * { box-sizing: border-box; }
 .rw-page h1, .rw-page h2, .rw-page h3 { font-family: var(--font-display); }
@@ -90,7 +70,7 @@ html[data-theme='light'] .rw-page {
   border-radius: 15px;
   transition: box-shadow 0.3s;
 }
-.rw-page #editor:focus { box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.5); }
+.rw-page #editor:focus { box-shadow: 0 0 0 2px var(--accent-glow); }
 /* Espace réservé si jamais le champ redevient vide (l'utilisateur efface
    l'exemple pré-rempli) — sans ça, un champ vide se referme à sa hauteur
    minimale sans aucun repère visuel indiquant qu'il reste modifiable. */
@@ -101,7 +81,7 @@ html[data-theme='light'] .rw-page {
 .rw-page .angel-btn {
   width: 100%;
   background: var(--btn-primary);
-  color: white;
+  color: var(--button-ink);
   font-size: 18px;
   font-weight: bold;
   border: none;

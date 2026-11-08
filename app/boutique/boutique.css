@@ -39,7 +39,7 @@
 :where(.boutique-page) .bq-error  { color: var(--danger); text-align: center; }
 :where(.boutique-page) .bq-intro, :where(.boutique-page) .bq-note { color: var(--bq-text-dim); font-size: .88rem; line-height: 1.5; }
 :where(.boutique-page) .bq-note { margin-top: 12px; text-align: center; }
-:where(.boutique-page) .bq-payment { margin: 1rem 0; padding: 4px 16px 16px; border-radius: 16px; background: #fff; }
+:where(.boutique-page) .bq-payment { margin: 1rem 0; padding: 4px 16px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
 :where(.boutique-page) .bq-share { display: grid; gap: 6px; margin: 0 0 1.25rem; }
 :where(.boutique-page) .bq-share .bq-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 :where(.boutique-page) .bq-share p, :where(.boutique-page) .bq-share-hint { margin: 0 0 1.25rem; color: var(--bq-text-dim); font-size: .82rem; line-height: 1.45; }

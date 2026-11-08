@@ -152,13 +152,14 @@ html[data-theme="light"] {
   --mk-gutter: 16px;
   --mk-radius: 16px;
   --mk-cta-h: 46px;
-  --mk-violet: #8b5cf6;
-  --mk-violet-2: #6d28d9;
+  /* Accent unique de l'application (orange) — le nom « violet » est historique. */
+  --mk-violet: var(--accent);
+  --mk-violet-2: var(--accent-hover);
   --mk-card: color-mix(in srgb, var(--mk-violet) 7%, var(--mk-bg-deep));
   --mk-card-line: color-mix(in srgb, var(--mk-violet) 22%, transparent);
   --mk-card-shadow: none;
   --mk-price: var(--mk-price-green);
-  --mk-fade: #0d0819;
+  --mk-fade: var(--bg-deep);
   /* Safe-area : APK Capacitor 8 → variables --safe-area-inset-* injectées par
      SystemBars (fiables sur toutes les WebView Android) ; navigateur/PWA →
      env(). Sur une WebView < 140, Capacitor décale déjà la WebView et
@@ -177,23 +178,17 @@ html[data-theme="light"] {
    violet très profond + halo discret en haut. Classe posée sur <body> par
    app/page.tsx (pas de :has(), absent des WebView Android < 105). */
 html:not([data-theme="light"]) body.market-body {
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
-    #0d0819;
-  background-attachment: fixed;
+  background: var(--bg-deep);
 }
 /* Même fond dès le premier rendu (avant l'hydratation) là où :has() existe —
    règle SÉPARÉE : dans une liste, un :has() inconnu invaliderait tout. */
 html:not([data-theme="light"]) body:has(.container.market-page) {
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
-    #0d0819;
-  background-attachment: fixed;
+  background: var(--bg-deep);
 }
 html:not([data-theme="light"]) .container.market-page {
-  --mk-card: #171029;
-  --mk-card-line: rgba(167, 139, 250, 0.16);
-  --mk-text-soft: rgba(226, 220, 245, 0.68);
+  --mk-card: #1c1c1e;
+  --mk-card-line: rgba(255, 255, 255, 0.09);
+  --mk-text-soft: var(--text-dim);
 }
 
 /* Le panneau qui enveloppe la page ne doit rien dessiner : son ombre globale
@@ -206,15 +201,13 @@ html:not([data-theme="light"]) .container.market-page {
 /* MODE CLAIR premium : cartes blanches, ombre douce, bordure lavande, violet
    plus profond (contraste sur fond clair), prix en vert foncé lisible. */
 html[data-theme="light"] .container.market-page {
-  --mk-violet: #7c3aed;
-  --mk-violet-2: #5b21b6;
   --mk-card: #ffffff;
-  --mk-card-line: rgba(124, 58, 237, 0.16);
-  --mk-card-shadow: 0 1px 2px rgba(60, 40, 120, 0.06), 0 6px 18px rgba(60, 40, 120, 0.08);
+  --mk-card-line: rgba(0, 0, 0, 0.08);
+  --mk-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   --mk-price: #15803d;
-  --mk-fade: #f5f3ff;
+  --mk-fade: #f4f4f5;
 }
-html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245, 243, 255, 0.94); background: color-mix(in srgb, var(--mk-fade) 86%, transparent); }
+html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(244, 244, 245, 0.94); background: color-mix(in srgb, var(--mk-fade) 86%, transparent); }
 
 /* En-tête : titre + sous-titre à gauche, icône colis à droite. */
 :where(.market-page) .market-header {
@@ -362,9 +355,9 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
 }
 :where(.market-page) .market-cat-pill:hover { transform: none; box-shadow: none; }
 :where(.market-page) .market-cat-pill.active {
-  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
+  background: var(--mk-violet);
   border-color: transparent;
-  color: #fff;
+  color: var(--button-ink);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--mk-violet) 35%, transparent);
 }
 
@@ -427,7 +420,7 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
 :where(.market-page) .vendor-you-badge {
   align-self: flex-start;
   background: var(--mk-violet);
-  color: #fff;
+  color: var(--button-ink);
   font-size: 0.6rem;
   font-weight: 700;
   padding: 1px 7px;
@@ -490,7 +483,7 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   transition: transform 0.12s, border-color 0.2s;
 }
 :where(.market-page) .prod-card:active { transform: scale(0.98); }
-@media (hover: hover) { :where(.market-page) .prod-card:hover { border-color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 45%, transparent); } }
+@media (hover: hover) { :where(.market-page) .prod-card:hover { border-color: color-mix(in srgb, var(--mk-violet) 45%, transparent); } }
 
 /* Images : MÊME ratio 1:1 partout (object-fit: cover), placeholder au même
    gabarit — les cartes restent uniformes. */
@@ -500,7 +493,7 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-surface-3, transparent));
+  background: color-mix(in srgb, var(--mk-violet) 10%, var(--mk-surface-3, transparent));
 }
 :where(.market-page) .prod-img-placeholder {
   width: 100%;
@@ -512,7 +505,7 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   gap: 4px;
   font-size: 1.8rem;
   color: var(--mk-text-dim);
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 10%, var(--mk-surface-3, transparent));
+  background: color-mix(in srgb, var(--mk-violet) 10%, var(--mk-surface-3, transparent));
 }
 :where(.market-page) .prod-media .prod-img-placeholder { position: absolute; inset: 0; opacity: 0.6; }
 :where(.market-page) .prod-img-placeholder-icon { font-size: 1.8rem; opacity: 0.55; }
@@ -591,8 +584,8 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   white-space: nowrap;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--mk-violet, #8b5cf6) 14%, transparent);
-  color: color-mix(in srgb, var(--mk-violet, #8b5cf6) 78%, var(--mk-text));
+  background: color-mix(in srgb, var(--mk-violet) 14%, transparent);
+  color: color-mix(in srgb, var(--mk-violet) 78%, var(--mk-text));
   font-size: 0.64rem;
   font-weight: 700;
 }
@@ -647,8 +640,8 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   gap: 4px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--mk-violet, #8b5cf6), var(--mk-violet-2, #6d28d9));
-  color: #fff;
+  background: var(--mk-violet);
+  color: var(--button-ink);
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -671,7 +664,7 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   justify-content: center;
   border-radius: 50%;
   border: none;
-  background: rgba(20, 12, 40, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   color: #fff;
@@ -712,8 +705,8 @@ html[data-theme="light"] :where(.market-page) .market-cta { background: rgba(245
   height: var(--mk-cta-h);
   margin: 0 auto;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
-  color: #fff;
+  background: var(--mk-violet);
+  color: var(--button-ink);
   font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -1027,8 +1020,8 @@ html:not([data-theme="light"]) :where(.market-page) .pm-rating { color: #fbbf24;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--mk-violet), var(--mk-violet-2));
-  color: #fff;
+  background: var(--mk-violet);
+  color: var(--button-ink);
   cursor: pointer;
   box-shadow: none;
 }

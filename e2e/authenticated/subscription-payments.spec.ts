@@ -46,7 +46,13 @@ test('le dialogue mobile propose une seule durée et trois choix de paiement, sa
   await expect(dialog.getByRole('button', { name: 'Continuer avec Wave', exact: true })).toBeInViewport({ ratio: 1 });
   const box = await page.locator('.subscription-dialog').boundingBox();
   expect(Math.abs(box!.y + box!.height - 568)).toBeLessThan(1);
-  expect(await page.locator('.subscription-dialog').evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(255, 255, 255)');
+  // Fond opaque du thème courant (carte --glass-bg), jamais transparent.
+  const sheet = await page.locator('.subscription-dialog').evaluate((node) => {
+    const probe = document.createElement('div'); probe.style.background = 'var(--glass-bg)'; document.body.appendChild(probe);
+    const expected = getComputedStyle(probe).backgroundColor; probe.remove();
+    return { actual: getComputedStyle(node).backgroundColor, expected };
+  });
+  expect(sheet.actual).toBe(sheet.expected); expect(sheet.actual).not.toMatch(/rgba\(.*, 0\)|transparent/);
   await page.screenshot({ path: test.info().outputPath('payment-sheet-320.png'), fullPage: true });
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
