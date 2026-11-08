@@ -208,6 +208,7 @@
    l'emportait sur `left`, faisant déborder le menu hors de l'écran à
    droite). Une sélection à deux classes gagne quel que soit l'ordre. */
 .zk-emoji-pop.zk-more-pop { grid-template-columns: 1fr; width: 200px; gap: 2px; bottom: auto; top: calc(100% + 8px); left: auto; right: 0; }
+.zk-emoji-pop.zk-more-pop.up { top: auto; bottom: calc(100% + 8px); }
 .zk-attach-item-danger { color: #e0607a; }
 .zk-attach-item-danger svg { color: #e0607a; }
 .zk-attach-item-danger:hover { background: rgba(224,96,122,0.12); }
@@ -334,7 +335,7 @@
 
 /* ── Panneau créateur : demandes ─────────────────────────── */
 .zk-owner-panel { margin: 24px 0; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-.zk-owner-panel h3, .zk-board h3, .zk-admin-panel h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.zk-owner-panel h3, .zk-board h3 { font-size: 0.95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .zk-pill { background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 20px; }
 .zk-req-list { display: flex; flex-direction: column; gap: 8px; }
 /* flex-wrap : avec 3 pastilles d'action désormais possibles (WhatsApp en
@@ -377,18 +378,6 @@
    contacter ») — vert WhatsApp, distinct des deux verdicts Accepter/Refuser
    pour ne pas laisser croire à un troisième verdict sur la demande. */
 .zk-mini.wa { background: rgba(37,211,102,0.16); color: #25d366; }
-
-/* ── Gestion du groupe (panneau admin — créateur/admin only) ──────────────
-   Regroupe modifier/demandes/modération/administration, hors de l'écran de
-   récitation (revue design : « les demandes d'adhésion et outils de
-   modération ne devraient pas encombrer en permanence l'expérience de
-   récitation »). Sections nettement séparées mais sobres — un seul système
-   de carte, pas un bloc violet dominant. */
-.zk-admin-panel { display: flex; flex-direction: column; gap: 20px; margin: 4px 0 28px; }
-.zk-admin-section { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--glass-border); }
-.zk-admin-panel > h3:first-child { padding-top: 0; border-top: none; }
-.zk-admin-section h4 { margin: 0; font-size: 0.82rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .03em; display: flex; align-items: center; gap: 8px; }
-.zk-admin-section-danger .zk-btn.danger { border-color: rgba(224,96,122,0.4); }
 
 /* ── Participants (présence, rythme, modération) ─────────── */
 .zk-board { margin: 4px 0 28px; }

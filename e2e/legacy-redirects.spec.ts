@@ -21,6 +21,8 @@ const CASES: Array<[string, string]> = [
   ['/formation/formation.html', '/menu/ressources'],
   ['/alqalam/index.html', '/alqalam'],
   ['/Benefits/index.html', '/menu'], // module supprimé (2026-09-20)
+  ['/tafsir', '/menu/outils'], // Tafsir al-Ahlam supprimé
+  ['/wafq', '/wafq/carre'], // générateur de talisman supprimé, Hatims conservés
 ];
 
 test.describe('Compatibilité des anciennes URLs (redirects)', () => {

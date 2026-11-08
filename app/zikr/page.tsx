@@ -31,7 +31,9 @@ import SpinnerUntyped from '@/components/Spinner';
 import TasbihChapelet from '@/components/TasbihChapelet';
 import { useTasbih } from '@/components/useTasbih';
 import MoreMenuUntyped from '@/components/MoreMenu';
+import ZikrModalUntyped from '@/components/Modal';
 import { deepLink, cleanUrl, share as shareLink } from '@/lib/share';
+import { handleExternalLinkClick } from '@/lib/externalWindow';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
   progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX,
@@ -49,6 +51,7 @@ import {
 
 const Spinner = SpinnerUntyped as any;
 const MoreMenu = MoreMenuUntyped as any;
+const ZikrModal = ZikrModalUntyped as any;
 
 type GroupStatus = 'owner' | 'member' | 'pending' | 'none';
 
@@ -358,6 +361,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
                   <span className="zk-req-actions">
                     {r.phone && (
                       <a className="zk-mini wa" href={waContactUrl(r.phone, r.group.name)} target="_blank" rel="noopener noreferrer"
+                        onClick={(event) => handleExternalLinkClick(event, waContactUrl(r.phone!, r.group.name))}
                         title={`Contacter ${reqName} par WhatsApp avant d’accepter sa demande`}>
                         <Phone size={12} strokeWidth={2.5} aria-hidden="true" /> WhatsApp
                       </a>
@@ -820,11 +824,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // Écran actif — remplace l'ancien empilement d'une seule longue page :
   // « zikr » (récitation, cœur de l'expérience) est l'écran par défaut,
   // « participants »/« discussion » sont accessibles via la barre de
-  // navigation fixe en pied d'écran (BottomNav, plus bas), « admin » (panneau
-  // « Gestion du groupe ») seulement via le menu ⋮, réservé au créateur/admin
-  // — jamais dans la barre du bas, pour ne pas encombrer en permanence
-  // l'expérience de récitation des autres membres.
-  const [tab, setTab] = useState<'zikr' | 'participants' | 'discussion' | 'admin'>('zikr');
+  // navigation fixe en pied d'écran (BottomNav, plus bas). La modification du
+  // zikr (créateur) s'ouvre dans une fenêtre depuis le menu ⋮.
+  const [tab, setTab] = useState<'zikr' | 'participants' | 'discussion'>('zikr');
   const [invocationOpen, setInvocationOpen] = useState(false);
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -1038,9 +1040,9 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           — visible de TOUT membre désormais (pas seulement créateur/admin) :
           « Quitter le groupe » (revue design : action secondaire rarement
           utilisée, ne doit plus traîner en bas de l'onglet Participants) y
-          vit pour tous, « Gestion du groupe » (modifier, demandes d'adhésion,
-          modération, approbation/suppression admin) reste réservée au
-          créateur/admin, dans ce même menu. */}
+          vit pour tous ; « Modifier le zikr » (et « Supprimer le zikr » tant
+          que le créateur est seul) est réservé au créateur, la suppression
+          administrateur à l'administration, dans ce même menu. */}
       <div className="zk-detail-topbar">
         <button type="button" className="zk-icon-btn zk-topbar-back" onClick={onBack} aria-label="Retour à la liste des zikr">
           <ArrowLeft size={24} strokeWidth={2.2} aria-hidden="true" />
@@ -1059,8 +1061,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           {isMember && (
             <MoreMenu label="Plus d’actions sur ce zikr collectif">
               {g.status === 'owner' && (
-                <button type="button" className="zk-attach-item" onClick={() => setTab('admin')}>
-                  <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe
+                <button type="button" className="zk-attach-item" onClick={() => setEditing(true)}>
+                  <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> Modifier le zikr
+                </button>
+              )}
+              {g.status === 'owner' && g.membersCount <= 1 && (
+                <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={doDelete}>
+                  <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer le zikr
                 </button>
               )}
               {g.isAdmin && g.status !== 'owner' && (
@@ -1187,42 +1194,20 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         </>
       )}
 
-      {/* Gestion du groupe — réservée au CRÉATEUR, ouverte depuis le menu ⋮
-          (jamais dans la barre de navigation du bas). Limitée aux
-          modifications du zikr (demande 2026-09-28) : les demandes
-          d'adhésion se traitent dès la liste (section « Demandes
-          d'adhésion »), l'approbation administrateur aussi (« À valider ») ;
-          la suppression administrateur passe par le menu ⋮. */}
-      {isMember && tab === 'admin' && g.status === 'owner' && (
-        <div className="zk-admin-panel">
-          <h3><Shield size={15} strokeWidth={2.5} aria-hidden="true" /> Gestion du groupe</h3>
-
-          {g.status === 'owner' && (
-            <div className="zk-admin-section">
-              <button type="button" className="zk-btn ghost" onClick={() => setEditing((v) => !v)}>
-                <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> {editing ? 'Fermer la modification' : 'Modifier le zikr'}
-              </button>
-              {editing && (
-                <EditGroupForm
-                  groupId={groupId}
-                  g={g}
-                  notify={notify}
-                  onSaved={() => { setEditing(false); load(); }}
-                  onCancel={() => setEditing(false)}
-                />
-              )}
-            </div>
-          )}
-
-          {g.status === 'owner' && g.membersCount <= 1 && (
-            <div className="zk-admin-section zk-admin-section-danger">
-              <h4>Zone sensible</h4>
-              <button type="button" className="zk-btn danger" onClick={doDelete}>
-                <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Supprimer le zikr
-              </button>
-            </div>
-          )}
-        </div>
+      {/* Modification du zikr (créateur) : fenêtre ouverte depuis le menu ⋮. */}
+      {editing && g.status === 'owner' && (
+        <ZikrModal className="zk-warning-dialog" label="Modifier le zikr" onClose={() => setEditing(false)}>
+          <div className="zk-warning-editor">
+            <header><h2>Modifier le zikr</h2><button type="button" className="zk-icon-btn" aria-label="Fermer" onClick={() => setEditing(false)}>×</button></header>
+            <EditGroupForm
+              groupId={groupId}
+              g={g}
+              notify={notify}
+              onSaved={() => { setEditing(false); load(); }}
+              onCancel={() => setEditing(false)}
+            />
+          </div>
+        </ZikrModal>
       )}
 
       {/* Qui participe, sa progression, sa présence et son rythme — visible
@@ -1468,14 +1453,13 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
 
 // Navigation fixe en pied d'écran — Zikr / Participants / Discussion,
 // demandé explicitement pour garder les actions importantes accessibles
-// sans parcourir toute la page. La Gestion du groupe reste volontairement
-// HORS de cette barre (icône bouclier de la barre du haut, réservée
-// créateur/admin) pour ne pas encombrer l'expérience de récitation des
-// autres membres.
+// sans parcourir toute la page. La modification du zikr reste HORS de cette
+// barre (menu ⋮ du haut, réservé au créateur) pour ne pas encombrer
+// l'expérience de récitation des autres membres.
 function BottomNav({ tab, setTab, unreadCount, canDiscuss = true }: {
   canDiscuss?: boolean;
-  tab: 'zikr' | 'participants' | 'discussion' | 'admin';
-  setTab: (t: 'zikr' | 'participants' | 'discussion' | 'admin') => void;
+  tab: 'zikr' | 'participants' | 'discussion';
+  setTab: (t: 'zikr' | 'participants' | 'discussion') => void;
   unreadCount: number;
 }) {
   const items: { key: 'zikr' | 'participants' | 'discussion'; label: string; icon: JSX.Element }[] = [

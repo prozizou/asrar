@@ -85,7 +85,6 @@ const RAW_CATEGORIES: ModuleCategory[] = [
       { icon: <Globe {...ICON} />, label: 'Planète', desc: 'Heure planétaire du moment', href: '/planete', keywords: ['heure planetaire', 'mars', 'mercure', 'astrologie'] },
       { icon: <Calendar {...ICON} />, label: 'Date du jour', desc: 'Date hijri et grégorienne', href: '/hijri', keywords: ['hijri', 'calendrier', 'islamique', 'date', 'mois', 'aladhan'] },
       { icon: <Gift {...ICON} />, label: 'Parrainage', desc: 'Inviter des proches', href: '/parrainage', keywords: ['inviter', 'filleul', 'abonnement', 'referral'] },
-      // Tafsir al-Ahlam reste accessible par lien direct.
     ],
   },
 ];

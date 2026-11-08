@@ -1,3 +1,24 @@
+## SW v46.61 — WhatsApp direct dans l’application, pages retirées, Zikr simplifié, Géomancie
+
+### WhatsApp s’ouvre directement dans l’application
+
+- Application Android : les contacts WhatsApp (demande au Marché, assistance abonnement, paiements, boutique, Zikr) ouvrent directement la discussion préremplie dans WhatsApp (`whatsapp://send`), sans passer par la page web « Ouvrir l’application / Télécharger » de WhatsApp. Les emojis du message ne sont plus abîmés.
+- Si WhatsApp n’est pas installé, repli automatique sur le lien wa.me après 2,5 s. Site web : inchangé.
+
+### Pages retirées
+
+- Tafsir al-Ahlam et le générateur de talisman Wafq sont supprimés (ils n’étaient plus dans le menu). Anciens liens : `/tafsir` → Outils, `/wafq` → Hatims (`/wafq/carre`, inchangé).
+
+### Zikr
+
+- Panneau « Gestion du groupe » supprimé : « Modifier le zikr » (fenêtre) et « Supprimer le zikr » (créateur seul dans le groupe) sont dans le menu ⋮ du créateur.
+- Le menu ⋮ d’un participant s’ouvre vers le haut quand il passerait sous la barre de navigation (dernières lignes de la liste) : « Exclure du groupe » reste visible.
+
+### Géomancie
+
+- Figure de Repérage = M1 + M3 + M5 + M16 (L’Âme, L’Entourage, Les Projets, La Sentence Finale), au lieu de M2 + M4 + M7 + M8.
+- « Le vœu » retiré pour l’instant (écran, PDF et texte de partage).
+
 ## SW v46.60 — Style épuré clair/sombre, boutique à 5 000 FCFA et partage, site Android
 
 ### Nouveau style épuré, thèmes clair et sombre

@@ -180,7 +180,7 @@ html[data-theme='light'] .geo-page {
 html[data-theme='light'] .geo-page .parity-badge.ok { color: #1c7a43; }
 html[data-theme='light'] .geo-page .parity-badge.warn { color: #b0291b; }
 
-.geo-page .synthesis-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.geo-page .synthesis-container { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 16px; }
 .geo-page .synthesis-card {
   font: inherit;
   color: inherit;

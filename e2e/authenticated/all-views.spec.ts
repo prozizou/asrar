@@ -3,7 +3,7 @@ import { VIEW_ROUTES } from './view-routes';
 const { app } = require('../../server/grant');
 
 for (const width of [320, 1440]) for (const theme of ['dark', 'light']) {
-  test(`les 32 vues conservent leurs repères à ${width}px en thème ${theme}`, async ({ page, login }) => {
+  test(`les ${VIEW_ROUTES.length} vues conservent leurs repères à ${width}px en thème ${theme}`, async ({ page, login }) => {
     test.setTimeout(70000);
     await page.setViewportSize({ width, height: 900 }); await login('premium');
     await page.evaluate((value) => {
@@ -87,17 +87,6 @@ test('bibliothèque, boutique et secrets proposent une reprise après une panne 
     failing = false; await page.getByRole('button', { name: 'Réessayer', exact: true }).click();
     await expect(page.getByRole('heading', { name: title })).toHaveCount(0);
   }
-});
-
-test('les filtres et les sous-pages restent utilisables au clavier avec des cibles tactiles de 44px', async ({ page, login }) => {
-  await page.setViewportSize({ width: 320, height: 800 }); await login('premium');
-  for (const [path, selector] of [['/tafsir', '.tf-cat-btn'], ['/wafq', '.wq-intent-btn']]) {
-    await page.goto(path); const controls = page.locator(selector);
-    for (const button of await controls.all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await controls.last().focus(); await page.keyboard.press('Enter');
-    await expect(controls.last()).toHaveClass(/active/);
-  }
-
 });
 
 test('les neuf tailles de carrés affichent des valeurs lisibles sans déborder de la page', async ({ page, login }) => {
