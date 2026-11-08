@@ -1,5 +1,6 @@
-## Combinaisons : page en pleine largeur sur téléphone
+## Pages adaptées à toutes les largeurs d’écran
 
+- Planète débordait sur les petits écrans (320–360 px) : l’étiquette de nature passe désormais sous la planète quand la place manque.
 - La page des combinaisons (99 Noms) se réduisait à la largeur de son contenu et laissait de grandes marges vides : elle occupe désormais toute la largeur de l’écran. Un test vérifie que chaque vue prend toute la largeur d’un téléphone.
 
 ## Planète : heure en cours réservée aux abonnés

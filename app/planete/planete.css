@@ -27,6 +27,10 @@
   position: relative;
   z-index: 1;
   isolation: isolate;
+  /* body est un flex centré : sans largeur explicite, la page prenait la
+     largeur minimale de son contenu et débordait sur les petits écrans. */
+  width: 100%;
+  min-width: 0;
   min-height: 100dvh;
   background: var(--pm-bg);
   color: var(--pm-text);
@@ -114,14 +118,14 @@
 .pm .pm-icon-btn:hover { background: var(--pm-accent-weak); }
 
 /* ── Heure planétaire actuelle ───────────────────────────────── */
-.pm-now-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.pm-now-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
 .pm-now.compact .pm-now-row { margin-top: 0; }
 .pm-glyph {
   display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%;
   background: var(--pm-accent-weak); color: var(--pm-accent); font-size: 1.3rem; line-height: 1;
 }
 .pm-glyph.lg { width: 52px; height: 52px; font-size: 1.7rem; }
-.pm-now-id { flex: 1; min-width: 0; }
+.pm-now-id { flex: 1 1 8rem; min-width: 0; }
 .pm-now-planet { font-size: 1.45rem; font-weight: 700; line-height: 1.2; }
 .pm-now.compact .pm-now-planet { font-size: 1.1rem; }
 .pm-now-time { font-size: .92rem; color: var(--pm-muted); font-variant-numeric: tabular-nums; margin-top: 2px !important; }
