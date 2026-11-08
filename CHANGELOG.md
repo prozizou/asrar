@@ -1,3 +1,8 @@
+## SW v46.62 — WhatsApp : plus de page web ouverte d’office
+
+- Application Android : le repli automatique vers la page web de WhatsApp (wa.me) est supprimé. L’application ne met pas la page en pause quand WhatsApp s’ouvre : le repli se déclenchait donc pendant que WhatsApp était ouvert, et l’on retrouvait la page « Ouvrir l’application / Télécharger » au retour.
+- Si WhatsApp ne semble pas s’être ouvert après 2,5 s, un bandeau « WhatsApp ne s’est pas ouvert ? » propose « Ouvrir dans le navigateur » (aussi au-dessus d’une fiche produit ouverte) ; rien ne s’ouvre sans action.
+
 ## SW v46.61 — WhatsApp direct dans l’application, pages retirées, Zikr simplifié, Géomancie
 
 ### WhatsApp s’ouvre directement dans l’application
