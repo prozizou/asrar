@@ -29,8 +29,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Ouverture depuis le site (components/AndroidAppGate.js,
-                 lib/androidApp.js) : intent://open#Intent;scheme=asrarpro;… -->
+            <!-- Lien asrarpro://open (ouverture de l’application par lien) :
+                 intent://open#Intent;scheme=asrarpro;… -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

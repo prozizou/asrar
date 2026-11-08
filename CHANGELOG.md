@@ -1,3 +1,7 @@
+## Site accessible sur Android
+
+- Le verrou qui redirigeait les visiteurs Android du site vers Google Play (fenêtre « Ouvrir l’application / Installer ») est supprimé : le site s’utilise normalement dans le navigateur Android, comme sur iPhone et ordinateur. L’application reste disponible. La variable `NEXT_PUBLIC_ANDROID_APP_REDIRECT` n’est plus utilisée.
+
 ## SW v46.59 — Paiement PI-SPI avec activation manuelle
 
 - PI-SPI proposé à côté de Wave et WhatsApp dans le dialogue d’abonnement et Mon compte.
