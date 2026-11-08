@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         return { ...current, contactOpenedAt: current.contactOpenedAt || at };
       }).then((result) => { if (!result.committed || !result.snapshot.exists()) throw new Error("Contact changé"); });
       const message = orderWhatsAppMessage(order, id);
-      return sendWhatsApp(req, res, "https://wa.me/" + order._private.phone + "?text=" + encodeURIComponent(message));
+      return sendWhatsApp(req, res, whatsappUrl(order._private.phone, message));
     } catch { return htmlMessage(res, 503, "Le contact est temporairement indisponible. Réessayez depuis vos demandes."); }
   }
   const q = (req.query && typeof req.query.text === "string") ? req.query.text : "";
@@ -77,10 +77,14 @@ export default async function handler(req, res) {
     }
   }
 
-  const url = "https://wa.me/" + number + (text ? "?text=" + encodeURIComponent(text) : "");
-
-  return sendWhatsApp(req, res, url);
+  return sendWhatsApp(req, res, whatsappUrl(number, text));
 };
+
+// Adresse WhatsApp directe (api.whatsapp.com/send), PAS wa.me : la redirection
+// de wa.me remplace les emojis du message (🌙, 📦…) par « � » (U+FFFD).
+function whatsappUrl(phone, text) {
+  return "https://api.whatsapp.com/send?phone=" + String(phone).replace(/\D/g, "") + (text ? "&text=" + encodeURIComponent(text) : "");
+}
 
 // Redirection vers WhatsApp, ou, avec format=json, l'adresse elle-même :
 // l'application Android (WebView) ne peut pas ouvrir de nouvelle fenêtre ;

@@ -6,7 +6,7 @@ import ViewState from '@/components/ViewState';
 import { useSearchParams } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { ORDER_LABELS, ORDER_TRANSITIONS, formatOrderPrice } from '@/lib/orderStatus';
-import { reserveExternalWindow } from '@/lib/externalWindow';
+import { reserveWhatsAppWindow } from '@/lib/externalWindow';
 import ModalUntyped from '@/components/Modal';
 import '../compte/compte.css';
 const Modal = ModalUntyped as any;
@@ -27,7 +27,7 @@ function OrdersContent() {
   }, [seller, administrator]);
   useEffect(() => { setItems([]); setCursor(null); void load(); }, [load]);
   const contact = async (order: any) => {
-    const destination = reserveExternalWindow();
+    const destination = reserveWhatsAppWindow();
     if (!destination) { setError('Autorisez l’ouverture d’une nouvelle fenêtre pour contacter la boutique.'); return; }
     setBusy(true);
     try { await destination.navigate((await apiPost('orders', { action: 'contact', orderId: order._key })).contactUrl); }

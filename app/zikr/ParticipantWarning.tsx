@@ -28,7 +28,7 @@ export default function ParticipantWarning({ groupId, group, member, onClose, on
     finally { setBusy(false); }
   }
   const whatsapp = member.phone && saved === text && saved.trim()
-    ? 'https://wa.me/' + member.phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(saved) : '';
+    ? 'https://api.whatsapp.com/send?phone=' + member.phone.replace(/\D/g, '') + '&text=' + encodeURIComponent(saved) : '';
   return <Modal className="zk-warning-dialog" label="Message et avertissement" onClose={close}>
     <form className="zk-warning-editor" onSubmit={save}>
       <header><h2>Message et avertissement</h2><button type="button" className="zk-icon-btn" aria-label="Fermer" disabled={busy} onClick={close}>×</button></header>

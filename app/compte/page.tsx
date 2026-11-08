@@ -10,7 +10,7 @@ import ModalUntyped from '@/components/Modal';
 import './compte.css';
 import SubscriptionPlans from '@/components/SubscriptionPlans';
 import NativeAdPrivacy from '@/components/NativeAdPrivacy';
-import { isNativeApp, openExternalInApp } from '@/lib/externalWindow';
+import { handleExternalLinkClick } from '@/lib/externalWindow';
 const Modal = ModalUntyped as any;
 const subscriptionContact = '/api/wa?text=Je%20souhaite%20v%C3%A9rifier%20ou%20renouveler%20mon%20abonnement%20ASRAR%20PRO.';
 const REQUEST_LABELS: Record<string, string> = { pending: 'En attente', processing: 'En cours', completed: 'Traitement clôturé', rejected: 'Demande refusée' };
@@ -78,7 +78,7 @@ export default function ComptePage() {
         <NativeAdPrivacy />
         {!subscription.admin && !subscription.vip && <details className="account-subscription-plans"><summary>Choisir ou renouveler mon abonnement</summary><SubscriptionPlans /></details>}
         <Link className="account-button" href="/commandes">Mes demandes et commandes</Link>
-        {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact} onClick={(e) => { if (isNativeApp()) { e.preventDefault(); openExternalInApp(subscriptionContact).catch(() => { window.location.href = subscriptionContact; }); } }}>Contacter l’assistance pour mon abonnement</a>}
+        {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact} onClick={(e) => handleExternalLinkClick(e, subscriptionContact)}>Contacter l’assistance pour mon abonnement</a>}
       </section>
       <section className="account-card" aria-labelledby="account-preferences"><h2 id="account-preferences">Mes préférences</h2>
         <label className="account-toggle"><input type="checkbox" checked={data.settings.analytics} disabled={busy} onChange={(e) => void saveSettings(e.target.checked, data.settings.pushEnabled)} /> Autoriser la mesure des visites et vues de produits</label>

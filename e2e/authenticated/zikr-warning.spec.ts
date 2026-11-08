@@ -24,7 +24,7 @@ test('le modérateur prépare un WhatsApp personnalisé, enregistre le badge pri
   const whatsapp = dialog.getByRole('link', { name: 'Ouvrir WhatsApp', exact: true });
   await expect(whatsapp).toBeVisible();
   const url = new URL((await whatsapp.getAttribute('href'))!);
-  expect(url.hostname).toBe('wa.me'); expect(url.pathname).toBe('/15555550123');
+  expect(url.hostname).toBe('api.whatsapp.com'); expect(url.pathname).toBe('/send'); expect(url.searchParams.get('phone')).toBe('15555550123');
   expect(url.searchParams.get('text')).toContain('Message personnel de l’administration.');
   // Aucun lien WhatsApp n’est suivi et aucun message externe n’est envoyé.
   await page.screenshot({ path: test.info().outputPath('zikr-warning-message.png') });
