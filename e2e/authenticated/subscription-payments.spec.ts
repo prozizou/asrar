@@ -22,7 +22,7 @@ async function openPlans(page: any) {
   await page.getByText('Choisir ou renouveler mon abonnement', { exact: true }).click();
 }
 
-test('le dialogue mobile propose une seule durée et deux choix de paiement, sans défilement', async ({ page, login }) => {
+test('le dialogue mobile propose une seule durée et trois choix de paiement, sans défilement initial', async ({ page, login }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await login('free');
   if (ADS_PAUSED) {
@@ -34,10 +34,11 @@ test('le dialogue mobile propose une seule durée et deux choix de paiement, san
   }
   const dialog = page.getByRole('dialog', { name: ADS_PAUSED ? 'Abonnement' : 'Retirer les publicités', exact: true });
   await expect(dialog.getByRole('combobox', { name: 'Durée et prix' })).toBeVisible();
-  const choices = dialog.getByRole('radiogroup', { name: 'Wave ou WhatsApp' });
-  await expect(choices.getByRole('radio')).toHaveCount(2);
+  const choices = dialog.getByRole('radiogroup', { name: 'Moyen de paiement' });
+  await expect(choices.getByRole('radio')).toHaveCount(3);
   await expect(choices.locator('.subscription-method').filter({ has: page.getByRole('radio', { name: 'Wave', exact: true }) })).toBeInViewport({ ratio: 1 });
   await expect(choices.locator('.subscription-method').filter({ has: page.getByRole('radio', { name: 'WhatsApp', exact: true }) })).toBeInViewport({ ratio: 1 });
+  await expect(choices.locator('.subscription-method').filter({ has: page.getByRole('radio', { name: 'PI-SPI', exact: true }) })).toBeInViewport({ ratio: 1 });
   await expect.poll(() => page.locator('.subscription-dialog').evaluate(node => getComputedStyle(node).transform)).toBe('none');
   const size = await page.locator('.subscription-dialog').evaluate((node) => ({ height: node.clientHeight, contentHeight: node.scrollHeight, width: node.clientWidth, contentWidth: node.scrollWidth }));
   expect(size.contentHeight).toBeLessThanOrEqual(size.height);
@@ -61,7 +62,7 @@ test('les trois formules ouvrent les liens Wave exacts sans activer un abonnemen
     const tab = await popup; await tab.waitForURL('https://pay.wave.com/m/M_sn_6W-tuxFYYkZa/c/sn/?amount=' + amount);
     await tab.close();
     await expect(page.getByRole('status')).toContainText('Après votre paiement Wave');
-    await expect(page.getByRole('radiogroup', { name: 'Wave ou WhatsApp' }).getByRole('radio')).toHaveCount(2);
+    await expect(page.getByRole('radiogroup', { name: 'Moyen de paiement' }).getByRole('radio')).toHaveCount(3);
     const access = await (await postAs('free', 'check-access')).json(); expect(access.allowed).toBe(FREE_FOR_ALL); expect(access.adFree).toBe(false);
   }
 });
@@ -134,9 +135,13 @@ test('les cartes sélectionnent un moyen sans ouvrir de paiement avant Continuer
   await login('free'); await openPlans(page);
   const popups: string[] = []; page.on('popup', tab => popups.push(tab.url()));
   const wave = page.getByRole('radio', { name: 'Wave', exact: true });
+  const pispi = page.getByRole('radio', { name: 'PI-SPI', exact: true });
   const whatsapp = page.getByRole('radio', { name: 'WhatsApp', exact: true });
   await expect(wave).toBeChecked();
   await wave.focus(); await page.keyboard.press('ArrowRight');
+  await expect(pispi).toBeChecked();
+  await expect(page.getByRole('button', { name: 'Copier l’alias PI-SPI', exact: true })).toBeVisible();
+  await page.keyboard.press('ArrowRight');
   await expect(whatsapp).toBeChecked();
   await expect(page.getByRole('button', { name: 'Continuer avec WhatsApp', exact: true })).toBeVisible();
   await wave.check(); await expect(wave).toBeChecked();
@@ -144,3 +149,67 @@ test('les cartes sélectionnent un moyen sans ouvrir de paiement avant Continuer
   const access = await (await postAs('free', 'check-access')).json();
   expect(access.adFree).toBe(false);
 });
+
+test('PI-SPI copie l’alias réel et transmet chaque formule sur WhatsApp sans ouvrir les accès', async ({ page, login, postAs }) => {
+  await page.addInitScript(() => {
+    (window as any).__copiedAliases = [];
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async (value: string) => { (window as any).__copiedAliases.push(value); },
+    } });
+  });
+  await login('free'); await openPlans(page);
+  await page.context().route('**/api/wa?text=**', route => route.fulfill({ body: 'WhatsApp test' }));
+  for (const [planId, amount] of [['sub_3m', '15 000'], ['sub_6m', '25 000'], ['sub_1y', '45 000']]) {
+    await page.getByRole('combobox', { name: 'Durée et prix' }).selectOption(planId);
+    await page.getByRole('radio', { name: 'PI-SPI', exact: true }).check();
+    const details = page.getByRole('region', { name: 'Paiement par PI-SPI' });
+    await expect(details).toContainText(amount + ' FCFA');
+    await expect(details.getByRole('textbox', { name: 'Alias du bénéficiaire' })).toHaveValue('2b26c0d5-7673-46fa-82c8-7c124cc6d33d');
+    await page.getByRole('button', { name: 'Copier l’alias PI-SPI', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Alias copié.');
+    expect(await page.evaluate(() => (window as any).__copiedAliases.at(-1))).toBe('2b26c0d5-7673-46fa-82c8-7c124cc6d33d');
+    const popup = page.waitForEvent('popup');
+    await page.getByRole('button', { name: 'Envoyer le justificatif sur WhatsApp', exact: true }).click();
+    const tab = await popup; await tab.waitForURL(/\/api\/wa\?text=/);
+    const message = new URL(tab.url()).searchParams.get('text') || '';
+    expect(message).toContain('Paiement à vérifier : PI-SPI');
+    expect(message).toContain(amount + ' FCFA'); expect(message).toContain(accounts.free.email);
+    expect(message).toContain('Merci de vérifier le paiement reçu');
+    await tab.close();
+  }
+  const access = await (await postAs('free', 'check-access')).json();
+  expect(access.adFree).toBe(false); expect(access.allowed).toBe(FREE_FOR_ALL);
+  expect((await postAs('free', 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' })).status()).toBe(FREE_FOR_ALL ? 200 : 403);
+});
+
+for (const fallbackWorks of [true, false]) {
+  test(`PI-SPI sur Android : copie de repli ${fallbackWorks ? 'réussie' : 'indisponible'} et alias accessible sur petit écran`, async ({ page, login, postAs }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.addInitScript((works) => {
+      (window as any).androidBridge = { postMessage: () => {} };
+      (window as any).Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: () => false };
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Clipboard denied'); } } });
+      document.execCommand = () => works;
+    }, fallbackWorks);
+    await login('free'); await page.goto('/wafq/carre/6');
+    await page.getByLabel('Nombre', { exact: true }).fill('111');
+    await page.getByRole('button', { name: 'Calculer', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
+    await dialog.getByRole('radio', { name: 'PI-SPI', exact: true }).check();
+    await dialog.getByRole('button', { name: 'Copier l’alias PI-SPI', exact: true }).click();
+    if (fallbackWorks) await expect(dialog.getByRole('status')).toContainText('Alias copié.');
+    else {
+      await expect(dialog.getByRole('alert')).toContainText('appuyez longuement sur l’alias');
+      await expect(dialog.getByRole('status')).not.toContainText('Alias copié.');
+    }
+    const alias = dialog.getByRole('textbox', { name: 'Alias du bénéficiaire' });
+    await expect(alias).toHaveValue('2b26c0d5-7673-46fa-82c8-7c124cc6d33d');
+    expect(await alias.evaluate((node: HTMLTextAreaElement) => node.readOnly)).toBe(true);
+    const size = await page.locator('.subscription-dialog').evaluate(node => ({ width: node.clientWidth, content: node.scrollWidth }));
+    expect(size.content).toBeLessThanOrEqual(size.width);
+    await dialog.getByRole('button', { name: 'Envoyer le justificatif sur WhatsApp', exact: true }).scrollIntoViewIfNeeded();
+    await expect(dialog.getByRole('button', { name: 'Envoyer le justificatif sur WhatsApp', exact: true })).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: test.info().outputPath(`pispi-320-${fallbackWorks ? 'copy' : 'fallback'}.png`), fullPage: true });
+    const access = await (await postAs('free', 'check-access')).json(); expect(access.adFree).toBe(false);
+  });
+}

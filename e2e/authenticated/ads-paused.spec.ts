@@ -29,7 +29,7 @@ for (const native of [false, true]) {
       if (role === 'free') {
         const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
         await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole('radiogroup', { name: 'Wave ou WhatsApp' }).getByRole('radio')).toHaveCount(2);
+        await expect(dialog.getByRole('radiogroup', { name: 'Moyen de paiement' }).getByRole('radio')).toHaveCount(3);
         await expect(dialog.getByRole('button', { name: /Regarder/ })).toHaveCount(0);
         await expect(page.locator('.kz-grid')).toHaveCount(0);
         await page.keyboard.press('Escape');
@@ -57,13 +57,13 @@ test('un ancien passe publicitaire ne donne pas accès au contenu pendant la pau
   } finally { await db.ref(path).set(previous); }
 });
 
-test('la recette et le modèle étoile proposent aussi Wave ou WhatsApp', async ({ page, login }) => {
+test('la recette et le modèle étoile proposent aussi Wave, PI-SPI ou WhatsApp', async ({ page, login }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login('free'); await page.goto('/asrar');
   await page.getByRole('button', { name: /Secret de test/i }).click();
   const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('radiogroup', { name: 'Wave ou WhatsApp' }).getByRole('radio')).toHaveCount(2);
+  await expect(dialog.getByRole('radiogroup', { name: 'Moyen de paiement' }).getByRole('radio')).toHaveCount(3);
   await expect(page.locator('.secret-detail')).toHaveCount(0);
   await expect.poll(() => page.locator('.subscription-dialog').evaluate(node => getComputedStyle(node).opacity)).toBe('1');
   await page.screenshot({ path: test.info().outputPath('abonnement-action-mobile.png'), fullPage: true });

@@ -1,3 +1,9 @@
+## SW v46.59 — Paiement PI-SPI avec activation manuelle
+
+- PI-SPI proposé à côté de Wave et WhatsApp dans le dialogue d’abonnement et Mon compte.
+- Alias de réception fourni par l’éditeur, copie avec repli Android, montant de la formule et instructions de paiement depuis une application compatible.
+- Justificatif transmis par WhatsApp avec la formule et le compte ASRAR ; activation après vérification manuelle du paiement reçu.
+
 ## SW v46.58 — Panneau de paiement mobile
 
 - Dialogue présenté en panneau blanc au bas de l’écran mobile, avec cartes Wave/WhatsApp sélectionnables et bouton Continuer.
