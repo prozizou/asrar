@@ -1,3 +1,8 @@
+## Planète : heure en cours réservée aux abonnés
+
+- Sans abonnement, la carte « Heure planétaire actuelle » est floutée : seul un gabarit fictif est affiché (planète, horaires, nature, temps restant et heure suivante ne sont jamais envoyés à l’écran), avec « Débloquer avec l’abonnement ».
+- L’activation des alertes de changement d’heure dans l’application Android demande aussi l’abonnement. Horloge, période jour/nuit, régent du jour, lever et coucher restent visibles.
+
 ## Partage des boutiques sur les réseaux sociaux
 
 - « Partager ma boutique » dans Ma Boutique et « Partager cette boutique » sur la page d'une boutique du Marché : feuille de partage du téléphone (WhatsApp, Facebook, TikTok…) ou copie du lien.

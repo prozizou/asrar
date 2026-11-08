@@ -31,7 +31,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X,
+  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X, Lock,
 } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
@@ -159,9 +159,14 @@ export default function PlanetePage() {
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
-  const { ensureAccess } = useAccess() as unknown as {
+  const { ensureAccess, allowed } = useAccess() as unknown as {
     ensureAccess: (minLevel?: number) => Promise<boolean>;
+    allowed: boolean | null;
   };
+  // Heure planétaire en cours réservée aux abonnés : tant que l'accès n'est
+  // pas confirmé (null = vérification en cours), la carte n'affiche que des
+  // valeurs fictives floutées — les vraies ne sont jamais rendues dans la page.
+  const locked = allowed !== true;
   const sunCache = useRef<SunCache>({});
 
   const [now, setNow] = useState(() => new Date());
@@ -390,6 +395,40 @@ export default function PlanetePage() {
           <>
             {/* Heure planétaire actuelle : régent, horaires, nature,
                 progression réelle (écoulé / restant), heure suivante. */}
+            {locked ? (
+              <section className="pm-card pm-now is-locked" aria-label="Heure planétaire actuelle">
+                <p className="pm-label">Heure planétaire actuelle</p>
+                {/* Gabarit fictif : même mise en page, aucune donnée réelle. */}
+                <div className="pm-locked-body" aria-hidden="true">
+                  <div className="pm-now-row">
+                    <span className="pm-glyph lg">✦</span>
+                    <div className="pm-now-id">
+                      <p className="pm-now-planet">Planète</p>
+                      <p className="pm-now-time">00:00 – 00:00</p>
+                    </div>
+                    <span className="pm-chip">Nature</span>
+                  </div>
+                  <div className="pm-progress"><span style={{ width: '50%' }} /></div>
+                  <div className="pm-progress-legend">
+                    <span><strong>00 min</strong> restantes</span>
+                    <span>00 % écoulés</span>
+                  </div>
+                  <p className="pm-next">Ensuite : <strong>Planète</strong> à 00:00 · Nature</p>
+                </div>
+                <div className="pm-lock-overlay">
+                  <span className="pm-lock-icon" aria-hidden="true"><Lock size={18} strokeWidth={2.2} /></span>
+                  <p className="pm-lock-title">{allowed === null ? 'Vérification de votre abonnement…' : 'Réservé aux abonnés'}</p>
+                  {allowed === false && (
+                    <>
+                      <p className="pm-lock-text">Planète de l’heure en cours, nature favorable ou défavorable et heure suivante.</p>
+                      <button type="button" className="pm-btn-filled pm-lock-btn" onClick={() => { ensureAccess().catch(() => {}); }}>
+                        Débloquer avec l’abonnement
+                      </button>
+                    </>
+                  )}
+                </div>
+              </section>
+            ) : (
             <section className="pm-card pm-now" aria-label="Heure planétaire actuelle">
               <p className="pm-label">Heure planétaire actuelle</p>
               <div className="pm-now-row">
@@ -421,6 +460,7 @@ export default function PlanetePage() {
                 </p>
               )}
             </section>
+            )}
 
             {/* Période astronomique active, bornes comprises. */}
             <section className="pm-card pm-period">
@@ -467,7 +507,7 @@ export default function PlanetePage() {
           </>
         )}
 
-        <NotificationsRow place={place} sunCache={sunCache.current} onOpenAlarms={ready ? showHours : undefined} />
+        <NotificationsRow place={place} sunCache={sunCache.current} onOpenAlarms={ready ? showHours : undefined} locked={locked} ensureAccess={ensureAccess} />
 
         {/* Régents de la semaine : une ligne repliée (aujourd'hui), les 7 à un tap. */}
         <section className="pm-card pm-week">
@@ -591,10 +631,15 @@ function PlaceSheet({ onClose, onPick, onUseGps }: {
 // changement d'heure (programmées 48 h à l'avance, reçues app fermée,
 // lib/planetHourChangeNative.js). Navigateur → push web (PlanetPushToggle).
 // « Alarmes par heure » ouvre l'écran des heures, où chaque heure se règle.
-function NotificationsRow({ place, sunCache, onOpenAlarms }: {
+// locked : sans abonnement confirmé, l'activation des alertes de l'appareil
+// (qui nomment la planète de chaque heure) ouvre d'abord le portail
+// d'abonnement. Les notifications web (PlanetPushToggle) restent désactivables.
+function NotificationsRow({ place, sunCache, onOpenAlarms, locked, ensureAccess }: {
   place: Place | null;
   sunCache: SunCache;
   onOpenAlarms?: () => void;
+  locked: boolean;
+  ensureAccess: (minLevel?: number) => Promise<boolean>;
 }) {
   const [mode, setMode] = useState<'checking' | 'native' | 'web' | 'none'>('checking');
   const [enabled, setEnabled] = useState(false);
@@ -629,6 +674,7 @@ function NotificationsRow({ place, sunCache, onOpenAlarms }: {
       await disableHourChangeAlerts();
       setEnabled(false);
     } else {
+      if (locked && !(await ensureAccess())) { setBusy(false); return; }
       const r = await enableHourChangeAlerts({ lat, lng, cache: sunCache, timeZone: zone });
       if (r.ok) setEnabled(true);
       else setMsg(r.error === 'permission'
