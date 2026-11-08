@@ -54,7 +54,12 @@ test('application : « Contacter l’assistance pour mon abonnement » ouvre Wha
   const urls = recordNavigations(page);
   await page.getByRole('link', { name: 'Contacter l’assistance pour mon abonnement' }).click();
   await expect.poll(() => page.url(), { timeout: 10000 }).toMatch(/^https:\/\/wa\.me\/22100000000\?text=/);
-  expect(urls[0]).toMatch(/^whatsapp:\/\/send\?phone=22100000000&text=/);
+  // D'autres événements de navigation (fin de chargement de /compte) peuvent
+  // s'intercaler : on cherche la tentative WhatsApp, puis on vérifie qu'elle
+  // précède le repli wa.me.
+  const appIndex = urls.findIndex((url) => url.startsWith('whatsapp://send?phone=22100000000&text='));
+  expect(appIndex).toBeGreaterThanOrEqual(0);
+  expect(appIndex).toBeLessThan(urls.findIndex((url) => url.startsWith('https://wa.me/')));
 });
 
 test('application : WhatsApp ouvert (l’application passe en arrière-plan), pas de page web en plus', async ({ page, login }) => {
