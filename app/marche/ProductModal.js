@@ -14,7 +14,7 @@ import { formatPrice, displayProductName } from '@/lib/market';
 import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import Modal from '@/components/Modal';
-import { reserveExternalWindow } from '@/lib/externalWindow';
+import { reserveWhatsAppWindow } from '@/lib/externalWindow';
 import { formatOrderPrice } from '@/lib/orderStatus';
 import { share as shareLink } from '@/lib/share';
 import { useProductSocial } from '@/components/useProductSocial';
@@ -76,7 +76,7 @@ export default function ProductModal({ product, vendor, onClose, onVisitShop }) 
   const [verifiedRequest, setVerifiedRequest] = useState(null);
   const order = async () => {
     if (ordering) return;
-    const destination = reserveExternalWindow();
+    const destination = reserveWhatsAppWindow();
     if (!destination) { setOrderError('Autorisez l’ouverture d’une nouvelle fenêtre pour contacter la boutique.'); return; }
     setOrdering(true); setOrderError('');
     try {

@@ -164,11 +164,11 @@ const toLocalInputValue = (ms: number) => {
 const fmtSessionAt = (ms: number) =>
   new Date(ms).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
 // Lien de contact WhatsApp direct (créateur/admin → un participant précis) —
-// wa.me exige le numéro SANS le "+" (l'indicatif pays reste dans les
+// WhatsApp exige le numéro SANS le "+" (l'indicatif pays reste dans les
 // chiffres). `phone` est déjà au format international normalisé côté
 // serveur (lib/zikrLogic.js normalizePhone) avant d'arriver ici.
 const waContactUrl = (phone: string, groupName: string) =>
-  'https://wa.me/' + phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(`Assalamou aleykoum — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
+  'https://api.whatsapp.com/send?phone=' + phone.replace(/\D/g, '') + '&text=' + encodeURIComponent(`Assalamou aleykoum — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
 const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
 const LIST_POLL_MS = 15000; // La liste n'affiche pas le compteur en direct.

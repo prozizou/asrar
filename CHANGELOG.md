@@ -1,4 +1,7 @@
-## SW v46.62 — WhatsApp : plus de page web ouverte d’office
+## SW v46.62 — WhatsApp : ouverture directe (application et site Android), emojis intacts
+
+- Messages WhatsApp : le lien passe désormais par `api.whatsapp.com/send` au lieu de `wa.me`, dont la redirection remplaçait les emojis (🌙, 📦, 🏪, 💰, 🔖) par « � ». Partout : site, ordinateur, iPhone, application.
+- Site ouvert dans Chrome sur Android (y compris l’application web installée) : WhatsApp s’ouvre directement (lien `intent://`), sans nouvel onglet ni page « Ouvrir l’application » ; si WhatsApp n’est pas installé, la page web de WhatsApp s’ouvre à la place. Ordinateur et iPhone : nouvel onglet, comme avant.
 
 - Application Android : le repli automatique vers la page web de WhatsApp (wa.me) est supprimé. L’application ne met pas la page en pause quand WhatsApp s’ouvre : le repli se déclenchait donc pendant que WhatsApp était ouvert, et l’on retrouvait la page « Ouvrir l’application / Télécharger » au retour.
 - Si WhatsApp ne semble pas s’être ouvert après 2,5 s, un bandeau « WhatsApp ne s’est pas ouvert ? » propose « Ouvrir dans le navigateur » (aussi au-dessus d’une fiche produit ouverte) ; rien ne s’ouvre sans action.
