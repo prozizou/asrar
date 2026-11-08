@@ -44,6 +44,10 @@ const LEGACY = [
   // renvoyés vers le tableau de bord plutôt que de laisser un 404 sec.
   ['/Benefits/index.html', '/menu'],
   ['/benefits', '/menu'],
+  // Tafsir al-Ahlam et le générateur de talisman Wafq supprimés : les anciens
+  // liens mènent aux Outils et aux Hatims (/wafq/carre, toujours en place).
+  ['/tafsir', '/menu/outils'],
+  ['/wafq', '/wafq/carre'],
 ];
 
 // Content-Security-Policy — définition dans lib/csp.js (source unique).

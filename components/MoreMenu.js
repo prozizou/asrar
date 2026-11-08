@@ -5,12 +5,28 @@
 // Discussion + Partager » sur une seule ligne, trop chargée). Même structure
 // que components/AttachMenu.js (popover + fermeture au clic extérieur),
 // mais un contenu libre (children) plutôt que deux actions fixes.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 
 export default function MoreMenu({ children, label }) {
   const [open, setOpen] = useState(false);
+  // Ouverture vers le haut quand le menu dépasserait le bas de l'écran (dernière
+  // ligne d'une liste, barre de navigation fixe du Zikr par-dessus).
+  const [up, setUp] = useState(false);
   const rootRef = useRef(null);
+  const popRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!open) { setUp(false); return; }
+    const pop = popRef.current, root = rootRef.current;
+    if (!pop || !root) return;
+    const nav = document.querySelector('.zk-bottom-nav');
+    const navTop = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const limit = Math.min(window.innerHeight, navTop) - 8;
+    const below = pop.getBoundingClientRect().bottom;
+    const spaceAbove = root.getBoundingClientRect().top;
+    setUp(below > limit && spaceAbove > pop.offsetHeight + 8);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -36,7 +52,7 @@ export default function MoreMenu({ children, label }) {
       {/* Un clic sur N'IMPORTE QUEL item referme le menu (bubbling) — chaque
           item n'a donc pas besoin de gérer sa propre fermeture. */}
       {open && (
-        <div className="zk-emoji-pop zk-more-pop" role="menu" onClick={() => setOpen(false)}>
+        <div ref={popRef} className={'zk-emoji-pop zk-more-pop' + (up ? ' up' : '')} role="menu" onClick={() => setOpen(false)}>
           {children}
         </div>
       )}
