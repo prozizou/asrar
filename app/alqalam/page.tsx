@@ -713,8 +713,6 @@ export default function AlQalamPage() {
 
   return (
     <div className="alq-page">
-      <div className="bg-shape shape1" />
-      <div className="bg-shape shape2" />
 
       <div className="app-container">
         <header className="alq-heading">

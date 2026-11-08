@@ -1,4 +1,18 @@
 import { test, expect } from './fixtures';
+const { app } = require('../../server/grant');
+const { accounts } = require('./accounts.cjs');
+
+// D'autres scénarios accordent un accès au compte « free » (ex. notifications) :
+// on retire cet accès le temps du test, puis on restaure l'état d'origine.
+const freeKey = accounts.free.email.replace(/\./g, ',');
+const isolatedPaths = ['purchased_user/' + freeKey, 'allowedUsers/' + freeKey];
+let saved: Record<string, unknown> = {};
+test.beforeEach(async () => {
+  const db = app().database(); saved = {};
+  for (const path of isolatedPaths) saved[path] = (await db.ref(path).once('value')).val();
+  await db.ref().update(Object.fromEntries(isolatedPaths.map((path) => [path, null])));
+});
+test.afterEach(async () => { await app().database().ref().update(saved); });
 
 const PLANETS = /Saturne|Jupiter|Mars|Soleil|Vénus|Mercure|Lune/;
 const DAKAR = JSON.stringify({ name: 'Dakar', lat: 14.7167, lng: -17.4677, timeZone: 'Africa/Dakar' });

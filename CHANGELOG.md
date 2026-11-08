@@ -1,3 +1,10 @@
+## Nouveau style épuré, thèmes clair et sombre
+
+- Palette commune refaite pour les deux thèmes : fond neutre uni (gris très foncé / gris très clair), cartes pleines et nettes, ombres discrètes, un seul accent orange (contrastes AA, texte foncé sur l’orange en sombre, blanc en clair).
+- Fond animé (nébuleuse, étoiles) et halos retirés.
+- Marché, Al-Qalam, Combinaisons, Géomancie, Rouwhanes, menu, fenêtres d’abonnement et de paiement : couleurs violettes/bleues codées en dur remplacées par la palette commune ; le panneau de paiement suit désormais le thème (sombre en sombre, blanc en clair).
+- La bascule clair/sombre reste dans le menu latéral.
+
 ## Pages adaptées à toutes les largeurs d’écran
 
 - Planète débordait sur les petits écrans (320–360 px) : l’étiquette de nature passe désormais sous la planète quand la place manque.
