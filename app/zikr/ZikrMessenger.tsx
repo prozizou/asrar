@@ -326,7 +326,9 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
       <div className="zk-chat-field"><EmojiPicker onPick={(emoji: string) => setText((value) => (value + emoji).slice(0, CHAT_MESSAGE_MAX))} />
         <textarea dir="auto" ref={inputRef} aria-label="Écrire un message" rows={1} maxLength={CHAT_MESSAGE_MAX} value={text} placeholder="Écrire un message…" onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(); }
-        }} /></div>
+        }} />
+        {text.length >= CHAT_MESSAGE_MAX * 0.8 && <span className={'zk-chat-count' + (text.length >= CHAT_MESSAGE_MAX ? ' full' : '')} aria-live="polite" aria-label={`${text.length} caractères sur ${CHAT_MESSAGE_MAX}`}>{CHAT_MESSAGE_MAX - text.length}</span>}
+      </div>
       <button type="button" style={{ display: text.trim() ? undefined : 'none' }} className="zk-chat-send" onClick={sendText} disabled={busy || !text.trim()} aria-label="Envoyer"><Send size={18} /></button>
       </div>
       <VoiceComposer voice={voice} show={voice.recording || !text.trim()} disabled={busy || voiceChecking || !!unsent} active={active} onStart={startVoice} maxSeconds={CHAT_AUDIO_MAX_S} />

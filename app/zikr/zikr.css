@@ -1174,3 +1174,51 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
 @media (prefers-reduced-motion: reduce) { .zk-title-toggle svg { transition: none; } }
 .zk-chat-mode .zk-title-toggle { transform: none; }
 .zk-messenger .zk-new-messages:hover { transform: translateX(-50%); }
+
+/* ── Barre de saisie de la discussion : finitions ──────────────────────────
+   Un SEUL contour de focus (sur la pilule), au lieu de deux superposés : le
+   contour décalé de .zk-chat-field:focus-within PLUS le rectangle global
+   `textarea:focus-visible` (app/globals.css) dessinaient un cadre carré à
+   l'intérieur de la pilule arrondie. Barre détachée de la conversation par
+   un filet, boutons alignés en bas quand le message s'étend sur plusieurs
+   lignes (comme WhatsApp), compteur discret à l'approche de la limite. */
+.zk-messenger .zk-chat-composer {
+  align-items: flex-end; gap: 8px; padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-deep);
+}
+.zk-messenger .zk-chat-composer > .zk-composer-body { align-items: flex-end; }
+.zk-messenger .zk-chat-field {
+  align-items: flex-end; gap: 2px; min-height: 48px; padding: 2px 6px 2px 2px;
+  border: 1px solid var(--border); background: var(--card-bg);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.zk-messenger .zk-chat-field:focus-within {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.zk-messenger .zk-chat-field textarea,
+.zk-messenger .zk-chat-field textarea:focus,
+.zk-messenger .zk-chat-field textarea:focus-visible { outline: none; box-shadow: none; }
+.zk-messenger .zk-chat-field textarea {
+  align-self: center; padding: 11px 4px; line-height: 1.4; min-height: 44px; color: var(--text-main);
+}
+.zk-messenger .zk-chat-field textarea::placeholder { color: var(--text-faint); opacity: 1; }
+.zk-messenger .zk-chat-field .zk-chat-tool { width: 42px; height: 42px; min-width: 42px; color: var(--text-dim); border: 0; }
+.zk-messenger .zk-chat-field .zk-chat-tool:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.zk-messenger .zk-chat-tool, .zk-messenger .zk-attach-menu > summary.zk-chat-tool {
+  width: 48px; height: 48px; min-width: 48px; border: 1px solid var(--border-soft);
+  background: var(--card-bg); color: var(--text-dim);
+}
+.zk-messenger .zk-chat-tool:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.zk-messenger .zk-record-trigger { color: var(--accent); }
+.zk-messenger .zk-chat-send { width: 48px; height: 48px; min-width: 48px; }
+.zk-chat-count {
+  align-self: flex-end; margin: 0 4px 13px 0; font-size: .72rem; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--text-faint);
+}
+.zk-chat-count.full { color: var(--danger); font-weight: 700; }
+@media (max-width: 360px) {
+  .zk-messenger .zk-chat-tool, .zk-messenger .zk-chat-send, .zk-messenger .zk-attach-menu > summary.zk-chat-tool { width: 44px; height: 44px; min-width: 44px; }
+  .zk-messenger .zk-chat-field .zk-chat-tool { width: 36px; min-width: 36px; }
+}
