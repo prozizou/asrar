@@ -1,3 +1,8 @@
+## SW v46.63 — Statistiques d’administration : mesure d’audience anonyme pour tous
+
+- Le panneau d’administration affichait 0 visite et aucun pays : la mesure détaillée (« Autoriser la mesure des visites ») est décochée par défaut, et presque personne ne l’active. `/api/track` tient désormais, pour **tous** les comptes, des compteurs anonymes et agrégés : `analytics/daily/{jour}` (visites, visiteurs uniques du jour, type d’appareil, pays) et `analytics/geo/{AAAA-MM}/{pays}` (utilisateurs distincts du mois). Ni identifiant, ni e-mail, ni page. Le journal détaillé par compte reste réservé aux comptes qui l’acceptent.
+- Politique de confidentialité et page Compte : mention de ces compteurs anonymes.
+
 ## SW v46.62 — WhatsApp : ouverture directe (application et site Android), emojis intacts
 
 - Messages WhatsApp : le lien passe désormais par `api.whatsapp.com/send` au lieu de `wa.me`, dont la redirection remplaçait les emojis (🌙, 📦, 🏪, 💰, 🔖) par « � ». Partout : site, ordinateur, iPhone, application.

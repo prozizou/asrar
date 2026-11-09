@@ -82,7 +82,7 @@ export default function ComptePage() {
       </section>
       <section className="account-card" aria-labelledby="account-preferences"><h2 id="account-preferences">Mes préférences</h2>
         <label className="account-toggle"><input type="checkbox" checked={data.settings.analytics} disabled={busy} onChange={(e) => void saveSettings(e.target.checked, data.settings.pushEnabled)} /> Autoriser la mesure des visites et vues de produits</label>
-        <p className="account-muted">Facultatif. Le suivi de connexion nécessaire au fonctionnement du compte reste conservé.</p>
+        <p className="account-muted">Facultatif. Le suivi de connexion nécessaire au fonctionnement du compte reste conservé, ainsi que des compteurs de fréquentation anonymes (visites, appareil, pays), sans lien avec votre compte.</p>
         <label className="account-toggle"><input type="checkbox" checked={data.settings.pushEnabled} disabled={busy} onChange={(e) => void saveSettings(data.settings.analytics, e.target.checked)} /> Autoriser les notifications sur mes appareils</label>
         <p className="account-muted">Désactiver retire vos appareils enregistrés. Après réactivation, reconnectez l’appareil pour le réabonner. L’historique reste disponible dans l’application.</p>
       </section>

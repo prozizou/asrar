@@ -3,7 +3,8 @@
 // Body : { idToken, type, page?, productKey?, adStats? }.
 // type="ad_stats" : compteurs agrégés de la pub au clic (lib/actionAd.ts) —
 // ajoutés à analytics/ads/{jour}, sans visite ni entrée dans le fil d'activité.
-// Les statistiques de visites, vues et activité exigent account_settings.analytics=true.
+// Le journal détaillé (visites par compte, vues, activité) exige account_settings.analytics=true ;
+// les compteurs d'audience anonymes (analytics/daily, analytics/geo) valent pour tous.
 // La dernière session reste une donnée opérationnelle ; le pays est facultatif.
 // L'ancien type « order » est refusé (410) : seule /api/orders crée une demande
 // à partir du produit et du vendeur relus côté serveur.
@@ -65,11 +66,23 @@ export default async function handler(req, res) {
     // d'événements (product_view, order…) ne rafraîchissent que
     // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
     // moins significative.
+    const sessionRef = db.ref("user_sessions/" + user.uid);
     const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
+    let previousVisitDay = "";
     if (kind === "visit") {
-      Object.assign(sessionUpdate, { lastLoginAt: now }, analyticsEnabled && countryCode ? { country, countryCode } : { country: null, countryCode: null });
+      previousVisitDay = String((await sessionRef.child("lastVisitDay").once("value")).val() || "");
+      Object.assign(sessionUpdate, { lastLoginAt: now, lastVisitDay: date }, analyticsEnabled && countryCode ? { country, countryCode } : { country: null, countryCode: null });
     }
-    await db.ref("user_sessions/" + user.uid).update(sessionUpdate);
+    await sessionRef.update(sessionUpdate);
+
+    // 2ter) Mesure d'audience ANONYME, pour tous les comptes : de simples
+    // compteurs agrégés (aucun uid, aucun e-mail, aucune page) — visites du
+    // jour, visiteurs uniques du jour, type d'appareil, pays (jour et mois).
+    // Sans ces compteurs, le panneau d'administration affichait 0 visite et
+    // aucun pays, puisque presque personne ne coche la mesure détaillée
+    // (account_settings.analytics, décochée par défaut) : celle-ci reste
+    // réservée aux comptes qui l'acceptent (journal par compte ci-dessous).
+    if (kind === "visit") await countAudience(db, date, previousVisitDay, countryCode, platformOf(req.headers["user-agent"]));
     if (!analyticsEnabled) return res.status(200).json({ ok: true });
 
     // 0) Compteurs de la pub au clic : un envoi groupé par session environ
@@ -114,6 +127,21 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false });
   }
 };
+
+// Compteurs anonymes : analytics/daily/{jour}/{visits,unique,platforms/*,countries/*}
+// et analytics/geo/{AAAA-MM}/{pays} (utilisateurs distincts du mois).
+// « XX » = pays inconnu (en-tête de géolocalisation absent).
+async function countAudience(db, date, previousVisitDay, countryCode, platform) {
+  const inc = (path) => db.ref(path).transaction((c) => (Number(c) || 0) + 1);
+  const code = /^[A-Z]{2}$/.test(countryCode || "") ? countryCode : "XX";
+  const day = "analytics/daily/" + date;
+  const jobs = [inc(day + "/visits")];
+  if (previousVisitDay !== date) {
+    jobs.push(inc(day + "/unique"), inc(day + "/platforms/" + platform), inc(day + "/countries/" + code));
+    if (previousVisitDay.slice(0, 7) !== date.slice(0, 7)) jobs.push(inc("analytics/geo/" + date.slice(0, 7) + "/" + code));
+  }
+  await Promise.all(jobs);
+}
 
 // Compteurs de pub : entiers 0..AD_COUNT_MAX, quick+closed+open ≤ opened.
 const AD_COUNT_MAX = 100;
