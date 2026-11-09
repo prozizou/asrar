@@ -943,7 +943,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // best-effort). `notified` reflète ce que le SERVEUR a réellement trouvé
   // (recalculé côté serveur, pas simplement inactiveCount côté client).
   const doNotifyInactive = async () => {
-    if (notifyBusy || !window.confirm("Avertir les membres sans récitation ? Sans reprise sous 7 jours, ils seront retirés de ce groupe.")) return;
+    if (notifyBusy || !window.confirm("Avertir les membres sans récitation ? Ceux qui n’auront toujours récité aucun grain sous 7 jours seront retirés de ce groupe.")) return;
     setNotifyBusy(true);
     try {
       const d = await notifyInactiveMembers(groupId);

@@ -35,7 +35,7 @@ export default function ParticipantWarning({ groupId, group, member, onClose, on
       <p>{member.name || member.email}</p>
       <label htmlFor="zk-personal-warning">Message personnalisé</label>
       <textarea id="zk-personal-warning" value={text} onChange={(event) => setText(event.target.value)} maxLength={ZIKR_WARNING_MAX} rows={12} />
-      <p className="zk-muted">L’avertissement sera visible dans l’application. Sans nouvelle récitation enregistrée sous 7 jours, le membre sera retiré de ce groupe. Un avertissement répété ne repousse pas l’échéance.</p>
+      <p className="zk-muted">L’avertissement sera visible dans l’application. Au bout de 7 jours, le membre n’est retiré du groupe que s’il n’a toujours récité aucun grain ; s’il a déjà participé, il reste et l’avertissement est levé. Un avertissement répété ne repousse pas l’échéance.</p>
       {error && <p role="alert" className="view-feedback view-feedback-error">{error}</p>}
       {saved && <p role="status">Avertissement enregistré. Échéance : {new Date(deadline).toLocaleString('fr-FR')}. Le message reste à envoyer dans WhatsApp.</p>}
       <div className="zk-warning-actions">

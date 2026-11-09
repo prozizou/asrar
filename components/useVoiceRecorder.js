@@ -87,7 +87,11 @@ export function useVoiceRecorder(onDone, onInterrupted = undefined) {
       interruptedRef.current = false;
       streamRef.current = stream;
       chunksRef.current = [];
-      const rec = new MediaRecorder(stream);
+      // 32 kbit/s : qualité voix nette, fichier ~4× plus léger que le défaut
+      // du navigateur (vocaux jusqu'à 15 min, cf. CHAT_AUDIO_MAX_S).
+      let rec;
+      try { rec = new MediaRecorder(stream, { audioBitsPerSecond: 32000 }); }
+      catch { rec = new MediaRecorder(stream); }
       mediaRecorderRef.current = rec;
       rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = () => {
@@ -104,8 +108,8 @@ export function useVoiceRecorder(onDone, onInterrupted = undefined) {
       startedAtRef.current = Date.now();
       rec.start();
       setRecording(true);
-      // Arrêt automatique à CHAT_AUDIO_MAX_S — un vocal reste un message court,
-      // pas un enregistrement illimité (coût de stockage/lecture).
+      // Arrêt automatique à CHAT_AUDIO_MAX_S (15 min) : le vocal est alors
+      // envoyé normalement, rien n'est perdu.
       timerRef.current = setInterval(() => {
         setSeconds((s) => {
           const next = s + 1;

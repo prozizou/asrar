@@ -5,7 +5,7 @@ import { ZIKR_WARNING_GRACE_MS, zikrWarningMessage } from '../lib/zikrWarning';
 const start = 1700000000000, end = start + ZIKR_WARNING_GRACE_MS + 1;
 function fixture() {
   const db = database({ zikr_groups: { g: { ownerUid: 'tester', name: 'Récitation', arabic: 'لا إله إلا الله', target: 1000, total: 120, membersCount: 2 } },
-    zikr_members: { g: { tester: { fait: 100 }, guest: { fait: 20, email: 'guest@example.invalid', phone: '+221770000000' } } } });
+    zikr_members: { g: { tester: { fait: 100 }, guest: { fait: 0, email: 'guest@example.invalid', phone: '+221770000000' } } } });
   const load = runtime(db);
   return { db, load, ...load('server/zikrInactivity.js') };
 }
@@ -36,7 +36,7 @@ describe('Avertissement et retrait du Zikr', () => {
     const { db, load, warnParticipant, processZikrInactivity } = fixture();
     await warnParticipant(db, 'g', 'guest', 'tester', 'Avis', start);
     await db.ref('zikr_members/g/guest/avertissement').remove();
-    await load('server/zikrProgress.js').recordProgress(db, 'g', 'guest', 20, 0, end - 1);
+    await load('server/zikrProgress.js').recordProgress(db, 'g', 'guest', 0, 0, end - 1);
     expect(db.read('zikr_members/g/guest/warning')).not.toBeNull();
     await processZikrInactivity(db, end);
     expect(db.read('zikr_members/g/guest')).toBeNull();
@@ -44,13 +44,24 @@ describe('Avertissement et retrait du Zikr', () => {
   it('une vraie récitation annule le retrait et permet un nouvel avertissement indépendant', async () => {
     const { db, load, warnParticipant, processZikrInactivity } = fixture();
     const first = await warnParticipant(db, 'g', 'guest', 'tester', 'Avis', start);
-    await load('server/zikrProgress.js').recordProgress(db, 'g', 'guest', 21, 1, end - 1);
+    await load('server/zikrProgress.js').recordProgress(db, 'g', 'guest', 1, 1, end - 1);
     expect(db.read('zikr_members/g/guest/warning')).toBeNull();
     const second = await warnParticipant(db, 'g', 'guest', 'tester', 'Nouvel avis', end);
     expect(second.id).not.toBe(first.id);
     await processZikrInactivity(db, end + 1);
     expect(db.read('zikr_members/g/guest/warning/id')).toBe(second.id);
     expect(db.read('zikr_groups/g/total')).toBe(121);
+  });
+  it('à l’échéance, un membre averti qui a déjà récité reste dans le groupe (avertissement levé)', async () => {
+    const { db, warnParticipant, processZikrInactivity } = fixture();
+    await db.ref('zikr_members/g/guest/fait').set(20);
+    await warnParticipant(db, 'g', 'guest', 'tester', 'Avis', start);
+    await processZikrInactivity(db, end);
+    expect(db.read('zikr_members/g/guest')).toMatchObject({ fait: 20 });
+    expect(db.read('zikr_members/g/guest/warning')).toBeNull();
+    expect(db.read('zikr_members/g/guest/removalId')).toBeNull();
+    expect(db.read('zikr_groups/g')).toMatchObject({ membersCount: 2, total: 120 });
+    expect(Object.keys(db.read('zikr_inactivity') || {})).toHaveLength(0);
   });
   it('reprend un retrait après panne sans recréer le membre ni décrémenter deux fois', async () => {
     const { db, load, warnParticipant, processZikrInactivity } = fixture();
