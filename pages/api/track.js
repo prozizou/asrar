@@ -3,8 +3,10 @@
 // Body : { idToken, type, page?, productKey?, adStats? }.
 // type="ad_stats" : compteurs agrégés de la pub au clic (lib/actionAd.ts) —
 // ajoutés à analytics/ads/{jour}, sans visite ni entrée dans le fil d'activité.
-// Le journal détaillé (visites par compte, vues, activité) exige account_settings.analytics=true ;
-// les compteurs d'audience anonymes (analytics/daily, analytics/geo) valent pour tous.
+// type="actions" : lot d'actions de components/ActivityTracker.js (pages ouvertes,
+// boutons/liens touchés) ajoutées à activity_feed avec e-mail, pays et heure.
+// Tout est enregistré pour chaque utilisateur connecté (session, pays, visites,
+// actions) et consultable dans le panneau d'administration.
 // La dernière session reste une donnée opérationnelle ; le pays est facultatif.
 // L'ancien type « order » est refusé (410) : seule /api/orders crée une demande
 // à partir du produit et du vendeur relus côté serveur.
@@ -27,7 +29,7 @@ function geoFromRequest(req) {
   return resolveCountry(code);
 }
 
-// Le tracking suit la navigation normale (une entrée par page/action) : une
+// Le tracking suit la navigation normale (lots d'actions toutes les 10 s) : une
 // limite large, juste assez pour couper un compte compromis qui boucle en
 // continu sur cet endpoint (chaque appel écrit dans activity_feed).
 const RATE_LIMIT = { max: 60, windowMs: 60_000 };
@@ -57,33 +59,43 @@ export default async function handler(req, res) {
   const { country, countryCode } = geoFromRequest(req);
 
   try {
-    const analyticsEnabled = (await db.ref("account_settings/" + user.uid + "/analytics").once("value")).val() === true;
-    // 2bis) Session utilisateur (inscription/connexion + dernière activité) —
-    // un seul nœud par utilisateur (merge), source de la répartition par
-    // pays et du flux de connexions récentes côté panneau d'administration.
-    // `lastLoginAt` n'est mis à jour que sur une VRAIE connexion (type="visit",
-    // envoyé une fois par session app par trackVisit()) ; les autres types
-    // d'événements (product_view, order…) ne rafraîchissent que
-    // `lastActivityAt`, sans écraser le pays/heure de connexion avec une valeur
-    // moins significative.
+    // 2bis) Session utilisateur — un seul nœud par utilisateur (merge) :
+    // e-mail, pays, heure de connexion, appareil, dernière activité. Source
+    // du suivi des connexions côté panneau d'administration, pour TOUS les
+    // utilisateurs. `lastLoginAt` n'est mis à jour que sur une VRAIE
+    // connexion/ouverture de l'app (type="visit", envoyé une fois par
+    // session par trackVisit()) ; les autres envois ne rafraîchissent que
+    // l'activité.
     const sessionRef = db.ref("user_sessions/" + user.uid);
+    const platform = platformOf(req.headers["user-agent"]);
     const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
     let previousVisitDay = "";
     if (kind === "visit") {
       previousVisitDay = String((await sessionRef.child("lastVisitDay").once("value")).val() || "");
-      Object.assign(sessionUpdate, { lastLoginAt: now, lastVisitDay: date }, analyticsEnabled && countryCode ? { country, countryCode } : { country: null, countryCode: null });
+      Object.assign(sessionUpdate, { lastLoginAt: now, lastVisitDay: date, platform, lastPage: safePage || null },
+        countryCode ? { country, countryCode } : {});
     }
     await sessionRef.update(sessionUpdate);
 
-    // 2ter) Mesure d'audience ANONYME, pour tous les comptes : de simples
-    // compteurs agrégés (aucun uid, aucun e-mail, aucune page) — visites du
-    // jour, visiteurs uniques du jour, type d'appareil, pays (jour et mois).
-    // Sans ces compteurs, le panneau d'administration affichait 0 visite et
-    // aucun pays, puisque presque personne ne coche la mesure détaillée
-    // (account_settings.analytics, décochée par défaut) : celle-ci reste
-    // réservée aux comptes qui l'acceptent (journal par compte ci-dessous).
-    if (kind === "visit") await countAudience(db, date, previousVisitDay, countryCode, platformOf(req.headers["user-agent"]));
-    if (!analyticsEnabled) return res.status(200).json({ ok: true });
+    // 2ter) Compteurs d'audience agrégés (visites/jour, appareil, pays).
+    if (kind === "visit") await countAudience(db, date, previousVisitDay, countryCode, platform);
+
+    // 2quater) Lot d'actions (components/ActivityTracker.js) : chaque page
+    // ouverte et chaque bouton/lien touché, avec e-mail, pays et heure.
+    if (kind === "actions") {
+      const events = actionEvents(parseBody(req).events, now);
+      if (events.length) {
+        const feed = db.ref("activity_feed");
+        await Promise.all(events.map((e) => feed.push({
+          uid: user.uid, email: user.email, at: e.at, type: e.type, page: e.page,
+          ...(e.label ? { label: e.label } : {}), platform,
+          ...(countryCode ? { country, countryCode } : {}),
+        })));
+        const last = events[events.length - 1];
+        await sessionRef.update({ lastPage: last.page || null, lastAction: last.label || last.page || null, lastActionAt: last.at });
+      }
+      return res.status(200).json({ ok: true, count: events.length });
+    }
 
     // 0) Compteurs de la pub au clic : un envoi groupé par session environ
     // (lib/actionAd.ts). Valeurs bornées : un client ne peut pas gonfler les
@@ -101,11 +113,12 @@ export default async function handler(req, res) {
     const vref = db.ref("analytics/visits/" + date + "/" + user.uid);
     await vref.child("n").transaction((c) => (c || 0) + 1);
     // platform : catégorie d'appareil (lib/platform.js), lue par l'administration.
-    await vref.update({ last: now, email: user.email, platform: platformOf(req.headers["user-agent"]), ...(countryCode ? { country, countryCode } : {}) });
+    await vref.update({ last: now, email: user.email, platform, ...(countryCode ? { country, countryCode } : {}) });
 
     // 2) Fil d'activité global (les N dernières actions visibles côté admin).
     await db.ref("activity_feed").push({
-      uid: user.uid, email: user.email, type: kind, page: safePage, at: now,
+      uid: user.uid, email: user.email, type: kind, page: safePage, at: now, platform,
+      ...(kind === "visit" ? { label: "Connexion / ouverture de l’application" } : {}),
       ...(countryCode ? { country, countryCode } : {}),
     });
 
@@ -127,6 +140,24 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false });
   }
 };
+
+// Lot d'actions : au plus ACTIONS_MAX, types connus, libellés nettoyés,
+// heure client acceptée seulement dans les 15 dernières minutes (sinon
+// l'heure de réception), jamais dans le futur.
+const ACTIONS_MAX = 30;
+const ACTION_TYPES = new Set(["page", "click"]);
+function actionEvents(list, now) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, ACTIONS_MAX)
+    .filter((e) => e && typeof e === "object" && ACTION_TYPES.has(e.type))
+    .map((e) => {
+      const at = Number(e.at);
+      return {
+        type: e.type, page: clean(e.page, 80) || "accueil", label: clean(e.label, 60),
+        at: Number.isFinite(at) && at <= now && at >= now - 15 * 60_000 ? Math.floor(at) : now,
+      };
+    });
+}
 
 // Compteurs anonymes : analytics/daily/{jour}/{visits,unique,platforms/*,countries/*}
 // et analytics/geo/{AAAA-MM}/{pays} (utilisateurs distincts du mois).

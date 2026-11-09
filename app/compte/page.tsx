@@ -81,8 +81,7 @@ export default function ComptePage() {
         {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact} onClick={(e) => handleExternalLinkClick(e, subscriptionContact)}>Contacter l’assistance pour mon abonnement</a>}
       </section>
       <section className="account-card" aria-labelledby="account-preferences"><h2 id="account-preferences">Mes préférences</h2>
-        <label className="account-toggle"><input type="checkbox" checked={data.settings.analytics} disabled={busy} onChange={(e) => void saveSettings(e.target.checked, data.settings.pushEnabled)} /> Autoriser la mesure des visites et vues de produits</label>
-        <p className="account-muted">Facultatif. Le suivi de connexion nécessaire au fonctionnement du compte reste conservé, ainsi que des compteurs de fréquentation anonymes (visites, appareil, pays), sans lien avec votre compte.</p>
+        <p className="account-muted">Votre activité dans l’application (connexions avec pays et heure, pages ouvertes, actions) est enregistrée et consultable par l’administration d’ASRAR PRO. Voir la politique de confidentialité.</p>
         <label className="account-toggle"><input type="checkbox" checked={data.settings.pushEnabled} disabled={busy} onChange={(e) => void saveSettings(data.settings.analytics, e.target.checked)} /> Autoriser les notifications sur mes appareils</label>
         <p className="account-muted">Désactiver retire vos appareils enregistrés. Après réactivation, reconnectez l’appareil pour le réabonner. L’historique reste disponible dans l’application.</p>
       </section>

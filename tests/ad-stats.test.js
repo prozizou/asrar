@@ -17,10 +17,10 @@ describe('Compteurs de la pub au clic (/api/track, type ad_stats)', () => {
     expect(db.read('activity_feed')).toBeNull();
   });
 
-  it('respecte le réglage statistiques du compte : rien n’est enregistré sans accord', async () => {
+  it('compte les pubs de chaque utilisateur, sans réglage préalable', async () => {
     const db = database();
     expect((await track(db, { type: 'ad_stats', adStats: { opened: 1, quick: 1, closed: 0, open: 0 } })).code).toBe(200);
-    expect(db.read('analytics/ads')).toBeNull();
+    expect(db.read('analytics/ads/' + day)).toEqual({ opened: 1, quick: 1 });
   });
 
   it('refuse les valeurs incohérentes et borne les envois gonflés', async () => {

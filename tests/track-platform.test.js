@@ -23,9 +23,10 @@ describe('Type d’appareil à la visite (/api/track)', () => {
     expect(stored.platform).toBe('android_app');
     expect(JSON.stringify(stored)).not.toContain('Mozilla');
   });
-  it('sans accord statistiques, rien n’est enregistré', async () => {
+  it('enregistre la visite de chaque utilisateur, sans réglage préalable', async () => {
     const db = database();
     await visit(db, 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
-    expect(db.read('analytics/visits')).toBeNull();
+    expect(db.read('analytics/visits/' + day + '/visitor/platform')).toBe('ios');
+    expect(db.read('user_sessions/visitor/platform')).toBe('ios');
   });
 });
