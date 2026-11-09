@@ -1,3 +1,9 @@
+## SW v46.65 — Zikr collectif : barre de saisie de la discussion affinée
+
+- Un seul contour de focus, arrondi, sur la pilule de saisie : le rectangle orange qui s’ajoutait à l’intérieur (contour global des champs) a disparu.
+- Barre détachée de la conversation par un filet, boutons image, emoji, micro et envoi alignés en bas quand le message s’étend sur plusieurs lignes.
+- Compteur discret des caractères restants à l’approche de la limite de 500 (en rouge une fois atteinte).
+
 ## SW v46.64 — Journal d’activité complet envoyé à l’administration
 
 - Chaque utilisateur connecté envoie automatiquement, à l’ouverture de l’application, son e-mail, son pays (adresse IP), l’heure et son appareil (`user_sessions/{uid}`, `activity_feed`) — plus de case « Autoriser la mesure des visites ».
