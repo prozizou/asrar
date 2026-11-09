@@ -2,7 +2,7 @@ const { normalizeChatWaveform } = require('../lib/chatWaveform');
 const { randomUUID } = require('crypto');
 const { isValidKey } = require('./http');
 const { isActiveZikrMember } = require('../lib/zikrWarning');
-const { chatDisplayName, cleanText, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, isValidChatMessage } = require('../lib/zikrLogic');
+const { chatDisplayName, cleanText, CHAT_MESSAGE_MAX, CHAT_MEDIA_TYPES, CHAT_AUDIO_MAX_S, isValidChatMessage } = require('../lib/zikrLogic');
 
 async function signal(db, gid) {
   try { await db.ref(`zikr_chat_signals/${gid}`).set({ at: Date.now(), nonce: randomUUID() }); }
@@ -46,7 +46,7 @@ function media(body) {
   if (mediaUrl) {
     result.mediaType = mediaType; result.mediaUrl = mediaUrl;
     const duration = Math.floor(Number(body.mediaDuration));
-    if (mediaType === 'audio' && duration > 0 && Number.isFinite(duration)) result.mediaDuration = Math.min(duration, 120);
+    if (mediaType === 'audio' && duration > 0 && Number.isFinite(duration)) result.mediaDuration = Math.min(duration, CHAT_AUDIO_MAX_S);
     const waveform = normalizeChatWaveform(body.mediaWaveform);
     if (mediaType === 'audio' && waveform) result.mediaWaveform = waveform;
   }

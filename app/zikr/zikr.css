@@ -1222,3 +1222,43 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
   .zk-messenger .zk-chat-tool, .zk-messenger .zk-chat-send, .zk-messenger .zk-attach-menu > summary.zk-chat-tool { width: 44px; height: 44px; min-width: 44px; }
   .zk-messenger .zk-chat-field .zk-chat-tool { width: 36px; min-width: 36px; }
 }
+
+/* ── Dialogues de la discussion : taille AJUSTÉE au contenu ────────────────
+   .app-dialog (app/globals.css) est en `position:fixed; inset:0` : même avec
+   `height:auto`, la fenêtre s'étirait sur toute la hauteur de l'écran (grand
+   panneau blanc presque vide sous « Fermer »). Mobile : feuille compacte
+   ancrée en bas, à portée du pouce ; ordinateur : fenêtre centrée. */
+.zk-messenger-overlay.app-dialog {
+  inset: auto 0 0 0; margin: 0 auto; height: auto; max-height: 85dvh;
+  width: min(100%, 520px); border-radius: 20px 20px 0 0; border-bottom: 0;
+  padding-bottom: var(--sab); overflow: auto; overscroll-behavior: contain;
+  box-shadow: 0 -8px 30px #0004;
+}
+@media (min-width: 640px) {
+  .zk-messenger-overlay.app-dialog { inset: 0; margin: auto; height: fit-content; border-radius: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+}
+.zk-messenger-overlay .zk-media-dialog { padding: 16px; }
+.zk-messenger-overlay .zk-media-dialog h2 { font-size: 1.02rem; margin-bottom: 10px; }
+
+/* Menu d'un message : réactions sur UNE ligne, actions en liste compacte. */
+.zk-message-actions { gap: 0; padding-top: 12px; }
+.zk-message-actions .zk-reaction-picker {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;
+  margin: 0 0 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);
+}
+.zk-message-actions .zk-reaction-picker button {
+  width: 100%; min-width: 0; min-height: 46px; padding: 0; font-size: 1.45rem; line-height: 1;
+  border-radius: 14px; border: 0; background: var(--surface-2);
+}
+.zk-message-actions .zk-reaction-picker button:active { transform: scale(.92); }
+.zk-message-actions > button {
+  min-height: 48px; padding: 0 6px; border-radius: 10px; font-size: .98rem; font-weight: 500; gap: 14px;
+}
+.zk-message-actions > button svg { color: var(--text-dim); flex: none; }
+.zk-message-actions > button:hover { background: var(--surface-2); }
+.zk-message-actions > button:last-child {
+  justify-content: center; margin-top: 8px; border-top: 1px solid var(--border-soft);
+  border-radius: 0; color: var(--text-muted); font-weight: 600;
+}
+.zk-message-actions .zk-danger svg { color: currentColor; }
+.zk-message-actions .zk-reaction-picker button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

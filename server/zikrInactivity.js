@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { httpError } = require('./access');
-const { ZIKR_WARNING_GRACE_MS, warningExpired, isActiveZikrMember } = require('../lib/zikrWarning');
+const { ZIKR_WARNING_GRACE_MS, warningExpired, isActiveZikrMember, removableAfterWarning } = require('../lib/zikrWarning');
 
 async function warnParticipant(db, gid, uid, author, message, now = Date.now()) {
   const id = crypto.randomUUID();
@@ -47,11 +47,13 @@ async function processZikrInactivity(db, now = Date.now()) {
         if (member.removalId === job.id) return member;
         if (group.ownerUid === job.uid || (Number(group.total) || 0) >= Number(group.target)) return member;
         if (member.removalId || member.warning?.id !== job.id || !warningExpired(member, now)) return member;
+        // Membre qui a déjà récité au moins un grain : jamais retiré.
+        if (!removableAfterWarning(member)) return member;
         return { ...member, removalId: job.id };
       });
       const member = tx.snapshot.val();
       if (member?.removalId !== job.id) {
-        if (member?.warning?.id === job.id && (group.ownerUid === job.uid || (Number(group.total) || 0) >= Number(group.target))) {
+        if (member?.warning?.id === job.id && (group.ownerUid === job.uid || (Number(group.total) || 0) >= Number(group.target) || (!member.removalId && !removableAfterWarning(member) && warningExpired(member, now)))) {
           await ref.transaction((current) => current?.warning?.id === job.id && !current.removalId ? { ...current, warning: null, avertissement: null } : current);
         }
         await task.remove(); stats.skipped++; continue;

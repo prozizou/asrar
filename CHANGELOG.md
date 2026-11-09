@@ -1,3 +1,10 @@
+## SW v46.66 — Zikr collectif : retour à la ligne, vocaux de 15 min, menus compacts, retrait seulement à 0 grain
+
+- Discussion : sur téléphone, la touche Entrée fait un retour à la ligne et l’envoi passe par le bouton ➤. Sur ordinateur, Entrée envoie et Maj+Entrée revient à la ligne.
+- Vocaux jusqu’à 15 minutes (au lieu de 2), enregistrés à 32 kbit/s : environ 3,6 Mo pour 15 min. À 15 min, le vocal s’arrête et s’envoie normalement.
+- Menus et fenêtres de la discussion ajustés à leur contenu : feuille compacte en bas d’écran sur mobile, fenêtre centrée sur ordinateur (ils occupaient tout l’écran). Réactions sur une ligne.
+- Avertissements : à l’échéance des 7 jours, seul un membre qui n’a récité aucun grain est retiré. Un membre qui a déjà participé reste dans le groupe et son avertissement est levé.
+
 ## SW v46.65 — Zikr collectif : barre de saisie de la discussion affinée
 
 - Un seul contour de focus, arrondi, sur la pilule de saisie : le rectangle orange qui s’ajoutait à l’intérieur (contour global des champs) a disparu.

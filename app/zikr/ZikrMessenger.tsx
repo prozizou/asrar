@@ -9,6 +9,9 @@ import { useVoiceRecorder } from '@/components/useVoiceRecorder';
 import { startVisiblePolling } from '@/lib/visiblePolling';
 import { playNotificationBeep } from '@/lib/notifSound';
 import { chatDisplayName, CHAT_MESSAGE_MAX, CHAT_AUDIO_MAX_S } from '@/lib/zikrLogic';
+
+// Clavier virtuel probable (écran tactile principal, sans souris).
+const touchKeyboard = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
 import { checkZikrAudio, uploadZikrChatMedia } from '@/lib/cloudinary';
 import { mergeChatMessages } from '@/lib/chatMessages';
 import { chatWaveform } from '@/lib/chatWaveform';
@@ -324,8 +327,11 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
         <button type="button" disabled={busy} onClick={(event) => { event.currentTarget.closest('details')!.open = false; cameraRef.current?.click(); }}><Camera size={16} /> Prendre une photo</button>
       </div></details>
       <div className="zk-chat-field"><EmojiPicker onPick={(emoji: string) => setText((value) => (value + emoji).slice(0, CHAT_MESSAGE_MAX))} />
-        <textarea dir="auto" ref={inputRef} aria-label="Écrire un message" rows={1} maxLength={CHAT_MESSAGE_MAX} value={text} placeholder="Écrire un message…" onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(); }
+        <textarea dir="auto" ref={inputRef} aria-label="Écrire un message" rows={1} enterKeyHint="enter" maxLength={CHAT_MESSAGE_MAX} value={text} placeholder="Écrire un message…" onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
+          // Téléphone/tablette (écran tactile) : Entrée = retour à la ligne,
+          // l'envoi passe par le bouton ➤ (comme WhatsApp). Ordinateur :
+          // Entrée envoie, Maj+Entrée revient à la ligne.
+          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !touchKeyboard()) { event.preventDefault(); void sendText(); }
         }} />
         {text.length >= CHAT_MESSAGE_MAX * 0.8 && <span className={'zk-chat-count' + (text.length >= CHAT_MESSAGE_MAX ? ' full' : '')} aria-live="polite" aria-label={`${text.length} caractères sur ${CHAT_MESSAGE_MAX}`}>{CHAT_MESSAGE_MAX - text.length}</span>}
       </div>
