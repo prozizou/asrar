@@ -7,10 +7,12 @@ import AuthProvider from './AuthProvider';
 import AccessProvider from './AccessProvider';
 import PendingDeepLink from './PendingDeepLink';
 import AdsterraAds from './AdsterraAds';
+import ActivityTracker from './ActivityTracker';
 
 export default function Providers({ children }) {
   return (
     <AuthProvider>
+      <ActivityTracker />
       <AccessProvider>
         <PendingDeepLink />
         {children}

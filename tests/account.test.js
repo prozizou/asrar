@@ -59,10 +59,11 @@ describe('Compte et données personnelles', () => {
     expect(Object.keys(db.read('notifications/tester'))).toHaveLength(1);
     expect(Object.values(db.read('notification_jobs')).every((job) => job.status === 'completed')).toBe(true);
   });
-  it('ne collecte pas de statistiques facultatives sans accord explicite', async () => {
+  it('enregistre l’activité de chaque utilisateur connecté, sans réglage préalable', async () => {
     const { db, load } = setup();
     expect((await invoke(load('pages/api/track.js').default, { type: 'product_view', productKey: 'p' })).code).toBe(200);
-    expect(db.read('analytics')).toBeNull(); expect(db.read('activity_feed')).toBeNull(); expect(db.read('views')).toBeNull();
+    expect(Object.values(db.read('activity_feed'))[0]).toMatchObject({ uid: 'tester', type: 'product_view' });
+    expect(Object.keys(db.read('views/product/p'))).toEqual(['tester']);
     expect(db.read('user_sessions/tester/uid')).toBe('tester');
   });
   it('interdit le traitement des demandes de données à un utilisateur ordinaire', async () => {

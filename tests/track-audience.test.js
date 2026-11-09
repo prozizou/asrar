@@ -17,16 +17,42 @@ async function track(db, body, headers = {}) {
 }
 
 describe('Mesure d’audience anonyme (/api/track)', () => {
-  it('compte la visite, l’appareil et le pays sans accord détaillé, sans aucune donnée personnelle', async () => {
+  it('connexion : e-mail, pays, heure et appareil enregistrés pour chaque utilisateur', async () => {
     const db = database();
+    const before = Date.now();
     expect((await track(db, { type: 'visit', page: 'accueil' }, { 'x-vercel-ip-country': 'sn' })).code).toBe(200);
     expect(db.read('analytics/daily/' + day)).toEqual({ visits: 1, unique: 1, platforms: { android_app: 1 }, countries: { SN: 1 } });
     expect(db.read('analytics/geo/' + month)).toEqual({ SN: 1 });
-    expect(JSON.stringify(db.read('analytics'))).not.toMatch(/visitor/);
-    // Le journal détaillé reste réservé aux comptes qui l’acceptent.
-    expect(db.read('analytics/visits')).toBeNull();
-    expect(db.read('activity_feed')).toBeNull();
-    expect(db.read('user_sessions/visitor/countryCode')).toBeNull();
+    const session = db.read('user_sessions/visitor');
+    expect(session).toMatchObject({ email: 'visitor@example.test', country: 'Sénégal', countryCode: 'SN', platform: 'android_app', lastPage: 'accueil' });
+    expect(session.lastLoginAt).toBeGreaterThanOrEqual(before);
+    expect(Object.values(db.read('activity_feed'))[0]).toMatchObject({ email: 'visitor@example.test', type: 'visit', countryCode: 'SN' });
+  });
+
+  it('lot d’actions : chaque page et chaque bouton, avec e-mail, pays et heure', async () => {
+    const db = database();
+    const now = Date.now();
+    const events = [
+      { type: 'page', page: 'marche', at: now - 5000 },
+      { type: 'click', page: 'marche', label: 'Ajouter <au> panier', at: now - 2000 },
+      { type: 'click', page: 'marche', label: 'futur', at: now + 3_600_000 },
+      { type: 'inconnu', page: 'x' },
+    ];
+    const res = await track(db, { type: 'actions', events }, { 'x-vercel-ip-country': 'CI' });
+    expect(res.body).toEqual({ ok: true, count: 3 });
+    const feed = Object.values(db.read('activity_feed'));
+    expect(feed.map((e) => [e.type, e.page, e.label || ''])).toEqual([['page', 'marche', ''], ['click', 'marche', 'Ajouter  au  panier'], ['click', 'marche', 'futur']]);
+    expect(feed.every((e) => e.email === 'visitor@example.test' && e.countryCode === 'CI' && e.at <= Date.now())).toBe(true);
+    expect(feed[0].at).toBe(now - 5000);
+    expect(db.read('user_sessions/visitor/lastAction')).toBe('futur');
+    // Un lot n’est pas une visite.
+    expect(db.read('analytics/daily')).toBeNull();
+  });
+
+  it('lot d’actions borné à 30 événements', async () => {
+    const db = database();
+    const events = Array.from({ length: 50 }, (_, i) => ({ type: 'click', page: 'p', label: 'b' + i }));
+    expect((await track(db, { type: 'actions', events })).body.count).toBe(30);
   });
 
   it('un même compte ne compte qu’une fois par jour comme visiteur unique', async () => {
