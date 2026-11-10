@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
 
-  const { idToken, action, planet, enabled, offsetMin, startMs } = parseBody(req);
+  const { idToken, action, planet, enabled, offsetMin, startMs, lat, lng, timeZone } = parseBody(req);
 
   let user;
   try { user = await verifyUser(idToken); }
@@ -84,9 +84,40 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // Alarme NATIVE (Android) : sonne sur l'appareil, mais le serveur doit
+    // la connaître pour prévenir aussi sur WhatsApp (cron planet-push, passe
+    // 3). Une seule heure cochée à la fois, comme dans l'application : cocher
+    // remplace les autres. Position jointe (le natif n'a pas d'abonnement
+    // push web d'où la tirer).
+    if (action === "native-set") {
+      const slug = planetSlug(planet);
+      if (!slug) return res.status(400).json({ error: "Planète inconnue." });
+      const nativeBase = "planet_native_alarms/" + user.uid;
+      if (!enabled) {
+        await db.ref(nativeBase + "/" + slug).remove();
+        return res.status(200).json({ ok: true });
+      }
+      if (!validCoord(lat, 90) || !validCoord(lng, 180)) return res.status(400).json({ error: "Position requise." });
+      await db.ref(nativeBase).set({ [slug]: {
+        enabled: true,
+        offsetMin: validateWebOffset(offsetMin),
+        onceStartMs: Number.isFinite(startMs) ? startMs : null,
+        lat, lng, timeZone: validTimeZone(timeZone),
+        lastSentTrigger: Date.now(),
+        updatedAt: Date.now(),
+      } });
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ error: "Action inconnue." });
   } catch (e) {
     await reportError("planet-web-alarm", e, { uid: user.uid, action });
     return res.status(500).json({ error: e.message });
   }
 };
+
+function validCoord(v, max) { return typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= max; }
+function validTimeZone(tz) {
+  if (typeof tz !== "string" || !tz || tz.length > 64) return null;
+  try { new Intl.DateTimeFormat("fr-FR", { timeZone: tz }); return tz; } catch (_) { return null; }
+}

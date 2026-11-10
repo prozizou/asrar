@@ -19,7 +19,8 @@ const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { publishAndNotify } = require("../../server/notify");
-const { vendorKey, emailVendorKey } = require("../../lib/market");
+const { emailVendorKey } = require("../../lib/market");
+const { findShopOwnerUids } = require("../../server/shopOwners");
 const {
   cleanRequestText, isShopOwner, publicRequest, sortRequests,
   REQUEST_TEXT_MAX, REPLY_TEXT_MAX, MAX_OPEN_PER_USER,
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: "Vous avez déjà " + MAX_OPEN_PER_USER + " demandes en attente dans cette boutique." });
       }
 
-      const ownerUids = await findOwnerUids(db, vendorId);
+      const ownerUids = await findShopOwnerUids(db, vendorId);
       if (!ownerUids.length) return res.status(404).json({ error: "Boutique introuvable." });
 
       const id = db.ref(base).push().key;
@@ -134,29 +135,6 @@ function displayName(user) {
   const n = String(user.name || "").trim();
   if (n) return n.slice(0, 80);
   return String(user.email || "").split("@")[0].slice(0, 80);
-}
-
-// Uid(s) du propriétaire, pour le notifier. Ordre : uid mémorisé à sa
-// dernière consultation, ancienne boutique identifiée par uid, sinon uid des
-// produits / fiche boutique dont l'e-mail correspond à la clé.
-async function findOwnerUids(db, vendorId) {
-  const cached = (await db.ref("product_request_owners/" + vendorId).once("value")).val();
-  if (typeof cached === "string" && cached) return [cached];
-  if (!vendorId.startsWith("v_")) return [vendorId];
-  const uids = new Set();
-  const [prods, shops] = await Promise.all([
-    db.ref("det_produits").once("value"),
-    db.ref("profile_clients").once("value"),
-  ]);
-  prods.forEach((c) => {
-    const v = c.val() || {};
-    if (v.uid && vendorKey(v) === vendorId) uids.add(v.uid);
-  });
-  shops.forEach((c) => {
-    const v = c.val() || {};
-    if (v.uid && typeof v.email === "string" && emailVendorKey(v.email) === vendorId) uids.add(v.uid);
-  });
-  return [...uids];
 }
 
 // Nom affiché dans la notification de réponse : boutique vendeur

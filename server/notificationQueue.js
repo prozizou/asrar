@@ -25,6 +25,12 @@ function prepareNotification(audience, notif, eventId = crypto.randomUUID()) {
         senderName: notif.senderName || null, targetUrl: notif.targetUrl,
         createdAt: now, read: false, ...(notif.meta ? { meta: notif.meta } : {}),
         ...(Number.isFinite(notif.expiresAt) ? { expiresAt: notif.expiresAt } : {}),
+        // Canaux (server/notificationTransport.js) : `inApp: false` / `push:
+        // false` les coupent ; `whatsappBroadcast: true` autorise WhatsApp
+        // même pour une diffusion à tous (sinon réservé aux envois ciblés).
+        ...(notif.inApp === false ? { inApp: false } : {}),
+        ...(notif.push === false ? { push: false } : {}),
+        ...(notif.whatsappBroadcast === true ? { whatsappBroadcast: true } : {}),
       },
     },
   };

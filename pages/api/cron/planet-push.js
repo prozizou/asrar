@@ -36,6 +36,10 @@ const { computePday, currentHour, planetaryNotification, buildHourList } = requi
 const { dueWebAlarms, planetFromSlug } = require("../../../lib/planetWebAlarms");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
+const { enqueueNotification } = require("../../../server/notificationQueue");
+const { scheduleNotifications } = require("../../../server/notificationScheduler");
+const { whatsappReady } = require("../../../server/whatsapp");
+const { planetAlarmNotification } = require("../../../lib/notifyTemplates");
 
 export default async function handler(req, res) {
   if (!authorized(req)) return res.status(401).json({ error: "Non autorisé." });
@@ -43,12 +47,15 @@ export default async function handler(req, res) {
   const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
   const vapidSubject = process.env.VAPID_SUBJECT;
+  const db = app().database();
   if (!vapidPublic || !vapidPrivate || !vapidSubject) {
-    return res.status(500).json({ error: "VAPID non configuré (variables d'environnement manquantes)." });
+    // Sans VAPID, pas de push web ; les alarmes peuvent encore partir sur WhatsApp.
+    const native = await processNativeAlarmsAll(db, new Date()).catch(async (e) => { await reportError("cron:planet-push:native", e); return { sent: 0 }; });
+    scheduleNotifications(db);
+    return res.status(500).json({ error: "VAPID non configuré (variables d'environnement manquantes).", nativeWhatsApp: native.sent });
   }
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
-  const db = app().database();
   const now = new Date();
   let sent = 0, skipped = 0, removed = 0, errors = 0;
 
@@ -85,7 +92,14 @@ export default async function handler(req, res) {
       alarmsErrors++;
     }
 
-    return res.status(200).json({ ok: true, sent, skipped, removed, errors, alarmsSent, alarmsErrors });
+    // Pass 3 : alarmes NATIVES (Android) déclarées au serveur — l'appareil
+    // sonne lui-même ; ici, seulement la copie WhatsApp.
+    let nativeWhatsApp = 0;
+    try { nativeWhatsApp = (await processNativeAlarmsAll(db, now)).sent; }
+    catch (e) { await reportError("cron:planet-push:native", e); }
+    scheduleNotifications(db);
+
+    return res.status(200).json({ ok: true, sent, skipped, removed, errors, alarmsSent, alarmsErrors, nativeWhatsApp });
   } catch (e) {
     await reportError("cron:planet-push", e);
     return res.status(500).json({ error: e.message });
@@ -163,7 +177,8 @@ async function processUserWebAlarms(db, uid, enabled, now) {
       ref = { lat: v.lat, lng: v.lng, updatedAt: v.updatedAt || 0, timeZone: v.timeZone };
     }
   });
-  if (!subs.length || !ref) return 0; // pas d'abonnement ou pas de position → rien à faire
+  const wantsWa = await wantsWhatsApp(db, uid);
+  if ((!subs.length && !wantsWa) || !ref) return 0; // personne à prévenir, ou pas de position
 
   const noMatch = { isDay: null, idx: -1 };
   const pday = computePday(now, ref.lat, ref.lng, {}, ref.timeZone);
@@ -196,6 +211,7 @@ async function processUserWebAlarms(db, uid, enabled, now) {
     });
     // Envoi à tous les abonnements du compte ; nettoyage des abonnements morts.
     await Promise.allSettled(subs.map((sub) => sendWebAlarm(db, uid, sub, payload)));
+    if (wantsWa) await queueWhatsAppAlarm(db, uid, d.slug, planet, offsetMin, row, d.triggerMs);
     // Alarme ponctuelle (heure précise) : consommée → supprimée. Sinon,
     // déduplication : marque l'occurrence comme envoyée (triggerMs monotone).
     const alarmRef = db.ref(`planet_web_alarms/${uid}/${d.slug}`);
@@ -216,4 +232,59 @@ async function sendWebAlarm(db, uid, sub, payload) {
     }
     await reportError("cron:planet-push:web-alarms", e, { uid });
   }
+}
+
+// --- WhatsApp (compte ASRAR PRO) pour les alarmes cochées --------------------
+
+async function wantsWhatsApp(db, uid) {
+  if (!whatsappReady()) return false;
+  const wa = (await db.ref(`account_settings/${uid}/whatsapp`).once("value")).val();
+  return wa?.enabled === true && typeof wa.phone === "string" && !!wa.phone;
+}
+
+// Uniquement sur WhatsApp (inApp/push coupés) : l'appareil a déjà sonné (natif)
+// ou reçu le push d'alarme ci-dessus (web). Une seule fois par occurrence.
+async function queueWhatsAppAlarm(db, uid, slug, planet, offsetMin, row, triggerMs) {
+  await enqueueNotification(db, { type: "users", uids: [uid] }, {
+    ...planetAlarmNotification({ planet, offsetMin, interval: row.interval }),
+    senderName: "ASRAR PRO", targetUrl: "/planete", inApp: false, push: false,
+    expiresAt: row.end.getTime(), meta: { tagSuffix: "planet-" + slug },
+  }, `planet-alarm:${uid}:${slug}:${triggerMs}`);
+}
+
+// --- Pass 3 : alarmes natives (planet_native_alarms/{uid}/{slug}) -------------
+
+async function processNativeAlarmsAll(db, now) {
+  if (!whatsappReady()) return { sent: 0 };
+  const snap = await db.ref("planet_native_alarms").once("value");
+  const users = [];
+  snap.forEach((userSnap) => {
+    const alarms = {};
+    userSnap.forEach((a) => { const v = a.val() || {}; if (v.enabled) alarms[a.key] = v; });
+    if (Object.keys(alarms).length) users.push({ uid: userSnap.key, alarms });
+  });
+  let sent = 0;
+  const results = await Promise.allSettled(users.map(async ({ uid, alarms }) => {
+    if (!(await wantsWhatsApp(db, uid))) return;
+    for (const [slug, a] of Object.entries(alarms)) {
+      if (a.lat == null || a.lng == null) continue;
+      const enabled = { [slug]: { offsetMin: a.offsetMin, lastSentTrigger: a.lastSentTrigger, onceStartMs: a.onceStartMs } };
+      const pday = computePday(now, a.lat, a.lng, {}, a.timeZone);
+      const noMatch = { isDay: null, idx: -1 };
+      const rows = [...buildHourList(pday, noMatch, true), ...buildHourList(pday, noMatch, false)];
+      for (const d of dueWebAlarms({ rows, enabled, nowMs: now.getTime() })) {
+        const offsetMin = a.offsetMin || 0;
+        const planet = d.planet || planetFromSlug(d.slug);
+        const row = rows.find((r) => r.planet === planet && r.start.getTime() === d.triggerMs + offsetMin * 60000);
+        if (!row || now >= row.end) continue;
+        await queueWhatsAppAlarm(db, uid, slug, planet, offsetMin, row, d.triggerMs);
+        const ref = db.ref(`planet_native_alarms/${uid}/${slug}`);
+        if (a.onceStartMs != null) await ref.remove();
+        else await ref.update({ lastSentTrigger: d.triggerMs, lastSentAt: Date.now() });
+        sent++;
+      }
+    }
+  }));
+  for (const r of results) if (r.status === "rejected") await reportError("cron:planet-push:native", r.reason);
+  return { sent };
 }

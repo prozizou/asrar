@@ -10,6 +10,7 @@ const { enqueueNotification } = require("../../../server/notificationQueue");
 const { scheduleNotifications } = require("../../../server/notificationScheduler");
 const { mapBounded } = require("../../../server/notificationTransport");
 const { reminderPurchase } = require("../../../server/notificationValidity");
+const { queueMonthDayNotice } = require("../../../server/monthDayNotice");
 const {
   shouldSendSessionReminder, SESSION_GRACE_MS, SESSION_LEAD_MS, RENEWAL_GRACE_DAYS,
   shouldSendRenewalReminder, shouldSendExpiredNotice, daysUntil, renewalWhatsAppUrl,
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       queueSessionReminders(db, now, stats),
       queueRenewalReminders(db, now, stats),
       processZikrInactivity(db, now.getTime()).then((result) => { stats.zikrInactivity = result; }),
+      queueMonthDayNotice(db, now).then((result) => { stats.monthDay = result.status; }),
     ]);
     const failed = results.find((result) => result.status === 'rejected');
     if (failed) throw failed.reason;

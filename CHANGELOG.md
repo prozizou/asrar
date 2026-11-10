@@ -1,3 +1,12 @@
+## SW v46.69 — Notifications WhatsApp : boutiques, Zikr, alarmes planétaires, date du jour, Bibliothèque
+
+- Boutiques : le propriétaire est prévenu quand un produit ou la boutique est aimé (une fois par personne), commenté ou noté — centre de notifications, push et WhatsApp.
+- Zikr collectif : les messages de la discussion partent aussi sur WhatsApp pour les membres qui l’ont activé.
+- Heure planétaire : l’alarme cochée (cloche) est aussi envoyée sur WhatsApp à son heure, sur le web comme sur Android (alarme Android déclarée au serveur avec la position, la sonnerie reste locale).
+- Date du jour : le 1er et le 16 de chaque mois, grégorien ou hégirien, notification à tous les utilisateurs (WhatsApp compris), dès 7 h.
+- Bibliothèque : l’administration est prévenue quand un livre ou un manuscrit est aimé ou commenté.
+- Options par notification (`inApp`, `push`, `whatsappBroadcast`) dans la file de notifications.
+
 ## SW v46.68 — Notifications WhatsApp par le compte officiel ASRAR PRO
 
 - Nouveau canal de notification : le compte WhatsApp Business d’ASRAR PRO (API WhatsApp Cloud de Meta) envoie les notifications à qui l’a demandé, comme un service client. Activation dans Mon compte → Mes préférences → Notifications WhatsApp, avec le numéro au format international.

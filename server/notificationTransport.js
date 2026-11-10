@@ -31,12 +31,12 @@ function vapidReady() {
 
 async function deliverNotification(db, job, { now = Date.now } = {}) {
   const notif = job.notification;
-  if (!job.progress?.inApp) {
+  if (!job.progress?.inApp && notif.inApp !== false) {
     await storeNotification(db, job.uid, notif, job.notificationId);
     await ackDelivery(db, job, "inApp");
   }
   const settings = (await db.ref(`account_settings/${job.uid}`).once("value")).val() || {};
-  const pushEnabled = settings.pushEnabled !== false;
+  const pushEnabled = settings.pushEnabled !== false && notif.push !== false;
   const empty = { forEach() {} };
   const [webSnap, fcmSnap] = pushEnabled ? await Promise.all([
     db.ref(`push_subscriptions/${job.uid}`).orderByChild("updatedAt").limitToLast(10).once("value"),
@@ -44,9 +44,11 @@ async function deliverNotification(db, job, { now = Date.now } = {}) {
   ]) : [empty, empty];
   const targets = [];
   // Compte WhatsApp ASRAR PRO : uniquement si l'utilisateur l'a demandé, pour
-  // les envois CIBLÉS (jamais les diffusions à tous, facturées par message).
+  // les envois CIBLÉS — une diffusion à tous (facturée par message) seulement
+  // si la notification l'autorise explicitement (whatsappBroadcast).
   const wa = settings.whatsapp;
-  if (wa?.enabled === true && typeof wa.phone === "string" && job.audienceType !== "all" &&
+  if (wa?.enabled === true && typeof wa.phone === "string" &&
+      (job.audienceType !== "all" || notif.whatsappBroadcast === true) &&
       whatsappReady() && !job.progress?.whatsapp?.main) {
     targets.push({ channel: "whatsapp", key: "main", value: wa.phone });
   }

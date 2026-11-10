@@ -7,19 +7,41 @@ WhatsApp** en indiquant leur numéro (format international).
 
 ## Ce qui part sur WhatsApp
 
-Uniquement les notifications **ciblées** (un ou quelques destinataires) :
+| Événement | Qui reçoit |
+|---|---|
+| Nouvelle demande de produit dans une boutique | le propriétaire de la boutique |
+| Réponse de la boutique à une demande | le client qui a fait la demande |
+| Produit ou boutique aimé (une fois par personne), commenté ou noté | le propriétaire de la boutique |
+| Nouveau message dans la discussion d'un Zikr collectif | les autres membres du groupe |
+| Alarme d'heure planétaire cochée (cloche de la page Planète, web et Android) | l'utilisateur qui l'a cochée |
+| 1er ou 16 du mois, grégorien ou hégirien (« Date du jour ») | **tous** les utilisateurs ayant activé WhatsApp |
+| Livre ou manuscrit de la Bibliothèque aimé ou commenté | l'administration (super-admin et `admins/`) |
+| Accès ASRAR PRO activé, rappels de session et d'abonnement | la personne concernée |
 
-- nouvelle demande de produit reçue par une boutique, réponse de la boutique ;
-- messages des Zikr collectifs dont on est membre ;
-- accès ASRAR PRO activé, etc.
-
-Les **annonces envoyées à tous** (nouveau produit, nouvelle boutique, nouveau
-Zikr collectif, nouveau Secret) restent dans l'application et en push : Meta
-facture chaque message, une diffusion à tous les comptes coûterait cher.
+Les autres **annonces envoyées à tous** (nouveau produit, nouvelle boutique,
+nouveau Zikr collectif, nouveau Secret) restent dans l'application et en push :
+Meta facture chaque message. Seule la « Date du jour » est volontairement
+diffusée aussi sur WhatsApp (option `whatsappBroadcast` de la notification).
 
 Le canal s'ajoute aux autres (centre de notifications, push) sans les remplacer.
-Tant que les variables ci-dessous ne sont pas définies, il est inactif et le
-réglage n'apparaît pas dans la page Compte.
+L'alarme planétaire fait exception : l'appareil sonne déjà, WhatsApp n'en
+reçoit qu'une copie (`inApp: false, push: false`), une seule fois par occurrence.
+Tant que les variables ci-dessous ne sont pas définies, le canal est inactif et
+le réglage n'apparaît pas dans la page Compte.
+
+### Points d'attention
+
+- **Coût** : la discussion d'un Zikr très actif envoie un WhatsApp par message
+  et par membre ; la « Date du jour » part 2 à 4 fois par mois à chaque compte
+  inscrit.
+- **Alarmes planétaires** : comme le push web, elles dépendent d'un appel de
+  `/api/cron/planet-push` **chaque minute** (voir DEPLOIEMENT_SECURITE.md). Les
+  alarmes Android sont désormais déclarées au serveur
+  (`planet_native_alarms/{uid}`, avec la position) uniquement pour cette copie
+  WhatsApp ; la sonnerie reste locale au téléphone.
+- **Date du jour** : calculée en UTC (heure de Dakar) à partir de 7 h, par le
+  cron des rappels ; date hégirienne d'AlAdhan (comme la page « Date du jour »),
+  calendrier Umm al-Qura en secours.
 
 ## Mise en place chez Meta (une seule fois)
 
