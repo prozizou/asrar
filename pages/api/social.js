@@ -38,6 +38,9 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { cleanStars } = require("../../lib/reviews");
+const { notifyUsers } = require("../../server/notify");
+const { findShopOwnerUids, productOwner, shortName } = require("../../server/shopOwners");
+const { likeNotification, commentNotification } = require("../../lib/notifyTemplates");
 
 // Like + commentaire restent des actions ponctuelles (pas de boucle de
 // rafraîchissement serveur ici) : une limite large, surtout là pour couper un
@@ -139,7 +142,12 @@ export default async function handler(req, res) {
       if (snap.exists()) await uidRef.remove();
       // Valeur numérique arbitraire (1) : seule la PRÉSENCE de la clé compte
       // (existence testée partout ailleurs — jamais la valeur elle-même).
-      else await uidRef.set(1);
+      else {
+        await uidRef.set(1);
+        // Un seul avis par (élément, utilisateur) : aimer / ne plus aimer /
+        // aimer à nouveau ne renvoie pas la notification (eventId stable).
+        await notifyOwner(db, cat, key, user, likeNotification, {}, `like:${cat}:${key}:${user.uid}`);
+      }
       const likesSnap = await likesRef.once("value");
       const likes = likesSnap.val() || {};
       return res.status(200).json({ liked: !!likes[user.uid], likeCount: Object.keys(likes).length });
@@ -156,6 +164,7 @@ export default async function handler(req, res) {
       const record = { uid: user.uid, email: user.email || "", photo, text, timestamp: Date.now() };
       if (stars != null) record.stars = stars;
       const ref = await commentsRef.push(record);
+      await notifyOwner(db, cat, key, user, commentNotification, { preview: text, stars }, `comment:${cat}:${key}:${ref.key}`);
       return res.status(200).json({ comment: { id: ref.key, email: user.email || "", photo, text, stars } });
     }
 
@@ -165,3 +174,33 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 };
+
+// Prévient la boutique qu'un de ses produits, ou la boutique elle-même, a été
+// aimé ou commenté (centre de notifications, push, WhatsApp si activé).
+// Best-effort : un échec n'annule jamais le like ou le commentaire.
+async function notifyOwner(db, cat, key, user, template, extra, eventId) {
+  if (cat !== "product" && cat !== "vendor") return;
+  try {
+    let uids = [], itemLabel = "", targetUrl = "";
+    if (cat === "product") {
+      const owner = await productOwner(db, key);
+      if (!owner || !owner.uid) return;
+      uids = [owner.uid];
+      itemLabel = owner.name ? `votre produit « ${owner.name} »` : "votre produit";
+      targetUrl = "/?item=" + encodeURIComponent(key);
+    } else {
+      uids = await findShopOwnerUids(db, key);
+      itemLabel = "votre boutique";
+      targetUrl = "/?shop=" + encodeURIComponent(key);
+    }
+    uids = uids.filter((uid) => uid && uid !== user.uid);
+    if (!uids.length) return;
+    const who = shortName(user);
+    await notifyUsers(db, uids, {
+      ...template({ who, itemLabel, ...extra }),
+      senderName: who, targetUrl, meta: { cat, key, tagSuffix: cat + "-" + key },
+    }, { eventId });
+  } catch (e) {
+    await reportError("social:notify", e, { cat, key });
+  }
+}

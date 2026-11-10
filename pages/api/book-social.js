@@ -14,6 +14,9 @@ const { verifyUser } = require("../../server/access");
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { notifyUsers } = require("../../server/notify");
+const { adminUids, shortName } = require("../../server/shopOwners");
+const { likeNotification, commentNotification } = require("../../lib/notifyTemplates");
 
 const BAD_KEY = /[.#$\[\]\/\u0000-\u001F\u007F]/;
 const validKey = (k) => { const s = String(k ?? ""); return s.length > 0 && s.length <= 768 && !BAD_KEY.test(s); };
@@ -60,7 +63,11 @@ export default async function handler(req, res) {
     if (action === "like") {
       const ref = db.ref("book_likes/" + bookKey + "/" + user.uid);
       const cur = (await ref.once("value")).val();
-      if (cur) await ref.remove(); else await ref.set(true);
+      if (cur) await ref.remove();
+      else {
+        await ref.set(true);
+        await notifyAdmins(db, bookKey, user, likeNotification, {}, "book-like:" + bookKey + ":" + user.uid);
+      }
       const all = (await db.ref("book_likes/" + bookKey).once("value")).val() || {};
       return res.status(200).json({ likes: Object.keys(all).length, liked: !cur });
     }
@@ -91,7 +98,8 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: "Patientez quelques secondes avant de commenter à nouveau." });
       }
       const rec = { uid: user.uid, name: nameFromEmail(user.email), text: t, at: now };
-      await db.ref("book_comments/" + bookKey).push(rec);
+      const pushed = await db.ref("book_comments/" + bookKey).push(rec);
+      await notifyAdmins(db, bookKey, user, commentNotification, { preview: t }, "book-comment:" + bookKey + ":" + pushed.key);
       await metaRef.set(now);
       return res.status(200).json({ ok: true, comment: { name: rec.name, text: rec.text, at: rec.at } });
     }
@@ -102,3 +110,21 @@ export default async function handler(req, res) {
     return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };
+
+// Prévient l'administration qu'un livre / manuscrit de la Bibliothèque a été
+// aimé ou commenté. Best-effort : n'annule jamais l'action de l'utilisateur.
+async function notifyAdmins(db, bookKey, user, template, extra, eventId) {
+  try {
+    const uids = (await adminUids(db)).filter((uid) => uid !== user.uid);
+    if (!uids.length) return;
+    const titre = (await db.ref("almaqtab/" + bookKey + "/titre").once("value")).val();
+    const who = shortName(user);
+    await notifyUsers(db, uids, {
+      ...template({ who, itemLabel: titre ? `« ${String(titre).slice(0, 100)} »` : "un livre de la Bibliothèque", ...extra }),
+      senderName: who, targetUrl: "/bibliotheque?item=" + encodeURIComponent(bookKey),
+      meta: { bookKey, tagSuffix: "book-" + bookKey },
+    }, { eventId });
+  } catch (e) {
+    await reportError("book-social:notify", e, { bookKey });
+  }
+}

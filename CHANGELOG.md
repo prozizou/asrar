@@ -1,3 +1,28 @@
+## SW v46.69 — Notifications WhatsApp : boutiques, Zikr, alarmes planétaires, date du jour, Bibliothèque
+
+- Boutiques : le propriétaire est prévenu quand un produit ou la boutique est aimé (une fois par personne), commenté ou noté — centre de notifications, push et WhatsApp.
+- Zikr collectif : les messages de la discussion partent aussi sur WhatsApp pour les membres qui l’ont activé.
+- Heure planétaire : l’alarme cochée (cloche) est aussi envoyée sur WhatsApp à son heure, sur le web comme sur Android (alarme Android déclarée au serveur avec la position, la sonnerie reste locale).
+- Date du jour : le 1er et le 16 de chaque mois, grégorien ou hégirien, notification à tous les utilisateurs (WhatsApp compris), dès 7 h.
+- Bibliothèque : l’administration est prévenue quand un livre ou un manuscrit est aimé ou commenté.
+- Options par notification (`inApp`, `push`, `whatsappBroadcast`) dans la file de notifications.
+
+## SW v46.68 — Notifications WhatsApp par le compte officiel ASRAR PRO
+
+- Nouveau canal de notification : le compte WhatsApp Business d’ASRAR PRO (API WhatsApp Cloud de Meta) envoie les notifications à qui l’a demandé, comme un service client. Activation dans Mon compte → Mes préférences → Notifications WhatsApp, avec le numéro au format international.
+- Seules les notifications ciblées partent sur WhatsApp : demandes de produit et réponses, messages des Zikr, accès activé… Les annonces envoyées à tous restent dans l’application et en push, pour maîtriser le coût facturé par Meta.
+- Un seul modèle de message approuvé (`asrar_notification`), bouton lien facultatif. Une panne temporaire de Meta est réessayée, un numéro refusé est abandonné pour ce message.
+- Le réglage n’apparaît qu’une fois `WHATSAPP_CLOUD_TOKEN` et `WHATSAPP_PHONE_NUMBER_ID` définis. Mise en place : `NOTIFICATIONS_WHATSAPP.md`.
+- Correctif : enregistrer les préférences de notification n’efface plus les autres réglages du compte.
+- Politique de confidentialité : mention de Meta / WhatsApp Business.
+
+## SW v46.67 — Marché : demander un produit dans une boutique
+
+- Chaque boutique du Marché propose « Demander un produit » : le client décrit le produit qu’il cherche (500 caractères au plus, 5 demandes en attente par boutique).
+- Seul le propriétaire de la boutique voit les demandes reçues, avec le nom et l’e-mail du client. Il peut répondre (ou modifier sa réponse) et supprimer chaque demande. Le client ne voit que ses propres demandes et la réponse de la boutique ; il peut retirer sa demande.
+- Notifications ciblées : le propriétaire est prévenu d’une nouvelle demande, le client de la réponse (ouverture directe de la boutique).
+- Nouvelle route `/api/product-requests` (actions `list`, `create`, `reply`, `delete`). Données dans `product_requests/{boutique}/{id}`, lues et écrites uniquement par le serveur ; index `uid` et `at` ajoutés aux règles RTDB.
+
 ## SW v46.66 — Zikr collectif : retour à la ligne, vocaux de 15 min, menus compacts, retrait seulement à 0 grain
 
 - Discussion : sur téléphone, la touche Entrée fait un retour à la ligne et l’envoi passe par le bouton ➤. Sur ordinateur, Entrée envoie et Maj+Entrée revient à la ligne.

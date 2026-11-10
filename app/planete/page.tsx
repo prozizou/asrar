@@ -57,7 +57,7 @@ import { getAllPlanetAlarmRecords, savePlanetAlarmRecord, clearPlanetAlarmRecord
 import { pushSupported, getPushSubscriptionState, subscribeToPushReminders } from '@/lib/push';
 import { WEB_OFFSET_CHOICES, planetSlug, planetFromSlug, ringingWebAlarms } from '@/lib/planetWebAlarms';
 import { unlockAlarmAudio, startAlarmRing, stopAlarmRing } from '@/lib/alarmRinger';
-import { getWebAlarms, setWebAlarm } from '@/lib/planetWebAlarmsClient';
+import { getWebAlarms, setWebAlarm, syncNativeAlarm } from '@/lib/planetWebAlarmsClient';
 import { hourEntries, hourIdOf, selectedHourIdFrom } from '@/lib/planetHourSelection';
 import { SponsoredLink } from '@/components/AdsterraAds';
 const AccessibleModal = AccessibleModalUntyped as any;
@@ -963,6 +963,7 @@ function HourGrid({
           const record = records[r.planet];
           if (record) await cancelAlarms(record.scheduledIds);
           clearPlanetAlarmRecord(r.planet);
+          void syncNativeAlarm(r.planet, false);
           setRecords((prev) => ({ ...prev, [r.planet]: { prefs: record?.prefs || DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null } }));
         } else {
           // Libère toute autre heure cochée (préférences conservées).
@@ -1146,6 +1147,8 @@ async function applyNativeAlarm(
   const scheduledIds = 'ids' in res ? res.ids : [res.id];
   const startMs: number = row.start.getTime();
   savePlanetAlarmRecord(row.planet, { prefs, scheduledIds, startMs });
+  // Copie serveur (WhatsApp) : heure précise, ou chaque occurrence si « répéter ».
+  void syncNativeAlarm(row.planet, true, { offsetMin: prefs.offsetMin || 0, startMs: prefs.repeat ? null : startMs, lat, lng });
   return { ok: true, record: { prefs, scheduledIds, startMs } };
 }
 
@@ -1305,6 +1308,7 @@ function AlarmSettingsSheet({
     try {
       await cancelAlarms(record.scheduledIds);
       clearPlanetAlarmRecord(row.planet);
+      void syncNativeAlarm(row.planet, false);
       onApplied(row.planet, { prefs: DEFAULT_ALARM_PREFS, scheduledIds: [], startMs: null });
       onClose();
     } catch {

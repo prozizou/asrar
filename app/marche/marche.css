@@ -1192,3 +1192,29 @@ html:not([data-theme="light"]) :where(.market-page) .pm-rating { color: #fbbf24;
 :where(.market-page) .pm-more { min-height: 44px; }
 :where(.market-page) .pm-sheet:not(:has(.pm-gallery)) .pm-body { padding-top: calc(64px + var(--sat)); }
 :where(.market-page) .pm-title, :where(.market-page) .pm-desc { overflow-wrap: anywhere; }
+
+/* ── Demandes de produit (app/marche/ProductRequests.js) ───────────────────── */
+:where(.market-page) .pr-hint { margin: 0 0 4px; font-size: .85rem; color: var(--text-dim, #888); }
+:where(.market-page) .pr-count {
+  min-width: 26px; padding: 2px 9px; border-radius: 999px; text-align: center; font-size: .78rem; font-weight: 700;
+  background: color-mix(in srgb, var(--mk-gold) 18%, transparent); color: var(--mk-gold);
+}
+:where(.market-page) .pr-subtitle { margin: 6px 0 0; font-size: .9rem; }
+:where(.market-page) .pr-item-head { justify-content: space-between; flex-wrap: wrap; }
+:where(.market-page) .pr-author { font-weight: 600; font-size: .88rem; overflow-wrap: anywhere; }
+:where(.market-page) .pr-date { white-space: nowrap; }
+:where(.market-page) .pr-reply {
+  margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--mk-gold); border-radius: 6px;
+  background: color-mix(in srgb, var(--mk-gold) 8%, transparent);
+}
+:where(.market-page) .pr-reply-label { display: block; margin-bottom: 2px; font-size: .75rem; font-weight: 700; color: var(--mk-gold); }
+:where(.market-page) .pr-pending { margin: 6px 0 0; font-size: .8rem; font-style: italic; color: var(--text-dim, #888); }
+:where(.market-page) .pr-reply-form { margin: 8px 0 0; }
+:where(.market-page) .pr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 6px; }
+:where(.market-page) .pr-link {
+  width: auto; min-height: 36px; margin: 0; padding: 4px 0; border: none; background: none; box-shadow: none;
+  color: var(--mk-gold); font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer;
+}
+:where(.market-page) .pr-link:hover { transform: none; box-shadow: none; text-decoration: underline; }
+:where(.market-page) .pr-link:disabled { opacity: .5; cursor: default; }
+:where(.market-page) .pr-danger { color: #e11d48; }

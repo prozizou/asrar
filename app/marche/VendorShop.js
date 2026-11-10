@@ -6,6 +6,7 @@ import { optimImg } from '@/lib/img';
 import SmartImage from '@/components/SmartImage';
 import ReviewsSection from '@/components/ReviewsSection';
 import ProductPrice from './ProductPrice';
+import ProductRequests from './ProductRequests';
 import { Share2 } from 'lucide-react';
 import { shareShop } from '@/lib/share';
 
@@ -59,6 +60,10 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
       <button type="button" className="vendor-share-btn" onClick={() => shareShop(vendor, isOwn)}>
         <Share2 size={17} aria-hidden="true" /> {isOwn ? 'Partager ma boutique' : 'Partager cette boutique'}
       </button>
+
+      {/* Demandes de produit : visibles du seul propriétaire (qui répond ou
+          supprime) ; un visiteur ne voit que ses propres demandes. */}
+      <ProductRequests vendorId={vendor.id} isOwn={isOwn} />
 
       {/* La note moyenne était un champ statique saisi à la main
           (vendeurNote, jamais fiable) — remplacée par de vrais avis (étoiles

@@ -1,5 +1,6 @@
 const { emailKey } = require("./access");
 const { publicOrder } = require("./orderStore");
+const { whatsappReady } = require("./whatsapp");
 
 async function accountSummary(db, user, authUser, access) {
   const [settings, manual, request] = await Promise.all([
@@ -16,7 +17,9 @@ async function accountSummary(db, user, authUser, access) {
     subscription: { allowed: access.adFree ?? access.allowed, admin: access.admin, vip: access.vip,
       level: (lvl => lvl === Infinity ? 999999 : lvl)(access.subscriptionLevel ?? access.level),
       expiresAt: access.expiresAt, lastExpiresAt: lastExpiry || null },
-    settings: { analytics: settings.val()?.analytics === true, pushEnabled: settings.val()?.pushEnabled !== false },
+    settings: { analytics: settings.val()?.analytics === true, pushEnabled: settings.val()?.pushEnabled !== false,
+      whatsapp: { available: whatsappReady(), enabled: settings.val()?.whatsapp?.enabled === true,
+        phone: typeof settings.val()?.whatsapp?.phone === "string" ? settings.val().whatsapp.phone : "" } },
     privacyRequest: request.val() || null,
   };
 }
