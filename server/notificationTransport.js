@@ -4,6 +4,7 @@ const { sendWebPush } = require("./webPush");
 const { storeNotification } = require("./notificationStore");
 const { ackDelivery, failDevice, updateOwned, MAX_ATTEMPTS } = require("./notificationQueue");
 const { channelIdForNotifType, channelById } = require("../lib/pushChannels");
+const { whatsappReady, sendWhatsAppNotification, isPermanentWhatsAppError } = require("./whatsapp");
 
 async function mapBounded(values, max, action) {
   let index = 0;
@@ -34,12 +35,21 @@ async function deliverNotification(db, job, { now = Date.now } = {}) {
     await storeNotification(db, job.uid, notif, job.notificationId);
     await ackDelivery(db, job, "inApp");
   }
-  if ((await db.ref(`account_settings/${job.uid}/pushEnabled`).once("value")).val() === false) return { pending: false, dead: false };
-  const [webSnap, fcmSnap] = await Promise.all([
+  const settings = (await db.ref(`account_settings/${job.uid}`).once("value")).val() || {};
+  const pushEnabled = settings.pushEnabled !== false;
+  const empty = { forEach() {} };
+  const [webSnap, fcmSnap] = pushEnabled ? await Promise.all([
     db.ref(`push_subscriptions/${job.uid}`).orderByChild("updatedAt").limitToLast(10).once("value"),
     db.ref(`fcm_devices/${job.uid}`).orderByChild("updatedAt").limitToLast(10).once("value"),
-  ]);
+  ]) : [empty, empty];
   const targets = [];
+  // Compte WhatsApp ASRAR PRO : uniquement si l'utilisateur l'a demandé, pour
+  // les envois CIBLÉS (jamais les diffusions à tous, facturées par message).
+  const wa = settings.whatsapp;
+  if (wa?.enabled === true && typeof wa.phone === "string" && job.audienceType !== "all" &&
+      whatsappReady() && !job.progress?.whatsapp?.main) {
+    targets.push({ channel: "whatsapp", key: "main", value: wa.phone });
+  }
   webSnap.forEach((child) => {
     if (!job.progress?.web?.[child.key]) targets.push({ channel: "web", key: child.key, value: child.val() });
   });
@@ -55,13 +65,17 @@ async function deliverNotification(db, job, { now = Date.now } = {}) {
     const failure = job.progress?.failures?.[target.channel]?.[target.key];
     return !failure || (failure.attempts < MAX_ATTEMPTS && failure.availableAt <= now());
   });
-  // Deux appareils au plus par passage, même si le compte en possède dix.
-  await mapBounded(eligible.slice(0, 2), 2, async (target) => {
+  // Deux appareils au plus par passage, même si le compte en possède dix
+  // (WhatsApp en plus : ce n'est pas un appareil).
+  const passTargets = [...eligible.filter((t) => t.channel === "whatsapp"), ...eligible.filter((t) => t.channel !== "whatsapp").slice(0, 2)];
+  await mapBounded(passTargets, 3, async (target) => {
     try {
       // FCM n'a pas d'émulateur. Les tests d'intégration ne doivent jamais
       // appeler Google ni un vrai fournisseur push, même avec un jeton semé.
       if (process.env.FIREBASE_TEST_MODE === "true") throw Object.assign(new Error("Push externe désactivé dans les émulateurs."), { code: "EMULATOR_PUSH_DISABLED" });
-      if (target.channel === "web") {
+      if (target.channel === "whatsapp") {
+        await sendWhatsAppNotification(target.value, notif);
+      } else if (target.channel === "web") {
         // Une configuration Web incorrecte ne bloque jamais FCM.
         if (!vapidReady()) throw Object.assign(new Error("Configuration VAPID absente."), { code: "VAPID_NOT_CONFIGURED" });
         await sendWebPush(target.value, payload, { TTL: Math.floor(ttlMs / 1000) });
@@ -77,6 +91,12 @@ async function deliverNotification(db, job, { now = Date.now } = {}) {
       }
     } catch (error) {
       const code = error?.errorInfo?.code || error?.code;
+      if (target.channel === "whatsapp") {
+        // Numéro sans WhatsApp, modèle refusé… : on n'insiste pas.
+        if (isPermanentWhatsAppError(error)) await ackDelivery(db, job, "whatsapp", "main");
+        else await failDevice(db, job, "whatsapp", "main", error, now());
+        return;
+      }
       const expired = target.channel === "web" ? [404, 410].includes(error?.statusCode)
         : ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(code);
       if (expired) {

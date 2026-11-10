@@ -103,6 +103,9 @@ async function expandAudience(db, job, now = Date.now()) {
     const id = eventKey(`${job.id}:${uid}`);
     await db.ref(`notification_jobs/${id}`).transaction((current) => current || {
       kind: "delivery", uid, notificationId: job.id, notification: job.notification,
+      // Diffusion à tous ou envoi ciblé : le canal WhatsApp (payant à
+      // l'unité) ne sert qu'aux envois ciblés — server/notificationTransport.js.
+      audienceType: job.audience.type === "all" ? "all" : "users",
       status: "queued", attempts: 0, availableAt: now, createdAt: job.createdAt,
     });
   }

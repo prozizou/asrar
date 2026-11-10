@@ -1,3 +1,12 @@
+## SW v46.68 — Notifications WhatsApp par le compte officiel ASRAR PRO
+
+- Nouveau canal de notification : le compte WhatsApp Business d’ASRAR PRO (API WhatsApp Cloud de Meta) envoie les notifications à qui l’a demandé, comme un service client. Activation dans Mon compte → Mes préférences → Notifications WhatsApp, avec le numéro au format international.
+- Seules les notifications ciblées partent sur WhatsApp : demandes de produit et réponses, messages des Zikr, accès activé… Les annonces envoyées à tous restent dans l’application et en push, pour maîtriser le coût facturé par Meta.
+- Un seul modèle de message approuvé (`asrar_notification`), bouton lien facultatif. Une panne temporaire de Meta est réessayée, un numéro refusé est abandonné pour ce message.
+- Le réglage n’apparaît qu’une fois `WHATSAPP_CLOUD_TOKEN` et `WHATSAPP_PHONE_NUMBER_ID` définis. Mise en place : `NOTIFICATIONS_WHATSAPP.md`.
+- Correctif : enregistrer les préférences de notification n’efface plus les autres réglages du compte.
+- Politique de confidentialité : mention de Meta / WhatsApp Business.
+
 ## SW v46.67 — Marché : demander un produit dans une boutique
 
 - Chaque boutique du Marché propose « Demander un produit » : le client décrit le produit qu’il cherche (500 caractères au plus, 5 demandes en attente par boutique).

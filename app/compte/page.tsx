@@ -20,10 +20,10 @@ export default function ComptePage() {
   const { user, signOut } = useAuth() as any;
   const [data, setData] = useState<any>(null), [error, setError] = useState(''), [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false), [reauth, setReauth] = useState(false), [confirm, setConfirm] = useState(false);
-  const [email, setEmail] = useState(''), [name, setName] = useState('');
+  const [email, setEmail] = useState(''), [name, setName] = useState(''), [waPhone, setWaPhone] = useState('');
   const [requests, setRequests] = useState<any[]>([]), [responses, setResponses] = useState<Record<string, string>>({});
   const load = useCallback(async () => {
-    try { const value = await apiPost('account'); setData(value); setName(value.account.name); setError(''); }
+    try { const value = await apiPost('account'); setData(value); setName(value.account.name); setWaPhone(value.settings.whatsapp?.phone || ''); setError(''); }
     catch (e: any) { setError(e.message); setReauth(e.status === 401); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -41,6 +41,10 @@ export default function ComptePage() {
   const saveSettings = (analytics: boolean, pushEnabled: boolean) => act(async () => {
     await apiPost('account', { action: 'settings', analytics, pushEnabled });
     await load(); setMessage('Vos préférences sont enregistrées.');
+  });
+  const saveWhatsApp = (enabled: boolean) => act(async () => {
+    await apiPost('account', { action: 'whatsapp', enabled, phone: waPhone });
+    await load(); setMessage(enabled ? 'Vous recevrez vos notifications sur WhatsApp, de la part d’ASRAR PRO.' : 'Notifications WhatsApp désactivées.');
   });
   const exportData = () => act(async () => {
     const value = await apiPost('account', { action: 'export' });
@@ -84,6 +88,17 @@ export default function ComptePage() {
         <p className="account-muted">Votre activité dans l’application (connexions avec pays et heure, pages ouvertes, actions) est enregistrée et consultable par l’administration d’ASRAR PRO. Voir la politique de confidentialité.</p>
         <label className="account-toggle"><input type="checkbox" checked={data.settings.pushEnabled} disabled={busy} onChange={(e) => void saveSettings(data.settings.analytics, e.target.checked)} /> Autoriser les notifications sur mes appareils</label>
         <p className="account-muted">Désactiver retire vos appareils enregistrés. Après réactivation, reconnectez l’appareil pour le réabonner. L’historique reste disponible dans l’application.</p>
+        {data.settings.whatsapp?.available && <form className="account-whatsapp" onSubmit={(e) => { e.preventDefault(); void saveWhatsApp(true); }}>
+          <h3>Notifications WhatsApp</h3>
+          <p className="account-muted">Le compte WhatsApp officiel d’ASRAR PRO vous prévient de ce qui vous concerne directement : réponses à vos demandes, demandes reçues par votre boutique, commandes, messages de vos Zikr… Les annonces générales restent dans l’application.</p>
+          <label htmlFor="account-whatsapp-phone">Numéro WhatsApp (format international)</label>
+          <input id="account-whatsapp-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+221770000000" disabled={busy} value={waPhone} maxLength={20} onChange={(e) => setWaPhone(e.target.value)} />
+          {data.settings.whatsapp.enabled
+            ? <p className="account-muted">Activé pour le {data.settings.whatsapp.phone}.</p>
+            : null}
+          <button disabled={busy || waPhone.trim().length < 8}>{data.settings.whatsapp.enabled ? 'Mettre à jour mon numéro' : 'Recevoir mes notifications sur WhatsApp'}</button>
+          {data.settings.whatsapp.enabled && <button type="button" className="account-secondary" disabled={busy} onClick={() => void saveWhatsApp(false)}>Désactiver les notifications WhatsApp</button>}
+        </form>}
       </section>
       <section className="account-card" aria-labelledby="account-data"><h2 id="account-data">Mes données personnelles</h2>
         <a className="account-button account-secondary" href="/confidentialite.html">Politique de confidentialité</a>

@@ -4,6 +4,8 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { accountSummary, availableExport, requestPrivacy } = require("../../server/accountData");
+const { whatsappReady } = require("../../server/whatsapp");
+const { normalizePhone } = require("../../lib/zikrLogic");
 
 export default async function handler(req, res) {
   setCors(req, res); res.setHeader("Cache-Control", "no-store");
@@ -56,8 +58,22 @@ export default async function handler(req, res) {
     }
     if (action === "settings") {
       if (typeof body.analytics !== "boolean" || typeof body.pushEnabled !== "boolean") return res.status(400).json({ error: "Réglages invalides." });
-      await db.ref().update({ ["account_settings/" + user.uid]: { analytics: body.analytics, pushEnabled: body.pushEnabled, updatedAt: Date.now() },
+      // Champ par champ : ne pas effacer les autres réglages (WhatsApp).
+      const base = "account_settings/" + user.uid;
+      await db.ref().update({ [base + "/analytics"]: body.analytics, [base + "/pushEnabled"]: body.pushEnabled, [base + "/updatedAt"]: Date.now(),
         ...(!body.pushEnabled ? { ["push_subscriptions/" + user.uid]: null, ["fcm_devices/" + user.uid]: null } : {}) });
+      return res.json({ ok: true });
+    }
+    if (action === "whatsapp") {
+      // Notifications par le compte WhatsApp ASRAR PRO (server/whatsapp.js) :
+      // accord explicite + numéro au format international.
+      if (typeof body.enabled !== "boolean") return res.status(400).json({ error: "Réglage invalide." });
+      const phone = normalizePhone(body.phone);
+      if (body.enabled && !phone) return res.status(400).json({ error: "Numéro invalide : indiquez le format international (ex. +221770000000)." });
+      if (body.enabled && !whatsappReady()) return res.status(503).json({ error: "Les notifications WhatsApp ne sont pas encore disponibles." });
+      await db.ref("account_settings/" + user.uid + "/whatsapp").set(body.enabled || phone
+        ? { enabled: body.enabled, phone: phone || "", ...(body.enabled ? { consentAt: Date.now() } : {}), updatedAt: Date.now() }
+        : null);
       return res.json({ ok: true });
     }
     if (action === "request-privacy") return res.json({ request: await requestPrivacy(db, user, body.kind) });
