@@ -7,7 +7,7 @@
 // navigateur — mais la liste reste à jour SANS recharger la page.
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Scroll, BookOpen, MessageCircle, Check } from 'lucide-react';
+import { Bell, Scroll, BookOpen, MessageCircle, Check, PackageSearch } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import ViewState from '@/components/ViewState';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/notificationsClient';
@@ -20,6 +20,7 @@ const ICON_BY_TYPE = {
   [NOTIF_TYPES.SECRET]: Scroll,
   [NOTIF_TYPES.DOCUMENT]: BookOpen,
   [NOTIF_TYPES.ZIKR_MESSAGE]: MessageCircle,
+  [NOTIF_TYPES.PRODUCT_REQUEST]: PackageSearch,
 };
 
 // Horodatage compact : heure si aujourd'hui, jour+mois sinon (+ année si une

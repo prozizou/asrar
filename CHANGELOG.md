@@ -1,3 +1,10 @@
+## SW v46.67 — Marché : demander un produit dans une boutique
+
+- Chaque boutique du Marché propose « Demander un produit » : le client décrit le produit qu’il cherche (500 caractères au plus, 5 demandes en attente par boutique).
+- Seul le propriétaire de la boutique voit les demandes reçues, avec le nom et l’e-mail du client. Il peut répondre (ou modifier sa réponse) et supprimer chaque demande. Le client ne voit que ses propres demandes et la réponse de la boutique ; il peut retirer sa demande.
+- Notifications ciblées : le propriétaire est prévenu d’une nouvelle demande, le client de la réponse (ouverture directe de la boutique).
+- Nouvelle route `/api/product-requests` (actions `list`, `create`, `reply`, `delete`). Données dans `product_requests/{boutique}/{id}`, lues et écrites uniquement par le serveur ; index `uid` et `at` ajoutés aux règles RTDB.
+
 ## SW v46.66 — Zikr collectif : retour à la ligne, vocaux de 15 min, menus compacts, retrait seulement à 0 grain
 
 - Discussion : sur téléphone, la touche Entrée fait un retour à la ligne et l’envoi passe par le bouton ➤. Sur ordinateur, Entrée envoie et Maj+Entrée revient à la ligne.
