@@ -27,6 +27,7 @@ export default function MenuItemTile({ href, icon, label, desc, premium, favorit
             </span>
           )}
         </span>
+        <span className="menu-sep" aria-hidden="true" />
         <div className="menu-item-text">
           <h3>{label}</h3>
           <p className="menu-item-desc">{desc}</p>

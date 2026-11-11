@@ -14,7 +14,7 @@
 // (lib/modulesCatalog.tsx) ; seules les parties interactives (en-tête de
 // profil, recherche, zone personnelle) sont des composants clients isolés.
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Crown } from 'lucide-react';
 import UserBar from './UserBar';
 import MenuSearch from './MenuSearch';
 import PersonalRows from './PersonalRows';
@@ -28,12 +28,7 @@ const SEARCH_ITEMS = ALL_MODULES.map((m) => ({ ...m, category: categoryOf(m.href
 export default function MenuPage() {
   return (
     <div className="container menu-home">
-      {/* Réservé au desktop (masqué ≤900px, cf. app/globals.css) — sur
-          mobile, le retour se fait par le geste natif du navigateur. */}
-      <Link href="/" className="back-btn">
-        ← Retour
-      </Link>
-
+      {/* Le retour au Marché est dans la barre d'en-tête (UserBar). */}
       <UserBar />
       <MenuSearch items={SEARCH_ITEMS} />
 
@@ -50,14 +45,18 @@ export default function MenuPage() {
           {CATEGORIES.map((cat) => (
             <Link key={cat.slug} href={`/menu/${cat.slug}`} className="family-row">
               <span className="family-icon" aria-hidden="true">{cat.icon}</span>
+              <span className="menu-sep" aria-hidden="true" />
               <span className="family-id">
                 <span className="family-title">
                   <span className="family-title-text">{cat.title}</span>
-                  {cat.badge && <span className="family-badge">{cat.badge}</span>}
+                  {cat.badge && (
+                    <span className="family-badge">
+                      <Crown size={11} strokeWidth={2.4} aria-hidden="true" /> {cat.badge}
+                    </span>
+                  )}
                 </span>
-                <span className="family-items">{cat.items.map((it) => it.label).join(' · ')}</span>
+                <span className="family-items">{cat.items.map((it) => it.label).join(' • ')}</span>
               </span>
-              <span className="family-count">{cat.items.length} module{cat.items.length > 1 ? 's' : ''}</span>
               <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
             </Link>
           ))}

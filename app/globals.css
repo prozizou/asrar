@@ -1876,6 +1876,103 @@ html[data-theme="light"] .menu-home .family-badge { color: #8a5d12; background: 
 .menu-home .family-items { font-size: .74rem; color: var(--text-muted); }
 .menu-home .family-row > svg { width: 18px; height: 18px; color: var(--text-muted); }
 
+/* ═════════ Accueil (/menu) — maquette 2026-11 ═════════
+   En-tête : retour | logo sur fond blanc | titre | cloche | avatar cerclé
+   d'orange, avec de fins séparateurs verticaux. Titres de section précédés
+   d'une barre orange. Cartes et lignes : pastille d'icône, séparateur
+   vertical, texte. « Continuer » en ligne mise en avant (fond orangé). */
+.menu-home .menu-appbar { min-height: 56px; gap: 12px; margin-bottom: 16px; }
+.menu-appbar-back {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent); text-decoration: none;
+  background: var(--mh-card, var(--surface-2)); border: 1px solid var(--mh-line, var(--border));
+  transition: border-color .18s ease, transform 150ms ease;
+}
+.menu-appbar-back:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.menu-appbar-back:active { transform: scale(.94); }
+.menu-home .menu-appbar-logo {
+  width: 44px; height: 44px; border-radius: 12px; padding: 3px; background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+}
+.menu-home .menu-appbar-logo img { border-radius: 9px; }
+.menu-appbar-sep { flex-shrink: 0; width: 1px; height: 28px; background: var(--border-strong, var(--border)); }
+.menu-home .menu-appbar-title { font-size: 1.4rem; font-weight: 800; letter-spacing: 0; }
+.menu-home .menu-appbar-bell svg { width: 24px; height: 24px; }
+.menu-home .menu-appbar .avatar-sm {
+  width: 40px; height: 40px;
+  box-shadow: 0 0 0 2px var(--accent), 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.menu-home .menu-search { min-height: 48px; border-radius: 16px; padding: 0 16px; gap: 12px; }
+.menu-home .menu-search > svg { width: 20px; height: 20px; }
+.menu-home .menu-search input { font-size: 1rem; }
+
+.menu-home .group-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .85rem; font-weight: 700; letter-spacing: .12em; color: var(--text-main);
+  margin-bottom: 12px;
+}
+.menu-home .group-title::before {
+  content: ''; flex-shrink: 0; width: 4px; height: 16px; border-radius: 2px; background: var(--accent);
+}
+
+/* Séparateur vertical entre l'icône et le texte (tuiles et lignes). */
+.menu-sep { flex-shrink: 0; width: 1px; height: 34px; background: var(--border-strong, var(--border)); }
+
+/* Pastilles d'icône : plus grandes, dégradé orangé. */
+.menu-home .sub-grid .menu-item-icon,
+.menu-home .family-icon {
+  position: relative; width: 46px; height: 46px; border-radius: 14px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--accent) 9%, transparent));
+}
+.menu-home .sub-grid .menu-item-icon svg, .menu-home .family-icon svg { width: 24px; height: 24px; }
+
+/* Tuiles à 2 colonnes : place au titre (« Bibliothèque » sur une ligne). */
+.menu-home .sub-grid .menu-item { min-height: 88px; padding: 12px 10px; gap: 9px; }
+.menu-home .sub-grid .menu-item-icon { width: 40px; height: 40px; border-radius: 12px; }
+.menu-home .sub-grid .menu-item-icon svg { width: 22px; height: 22px; }
+.menu-home .sub-grid .menu-sep { height: 30px; }
+.menu-home .sub-grid .menu-item h3 { font-size: .95rem; padding-right: 12px; overflow-wrap: normal; }
+.menu-home .sub-grid .menu-item-desc { font-size: .8rem; line-height: 1.3; }
+.menu-home .menu-item-fav { top: 0; right: 0; width: 36px; height: 36px; }
+.menu-home .menu-item-fav svg { width: 17px; height: 17px; }
+.menu-home .menu-item-fav.on { color: #f5b142; }
+.menu-home .menu-item .menu-item-lock,
+.menu-home .family-icon .menu-item-lock {
+  position: absolute; right: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; border: 0;
+  background: linear-gradient(135deg, #f7c65c, #e39a2a); color: #2a1a05;
+  box-shadow: 0 0 0 2px var(--mh-card);
+}
+.menu-home .menu-item .menu-item-lock svg, .menu-home .family-icon .menu-item-lock svg { width: 10px; height: 10px; }
+
+/* Lignes (Continuer, Explorer). */
+.menu-home .family-list { gap: 12px; }
+.menu-home .family-row { min-height: 74px; padding: 12px 16px; gap: 14px; }
+.menu-home .family-title { font-size: 1.05rem; }
+.menu-home .family-items { font-size: .82rem; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+.menu-home .family-row > svg { width: 22px; height: 22px; color: var(--text-main); }
+.menu-home .family-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .7rem; padding: 3px 10px; border-color: rgba(227, 178, 79, .45);
+}
+.menu-home .continue-row {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 16%, var(--mh-card)), var(--mh-card) 75%);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow: var(--mh-shadow), 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.menu-home .continue-row .family-items { -webkit-line-clamp: 1; line-clamp: 1; }
+
+@media (max-width: 380px) {
+  .menu-home .menu-appbar { gap: 8px; }
+  .menu-appbar-back, .menu-home .menu-appbar-logo { width: 40px; height: 40px; }
+  .menu-home .menu-appbar-title { font-size: 1.2rem; }
+  .menu-home .family-icon { width: 40px; height: 40px; }
+  .menu-home .sub-grid .menu-item-icon { width: 36px; height: 36px; }
+  .menu-home .sub-grid .menu-item { gap: 7px; padding: 12px 8px; }
+}
+
 /* Fenêtres natives : Tab reste dans la fenêtre, Échap ferme et le fond est inerte. */
 .app-dialog{position:fixed;inset:0;margin:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;color:inherit;box-sizing:border-box}
 .app-dialog:not([open]){display:none!important}
