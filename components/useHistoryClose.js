@@ -23,6 +23,11 @@ function ensureListener() {
   });
 }
 
+// Une fiche est-elle ouverte ? (bouton retour Android, AndroidBackHandler.js)
+export function hasOpenPanel() {
+  return stack.length > 0;
+}
+
 export function useHistoryClose(active, onClose) {
   const entryRef = useRef(null);
   const onCloseRef = useRef(onClose);

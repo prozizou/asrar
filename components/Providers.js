@@ -8,9 +8,13 @@ import AccessProvider from './AccessProvider';
 import PendingDeepLink from './PendingDeepLink';
 import AdsterraAds from './AdsterraAds';
 import ActivityTracker from './ActivityTracker';
+import AndroidBackHandler from './AndroidBackHandler';
 
 export default function Providers({ children }) {
   return (
+    <>
+    {/* Hors d'AuthProvider : le bouton retour Android agit aussi sur l'écran de connexion. */}
+    <AndroidBackHandler />
     <AuthProvider>
       <ActivityTracker />
       <AccessProvider>
@@ -19,5 +23,6 @@ export default function Providers({ children }) {
         <AdsterraAds />
       </AccessProvider>
     </AuthProvider>
+    </>
   );
 }

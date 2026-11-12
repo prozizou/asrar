@@ -57,9 +57,12 @@ public class MainActivity extends BridgeActivity {
 
         // Bouton/geste retour Android. Sans @capacitor/app, Capacitor ne
         // l'intercepte pas : l'activité se fermait au premier appui, quelle que
-        // soit la page. Ici, retour = historique de la WebView (pages Next.js,
-        // mais aussi panneaux qui poussent une entrée d'historique — fiche
-        // produit, boutique vendeur, cf. components/useHistoryClose.js).
+        // soit la page. La page décide d'abord (window.__asrarBack, voir
+        // components/AndroidBackHandler.js et lib/androidBack.js) : fermer la
+        // fenêtre ou la fiche ouverte, sinon aller au menu depuis un module et
+        // au Marché depuis le menu, sans repasser par toutes les pages déjà
+        // vues. « exit » : on est sur le Marché (double appui pour quitter).
+        // Sans réponse (ancienne version du site) : retour par l'historique.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -68,31 +71,51 @@ public class MainActivity extends BridgeActivity {
                     finish();
                     return;
                 }
-                if (webView.canGoBack()) {
-                    webView.goBack();
-                    return;
-                }
-                // Plus d'historique mais pas sur l'accueil (ouverture via une
-                // notification ou un lien) : revenir à l'accueil plutôt que quitter.
-                String url = webView.getUrl();
-                if (url != null) {
-                    Uri uri = Uri.parse(url);
-                    String path = uri.getPath();
-                    if (path != null && !path.isEmpty() && !"/".equals(path)) {
-                        webView.loadUrl(uri.getScheme() + "://" + uri.getAuthority() + "/");
-                        return;
-                    }
-                }
-                // Accueil : double appui pour quitter (évite les sorties accidentelles).
-                long now = System.currentTimeMillis();
-                if (now - lastBackAt < EXIT_WINDOW_MS) {
-                    finish();
-                } else {
-                    lastBackAt = now;
-                    Toast.makeText(MainActivity.this, "Appuyez encore pour quitter", Toast.LENGTH_SHORT).show();
-                }
+                webView.evaluateJavascript(
+                    "(function(){try{return window.__asrarBack?window.__asrarBack():'native';}catch(e){return 'native';}})()",
+                    value -> {
+                        String answer = value == null ? "" : value.replace("\"", "");
+                        if ("handled".equals(answer)) return;
+                        if ("exit".equals(answer)) {
+                            exitOnSecondPress();
+                            return;
+                        }
+                        historyBack(webView);
+                    });
             }
         });
+    }
+
+    // Ancien comportement (site sans window.__asrarBack) : historique de la
+    // WebView, puis accueil, puis double appui pour quitter.
+    private void historyBack(WebView webView) {
+        if (webView.canGoBack()) {
+            webView.goBack();
+            return;
+        }
+        // Plus d'historique mais pas sur l'accueil (ouverture via une
+        // notification ou un lien) : revenir à l'accueil plutôt que quitter.
+        String url = webView.getUrl();
+        if (url != null) {
+            Uri uri = Uri.parse(url);
+            String path = uri.getPath();
+            if (path != null && !path.isEmpty() && !"/".equals(path)) {
+                webView.loadUrl(uri.getScheme() + "://" + uri.getAuthority() + "/");
+                return;
+            }
+        }
+        exitOnSecondPress();
+    }
+
+    // Accueil : double appui pour quitter (évite les sorties accidentelles).
+    private void exitOnSecondPress() {
+        long now = System.currentTimeMillis();
+        if (now - lastBackAt < EXIT_WINDOW_MS) {
+            finish();
+        } else {
+            lastBackAt = now;
+            Toast.makeText(MainActivity.this, "Appuyez encore pour quitter", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

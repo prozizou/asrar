@@ -1,3 +1,8 @@
+## SW v46.76 — Android : bouton retour direct vers le menu (APK 8.0.5)
+
+- Le bouton retour d’Android ne repasse plus par toutes les pages déjà visitées : il ferme d’abord la fenêtre ou la fiche ouverte, puis ramène directement au menu depuis n’importe quel module (même une sous-page, ex. carré 7 × 7), puis du menu au Marché ; sur le Marché, double appui pour quitter.
+- Nécessite l’application Android 8.0.5 (MainActivity demande la décision à la page). Les versions précédentes gardent l’ancien retour.
+
 ## SW v46.75 — Icônes SVG à la place des emojis dans toute l’application
 
 - Toutes les icônes emoji de l’interface sont remplacées par des icônes SVG (même famille, couleur du thème) : boutons Retour et Fermer, étoiles d’avis, statistiques et actions de la boutique, Bibliothèque, Combinaisons, chapelet (réglages, objectif, séries, série de jours, badge), Zikr (privé, rappel, vœux), Marché (boutique vérifiée, lieu, image indisponible), installation et abonnement, mise à jour requise, publicités, page d’erreur, Rouwhanes, Géomancie, export Word des Hatims.
