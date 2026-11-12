@@ -32,7 +32,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: npm
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - run: npm ci
       - run: npx cap sync android
       - name: Tests natifs et APK de test
