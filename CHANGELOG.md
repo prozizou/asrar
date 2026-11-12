@@ -1,5 +1,6 @@
-## SW v46.73 — Hatim triangulaire : traits arrêtés au bord des cercles
+## SW v46.73 — Hatims : triangle et liste des carrés
 
+- Liste des carrés : quand le nombre de cartes est impair, la dernière (11 × 11) occupe toute la largeur au lieu de laisser un vide à côté.
 - Les traits du Hatim triangulaire (carré 3 × 3, méthode « Triangulaire ») s’arrêtent au bord de chaque cercle au lieu de le traverser jusqu’au nombre ; le fond des cercles est désormais opaque.
 
 ## SW v46.72 — Hatims : carrés ajustés à la largeur, pourtour orange
