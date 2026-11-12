@@ -19,10 +19,12 @@ function authorized(req) {
   if (!secret) return false; // pas configuré → jamais déclenché (sécurité par défaut, pas par omission)
   const header = (req.headers && req.headers.authorization) || "";
   const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const query = (req.query && req.query.secret) || "";
+  // En-tête uniquement : un secret passé dans l'URL (?secret=) finirait dans
+  // les journaux d'accès (Vercel, proxys, historique). Vercel Cron et les
+  // workflows GitHub envoient déjà « Authorization: Bearer <CRON_SECRET> ».
   // Comparaison à temps constant : évite qu'une différence de timing sur une
   // comparaison naïve (===) ne fuite des informations sur le secret attendu.
-  return safeEqual(bearer, secret) || safeEqual(String(query), secret);
+  return safeEqual(bearer, secret);
 }
 
 module.exports = { authorized };

@@ -9,6 +9,7 @@ const { app } = require("../../server/grant");
 const { getSource } = require("../../server/sources");
 const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { rateLimit } = require("../../lib/rateLimit");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
 
   try {
     const user = await verifyUser(idToken);
+    if (!rateLimit("get-content:" + user.uid, 180, 60000)) return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
 
     // Le Marché (authOnly) ne demande PAS d'abonnement : l'achat = le prix du produit.
     const hasAccess = src.authOnly || await hasActiveAccess(user);

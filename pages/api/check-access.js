@@ -29,6 +29,7 @@ const { verifyUser, getAccessStatus } = require("../../server/access");
 const { setCors, parseBody } = require("../../server/http");
 const { adsEnabled, countAdCredits } = require("../../server/adReward");
 const { reportError } = require("../../server/log");
+const { rateLimit } = require("../../lib/rateLimit");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+  if (!rateLimit("check-access:" + user.uid, 600, 60000)) return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
 
   try {
     const status = await getAccessStatus(user);

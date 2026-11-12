@@ -2,4 +2,7 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="planet_alarm_clock.xml" />
     <exclude domain="sharedpref" path="planet_alarm_diagnostics.xml" />
+    <!-- Session de connexion (Firebase, IndexedDB/localStorage de la WebView) :
+         jamais copiée vers une sauvegarde ni un autre téléphone. -->
+    <exclude domain="root" path="app_webview/" />
 </full-backup-content>

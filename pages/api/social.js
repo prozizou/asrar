@@ -38,6 +38,11 @@ const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
 const { cleanStars } = require("../../lib/reviews");
+const { SECRET_CATS } = require("../../server/sources");
+
+// Catégories réellement utilisées par l'application : produits et boutiques
+// du Marché, avis de formation, et les catégories de Secrets.
+const SOCIAL_CATS = ["product", "vendor", "formation", ...SECRET_CATS];
 const { notifyUsers } = require("../../server/notify");
 const { findShopOwnerUids, productOwner, shortName } = require("../../server/shopOwners");
 const { likeNotification, commentNotification } = require("../../lib/notifyTemplates");
@@ -109,6 +114,9 @@ export default async function handler(req, res) {
 
     // — Actions ciblées sur un secret/produit/vendeur précis —
     if (!cat || !key) return res.status(400).json({ error: "Catégorie/clé manquante." });
+    // Liste fermée : sans elle, n'importe quel compte pouvait écrire likes et
+    // commentaires sous ratings/<n'importe quoi>/… et comments/<n'importe quoi>/….
+    if (!SOCIAL_CATS.includes(cat)) return res.status(400).json({ error: "Catégorie inconnue." });
     const likesRef = db.ref(`ratings/${cat}/${key}`);
     const commentsRef = db.ref(`comments/${cat}/${key}`);
 

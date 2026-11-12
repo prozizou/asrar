@@ -49,7 +49,10 @@ export default async function handler(req, res) {
   const { idToken, action } = body;
 
   let user;
-  try { user = await verifyUser(idToken); }
+  // checkRevoked : une session d'administrateur révoquée (compte compromis,
+  // mot de passe changé, « déconnecter partout ») est refusée immédiatement,
+  // au lieu de rester valable jusqu'à l'expiration du jeton (1 h).
+  try { user = await verifyUser(idToken, true); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
 
   if (!(await isAdmin(user))) {
