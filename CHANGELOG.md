@@ -1,3 +1,7 @@
+## SW v46.71 — Menu : « Continuer » limité au dernier module ouvert
+
+- La section Continuer n’affiche plus qu’une carte : le dernier module ouvert, même s’il est aussi en favori.
+
 ## SW v46.70 — Menu : nouvelle présentation
 
 - En-tête : bouton retour intégré à la barre (plus de bouton « ← Retour » sur sa propre ligne), logo sur fond blanc, séparateurs fins autour du titre et de la cloche, avatar cerclé d’orange.
