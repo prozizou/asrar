@@ -44,24 +44,35 @@ test('le modérateur prépare un WhatsApp personnalisé, enregistre le badge pri
   expect((await db.ref('zikr_members/warning-ui/fixture-premium/warning').once('value')).exists()).toBe(false);
 });
 
-test('le cron retire le membre averti expiré, conserve les grains et accepte un second passage', async ({ request, postAs }) => {
+test('le cron retire seulement le membre averti sans aucun grain, conserve les grains et accepte un second passage', async ({ request, postAs }) => {
+  // Règle « retrait seulement à 0 grain » (0f14a4a) : à l'échéance des 7 jours,
+  //  - fixture-premium n'a jamais récité → retiré ;
+  //  - fixture-basic a 20 grains mais rien depuis l'avertissement → gardé, avertissement levé ;
+  //  - fixture-seller a repris (1 grain depuis l'avertissement) → gardé.
   const db = app().database(), deadline = Date.now() - 10000;
-  await db.ref('zikr_groups/warning-cron').set({ name: 'Retrait test', target: 1000, total: 99, membersCount: 3, ownerUid: 'fixture-admin' });
+  await db.ref('zikr_groups/warning-cron').set({ name: 'Retrait test', target: 1000, total: 99, membersCount: 4, ownerUid: 'fixture-admin' });
   await db.ref('zikr_members/warning-cron').set({
     'fixture-admin': { fait: 78 },
-    'fixture-premium': { fait: 20, warning: { id: 'expiry-test', at: deadline - 7 * 86400000, deadline, fait: 20 } },
-    'fixture-basic': { fait: 1, warning: { id: 'resumed-test', at: deadline - 7 * 86400000, deadline, fait: 0 } },
+    'fixture-premium': { fait: 0, avertissement: 'Message', warning: { id: 'expiry-test', at: deadline - 7 * 86400000, deadline, fait: 0 } },
+    'fixture-basic': { fait: 20, avertissement: 'Message', warning: { id: 'kept-test', at: deadline - 7 * 86400000, deadline, fait: 20 } },
+    'fixture-seller': { fait: 1, warning: { id: 'resumed-test', at: deadline - 7 * 86400000, deadline, fait: 0 } },
   });
-  await db.ref('zikr_inactivity/expiry-test').set({ gid: 'warning-cron', uid: 'fixture-premium', id: 'expiry-test', deadline });
-  await db.ref('zikr_inactivity/resumed-test').set({ gid: 'warning-cron', uid: 'fixture-basic', id: 'resumed-test', deadline });
+  for (const [id, uid] of [['expiry-test', 'fixture-premium'], ['kept-test', 'fixture-basic'], ['resumed-test', 'fixture-seller']]) {
+    await db.ref('zikr_inactivity/' + id).set({ gid: 'warning-cron', uid, id, deadline });
+  }
   expect((await request.get('/api/cron/reminders')).status()).toBe(401);
   for (let n = 0; n < 2; n++) {
     const response = await request.get('/api/cron/reminders', { headers: { authorization: 'Bearer emulator-cron-only' } });
     expect(response.status()).toBe(200);
-    expect((await db.ref('zikr_groups/warning-cron').once('value')).val()).toMatchObject({ membersCount: 2, total: 99 });
+    expect((await db.ref('zikr_groups/warning-cron').once('value')).val()).toMatchObject({ membersCount: 3, total: 99 });
   }
   expect((await db.ref('zikr_members/warning-cron/fixture-premium').once('value')).exists()).toBe(false);
-  expect((await db.ref('zikr_members/warning-cron/fixture-basic').once('value')).exists()).toBe(true);
+  const kept = (await db.ref('zikr_members/warning-cron/fixture-basic').once('value')).val();
+  expect(kept).toMatchObject({ fait: 20 });
+  expect(kept.warning ?? null).toBeNull();
+  expect(kept.avertissement ?? null).toBeNull();
+  expect((await db.ref('zikr_members/warning-cron/fixture-seller').once('value')).val()).toMatchObject({ fait: 1 });
+  for (const id of ['expiry-test', 'kept-test', 'resumed-test']) expect((await db.ref('zikr_inactivity/' + id).once('value')).exists()).toBe(false);
   expect((await app().auth().getUser('fixture-premium')).uid).toBe('fixture-premium');
-  expect((await postAs('premium', 'zikr', { action: 'progress', groupId: 'warning-cron', fait: 21 })).status()).toBe(403);
+  expect((await postAs('premium', 'zikr', { action: 'progress', groupId: 'warning-cron', fait: 1 })).status()).toBe(403);
 });
