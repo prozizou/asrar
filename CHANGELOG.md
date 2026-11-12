@@ -1,3 +1,8 @@
+## SW v46.72 — Hatims : carrés ajustés à la largeur, pourtour orange
+
+- Les carrés (3 × 3 à 11 × 11) tiennent toujours dans la largeur de l’écran, sans défilement : chaque case vaut 1/N de la largeur (7 × 7 → 14,29 % par case). La taille des chiffres s’adapte à la case ; le curseur A⁻/A⁺ l’agrandit jusqu’à la place disponible.
+- Les cases du pourtour sont orange (couleur du thème), avec un texte foncé en thème sombre et blanc en thème clair.
+
 ## SW v46.71 — Menu : « Continuer » limité au dernier module ouvert
 
 - La section Continuer n’affiche plus qu’une carte : le dernier module ouvert, même s’il est aussi en favori.

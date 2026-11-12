@@ -124,10 +124,24 @@
 .kz-error { color: var(--status-danger-text); }
 .kz-scale-slider { flex-wrap: wrap; min-height: 44px; }
 .kz-scale-slider input[type="range"] { min-height: 44px; }
-.kz-grid-scroll { width: 100%; overflow: auto; margin-inline: auto; overscroll-behavior: contain; border-radius: 8px; }
-.kz-grid-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-.kz-grid-scroll .kz-grid { width: 100%; }
-.kz-grid-scroll .kz-cell-txt { white-space: nowrap; overflow-wrap: normal; }
+/* Carré ajusté à la largeur : N colonnes égales (100 % / N), écarts et rayons
+   proportionnels, aucune barre de défilement. Le conteneur fournit l'unité
+   cqi (1 % de sa largeur) ; --kz-cell = largeur réelle d'une case, utilisée
+   par GridCell pour dimensionner les chiffres. */
+.kz-grid-scroll { width: 100%; margin-inline: auto; container-type: inline-size; overflow: hidden; }
+.kz-grid-scroll .kz-grid {
+  width: 100%;
+  --kz-gap: min(6px, calc(10cqi / var(--cols)));
+  --kz-cell: calc((100cqi - (var(--cols) - 1) * var(--kz-gap)) / var(--cols));
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--kz-gap);
+}
+.kz-grid-scroll .kz-cell { padding: min(2px, calc(var(--kz-cell) * .04)); border-radius: min(8px, calc(var(--kz-cell) * .18)); }
+.kz-grid-scroll .kz-cell-txt { white-space: nowrap; overflow-wrap: normal; line-height: 1; }
+/* Pourtour orange (accent du thème), texte de la couleur prévue sur l'accent :
+   foncé en thème sombre, blanc en thème clair. */
+.kz-cell.edge { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.kz-cell.edge.empty { background: color-mix(in srgb, var(--accent) 35%, var(--bg-deep)); color: var(--text-on-accent); }
 .kz-grid-hint { font-size: .85rem; color: var(--text-muted); margin: 8px 0; text-align: center; }
 .hatim-icon-btn { width: 44px; height: 44px; }
 @media (max-width: 480px) { .kz-fields.grid3, .kz-fields.grid2 { grid-template-columns: 1fr; } }

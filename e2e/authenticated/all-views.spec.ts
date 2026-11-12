@@ -103,10 +103,17 @@ test('les neuf tailles de carrés affichent des valeurs lisibles sans déborder 
       const parent = node.parentElement!; return node.getBoundingClientRect().width > parent.clientWidth;
     }).length);
     expect(hiddenNumbers).toBe(0);
+    // Ajusté à la largeur : N colonnes égales, aucun défilement horizontal,
+    // et le pourtour en orange (N² − (N − 2)² cases).
+    expect(await grid.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+    const widths = await grid.locator('.kz-cell').evaluateAll((nodes) => nodes.slice(0, nodes.length).map((n) => n.getBoundingClientRect().width));
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(1);
+    await expect(grid.locator('.kz-cell.edge')).toHaveCount(size * size - (size - 2) * (size - 2));
     if (size === 11) {
       await page.getByRole('slider', { name: 'Taille du texte des cases' }).fill('2');
-      await grid.focus(); await page.keyboard.press('End');
-      expect(await grid.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+      expect(await grid.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+      expect(await grid.locator('.kz-cell-txt').evaluateAll((nodes) => nodes.filter((node) =>
+        node.getBoundingClientRect().width > node.parentElement!.clientWidth).length)).toBe(0);
     }
   }
 });
