@@ -53,6 +53,7 @@ import {
   loadRouwhaniaAsma,
   loadVerses,
 } from '@/lib/rouwhania';
+import { useSupport } from '@/components/SupportProvider';
 
 const SUPER_ADMIN = 'prozizou298@gmail.com';
 
@@ -62,6 +63,8 @@ interface Verse {
 }
 
 export default function RouwhaniaPage() {
+  // Fenêtre « Soutenir ASRAR PRO » après une réussite (règle : lib/supportPrompt.js).
+  const { celebrate } = useSupport();
   const { user } = useAuth() as any;
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
@@ -123,11 +126,12 @@ export default function RouwhaniaPage() {
 
     const c = computeAll(text);
     setComputed(c);
+    celebrate();
     const { list, seventh } = buildAngelNames(c.results);
     setAngels(list);
     setAllahCards(seventh ? buildAllahCards(seventh, asma) : []);
     setSuggestions([]);
-  }, [ensureAccess, asma]);
+  }, [ensureAccess, asma, celebrate]);
 
   const r = computed?.results;
   const showCalc = isAdmin && !!computed;

@@ -11,6 +11,8 @@ import './compte.css';
 import SubscriptionPlans from '@/components/SubscriptionPlans';
 import NativeAdPrivacy from '@/components/NativeAdPrivacy';
 import { handleExternalLinkClick } from '@/lib/externalWindow';
+import { useSupport } from '@/components/SupportProvider';
+import { HandHeart } from 'lucide-react';
 const Modal = ModalUntyped as any;
 const subscriptionContact = '/api/wa?text=Je%20souhaite%20v%C3%A9rifier%20ou%20renouveler%20mon%20abonnement%20ASRAR%20PRO.';
 const REQUEST_LABELS: Record<string, string> = { pending: 'En attente', processing: 'En cours', completed: 'Traitement clôturé', rejected: 'Demande refusée' };
@@ -18,6 +20,7 @@ const date = (value: number | string) => new Date(value).toLocaleDateString('fr-
 
 export default function ComptePage() {
   const { user, signOut } = useAuth() as any;
+  const { openSupport } = useSupport();
   const [data, setData] = useState<any>(null), [error, setError] = useState(''), [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false), [reauth, setReauth] = useState(false), [confirm, setConfirm] = useState(false);
   const [email, setEmail] = useState(''), [name, setName] = useState(''), [waPhone, setWaPhone] = useState('');
@@ -82,6 +85,7 @@ export default function ComptePage() {
         <NativeAdPrivacy />
         {!subscription.admin && !subscription.vip && <details className="account-subscription-plans"><summary>Choisir ou renouveler mon abonnement</summary><SubscriptionPlans /></details>}
         <Link className="account-button" href="/commandes">Mes demandes et commandes</Link>
+        <button type="button" className="account-button account-secondary" onClick={openSupport}><HandHeart size={18} aria-hidden="true" /> Soutenir l’application</button>
         {!subscription.admin && !subscription.vip && <a className="account-button account-secondary" href={subscriptionContact} onClick={(e) => handleExternalLinkClick(e, subscriptionContact)}>Contacter l’assistance pour mon abonnement</a>}
       </section>
       <section className="account-card" aria-labelledby="account-preferences"><h2 id="account-preferences">Mes préférences</h2>

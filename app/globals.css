@@ -2215,3 +2215,16 @@ html[data-theme="light"] {
 .sg-ad-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 /* Flèche SVG centrée sur le texte, même quand une page redéfinit .back-btn. */
 a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Fenêtre « Soutenir ASRAR PRO » (components/SupportProvider.js) : réutilise
+   les cartes de paiement des abonnements (.subscription-*). */
+.support-box { max-width: 420px; text-align: center; }
+.support-box .sg-sub { margin-bottom: 14px; }
+.support-pay { text-align: left; }
+.support-pay .support-hint { margin: 0 0 8px; color: var(--text-dim); font-size: .82rem; line-height: 1.45; }
+.support-pay .subscription-simple-note a { color: var(--accent); }
+.support-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.support-actions button { width: 100%; min-height: 44px; margin: 0; border-radius: 12px; font: 600 .88rem var(--font-ui); cursor: pointer; box-shadow: none; }
+.support-actions .support-later { border: 1px solid var(--border-strong, var(--border)); background: transparent; color: var(--text-main); }
+.support-actions .support-done { border: 0; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.support-actions button:hover { transform: none; box-shadow: none; }

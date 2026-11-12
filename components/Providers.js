@@ -9,6 +9,7 @@ import PendingDeepLink from './PendingDeepLink';
 import AdsterraAds from './AdsterraAds';
 import ActivityTracker from './ActivityTracker';
 import AndroidBackHandler from './AndroidBackHandler';
+import SupportProvider from './SupportProvider';
 
 export default function Providers({ children }) {
   return (
@@ -18,9 +19,11 @@ export default function Providers({ children }) {
     <AuthProvider>
       <ActivityTracker />
       <AccessProvider>
-        <PendingDeepLink />
-        {children}
-        <AdsterraAds />
+        <SupportProvider>
+          <PendingDeepLink />
+          {children}
+          <AdsterraAds />
+        </SupportProvider>
       </AccessProvider>
     </AuthProvider>
     </>
