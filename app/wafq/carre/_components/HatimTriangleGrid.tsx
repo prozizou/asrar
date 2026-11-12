@@ -26,6 +26,17 @@ const EDGES: [Point, Point][] = [
 ];
 
 const RADIUS = 27;
+const NODE_STROKE = 1.5;
+
+// Un trait relie deux cercles de BORD à bord, jamais de centre à centre :
+// sinon il traverse les cases et passe sous les nombres. On le raccourcit
+// donc d'un rayon (plus la demi-épaisseur du contour) à chaque extrémité.
+function trimmed(p: Point, q: Point): [Point, Point] {
+  const dx = q.x - p.x, dy = q.y - p.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const k = (RADIUS + NODE_STROKE / 2) / len;
+  return [{ x: p.x + dx * k, y: p.y + dy * k }, { x: q.x - dx * k, y: q.y - dy * k }];
+}
 const BASE_FONT_SIZE = 14;
 const VIEW_W = 400;
 const VIEW_H = 400;
@@ -54,12 +65,13 @@ export default function HatimTriangleGrid({
   return (
     <div className="kz-triangle">
       <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="img" aria-label={`Hatim triangulaire, D = ${triangle.d}`}>
-        {EDGES.map(([p, q], i) => (
-          <line key={i} x1={p.x} y1={p.y} x2={q.x} y2={q.y} className="kz-triangle-edge" strokeWidth={2} />
-        ))}
+        {EDGES.map(([from, to], i) => {
+          const [p, q] = trimmed(from, to);
+          return <line key={i} x1={p.x} y1={p.y} x2={q.x} y2={q.y} className="kz-triangle-edge" strokeWidth={2} />;
+        })}
         {nodes.map(({ point, value }, i) => (
           <g key={i}>
-            <circle cx={point.x} cy={point.y} r={RADIUS} className="kz-triangle-node" strokeWidth={1.5} />
+            <circle cx={point.x} cy={point.y} r={RADIUS} className="kz-triangle-node" strokeWidth={NODE_STROKE} />
             <text x={point.x} y={point.y} textAnchor="middle" dominantBaseline="middle" className="kz-svg-text" fontSize={BASE_FONT_SIZE * scale}>
               {formatNumeral(value, numerals)}
             </text>

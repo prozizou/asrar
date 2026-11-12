@@ -1,3 +1,7 @@
+## SW v46.73 — Hatim triangulaire : traits arrêtés au bord des cercles
+
+- Les traits du Hatim triangulaire (carré 3 × 3, méthode « Triangulaire ») s’arrêtent au bord de chaque cercle au lieu de le traverser jusqu’au nombre ; le fond des cercles est désormais opaque.
+
 ## SW v46.72 — Hatims : carrés ajustés à la largeur, pourtour orange
 
 - Les carrés (3 × 3 à 11 × 11) tiennent toujours dans la largeur de l’écran, sans défilement : chaque case vaut 1/N de la largeur (7 × 7 → 14,29 % par case). La taille des chiffres s’adapte à la case ; le curseur A⁻/A⁺ l’agrandit jusqu’à la place disponible.
