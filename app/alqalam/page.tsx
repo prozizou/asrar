@@ -16,9 +16,9 @@
 // même traitement (cast) que dans les batches précédents.
 import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -36,6 +36,10 @@ import {
   htmlToPlainText,
   loadQuranUthmani,
   matchUthmaniSourate,
+  countVerses,
+  parseRepetitions,
+  stepRepetitions,
+  plural,
 } from '@/lib/alqalam';
 import { detectRoundLetters } from '@/lib/alqalamOrne';
 import OrneePhrasePiece, { type OrneePhrasePieceHandle } from './OrneePhrasePiece';
@@ -61,6 +65,8 @@ const getPref = (k: string): string | null => {
 };
 
 type WritingMode = 'simple' | 'intercalee' | 'rasmique' | null;
+
+const MODE_ICONS = { simple: Repeat, intercalee: LinkIcon, rasmique: PenTool } as const;
 
 const MODE_LABELS: Record<Exclude<WritingMode, null>, string> = {
   simple: 'Écriture simple',
@@ -277,6 +283,34 @@ export default function AlQalamPage() {
   };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Menu ⋮ de l'en-tête (changer de mode, outils, réinitialiser).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDetailsElement>(null);
+
+  // Champ arabe : hauteur ajustée au contenu (2 lignes minimum, puis défile).
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight + 2, 220) + 'px';
+  }, [inputText, writingMode]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (e: Event) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('touchstart', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('touchstart', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
   const sugTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -490,10 +524,11 @@ export default function AlQalamPage() {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
     const text = inputText.trim();
-    const count = parseInt(repCount, 10);
-    if (!text || isNaN(count) || count <= 0) return;
+    const count = parseRepetitions(repCount);
+    if (!text) return showToast('Saisissez le texte à répéter.', 'error');
+    if (count === null) return showToast(repetitionError, 'error');
     setBaseText(text);
-    setTotalMultiplier(Math.min(count, config.MAX_TOTAL_REPEAT));
+    setTotalMultiplier(count);
     setIntercalatedPhrase('');
     setEditingResult(false);
     setResultEdited(false);
@@ -543,9 +578,10 @@ export default function AlQalamPage() {
     if (!interKey || !phrase) {
       return showToast("Choisissez une sourate et saisissez l'expression dans la zone de texte.", 'error');
     }
+    const rep = parseRepetitions(repCount);
+    if (rep === null) return showToast(repetitionError, 'error');
     const { content, error } = resolveSourateContent();
     if (error) return showToast(error, 'error');
-    const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
     const result = buildIntercalatedText(content, phrase, rep);
     setBaseText(result);
     setIntercalatedPhrase(phrase);
@@ -566,9 +602,10 @@ export default function AlQalamPage() {
     if (!interKey) {
       return showToast('Choisissez une sourate.', 'error');
     }
+    const rep = parseRepetitions(repCount);
+    if (rep === null) return showToast(repetitionError, 'error');
     const { content, error } = resolveSourateContent();
     if (error) return showToast(error, 'error');
-    const rep = Math.max(1, Math.min(parseInt(repCount, 10) || 1, config.MAX_TOTAL_REPEAT));
     const result = buildIntercalatedText(content, '', 0);
     setBaseText(result);
     setIntercalatedPhrase('');
@@ -647,12 +684,15 @@ export default function AlQalamPage() {
   const openExportPopup = async (format: 'docx' | 'pdf') => {
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
-    if (!docName.trim() || (totalMultiplier === 0 && accumulatedBlocks.length === 0)) {
-      return showToast('Générez un texte ou cumulez des blocs, et nommez le document.', 'error');
+    if (totalMultiplier === 0 && accumulatedBlocks.length === 0) {
+      return showToast('Générez un texte ou cumulez des blocs avant d’exporter.', 'error');
     }
     setPopupFormat(format);
     setPopupOpen(true);
   };
+  // Nom du fichier : celui saisi dans Outils › Documents, sinon un nom par défaut
+  // (les boutons PDF/DOCX du résultat exportent sans passer par Outils).
+  const exportName = () => docName.trim() || 'Ecriture spirituelle';
   const onDoc = () => openExportPopup('docx');
   const onPdf = () => openExportPopup('pdf');
 
@@ -669,7 +709,7 @@ export default function AlQalamPage() {
         useOuv,
         useFerm,
         blocks: currentBlocks(),
-        docName: docName.trim(),
+        docName: exportName(),
         fontPx: fontSize,
         onProgress: (pct: number, text: string) => setProgress({ pct, text }),
       });
@@ -689,7 +729,7 @@ export default function AlQalamPage() {
         useOuv,
         useFerm,
         blocks: currentBlocks(),
-        docName: docName.trim(),
+        docName: exportName(),
         onProgress: (pct: number, text: string) => setProgress({ pct, text }),
       });
       showToast(
@@ -704,6 +744,43 @@ export default function AlQalamPage() {
     }
   };
 
+  // ─── Valeurs dérivées de l'interface ───
+  const repValue = parseRepetitions(repCount);
+  const repetitionError = `Nombre de répétitions : entier de 1 à ${config.MAX_TOTAL_REPEAT.toLocaleString('fr-FR')}.`;
+  const changeRep = (delta: number) => {
+    const v = String(stepRepetitions(repCount, delta));
+    setRepCount(v);
+    savePref('repCount', v);
+  };
+  const sourateOptions = useMemo(
+    () => sourates.map((s) => ({ ...s, verses: countVerses(souratesContent[s.key]) })),
+    [sourates, souratesContent]
+  );
+  const selectedSourate = sourateOptions.find((s) => s.key === interKey);
+  const onGenerate = () => (writingMode === 'intercalee' ? onIntercaler() : onWrite());
+  const openTools = () => {
+    setMenuOpen(false);
+    if (toolsRef.current) {
+      toolsRef.current.open = true;
+      toolsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  const resetAll = () => {
+    setMenuOpen(false);
+    setInputText('');
+    setBaseText('');
+    setTotalMultiplier(0);
+    setIntercalatedPhrase('');
+    setEditingResult(false);
+    setResultEdited(false);
+    setSearchTerm('');
+  };
+  const TOOLS = [
+    { id: 'doc', label: 'Documents', Icon: Layers },
+    { id: 'search', label: 'Recherche', Icon: Search },
+    { id: 'ornement', label: 'Ornement', Icon: Circle },
+  ] as const;
+
   const triggerExport = (useOuv: boolean, useFerm: boolean) =>
     popupFormat === 'orne'
       ? triggerOrnementExport(useOuv, useFerm)
@@ -715,21 +792,27 @@ export default function AlQalamPage() {
     <div className="alq-page">
 
       <div className="app-container">
-        <header className="alq-heading">
-          <Link href="/" aria-label="Retour à l’accueil"><ArrowLeft size={24} aria-hidden="true" /></Link>
+        <header className="alq-appbar">
+          <Link href="/" className="alq-icon-btn" aria-label="Retour à l’accueil"><ArrowLeft size={22} aria-hidden="true" /></Link>
           <h1>Écriture spirituelle</h1>
+          {writingMode !== null && (
+            <div className="alq-menu" ref={menuRef}>
+              <button type="button" className="alq-icon-btn" aria-label="Plus d’options" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
+                <MoreVertical size={22} aria-hidden="true" />
+              </button>
+              {menuOpen && (
+                <div className="alq-menu-list" role="menu">
+                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); changeWritingMode(); }}><ArrowLeftRight size={18} aria-hidden="true" /> Changer de mode</button>
+                  <button type="button" role="menuitem" onClick={openTools}><SlidersHorizontal size={18} aria-hidden="true" /> Outils</button>
+                  <button type="button" role="menuitem" onClick={resetAll}><RotateCcw size={18} aria-hidden="true" /> Réinitialiser</button>
+                </div>
+              )}
+            </div>
+          )}
         </header>
 
         {writingMode === null ? (
-          // Menu de sélection : quel type d'écriture ? Précède l'outil — évite
-          // d'atterrir directement sur un formulaire générique avec un
-          // sélecteur « Outils » qui mélangeait des choses très différentes.
-          //
-          // Pas de .controls-section ici (revue design) : le grand conteneur
-          // à bordure arrondie autour des trois cartes, chacune ayant déjà sa
-          // propre bordure, empilait deux niveaux de "carte dans une carte"
-          // pour un simple menu de trois choix — les cartes flottent
-          // directement sur le fond, comme un menu d'outils mobile.
+          // Menu de sélection : quel type d'écriture ? Précède l'outil.
           <div className="mode-picker-section">
             <div className="mode-picker-head">
               <h2>Outils d&apos;écriture</h2>
@@ -769,21 +852,59 @@ export default function AlQalamPage() {
             </div>
           </div>
         ) : (
-          <div className="controls-section">
-            <div className="mode-current">
-              <span>
-                Mode : <strong>{MODE_LABELS[writingMode]}</strong>
+          <div className="controls-section alq-settings">
+            {/* Mode courant + changement discret */}
+            <div className="alq-mode-row">
+              <span className="alq-mode-chip">
+                {(() => { const Icon = MODE_ICONS[writingMode]; return <Icon size={16} aria-hidden="true" />; })()}
+                {MODE_LABELS[writingMode]}
               </span>
-              <button type="button" className="mode-change-btn" onClick={changeWritingMode}>
-                ↺ Changer
-              </button>
+              <button type="button" className="alq-text-btn" onClick={changeWritingMode}>Changer</button>
             </div>
 
-            <div className="alq-text-field" style={{ position: 'relative', width: '100%' }}>
-              <label htmlFor="alq-source">Texte à répéter</label>
+            {writingMode === 'intercalee' && (
+              <div className="alq-field">
+                <label htmlFor="alq-sourate">Sourate</label>
+                <div className="alq-select">
+                  <BookOpen size={18} aria-hidden="true" />
+                  <select id="alq-sourate" value={interKey} onChange={(e) => setInterKey(e.target.value)}>
+                    <option value="">{sourates.length ? 'Choisir une sourate' : 'Chargement des sourates…'}</option>
+                    {sourateOptions.map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {/* Nom arabe isolé (U+2068…U+2069) : sans ça, le nombre de versets
+                            se mêle au texte RTL et s'affiche dans le désordre. */}
+                        {'\u2068' + s.name + '\u2069'}{s.verses > 0 ? ` · ${plural(s.verses, 'verset')}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="alq-select-chevron" aria-hidden="true" />
+                </div>
+                <div className="alq-segmented" role="radiogroup" aria-label="Version du texte de la sourate">
+                  {(['simple', 'voyelles'] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      role="radio"
+                      aria-checked={textVersion === v}
+                      className={textVersion === v ? 'is-active' : ''}
+                      onClick={() => chooseTextVersion(v)}
+                    >
+                      {textVersion === v && <Check size={16} aria-hidden="true" />}
+                      {v === 'simple' ? 'Sans voyelles' : uthmaniLoading ? <><Spinner /> Chargement…</> : 'Avec voyelles'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="alq-field alq-text-field" style={{ position: 'relative' }}>
+              <label htmlFor="alq-source">{writingMode === 'intercalee' ? 'Expression à intercaler' : 'Texte à répéter'}</label>
               <textarea
                 id="alq-source"
                 ref={inputRef}
+                rows={1}
+                dir="rtl"
+                lang="ar"
                 className="glass-input top-textarea"
                 placeholder="يحبونهم كحب الله..."
                 aria-label="Zone de saisie du texte arabe"
@@ -810,103 +931,66 @@ export default function AlQalamPage() {
               )}
             </div>
 
-            <div className="grid-row-2-1 alq-repeat-row">
-              <label htmlFor="alq-repetitions">Nombre de répétitions</label>
-              <input
-                id="alq-repetitions"
-                min={1}
-                step={1}
-                inputMode="numeric"
-                type="number"
-                className="glass-input"
-                placeholder="100"
-                value={repCount}
-                onChange={(e) => {
-                  setRepCount(e.target.value);
-                  savePref('repCount', e.target.value);
-                }}
-                aria-label="Nombre de répétitions de base"
-                max={config.MAX_TOTAL_REPEAT}
-              />
-              <button type="button" className="btn-glass" onClick={onWrite}>
-                Générer{Number.isInteger(Number(repCount)) && Number(repCount) > 0
-                  ? ` ${Math.min(Number(repCount), config.MAX_TOTAL_REPEAT).toLocaleString('fr-FR')}` : ''} répétitions
-              </button>
+            <div className="alq-field alq-rep-field">
+              <div className="alq-rep-row">
+                <label htmlFor="alq-repetitions">Répétitions</label>
+                <div className={'alq-stepper' + (repValue === null ? ' is-invalid' : '')}>
+                  <button type="button" onClick={() => changeRep(-1)} disabled={repValue !== null && repValue <= 1} aria-label="Une répétition de moins"><Minus size={18} aria-hidden="true" /></button>
+                  <input
+                    id="alq-repetitions"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={repCount}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d]/g, '').slice(0, 5);
+                      setRepCount(v);
+                      savePref('repCount', v);
+                    }}
+                    aria-label="Nombre de répétitions"
+                    aria-invalid={repValue === null}
+                    aria-describedby="alq-rep-help"
+                  />
+                  <button type="button" onClick={() => changeRep(1)} disabled={repValue !== null && repValue >= config.MAX_TOTAL_REPEAT} aria-label="Une répétition de plus"><Plus size={18} aria-hidden="true" /></button>
+                </div>
+              </div>
+              <p id="alq-rep-help" className={'alq-help' + (repValue === null ? ' is-error' : '')} aria-live="polite">
+                {repValue === null
+                  ? repetitionError
+                  : writingMode === 'intercalee'
+                    ? `Expression insérée ${plural(repValue, 'fois', 'fois')} entre chaque verset${selectedSourate && selectedSourate.verses > 0 ? ` (${plural(selectedSourate.verses, 'verset')})` : ''}.`
+                    : `Texte écrit ${plural(repValue, 'fois', 'fois')}.`}
+              </p>
             </div>
 
-            {writingMode === 'intercalee' && (
-              <div className="hidden-panel show-panel">
-                <select
-                  className="glass-input"
-                  style={{ direction: 'rtl', fontFamily: "'Scheherazade New', serif" }}
-                  value={interKey}
-                  onChange={(e) => setInterKey(e.target.value)}
-                >
-                  <option value="">{sourates.length ? 'Sélectionnez une sourate' : '⏳ Chargement des sourates...'}</option>
-                  {sourates.map((s) => (
-                    <option key={s.key} value={s.key}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="version-toggle" role="radiogroup" aria-label="Version du texte de la sourate">
-                  <button
-                    type="button"
-                    className={'version-btn' + (textVersion === 'simple' ? ' active' : '')}
-                    onClick={() => chooseTextVersion('simple')}
-                  >
-                    Sans voyelles
-                  </button>
-                  <button
-                    type="button"
-                    className={'version-btn' + (textVersion === 'voyelles' ? ' active' : '')}
-                    onClick={() => chooseTextVersion('voyelles')}
-                  >
-                    {uthmaniLoading ? (
-                      <>
-                        <Spinner /> Chargement…
-                      </>
-                    ) : (
-                      'Avec voyelles'
-                    )}
-                  </button>
-                </div>
-
-                <p style={{ fontSize: 12, color: 'var(--text-gray)', margin: 0 }}>
-                  ✍️ Entre chaque verset, on insère l'expression de la zone de texte, <b>répétée</b> selon le nombre de
-                  « répétitions ».
-                  {textVersion === 'voyelles' && ' Texte Uthmani complet (source : alquran.cloud).'}
-                </p>
-                <button className="btn-glass" style={{ width: '100%' }} onClick={onIntercaler}>
-                  Combiner le texte
+            <div className={'alq-actions' + (writingMode === 'intercalee' ? ' has-secondary' : '')}>
+              <button type="button" className="alq-btn-primary" onClick={onGenerate} disabled={repValue === null}>
+                <Sparkles size={18} aria-hidden="true" /> Générer le texte
+              </button>
+              {writingMode === 'intercalee' && (
+                <button type="button" className="alq-btn-secondary" onClick={onSourateSeule} title="Insère la sourate seule, sans y intercaler d'expression">
+                  <BookOpen size={18} aria-hidden="true" /> Sourate seule
                 </button>
-                <button
-                  type="button"
-                  className="btn-glass-outline"
-                  style={{ width: '100%' }}
-                  onClick={onSourateSeule}
-                  title="Insère la sourate seule, sans y intercaler d'expression"
-                >
-                  📖 Sourate seule (sans intercaler)
-                </button>
-              </div>
-            )}
+              )}
+            </div>
 
-            <details className="alq-tools">
-              <summary><SlidersHorizontal size={20} aria-hidden="true" /> Outils <ChevronDown size={18} className="alq-tools-chevron" aria-hidden="true" /></summary>
+            <details className="alq-tools" ref={toolsRef}>
+              <summary><SlidersHorizontal size={18} aria-hidden="true" /> Outils <ChevronDown size={18} className="alq-tools-chevron" aria-hidden="true" /></summary>
               <div className="alq-tools-content">
-            <select
-              className="glass-input"
-              aria-label="Outils d'édition"
-              value={activeTool}
-              onChange={(e) => onToolSelect(e.target.value)}
-            >
-              <option value="">🛠️ Outils</option>
-              <option value="doc">📄 Documents</option>
-              <option value="search">🔍 Recherche</option>
-              <option value="ornement">◯ Ornement</option>
-            </select>
+            <div className="alq-tool-chips" role="group" aria-label="Outils d'édition">
+              {TOOLS.map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={activeTool === id ? 'is-active' : ''}
+                  aria-pressed={activeTool === id}
+                  onClick={() => onToolSelect(activeTool === id ? '' : id)}
+                >
+                  <Icon size={16} aria-hidden="true" /> {label}
+                </button>
+              ))}
+            </div>
 
             {showDoc && (
               <div className="hidden-panel show-panel">
@@ -914,6 +998,7 @@ export default function AlQalamPage() {
                   <input
                     type="text"
                     className="glass-input flex-grow"
+                    aria-label="Nom du document"
                     placeholder="Nom du document"
                     value={docName}
                     onChange={(e) => {
@@ -921,19 +1006,19 @@ export default function AlQalamPage() {
                       savePref('docName', e.target.value);
                     }}
                   />
-                  <button className="btn-glass" onClick={onDoc}>
-                    DOCS
+                  <button type="button" className="alq-btn-tonal" onClick={onDoc}>
+                    <FileType size={16} aria-hidden="true" /> DOCX
                   </button>
-                  <button className="btn-glass" onClick={onPdf}>
-                    PDF
+                  <button type="button" className="alq-btn-tonal" onClick={onPdf}>
+                    <FileDown size={16} aria-hidden="true" /> PDF
                   </button>
                 </div>
                 <div className="grid-row-1-1">
-                  <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #2b5876, #4e4376)' }} onClick={onAddTemp}>
-                    ➕ Cumuler
+                  <button type="button" className="alq-btn-tonal" onClick={onAddTemp}>
+                    <Plus size={16} aria-hidden="true" /> Cumuler
                   </button>
-                  <button className="btn-glass" style={{ background: 'linear-gradient(135deg, #870000, #190a05)' }} onClick={onClearTemp}>
-                    🗑️ Vider ({accumulatedBlocks.length})
+                  <button type="button" className="alq-btn-tonal is-danger" onClick={onClearTemp} disabled={accumulatedBlocks.length === 0}>
+                    <X size={16} aria-hidden="true" /> Vider ({accumulatedBlocks.length})
                   </button>
                 </div>
 
@@ -941,8 +1026,8 @@ export default function AlQalamPage() {
                   <>
                     <button
                       type="button"
-                      className="btn-glass"
-                      style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,.08)' }}
+                      className="alq-btn-tonal alq-acc-toggle"
+                      aria-expanded={showAccList}
                       onClick={() => setShowAccList((v) => !v)}
                     >
                       {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
@@ -1139,7 +1224,7 @@ export default function AlQalamPage() {
                       </p>
                     </div>
 
-                    <button className="btn-glass" onClick={onPrintOrnement} disabled={!ornementLetters.length}>
+                    <button type="button" className="alq-btn-primary" onClick={onPrintOrnement} disabled={!ornementLetters.length}>
                       <Printer size={16} strokeWidth={2} aria-hidden="true" /> Télécharger le PDF
                     </button>
                     <p className="orne-hint">
@@ -1179,15 +1264,17 @@ export default function AlQalamPage() {
         {writingMode !== null && (
         <section className="output-section alq-result" aria-labelledby="alq-result-title">
           <div className="alq-result-header">
-            <h2 id="alq-result-title"><FileText size={20} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
-            {totalMultiplier > 0 && !showOrnement && !editingResult && (
-              <div className="alq-result-actions">
-                <button type="button" onClick={startEditResult} aria-label="Modifier le résultat"><Pencil size={16} aria-hidden="true" /> Modifier</button>
-                <button type="button" onClick={copyResult} aria-label="Copier le résultat"><Copy size={16} aria-hidden="true" /> Copier</button>
-                <button type="button" onClick={shareResult} aria-label="Partager le résultat"><Share2 size={16} aria-hidden="true" /> Partager</button>
-              </div>
-            )}
+            <h2 id="alq-result-title"><FileText size={18} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
           </div>
+          {totalMultiplier > 0 && !showOrnement && !editingResult && (
+            <div className="alq-result-actions" role="toolbar" aria-label="Actions sur le résultat">
+              <button type="button" onClick={copyResult}><Copy size={18} aria-hidden="true" /><span>Copier</span></button>
+              <button type="button" onClick={startEditResult}><Pencil size={18} aria-hidden="true" /><span>Modifier</span></button>
+              <button type="button" onClick={shareResult}><Share2 size={18} aria-hidden="true" /><span>Partager</span></button>
+              <button type="button" onClick={onPdf}><FileDown size={18} aria-hidden="true" /><span>PDF</span></button>
+              <button type="button" onClick={onDoc}><FileType size={18} aria-hidden="true" /><span>DOCX</span></button>
+            </div>
+          )}
           {/* Une seule ligne de repères : quoi, combien, et l'état (modifié). */}
           {totalMultiplier > 0 && !showOrnement && (
             <p className="alq-result-meta" role="status">
@@ -1237,7 +1324,7 @@ export default function AlQalamPage() {
               aria-label="Texte généré"
               dangerouslySetInnerHTML={{ __html: preview.html }}
             />
-          ) : <p className="alq-result-empty">Saisissez votre texte et générez les répétitions pour voir le résultat.</p>}
+          ) : <p className="alq-result-empty">Saisissez votre texte puis touchez « Générer le texte » : le résultat s’affiche ici.</p>}
         </section>
         )}
       </div>

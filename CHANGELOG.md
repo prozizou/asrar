@@ -1,3 +1,14 @@
+## SW v46.74 — Écriture spirituelle : nouvelle interface
+
+- En-tête compact (retour, titre, menu ⋮ : changer de mode, outils, réinitialiser) et une seule surface de réglages, nettement moins haute.
+- Mode d’écriture en pastille avec un bouton « Changer » discret.
+- Sourate : sélecteur compact affichant le nom et le nombre de versets ; « Sans voyelles / Avec voyelles » en contrôle segmenté.
+- Champ arabe RTL qui s’agrandit avec le texte (jusqu’à 220 px, puis défile).
+- Répétitions : compteur − / + avec saisie numérique, validation (1 à 30 000) et accord singulier/pluriel ; l’aide indique l’effet (« insérée 3 fois entre chaque verset (7 versets) »).
+- Un seul bouton principal « Générer le texte » (répétition ou intercalation selon le mode) ; « Sourate seule » reste en action secondaire.
+- Outils (Documents, Recherche, Ornement, taille du texte) repliés dans la même surface, en puces.
+- Résultat juste sous les réglages, avec Copier, Modifier, Partager, PDF et DOCX ; les exports utilisent un nom par défaut si aucun n’est saisi.
+
 ## SW v46.73 — Hatims : triangle et liste des carrés
 
 - Liste des carrés : quand le nombre de cartes est impair, la dernière (11 × 11) occupe toute la largeur au lieu de laisser un vide à côté, avec sa miniature et son texte centrés.
