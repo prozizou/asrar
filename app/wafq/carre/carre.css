@@ -103,8 +103,11 @@
 .hatim-instructions { font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
 .hatim-help-panel { margin-bottom: 20px; }
 .hatim-doors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-/* Nombre impair de cartes : la dernière occupe toute la ligne (pas de vide à côté). */
-.hatim-doors > .hatim-door:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* Nombre impair de cartes : la dernière occupe toute la ligne (pas de vide à côté),
+   contenu (miniature + texte) centré ; la flèche reste au bord droit sans décaler le centrage. */
+.hatim-doors > .hatim-door:last-child:nth-child(odd) { grid-column: 1 / -1; position: relative; justify-content: center; }
+.hatim-doors > .hatim-door:last-child:nth-child(odd) .hatim-door-copy { flex: 0 1 auto; align-items: center; text-align: center; }
+.hatim-doors > .hatim-door:last-child:nth-child(odd) .hatim-door-chevron { position: absolute; right: 16px; top: 50%; margin: -8px 0 0; }
 .hatim-door { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-width: 0; min-height: 124px; padding: 16px; border: 1px solid var(--glass-border); border-radius: 16px; background: var(--surface-2); color: var(--text-main); text-decoration: none; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
 .hatim-thumb { display: grid; gap: 2px; width: 44px; height: 44px; flex: 0 0 44px; }
 .hatim-thumb-cell { border-radius: 1px; background: color-mix(in srgb, var(--accent) 28%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 48%, transparent); }
