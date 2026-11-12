@@ -15,6 +15,7 @@
 // lib/rouwhania.js dans le batch précédent (#120). useAccess()/Spinner.js
 // suivent le même traitement (cast) que dans les batches précédents (#114,
 // #116, #118, #120).
+import { ArrowLeft, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -75,7 +76,7 @@ function Stepper({ stage }: { stage: number }) {
         const state = stage > i ? 'done' : stage === i ? 'current' : 'todo';
         return (
           <li className={'step ' + state} key={s.key} aria-current={state === 'current' ? 'step' : undefined}>
-            <span className="step-dot">{state === 'done' ? '✓' : i + 1}</span>
+            <span className="step-dot">{state === 'done' ? <Check size={14} strokeWidth={3} aria-hidden="true" /> : i + 1}</span>
             <span className="step-label">{s.label}</span>
             <span className="step-range">{s.range}</span>
           </li>
@@ -312,11 +313,11 @@ export default function GeomanciePage() {
       <div className="app-container">
         {onEcu ? (
           <button type="button" className="geo-back" onClick={goBackHome}>
-            ← Les 4 Mères
+            <ArrowLeft size={18} aria-hidden="true" /> Les 4 Mères
           </button>
         ) : (
           <Link href="/" className="geo-back">
-            ← Retour
+            <ArrowLeft size={18} aria-hidden="true" /> Retour
           </Link>
         )}
 

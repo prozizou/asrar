@@ -31,14 +31,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X, Lock,
-} from 'lucide-react';
+  Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X, Lock, ArrowLeft, Circle } from 'lucide-react';
+import PlanetGlyph from '@/components/PlanetGlyph';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
 import PlanetPushToggle from '@/components/PlanetPushToggle';
 import {
   DAY_PLANETS,
-  CHALDEAN_EMOJIS,
   computePday,
   currentHour,
   nextHour,
@@ -346,7 +345,7 @@ export default function PlanetePage() {
   return (
     <div className="planete-page pm">
       <div className="pm-container">
-        <Link href="/" className="back-btn">← Retour</Link>
+        <Link href="/" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
 
         <header className="pm-head">
           <h1 className="pm-eyebrow">Temporalité mystique</h1>
@@ -401,7 +400,7 @@ export default function PlanetePage() {
                 {/* Gabarit fictif : même mise en page, aucune donnée réelle. */}
                 <div className="pm-locked-body" aria-hidden="true">
                   <div className="pm-now-row">
-                    <span className="pm-glyph lg">✦</span>
+                    <span className="pm-glyph lg"><Sparkles size={22} aria-hidden="true" /></span>
                     <div className="pm-now-id">
                       <p className="pm-now-planet">Planète</p>
                       <p className="pm-now-time">00:00 – 00:00</p>
@@ -432,7 +431,7 @@ export default function PlanetePage() {
             <section className="pm-card pm-now" aria-label="Heure planétaire actuelle">
               <p className="pm-label">Heure planétaire actuelle</p>
               <div className="pm-now-row">
-                <span className="pm-glyph lg" aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span>
+                <span className="pm-glyph lg" aria-hidden="true"><PlanetGlyph planet={cur.planet} /></span>
                 <div className="pm-now-id">
                   <p className="pm-now-planet">{cur.planet}</p>
                   <p className="pm-now-time">{fmt(cur.start)} – {fmt(cur.end)}</p>
@@ -455,7 +454,7 @@ export default function PlanetePage() {
               </div>
               {next && nextNature && (
                 <p className="pm-next">
-                  Ensuite : <span aria-hidden="true">{CHALDEAN_EMOJIS[next.planet]}</span> <strong>{next.planet}</strong> à {fmt(next.start)}
+                  Ensuite : <span aria-hidden="true"><PlanetGlyph planet={next.planet} /></span> <strong>{next.planet}</strong> à {fmt(next.start)}
                   <span className={'pm-next-nat ' + nextNature.cls}> · {shortNatureLabel(nextNature)}</span>
                 </p>
               )}
@@ -482,7 +481,7 @@ export default function PlanetePage() {
               <div className="pm-cell">
                 <span className="pm-cell-label">Régent du jour</span>
                 <span className="pm-cell-value">
-                  <span aria-hidden="true">{CHALDEAN_EMOJIS[todayPlanetName!]}</span> {todayPlanetName}
+                  <span aria-hidden="true"><PlanetGlyph planet={todayPlanetName!} /></span> {todayPlanetName}
                 </span>
               </div>
               <div className="pm-cell">
@@ -521,7 +520,7 @@ export default function PlanetePage() {
               <span className="pm-week-title">Régents de la semaine</span>
               {ready && (
                 <span className="pm-week-today">
-                  Aujourd’hui · {DAY_PLANETS.names[activeDay]} · {todayPlanetName} {CHALDEAN_EMOJIS[todayPlanetName!]}
+                  Aujourd’hui · {DAY_PLANETS.names[activeDay]} · {todayPlanetName} <PlanetGlyph planet={todayPlanetName!} />
                 </span>
               )}
             </span>
@@ -533,7 +532,7 @@ export default function PlanetePage() {
                 <li key={day} className={i === activeDay ? 'today' : undefined}>
                   <span>{day}</span>
                   <span>
-                    {DAY_PLANETS.planetNames[i]} <span aria-hidden="true">{CHALDEAN_EMOJIS[DAY_PLANETS.planetNames[i]]}</span>
+                    {DAY_PLANETS.planetNames[i]} <span aria-hidden="true"><PlanetGlyph planet={DAY_PLANETS.planetNames[i]} /></span>
                   </span>
                 </li>
               ))}
@@ -766,14 +765,14 @@ function HoursScreen({
           <h2 className="pm-hours-title">Heures planétaires</h2>
           <p className="pm-hours-meta">
             {dateStr} · {position}
-            {todayPlanetName && <> · Régent : {CHALDEAN_EMOJIS[todayPlanetName]} {todayPlanetName}</>}
+            {todayPlanetName && <> · Régent : <PlanetGlyph planet={todayPlanetName} /> {todayPlanetName}</>}
           </p>
         </div>
       </header>
 
       <section className="pm-card pm-now compact" aria-label="Heure planétaire en cours">
         <div className="pm-now-row">
-          <span className="pm-glyph" aria-hidden="true">{CHALDEAN_EMOJIS[cur.planet]}</span>
+          <span className="pm-glyph" aria-hidden="true"><PlanetGlyph planet={cur.planet} /></span>
           <div className="pm-now-id">
             <p className="pm-now-planet">{cur.planet}</p>
             <p className="pm-now-time">{fmt(cur.start)} – {fmt(cur.end)} · {remaining} restantes</p>
@@ -894,7 +893,7 @@ function HourGrid({
     const key = planet + ':' + triggerMs;
     if (rungKeys.current.has(key)) return;
     rungKeys.current.add(key);
-    setRinging({ planet, emoji: row?.emoji || '🪐', interval: row?.interval || '', offsetMin });
+    setRinging({ planet, emoji: row?.emoji || '', interval: row?.interval || '', offsetMin });
     startAlarmRing(() => setRinging(null));
   }, []);
 
@@ -1023,14 +1022,14 @@ function HourGrid({
                 }
               >
                 <div className="hour-card-icon-wrap">
-                  <span className="pm-glyph" aria-hidden="true">{r.emoji}</span>
+                  <span className="pm-glyph" aria-hidden="true"><PlanetGlyph planet={r.planet} /></span>
                   <span className="hour-card-num">{String(i + 1).padStart(2, '0')}</span>
                 </div>
                 <div className="hour-card-info">
                   <span className="hour-card-planet">{r.planet}</span>
                   <span className="hour-card-time">{r.interval}</span>
                   <span className={'hour-card-status ' + r.nat.cls} title={r.nat.txt}>
-                    ● {shortNatureLabel(r.nat)}
+                    <Circle size={8} fill="currentColor" strokeWidth={0} aria-hidden="true" /> {shortNatureLabel(r.nat)}
                   </span>
                 </div>
                 {showBell && (
@@ -1075,7 +1074,7 @@ function HourGrid({
               <AlarmClock size={46} strokeWidth={2} />
             </div>
             <p className="alarm-ringing-planet">
-              <span aria-hidden="true">{ringing.emoji}</span> {ringing.planet}
+              <span aria-hidden="true"><PlanetGlyph planet={ringing.planet} /></span> {ringing.planet}
             </p>
             <p className="alarm-ringing-when">
               {ringing.offsetMin > 0 ? `commence dans ${ringing.offsetMin} min` : 'commence maintenant'}
@@ -1229,7 +1228,7 @@ function WebAlarmSheet({
     <AccessibleModal className="alarm-sheet-backdrop" onClose={onClose} label="Réglages de l’alarme">
       <div className="alarm-sheet glass-panel" onClick={(e) => e.stopPropagation()}>
         <h4 className="alarm-sheet-title">
-          <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
+          <span aria-hidden="true"><PlanetGlyph planet={row.planet} /></span> {row.planet} · {row.interval}
         </h4>
 
         <p className="alarm-sheet-label">Me prévenir</p>
@@ -1320,7 +1319,7 @@ function AlarmSettingsSheet({
     <AccessibleModal className="alarm-sheet-backdrop" onClose={onClose} label="Réglages de l’alarme">
       <div className="alarm-sheet glass-panel" onClick={(e) => e.stopPropagation()}>
         <h4 className="alarm-sheet-title">
-          <span aria-hidden="true">{row.emoji}</span> {row.planet} · {row.interval}
+          <span aria-hidden="true"><PlanetGlyph planet={row.planet} /></span> {row.planet} · {row.interval}
         </h4>
 
         <p className="alarm-sheet-label">Me prévenir</p>

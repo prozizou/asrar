@@ -3,6 +3,7 @@
 // venait juste à échouer silencieusement (bloqué par le paywall) le jour de
 // l'expiration, sans que l'utilisateur n'ait été prévenu ni n'ait eu
 // l'occasion de renouveler avant de perdre l'accès.
+import { X, Hourglass } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { openAccess } from '@/lib/whatsapp';
 import { useAuth } from './AuthProvider';
@@ -45,7 +46,7 @@ export default function SubscriptionExpiryBanner({ expiresAt }) {
   return (
     <div className="expiry-banner" role="status">
       <span className="expiry-banner-text">
-        ⏳ {label}.{' '}
+        <Hourglass size={15} aria-hidden="true" className="expiry-banner-icon" /> {label}.{' '}
         <button
           className="expiry-banner-link"
           onClick={() => openAccess({ email: user?.email, section: 'Renouvellement (rappel J-' + Math.max(daysLeft, 0) + ')' })}
@@ -54,7 +55,7 @@ export default function SubscriptionExpiryBanner({ expiresAt }) {
         </button>
       </span>
       <button className="expiry-banner-close" aria-label="Masquer le rappel d’abonnement" onClick={dismiss}>
-        ✕
+        <X size={20} strokeWidth={2.2} aria-hidden="true" />
       </button>
     </div>
   );

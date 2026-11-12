@@ -343,3 +343,6 @@
 :where(.library-page) .cm-text { overflow-wrap: anywhere; white-space: pre-wrap; }
 :where(.library-page) .cm-error { color: var(--status-danger-text); margin-block: 12px; }
 :where(.library-page) .cm-list { margin-top: 16px; }
+/* Couverture de repli (BookOpen SVG) et actions sociales en SVG. */
+:where(.library-page) .book-cover > svg { color: var(--accent); opacity: .75; }
+:where(.library-page) .bs-btn svg { flex-shrink: 0; }

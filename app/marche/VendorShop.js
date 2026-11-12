@@ -7,7 +7,7 @@ import SmartImage from '@/components/SmartImage';
 import ReviewsSection from '@/components/ReviewsSection';
 import ProductPrice from './ProductPrice';
 import ProductRequests from './ProductRequests';
-import { Share2 } from 'lucide-react';
+import { Share2, ArrowLeft, Store, BadgeCheck, MapPin, ImageOff } from 'lucide-react';
 import { shareShop } from '@/lib/share';
 
 export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProduct }) {
@@ -16,7 +16,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
   return (
     <div className="glass-panel">
       <button className="back-btn" onClick={onBack} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
-        ← Retour au marché
+        <ArrowLeft size={18} aria-hidden="true" /> Retour au marché
       </button>
 
       <div className="vendor-shop-heading" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -45,14 +45,14 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />
           ) : (
-            '🔮'
+            <Store size={34} strokeWidth={1.7} aria-hidden="true" />
           )}
         </div>
         <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
           <h2 style={{ margin: 0 }}>
-            {vendor.name} {vendor.verified && <span style={{ color: '#4CAF50', fontSize: '1rem' }}>✔ Vérifié</span>}
+            {vendor.name} {vendor.verified && <span className="vendor-verified"><BadgeCheck size={16} strokeWidth={2.4} aria-hidden="true" /> Vérifié</span>}
           </h2>
-          {vendor.location && <p style={{ color: '#888', margin: '4px 0' }}>📍 {vendor.location}</p>}
+          {vendor.location && <p className="vendor-location"><MapPin size={14} aria-hidden="true" /> {vendor.location}</p>}
           <p style={{ color: 'var(--mk-gold)' }}>{vendor.bio || 'Spécialiste ésotérique'}</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function VendorShop({ vendor, products, isOwn, onBack, onOpenProd
               </div>
             ) : (
               <div className="prod-img-placeholder">
-                <span className="prod-img-placeholder-icon" aria-hidden="true">🖼️</span>
+                <span className="prod-img-placeholder-icon" aria-hidden="true"><ImageOff size={28} strokeWidth={1.6} /></span>
                 <span className="prod-img-placeholder-label">Image indisponible</span>
               </div>
             )}

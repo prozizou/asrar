@@ -12,6 +12,7 @@
 // qu'une fois la version requise DISPONIBLE en production sur le Play Store :
 // sinon, l'utilisateur serait renvoyé vers un Play Store sans mise à jour à
 // lui proposer, et resterait bloqué.
+import { CircleArrowUp } from 'lucide-react';
 import Modal from './Modal';
 import { useEffect, useState } from 'react';
 import { isAndroidVersionOutdated } from '@/lib/nativeVersion';
@@ -49,7 +50,7 @@ export default function NativeUpdateGate() {
   return (
     <Modal className="nug-overlay" role="alertdialog" labelledBy="nug-title">
       <div className="nug-box">
-        <div className="nug-icon" aria-hidden="true">⬆️</div>
+        <div className="nug-icon" aria-hidden="true"><CircleArrowUp size={40} strokeWidth={1.8} /></div>
         <h2 id="nug-title">Mise à jour requise</h2>
         <p>
           Une nouvelle version d&apos;ASRAR PRO est disponible. Mettez l&apos;application à jour depuis le Play Store

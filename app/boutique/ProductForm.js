@@ -135,7 +135,7 @@ export default function ProductForm({ product, onClose, onSaved, notify }) {
         // `number` n'est pas envoyé : le serveur reprend le téléphone de la boutique.
       };
       await apiPost('shop', { action: 'save-product', product: payload });
-      notify('✅ Produit enregistré.');
+      notify('Produit enregistré.', 'success');
       onSaved();
     } catch (e) {
       setSaveError(true);

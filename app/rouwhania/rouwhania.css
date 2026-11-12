@@ -180,7 +180,7 @@ html[data-theme='light'] .rw-page { --btn-disabled: #a1a1aa; }
 }
 .rw-page .rw-calc-details summary::-webkit-details-marker { display: none; }
 .rw-page .rw-calc-toggle-hint { font-size: 0.78rem; font-weight: 600; color: var(--btn-primary); }
-.rw-page .rw-calc-toggle-hint::after { content: ' ⌄'; display: inline-block; transition: transform 0.2s ease; }
+.rw-page .rw-calc-toggle-hint::after { content: ''; width: 0.9em; height: 0.9em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; display: inline-block; vertical-align: -2px; margin-left: 4px; transition: transform 0.2s ease; }
 .rw-page .rw-calc-details[open] .rw-calc-toggle-hint::after { transform: rotate(180deg); }
 .rw-page .rw-calc-details-body { display: flex; flex-direction: column; gap: 14px; padding: 0 16px 16px; }
 
@@ -258,7 +258,7 @@ html[data-theme='light'] .rw-page { --btn-disabled: #a1a1aa; }
 .rw-page .allah-card-name { color: var(--card-title); font-weight: bold; font-size: 22px; word-break: break-word; }
 .rw-page .allah-card-translit { color: var(--text-secondary); font-size: 0.82rem; font-weight: 600; }
 .rw-page .allah-card-toggle-hint { flex-shrink: 0; font-size: 0.78rem; font-weight: 600; color: var(--btn-primary); white-space: nowrap; }
-.rw-page .allah-card-toggle-hint::after { content: ' ⌄'; display: inline-block; transition: transform 0.2s ease; }
+.rw-page .allah-card-toggle-hint::after { content: ''; width: 0.9em; height: 0.9em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; display: inline-block; vertical-align: -2px; margin-left: 4px; transition: transform 0.2s ease; }
 .rw-page .allah-card[open] .allah-card-toggle-hint::after { transform: rotate(180deg); }
 .rw-page .allah-card-body { width: 100%; box-sizing: border-box; border-top: 1px dashed var(--card-border); padding: 15px; }
 .rw-page .allah-card-section-title { text-align: center; font-weight: bold; margin-bottom: 8px; border-radius: 8px; padding: 6px; }
@@ -418,3 +418,4 @@ html[data-theme='light'] .rw-page { --btn-disabled: #a1a1aa; }
   .rw-page .rw-hint-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
   .rw-page .rw-hint-text { font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
 }
+.rw-page .rw-hint-icon { display: flex; justify-content: center; color: var(--accent); }

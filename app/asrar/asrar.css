@@ -873,3 +873,4 @@ body.comment-open #asrarViewBtn { display: none !important; }
 .secret-purchase-dialog .secret-purchase-panel button:not(.primary) { background: var(--surface-2, #332741); color: var(--text-main, #eee); border: 1px solid var(--border, #59446d); }
 .secret-purchase-dialog .secret-purchase-panel button { margin: 0; }
 .secret-purchase-dialog .secret-purchase-panel button:disabled { opacity: .55; cursor: default; }
+.asrar-page .secret-return { gap: 4px; }

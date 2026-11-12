@@ -22,7 +22,7 @@ import VoiceComposer from './VoiceComposer';
 const Modal = ModalUntyped as any; const EmojiPicker = EmojiPickerUntyped as any; const AudioMessage = AudioMessageUntyped as any;
 
 type Message = { id: string; uid: string; email?: string; name?: string; picture?: string; at: number; text: string; version?: number; reactions?: Record<string, string>; deleted?: boolean; editedAt?: number; forwarded?: boolean; replyTo?: string; reply?: any; mediaType?: 'image' | 'audio'; mediaUrl?: string; mediaDuration?: number; mediaWaveform?: number[] };
-type Props = { groupId: string; uid: string; active: boolean; onUnread: Dispatch<SetStateAction<number>>; notify: (message: string) => void };
+type Props = { groupId: string; uid: string; active: boolean; onUnread: Dispatch<SetStateAction<number>>; notify: (message: string, type?: 'success' | 'error' | 'info') => void };
 const time = (value: number) => new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const preview = (message: any) => message?.deleted ? 'Message supprimé' : message?.text || (message?.mediaType === 'image' ? 'Photo' : message?.mediaType === 'audio' ? 'Message vocal' : 'Message');
 const merge = mergeChatMessages as (previous: Message[], incoming: Message[]) => Message[];

@@ -194,7 +194,7 @@ async function processUserWebAlarms(db, uid, enabled, now) {
     if (!row || now >= row.end) continue;
     const { body, state } = planetaryNotification(row, now < row.start ? row.start : now, ref.timeZone);
     const payload = JSON.stringify({
-      title: offsetMin > 0 ? `🪐 ${planet} dans ${offsetMin} min` : `🪐 Heure de ${planet}`,
+      title: offsetMin > 0 ? `${planet} dans ${offsetMin} min` : `Heure de ${planet}`,
       body,
       validUntil: state.validUntil.getTime(),
       url: "/planete",

@@ -5,7 +5,7 @@
 import './hijri.css';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronRight, ArrowLeft } from 'lucide-react';
 import { fetchHijriToday } from '@/lib/hijri';
 import { phaseOfDay, PHASE_ATTRACTION } from '@/lib/hijriPhases';
 import Moon from './Moon';
@@ -42,7 +42,7 @@ export default function HijriPage() {
 
   return (
     <div className="container hijri-page">
-      <Link href="/" className="back-btn">← Retour</Link>
+      <Link href="/" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <h1 className="hijri-title">Date du jour</h1>
 
       {loading && <p className="hijri-state">Chargement…</p>}

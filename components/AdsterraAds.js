@@ -26,6 +26,7 @@
 //  - NEXT_PUBLIC_ADSTERRA_IN_APP=0      : coupe Adsterra dans l'application
 //                                         Android (bannières et Native Banner).
 // Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
+import { Ban, ExternalLink } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAccess } from './AccessProvider';
 import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
@@ -92,7 +93,7 @@ function RemoveAdsButton() {
       onClick={() => access?.openGate('noads')}
       style={{ background: 'none', border: '1px solid var(--text-muted)', color: 'var(--text-muted)', borderRadius: 999, padding: '6px 14px', fontSize: 13, cursor: 'pointer' }}
     >
-      🚫 Retirer les publicités
+      <Ban size={14} aria-hidden="true" style={{ verticalAlign: -2 }} /> Retirer les publicités
     </button>
   );
 }
@@ -149,7 +150,7 @@ export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
     <p style={{ textAlign: 'center', margin: '20px 0 8px', fontSize: 13 }}>
       <a href={ADSTERRA_SMARTLINK} target="_blank" rel="sponsored noopener noreferrer" style={{ color: 'var(--text-muted)' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11, marginRight: 6 }}>Sponsorisé</span>
-        {label} ↗
+        {label} <ExternalLink size={13} aria-hidden="true" style={{ verticalAlign: -2 }} />
       </a>
     </p>
   );

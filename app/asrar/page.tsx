@@ -15,7 +15,7 @@ import Link from 'next/link';
 import ViewState from '@/components/ViewState';
 import { useToast } from '@/components/useToast';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower, ScrollText, Bookmark, ChevronRight } from 'lucide-react';
+import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower, ScrollText, Bookmark, ChevronRight, ArrowLeft } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
 import { deepLink, cleanUrl } from '@/lib/share';
@@ -246,10 +246,10 @@ export default function AsrarPage() {
       <div className="asrar-topbar" ref={topbarRef}>
         {inDetail ? (
           <div className="secret-detail-topbar">
-            <button type="button" className="secret-return" onClick={goBackFromSecret}>← Retour</button>
+            <button type="button" className="secret-return" onClick={goBackFromSecret}><ArrowLeft size={18} aria-hidden="true" /> Retour</button>
             <span dir="auto">{sentenceCaseIfShouting(currentSecret?.data.faida || 'Secret mystique')}</span>
           </div>
-        ) : <div className="asrar-heading"><Link href="/menu" className="back-btn" aria-label="Retour au menu">←</Link><h1>Secrets mystiques</h1></div>}
+        ) : <div className="asrar-heading"><Link href="/menu" className="back-btn" aria-label="Retour au menu"><ArrowLeft size={20} aria-hidden="true" /></Link><h1>Secrets mystiques</h1></div>}
         {!inDetail && (
           // .cat-rail-wrap porte le dégradé de bord droit (voir asrar.css) —
           // indice visuel qu'il reste des catégories à faire défiler, plutôt

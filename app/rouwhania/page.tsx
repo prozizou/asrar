@@ -38,6 +38,7 @@
 // interfaces ici (forme interne complexe, propre à ce module), suivant le
 // même principe que useAccess()/SmartImage dans les batches précédents
 // (#114, #116, #118) pour ce qui reste .js.
+import { ArrowLeft, Moon } from 'lucide-react';
 import './rouwhania.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -138,7 +139,7 @@ export default function RouwhaniaPage() {
     <div className="rw-page">
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '12px 10px 40px' }}>
         <Link href="/" className="back-btn" style={{ direction: 'ltr' }}>
-          ← Retour
+          <ArrowLeft size={18} aria-hidden="true" /> Retour
         </Link>
 
         <div className="main-container">
@@ -204,7 +205,7 @@ export default function RouwhaniaPage() {
           <div className="rw-right" dir="ltr">
             {!computed && (
               <div className="rw-hint">
-                <div className="rw-hint-icon">🌙</div>
+                <div className="rw-hint-icon"><Moon size={34} strokeWidth={1.6} aria-hidden="true" /></div>
                 <div className="rw-hint-title">Les noms des rouwhanes apparaîtront ici</div>
                 <div className="rw-hint-text">
                   Saisissez un nom ou un verset, puis lancez « Calculer » pour révéler la génération complète.

@@ -3,6 +3,7 @@
 // un écran blanc. Ce fichier spécial (convention app router) intercepte
 // l'erreur pour TOUTES les pages et propose de réessayer plutôt que de
 // laisser l'utilisateur bloqué.
+import { ArrowLeft, Frown } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function GlobalError({ error, reset }) {
@@ -26,7 +27,7 @@ export default function GlobalError({ error, reset }) {
     <div className="container" style={{ maxWidth: 480 }}>
       <div className="glass-panel" style={{ textAlign: 'center' }}>
         <div className="header">
-          <h1>Oups 😕</h1>
+          <h1><Frown size={28} className="title-icon" aria-hidden="true" /> Oups</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>
             Une erreur inattendue est survenue. Vous pouvez réessayer, ou revenir à l'accueil.
           </p>
@@ -38,7 +39,7 @@ export default function GlobalError({ error, reset }) {
           {/* Rechargement complet nécessaire pour sortir d'un arbre React en erreur. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="back-btn">
-            ← Accueil
+            <ArrowLeft size={18} aria-hidden="true" /> Accueil
           </a>
         </div>
       </div>

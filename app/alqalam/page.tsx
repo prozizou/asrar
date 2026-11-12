@@ -18,7 +18,7 @@ import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -1030,7 +1030,7 @@ export default function AlQalamPage() {
                       aria-expanded={showAccList}
                       onClick={() => setShowAccList((v) => !v)}
                     >
-                      {showAccList ? '▲' : '▼'} Blocs cumulés ({accumulatedBlocks.length})
+                      {showAccList ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />} Blocs cumulés ({accumulatedBlocks.length})
                     </button>
 
                     {showAccList && (

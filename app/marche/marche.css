@@ -1218,3 +1218,10 @@ html:not([data-theme="light"]) :where(.market-page) .pm-rating { color: #fbbf24;
 :where(.market-page) .pr-link:hover { transform: none; box-shadow: none; text-decoration: underline; }
 :where(.market-page) .pr-link:disabled { opacity: .5; cursor: default; }
 :where(.market-page) .pr-danger { color: #e11d48; }
+
+/* Icônes SVG (remplacent 🔮 🖼️ ✔ 📍). */
+:where(.market-page) .vendor-avatar svg, :where(.market-page) .prod-img-placeholder svg { color: var(--mk-gold, var(--accent)); }
+:where(.market-page) .verified-badge { display: inline-flex; align-items: center; }
+:where(.market-page) .vendor-verified { display: inline-flex; align-items: center; gap: 4px; color: #4caf50; font-size: 1rem; vertical-align: middle; }
+:where(.market-page) .vendor-location { display: flex; align-items: center; gap: 5px; margin: 4px 0; color: var(--text-muted); }
+:where(.market-page) .prod-img-placeholder-icon { display: inline-flex; }

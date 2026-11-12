@@ -1,4 +1,5 @@
 'use client';
+import { RotateCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ModalUntyped from '@/components/Modal';
 import { CHAT_MESSAGE_MAX } from '@/lib/zikrLogic';
@@ -72,7 +73,7 @@ export default function ChatImageEditor({ file, caption = '', onClose, onSave }:
       <h2>Préparer l’image</h2>
       <canvas ref={canvasRef} aria-label="Aperçu de l’image modifiée" />
       <div className="zk-editor-tools">
-        <button type="button" onClick={() => setRotation((r) => (r + 90) % 360)} disabled={busy}>Pivoter ↻</button>
+        <button type="button" onClick={() => setRotation((r) => (r + 90) % 360)} disabled={busy}>Pivoter <RotateCw size={16} aria-hidden="true" /></button>
         <label>Recadrage<select value={ratio} onChange={(e) => setRatio(e.target.value)} disabled={busy}>
           <option value="original">Original</option><option value="square">Carré</option><option value="landscape">4:3</option>
         </select></label>

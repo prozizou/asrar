@@ -20,6 +20,7 @@
 // (forme interne propre à ce module), même principe que dans les batches
 // précédents (#120, #122). useAccess() suit le même traitement (cast) que
 // dans les batches précédents.
+import { ArrowLeft, X, History, TriangleAlert, Search, CirclePause, SearchX, CircleCheck, Star, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './combinaisons.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -292,7 +293,7 @@ export default function CombinaisonsPage() {
     <div className="cc-page">
       <div className="container" style={{ maxWidth: 900 }}>
         <Link href="/" className="back-btn">
-          ← Retour
+          <ArrowLeft size={18} aria-hidden="true" /> Retour
         </Link>
 
         <header>
@@ -315,7 +316,7 @@ export default function CombinaisonsPage() {
           {banner && (
             <div className="restore-banner">
               <div className="rb-text">
-                💾 Une recherche précédente a été trouvée :{' '}
+                <History size={16} className="cc-inline-icon" aria-hidden="true" /> Une recherche précédente a été trouvée :{' '}
                 <strong>
                   poids {banner.target}, {banner.k} noms — {banner.results.length} résultat(s) — {banner.date}
                 </strong>
@@ -368,7 +369,7 @@ export default function CombinaisonsPage() {
                 </select>
                 {k >= 8 && (
                   <div className="perf-warning">
-                    ⚠️ <strong>Attention :</strong> k ≥ 8 implique des milliards de combinaisons théoriques (ex.
+                    <TriangleAlert size={16} className="cc-inline-icon" aria-hidden="true" /> <strong>Attention :</strong> k ≥ 8 implique des milliards de combinaisons théoriques (ex.
                     C(99,9) ≈ 1,7 Md). Le pruning reste efficace, mais préparez-vous à une exécution longue selon le
                     poids cible. Utilisez le bouton <em>Arrêter</em> si nécessaire.
                   </div>
@@ -412,7 +413,7 @@ export default function CombinaisonsPage() {
               {showFilterBar && (
                 <div className="results-search-wrap">
                   <div className="search-icon-wrap">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><Search size={16} aria-hidden="true" /></span>
                     <input
                       className="results-search-input"
                       aria-label="Rechercher dans les résultats"
@@ -428,7 +429,7 @@ export default function CombinaisonsPage() {
                   </div>
                   {filter && (
                     <button className="results-search-clear" onClick={() => setFilter('')} title="Effacer le filtre">
-                      ✕
+                      <X size={20} strokeWidth={2.2} aria-hidden="true" />
                     </button>
                   )}
                   <span className="filter-count">
@@ -551,7 +552,7 @@ function SearchStatus({
   if (outcome.restored) {
     return (
       <div className="status-line status-ok">
-        💾 Résultats restaurés — {outcome.results.length} combinaison{outcome.results.length > 1 ? 's' : ''} pour le
+        <History size={16} className="cc-inline-icon" aria-hidden="true" /> Résultats restaurés — {outcome.results.length} combinaison{outcome.results.length > 1 ? 's' : ''} pour le
         poids {outcome.target}
       </div>
     );
@@ -559,7 +560,7 @@ function SearchStatus({
   if (outcome.stopped) {
     return (
       <div className="status-line status-stopped">
-        ⏸ Recherche interrompue — {outcome.results.length} résultat{outcome.results.length > 1 ? 's' : ''} partiel
+        <CirclePause size={16} className="cc-inline-icon" aria-hidden="true" /> Recherche interrompue — {outcome.results.length} résultat{outcome.results.length > 1 ? 's' : ''} partiel
         {outcome.results.length > 1 ? 's' : ''}
         <CalcDetails elapsed={outcome.elapsed} pruned={outcome.pruned} k={outcome.k} />
       </div>
@@ -568,7 +569,7 @@ function SearchStatus({
   if (outcome.empty) {
     return (
       <div className="status-line status-empty">
-        🔎 Aucune combinaison trouvée pour le poids {outcome.target}. Essayez un autre nombre de noms ou un autre
+        <SearchX size={16} className="cc-inline-icon" aria-hidden="true" /> Aucune combinaison trouvée pour le poids {outcome.target}. Essayez un autre nombre de noms ou un autre
         poids cible.
       </div>
     );
@@ -576,7 +577,7 @@ function SearchStatus({
   const n = outcome.results.length;
   return (
     <div className="status-line status-ok">
-      ✓ {n} combinaison{n > 1 ? 's' : ''} trouvée{n > 1 ? 's' : ''} pour le poids {outcome.target}
+      <CircleCheck size={16} className="cc-inline-icon" aria-hidden="true" /> {n} combinaison{n > 1 ? 's' : ''} trouvée{n > 1 ? 's' : ''} pour le poids {outcome.target}
       <CalcDetails elapsed={outcome.elapsed} pruned={outcome.pruned} k={outcome.k} />
     </div>
   );
@@ -651,7 +652,7 @@ function ResultCard({
             {i < names.length - 1 && '  +  '}
           </span>
         ))}
-        {isAllah && <span className="rc-allah-badge">★ الله</span>}
+        {isAllah && <span className="rc-allah-badge"><Star size={12} fill="currentColor" aria-hidden="true" /> الله</span>}
       </div>
       <div className="rc-translit">{parts.map((p: any) => p.translit).join(' + ')}</div>
       <div className="rc-desc">{parts.map((p: any) => p.desc).join(' · ')}</div>
@@ -665,7 +666,7 @@ function ResultCard({
             Détails
           </button>
           <button type="button" className="rc-action" onClick={handleCopy}>
-            {copied ? 'Copié ✓' : 'Copier'}
+            {copied ? <>Copié <Check size={14} aria-hidden="true" /></> : 'Copier'}
           </button>
           <button
             type="button"
@@ -674,7 +675,7 @@ function ResultCard({
             aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             aria-pressed={isFav}
           >
-            {isFav ? '★' : '☆'}
+            <Star size={16} fill={isFav ? 'currentColor' : 'none'} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -716,13 +717,13 @@ function ComboSheet({ indices, onClose, onCopy }: { indices: Combo; onClose: () 
             </div>
           ))}
         </div>
-        {isAllah && <div className="rc-allah-badge combo-sheet-allah">★ الله</div>}
+        {isAllah && <div className="rc-allah-badge combo-sheet-allah"><Star size={12} fill="currentColor" aria-hidden="true" /> الله</div>}
         <div className="name-sheet-weight" dir="ltr">
           {formula}
         </div>
         <div className="name-sheet-actions">
           <button className="name-sheet-use" onClick={handleCopy}>
-            {copied ? 'Copié ✓' : 'Copier la combinaison'}
+            {copied ? <>Copié <Check size={14} aria-hidden="true" /></> : 'Copier la combinaison'}
           </button>
           <button className="name-sheet-close" onClick={onClose}>
             Fermer

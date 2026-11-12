@@ -1,3 +1,13 @@
+## SW v46.75 — Icônes SVG à la place des emojis dans toute l’application
+
+- Toutes les icônes emoji de l’interface sont remplacées par des icônes SVG (même famille, couleur du thème) : boutons Retour et Fermer, étoiles d’avis, statistiques et actions de la boutique, Bibliothèque, Combinaisons, chapelet (réglages, objectif, séries, série de jours, badge), Zikr (privé, rappel, vœux), Marché (boutique vérifiée, lieu, image indisponible), installation et abonnement, mise à jour requise, publicités, page d’erreur, Rouwhanes, Géomancie, export Word des Hatims.
+- Symboles des sept planètes (Planète, Date du jour) dessinés en SVG (`components/PlanetGlyph.js`) au lieu des caractères ♄ ♃ ♂ ☉ ♀ ☿ ☽, souvent affichés en emoji couleur sur Android.
+- Messages éphémères (toasts) : icône SVG selon le type (succès, erreur, info) au lieu de « ✅ » / « ❌ » dans le texte.
+- Indicatif téléphonique du Zikr : code pays (« SN +221 ») au lieu du drapeau emoji.
+- Marqueurs CSS (chevrons, main) et page d’aperçu des liens partagés : SVG.
+- Titres des notifications sans emoji (le centre de notifications affiche déjà une icône par type).
+- Conservés volontairement : messages WhatsApp pré-remplis et textes de partage (texte envoyé à d’autres applications), réactions et emojis saisis dans la discussion des Zikr (contenu des messages), notifications locales des alarmes planétaires (texte système).
+
 ## SW v46.74 — Écriture spirituelle : nouvelle interface
 
 - En-tête compact (retour, titre, menu ⋮ : changer de mode, outils, réinitialiser) et une seule surface de réglages, nettement moins haute.

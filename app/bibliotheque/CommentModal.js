@@ -1,6 +1,7 @@
 'use client';
 // Modale commentaires d'un livre — port du bloc #commentModal + openComments/
 // renderComments/submitComment de bibliotheque.html.
+import { X } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { useState } from 'react';
 
@@ -24,7 +25,7 @@ export default function CommentModal({ book, comments, loading, error, onClose, 
     <Modal className="modal-overlay open" onClose={sending ? undefined : onClose} label={'Commentaires — ' + book.text}>
       <div className="modal-box">
         <button type="button" aria-label="Fermer les commentaires" className="modal-close" onClick={onClose} disabled={sending}>
-          ✕
+          <X size={20} strokeWidth={2.2} aria-hidden="true" />
         </button>
         <h3 className="cm-title">Commentaires — {book.text}</h3>
         <div className="cm-list">

@@ -1,6 +1,7 @@
 'use client';
 // Carré 5×5 — porté depuis prozizou/Kanzou app/carre/5/page.tsx (voir
 // lib/kanzouWafq.ts carre5Base()/carre5Askandria() pour les formules).
+import { ArrowLeft } from 'lucide-react';
 import '../carre.css';
 import { useState } from 'react';
 import MethodSelector from '../_components/MethodSelector';
@@ -83,7 +84,7 @@ export default function Carre5Page() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq/carre" className="back-btn">← Retour</Link>
+      <Link href="/wafq/carre" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 5 × 5</h1>
 

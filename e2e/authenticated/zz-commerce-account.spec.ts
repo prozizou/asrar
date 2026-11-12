@@ -85,7 +85,7 @@ test('les préférences personnelles sont appliquées côté serveur', async ({ 
   expect((await postAs('premium', 'account', { action: 'settings', analytics: false, pushEnabled: false })).status()).toBe(200);
   expect((await postAs('premium', 'push-fcm-register', { action: 'register', platform: 'android', token: 'emulator-device-should-not-register' })).status()).toBe(409);
   const summary = await (await postAs('premium', 'account')).json();
-  expect(summary.settings).toEqual({ analytics: false, pushEnabled: false });
+  expect(summary.settings).toEqual({ analytics: false, pushEnabled: false, whatsapp: { available: false, enabled: false, phone: '' } });
   expect((await postAs('premium', 'account', { action: 'privacy-list' })).status()).toBe(403);
   expect((await postAs('admin', 'account', { action: 'privacy-list' })).status()).toBe(200);
 });

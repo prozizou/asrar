@@ -20,7 +20,7 @@ describe('Boutique : likes, commentaires et avis', () => {
     const list = jobs(db);
     expect(list).toHaveLength(1);
     expect(list[0].audience.uids).toEqual(['owner']);
-    expect(list[0].notification).toMatchObject({ type: 'social', title: '❤️ Awa aime votre produit « Bague de protection »', targetUrl: '/?item=p1' });
+    expect(list[0].notification).toMatchObject({ type: 'social', title: 'Awa aime votre produit « Bague de protection »', targetUrl: '/?item=p1' });
   });
 
   it('prévient la boutique d’un commentaire ou d’un avis, jamais de ses propres actions', async () => {
@@ -29,7 +29,7 @@ describe('Boutique : likes, commentaires et avis', () => {
     await invoke(handler, { cat: 'vendor', key: vendorId, action: 'comment', text: 'Très sérieux', stars: 5 });
     await invoke(handler, { cat: 'product', key: 'p1', action: 'comment', text: 'Disponible ?' });
     const titles = jobs(db).map((j) => j.notification.title).sort();
-    expect(titles).toEqual(['⭐ Awa a laissé un avis sur votre boutique', '💬 Awa a commenté votre produit « Bague de protection »']);
+    expect(titles).toEqual(['Awa a commenté votre produit « Bague de protection »', 'Awa a laissé un avis sur votre boutique']);
 
     const self = setup(owner);
     await invoke(self.handler, { cat: 'product', key: 'p1', action: 'toggle-like' });
@@ -57,7 +57,7 @@ describe('Bibliothèque : l’administration est prévenue', () => {
     const list = jobs(db);
     expect(list).toHaveLength(2);
     expect(list.every((j) => JSON.stringify(j.audience.uids) === '["aide","boss"]')).toBe(true);
-    expect(list.map((j) => j.notification.title).sort()).toEqual(['❤️ Awa aime « Manuscrit ancien »', '💬 Awa a commenté « Manuscrit ancien »']);
+    expect(list.map((j) => j.notification.title).sort()).toEqual(['Awa a commenté « Manuscrit ancien »', 'Awa aime « Manuscrit ancien »']);
   });
 });
 
@@ -74,7 +74,7 @@ describe('Date du jour : le 1er et le 16 du mois', () => {
     const list = jobs(db);
     expect(list).toHaveLength(1);
     expect(list[0].audience).toEqual({ type: 'all' });
-    expect(list[0].notification).toMatchObject({ whatsappBroadcast: true, targetUrl: '/hijri', title: '📅 Date du jour — 16 du mois',
+    expect(list[0].notification).toMatchObject({ whatsappBroadcast: true, targetUrl: '/hijri', title: 'Date du jour — 16 du mois',
       body: 'Lundi 16 novembre 2026 · 6 Rajab (رجب) 1448 H' });
   });
 
@@ -83,7 +83,7 @@ describe('Date du jour : le 1er et le 16 du mois', () => {
     const { queueMonthDayNotice } = load(db);
     expect((await queueMonthDayNotice(db, new Date('2026-11-20T05:00:00Z'), { fetchHijri: hijri(1) })).status).toBe('early');
     expect((await queueMonthDayNotice(db, new Date('2026-11-20T08:00:00Z'), { fetchHijri: hijri(1) })).status).toBe('queued');
-    expect(jobs(db)[0].notification.title).toBe('📅 Date du jour — début du mois hégirien');
+    expect(jobs(db)[0].notification.title).toBe('Date du jour — début du mois hégirien');
     expect((await queueMonthDayNotice(db, new Date('2026-11-21T08:00:00Z'), { fetchHijri: hijri(2) })).status).toBe('not-due');
   });
 
@@ -153,7 +153,7 @@ describe('Alarme d’heure planétaire (cloche) sur WhatsApp', () => {
     const list = jobs(db);
     expect(list).toHaveLength(1);
     expect(list[0].audience.uids).toEqual(['u1']);
-    expect(list[0].notification).toMatchObject({ type: 'planet_alarm', inApp: false, push: false, title: `🪐 C’est l’heure de ${row.planet}` });
+    expect(list[0].notification).toMatchObject({ type: 'planet_alarm', inApp: false, push: false, title: `C’est l’heure de ${row.planet}` });
     expect(Object.keys(db.read('planet_native_alarms/u1') || {})).toEqual([]); // alarme ponctuelle consommée
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Lock, Mic, Send, Trash2, Unlock } from 'lucide-react';
+import { Lock, Mic, Send, Trash2, Unlock, ArrowUp, ArrowLeft } from 'lucide-react';
 type Props = { show: boolean; voice: any; disabled: boolean; active: boolean; onStart: () => Promise<void>; maxSeconds: number };
 export default function VoiceComposer({ show, voice, disabled, active, onStart, maxSeconds }: Props) {
   const [locked, setLocked] = useState(false);
@@ -50,7 +50,7 @@ export default function VoiceComposer({ show, voice, disabled, active, onStart, 
   const duration = (value: number) => `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
   return <div className="zk-chat-input-row zk-voice-recording">
     <span className="zk-voice-dot" aria-hidden="true" /><span className="zk-voice-time">{duration(voice.seconds)} / {duration(maxSeconds)}</span>
-    <span className="zk-voice-lock-label">{locked ? 'Verrouillé' : '↑ Verrouiller · ← Annuler'}</span>
+    <span className="zk-voice-lock-label">{locked ? 'Verrouillé' : <><ArrowUp size={13} aria-hidden="true" /> Verrouiller · <ArrowLeft size={13} aria-hidden="true" /> Annuler</>}</span>
     <button type="button" className="zk-chat-tool" aria-label={locked ? 'Enregistrement verrouillé' : 'Verrouiller l’enregistrement'} onClick={() => { if (gesture.current) gesture.current.locked = true; setLocked(true); }}>{locked ? <Lock size={18} /> : <Unlock size={18} />}</button>
     <button type="button" className="zk-chat-tool" aria-label="Annuler le vocal" onClick={voice.cancel}><Trash2 size={18} /></button>
     <button type="button" className="zk-chat-send" aria-label="Envoyer le vocal" onClick={voice.stop}><Send size={18} /></button>

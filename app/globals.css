@@ -1053,8 +1053,8 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   user-select: none; list-style: none;
 }
 .commit-modal-details summary::-webkit-details-marker { display: none; }
-.commit-modal-details summary::before { content: '▸ '; }
-.commit-modal-details[open] summary::before { content: '▾ '; }
+.commit-modal-details summary::before { content: ''; display: inline-block; width: 0.85em; height: 0.85em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; margin-right: 4px; vertical-align: -1px; transition: transform .15s; }
+.commit-modal-details[open] summary::before { transform: rotate(90deg); }
 .commit-modal-desc { color: var(--text-muted); font-size: .85rem; white-space: pre-wrap; margin-top: 8px; }
 
 /* ── Compteur de dhikr : le chapelet (components/TasbihChapelet.js) ───────────
@@ -1228,7 +1228,7 @@ img, svg:not(.lucide), video { max-width: 100%; height: auto; }
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 999px; padding: 6px 16px; margin: 0;
 }
-.tc-hint::before { content: '👆'; font-size: .9em; }
+.tc-hint::before { content: ''; display: inline-block; width: 1em; height: 1em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2'/%3E%3Cpath d='M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2'/%3E%3Cpath d='M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8'/%3E%3Cpath d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2'/%3E%3Cpath d='M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2'/%3E%3Cpath d='M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8'/%3E%3Cpath d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15'/%3E%3C/svg%3E") center / contain no-repeat; vertical-align: -2px; }
 
 /* Zikr collectif : simple légende sous le tasbih (toute la zone reste
    cliquable via .tc-tapzone) — texte discret, sans pilule. */
@@ -2195,3 +2195,23 @@ html[data-theme="light"] {
 .action-ad-area { display: flex; justify-content: center; margin: 12px auto; width: 300px; max-width: 100%; overflow: hidden; }
 .sg-box .action-ad-area + .sg-sub { margin-top: 12px; }
 .sg-box:has(.action-ad-area) > button { display: block; width: 100%; min-height: 44px; margin-top: 10px; }
+
+/* Toast avec icône SVG selon le type (components/useToast.js). */
+.toast { display: flex; align-items: center; gap: 8px; }
+.toast-icon { flex-shrink: 0; color: var(--accent); }
+.toast-success .toast-icon { color: var(--success); }
+.toast-error .toast-icon { color: var(--status-danger-text, var(--danger)); }
+/* Liens « Retour » : flèche SVG + texte. */
+.back-btn { gap: 6px; }
+.back-btn svg { flex-shrink: 0; }
+/* Icônes SVG de titre et d'en-tête de fenêtre (remplacent 📚 🏪 📖 📢 📶…). */
+.module-title .title-icon { display: inline-block; vertical-align: -4px; margin-right: 6px; color: var(--accent); }
+.sg-hero-icon { display: flex; justify-content: center; color: var(--accent); margin-bottom: 4px; }
+.sg-close svg, .modal-close svg { display: block; }
+/* Étoiles SVG (components/StarRating.js) et petits pictogrammes en ligne. */
+.sr-star, .sr-star-btn { display: inline-flex; align-items: center; }
+.install-inline-icon { display: inline-block; vertical-align: -3px; }
+.expiry-banner-icon { display: inline-block; vertical-align: -3px; }
+.sg-ad-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+/* Flèche SVG centrée sur le texte, même quand une page redéfinit .back-btn. */
+a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6px; }

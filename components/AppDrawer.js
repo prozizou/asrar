@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { UserRound, ShoppingBag, Moon, Sun, LogOut, X, Download, ChevronRight } from 'lucide-react';
+import { UserRound, ShoppingBag, Moon, Sun, LogOut, X, Download, ChevronRight, Menu } from 'lucide-react';
 import Modal from './Modal';
 import { useAuth } from '@/components/AuthProvider';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
@@ -41,7 +41,7 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
   };
   return <>
     <button type="button" className={triggerClassName || 'signout-btn'} onClick={() => setOpen(true)}
-      aria-label={triggerLabel || 'Ouvrir le menu'} aria-haspopup="dialog" aria-expanded={open} title={triggerLabel || 'Menu'}>{trigger || '☰'}</button>
+      aria-label={triggerLabel || 'Ouvrir le menu'} aria-haspopup="dialog" aria-expanded={open} title={triggerLabel || 'Menu'}>{trigger || <Menu size={20} aria-hidden="true" />}</button>
     {open && <Modal className="drawer-overlay" onClose={() => setOpen(false)} label="Menu">
       <div className="drawer-panel">
         <div className="drawer-header"><h2>Mon espace</h2><button type="button" className="drawer-close" onClick={() => setOpen(false)} aria-label="Fermer le menu"><X size={20} aria-hidden="true" /></button></div>

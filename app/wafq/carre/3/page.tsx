@@ -2,6 +2,7 @@
 // Carré 3×3 — porté depuis prozizou/Kanzou app/carre/3/page.tsx (voir
 // lib/kanzouWafq.ts wilaya()/ghazaly()/bayt()/hatimTriangulaire() pour les
 // formules et le bug corrigé du mode Bayt).
+import { ArrowLeft } from 'lucide-react';
 import '../carre.css';
 import { useState } from 'react';
 import MethodSelector from '../_components/MethodSelector';
@@ -98,7 +99,7 @@ export default function Carre3Page() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq/carre" className="back-btn">← Retour</Link>
+      <Link href="/wafq/carre" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 3 × 3</h1>
 
