@@ -1,6 +1,6 @@
 'use client';
-// En-tête compact du tableau de bord : logo — « Asrar Pro » — cloche —
-// profil. Revue design : « header chargé : logo + Menu + avatar + hamburger
+// En-tête compact du tableau de bord : retour — logo | « Asrar Pro » —
+// cloche | profil. Revue design : « header chargé : logo + Menu + avatar + hamburger
 // + déconnexion → garder logo + titre + profil, déplacer déconnexion et
 // options secondaires dans le menu profil ». L'avatar EST donc le bouton
 // qui ouvre le panneau (AppDrawer), lequel porte désormais thème,
@@ -8,6 +8,8 @@
 // s'ajoute comme SEULE exception à « une cible à droite » : le badge non-lu
 // doit rester visible en permanence, ce qu'un compteur enfoui dans le
 // panneau profil ne permettrait pas.
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import AppDrawer from '@/components/AppDrawer';
 import SmartImage from '@/components/SmartImage';
@@ -19,11 +21,18 @@ export default function UserBar() {
 
   return (
     <div className="menu-appbar">
+      {/* Retour au Marché, intégré à la barre (maquette 2026-11) : remplace
+          le bouton « ← Retour » qui occupait sa propre ligne au-dessus. */}
+      <Link href="/" className="menu-appbar-back" aria-label="Retour au Marché" title="Retour au Marché">
+        <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+      </Link>
       <span className="menu-appbar-logo" aria-hidden="true">
         <SmartImage src="/assets/logo-mark.png" alt="" width={34} height={34} priority />
       </span>
+      <span className="menu-appbar-sep" aria-hidden="true" />
       <h1 className="menu-appbar-title">Asrar Pro</h1>
       <NotificationBell />
+      <span className="menu-appbar-sep" aria-hidden="true" />
       <AppDrawer
         triggerClassName="menu-appbar-profile"
         triggerLabel={`Profil et réglages — ${name}`}

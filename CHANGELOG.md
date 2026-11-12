@@ -1,3 +1,11 @@
+## SW v46.70 — Menu : nouvelle présentation
+
+- En-tête : bouton retour intégré à la barre (plus de bouton « ← Retour » sur sa propre ligne), logo sur fond blanc, séparateurs fins autour du titre et de la cloche, avatar cerclé d’orange.
+- Titres de section (Continuer, Favoris, Explorer) précédés d’une barre orange.
+- Continuer : ligne pleine largeur avec flèche, fond légèrement orangé.
+- Favoris et pages de famille : pastille d’icône plus grande, séparateur vertical entre l’icône et le texte, étoile et cadenas plus visibles.
+- Explorer : modules séparés par « • », badge « Accès premium » avec couronne, compteur de modules retiré.
+
 ## SW v46.69 — Notifications WhatsApp : boutiques, Zikr, alarmes planétaires, date du jour, Bibliothèque
 
 - Boutiques : le propriétaire est prévenu quand un produit ou la boutique est aimé (une fois par personne), commenté ou noté — centre de notifications, push et WhatsApp.

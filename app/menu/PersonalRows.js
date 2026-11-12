@@ -9,7 +9,9 @@
 //   • « Continuer » exclut ce qui est déjà épinglé en favori, pour qu'un
 //     même module n'occupe jamais deux rangées à l'écran.
 import { useEffect, useState } from 'react';
-import { getRecentModules } from '@/lib/recentModules';
+import Link from 'next/link';
+import { ChevronRight, Lock } from 'lucide-react';
+import { getRecentModules, trackRecentModule } from '@/lib/recentModules';
 import { getFavoriteModules, toggleFavoriteModule } from '@/lib/favoriteModules';
 import MenuItemTile from './MenuItemTile';
 
@@ -44,9 +46,26 @@ export default function PersonalRows({ allItems }) {
       {continueItems.length > 0 && (
         <section className="menu-group">
           <h2 className="group-title">Continuer</h2>
-          <div className="sub-grid">
+          {/* Lignes pleine largeur avec chevron (maquette 2026-11) : « reprendre
+              là où j'en étais » se lit comme une action, pas comme une tuile. */}
+          <div className="family-list">
             {continueItems.map((it) => (
-              <MenuItemTile key={it.href} href={it.href} icon={it.icon} label={it.label} desc={it.desc} premium={it.premium} />
+              <Link key={it.href} href={it.href} className="family-row continue-row" onClick={() => trackRecentModule(it.href)}>
+                <span className="family-icon" aria-hidden="true">
+                  {it.icon}
+                  {it.premium && (
+                    <span className="menu-item-lock">
+                      <Lock size={9} strokeWidth={3} />
+                    </span>
+                  )}
+                </span>
+                <span className="menu-sep" aria-hidden="true" />
+                <span className="family-id">
+                  <span className="family-title"><span className="family-title-text">{it.label}</span></span>
+                  <span className="family-items">{it.desc}</span>
+                </span>
+                <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
+              </Link>
             ))}
           </div>
         </section>
