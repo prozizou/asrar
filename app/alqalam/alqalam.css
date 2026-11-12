@@ -483,3 +483,21 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 .alq-page .alq-btn-tonal:disabled { opacity: .45; cursor: default; }
 .alq-page .alq-acc-toggle { background: var(--surface-input); color: var(--text-main); }
 .alq-page .alq-tools-content .alq-btn-primary { width: 100%; }
+
+/* Icônes SVG (lucide) à la place des emojis : alignées sur le texte. */
+.alq-page .acc-btn, .alq-page .acc-item-meta { display: inline-flex; align-items: center; gap: 5px; }
+.alq-page .acc-btn { width: auto; flex: 0 0 auto; min-height: 36px; margin: 0; padding: 0 10px; box-shadow: none; }
+.alq-page .acc-btn:hover:not(:disabled) { transform: none; box-shadow: none; color: var(--button-ink, var(--text-on-accent)); }
+.alq-page .acc-item-meta { gap: 4px; }
+.alq-page .popup-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; font-weight: 600; color: var(--accent); }
+.alq-page .orne-loading { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.alq-page .orne-overflow svg { vertical-align: -2px; margin-right: 4px; color: var(--status-danger-text, var(--danger)); }
+.alq-page .orne-spin { animation: alq-spin 1s linear infinite; }
+@keyframes alq-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .alq-page .orne-spin { animation: none; } }
+/* Avertissement d'aperçu (HTML de lib/alqalam.js) : icône SVG en fond. */
+.alq-page .preview-warning::before {
+  content: ''; display: block; width: 22px; height: 22px; margin: 0 auto 6px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+}

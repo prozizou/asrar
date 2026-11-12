@@ -18,7 +18,7 @@ import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
@@ -102,7 +102,7 @@ interface Sourate {
   name: string;
 }
 
-// Blocs cumulés ("➕ Cumuler") : sauvegardés à chaque changement pour ne rien
+// Blocs cumulés (« Cumuler ») : sauvegardés à chaque changement pour ne rien
 // perdre si l'utilisateur ferme l'onglet/l'app avant de générer le Word.
 const ACC_KEY = 'cali_accumulated_blocks';
 const loadAccumulated = (): AccBlock[] => {
@@ -216,7 +216,7 @@ export default function AlQalamPage() {
 
   // Reconstitue, en texte brut arabe, tout ce qui a déjà été composé — c'est
   // ce texte que l'ornement analyse pour y détecter les lettres choisies :
-  //   • accumulatedBlocks : les blocs déjà « ➕ Cumulés » (n'importe quel
+  //   • accumulatedBlocks : les blocs déjà « Cumulés » (n'importe quel
   //     mode). block.texte porte parfois le balisage <span> de
   //     l'intercalation (posé par onAddTemp) — htmlToPlainText le retire ;
   //     le Rasm, lui, n'est PAS appliqué au stockage (seul le drapeau
@@ -1067,10 +1067,10 @@ export default function AlQalamPage() {
                                 </div>
                                 <div className="acc-item-actions">
                                   <button type="button" className="acc-btn" onClick={saveEdit}>
-                                    💾 Enregistrer
+                                    <Save size={15} aria-hidden="true" /> Enregistrer
                                   </button>
                                   <button type="button" className="acc-btn" onClick={cancelEdit}>
-                                    ✖️ Annuler
+                                    <X size={15} aria-hidden="true" /> Annuler
                                   </button>
                                 </div>
                               </>
@@ -1082,7 +1082,7 @@ export default function AlQalamPage() {
                                 </div>
                                 <span className="acc-item-meta">
                                   ×{Number(block.totalMultiplier || 0).toLocaleString('fr-FR')}
-                                  {block.isRasmMode ? ' · ✒️ Rasm' : ''}
+                                  {block.isRasmMode && <> · <PenTool size={12} aria-hidden="true" /> Rasm</>}
                                 </span>
                                 <div className="acc-item-actions">
                                   <button
@@ -1092,7 +1092,7 @@ export default function AlQalamPage() {
                                     disabled={i === 0}
                                     aria-label={`Monter le bloc ${i + 1}`}
                                   >
-                                    ⬆️
+                                    <ArrowUp size={15} aria-hidden="true" />
                                   </button>
                                   <button
                                     type="button"
@@ -1101,13 +1101,13 @@ export default function AlQalamPage() {
                                     disabled={i === accumulatedBlocks.length - 1}
                                     aria-label={`Descendre le bloc ${i + 1}`}
                                   >
-                                    ⬇️
+                                    <ArrowDown size={15} aria-hidden="true" />
                                   </button>
                                   <button type="button" className="acc-btn" onClick={() => startEdit(i)}>
-                                    ✏️ Modifier
+                                    <Pencil size={15} aria-hidden="true" /> Modifier
                                   </button>
                                   <button type="button" className="acc-btn acc-btn-danger" onClick={() => removeBlock(i)}>
-                                    🗑️ Supprimer
+                                    <Trash2 size={15} aria-hidden="true" /> Supprimer
                                   </button>
                                 </div>
                               </>
@@ -1333,12 +1333,13 @@ export default function AlQalamPage() {
       {popupOpen && (
         <AccessibleModal className="popup-overlay" onClose={() => setPopupOpen(false)} label="Options du document">
           <div className="popup-content glass-panel">
-            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 12, color: 'var(--accent-blue)' }}>
+            <div className="popup-title">
+              {popupFormat === 'docx' ? <FileType size={18} aria-hidden="true" /> : <FileDown size={18} aria-hidden="true" />}
               {popupFormat === 'orne'
-                ? '📄 Télécharger l’ornement en PDF'
+                ? 'Télécharger l’ornement en PDF'
                 : popupFormat === 'pdf'
-                  ? '📄 Générer le document PDF'
-                  : '📝 Générer le document Word (.docx)'}
+                  ? 'Générer le document PDF'
+                  : 'Générer le document Word (.docx)'}
             </div>
             <button className="popup-item" onClick={() => triggerExport(true, true)}>
               Avec ouverture et fermeture

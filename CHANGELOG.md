@@ -8,6 +8,7 @@
 - Un seul bouton principal « Générer le texte » (répétition ou intercalation selon le mode) ; « Sourate seule » reste en action secondaire.
 - Outils (Documents, Recherche, Ornement, taille du texte) repliés dans la même surface, en puces.
 - Résultat juste sous les réglages, avec Copier, Modifier, Partager, PDF et DOCX ; les exports utilisent un nom par défaut si aucun n’est saisi.
+- Plus aucun emoji : blocs cumulés (monter, descendre, modifier, supprimer, enregistrer, annuler, Rasm), fenêtres d’export, messages de l’ornement et avertissement d’aperçu utilisent de vraies icônes SVG.
 
 ## SW v46.73 — Hatims : triangle et liste des carrés
 
