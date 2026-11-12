@@ -6,8 +6,9 @@
 // familles listent déjà. D'où deux garde-fous ici :
 //   • aucune sélection par défaut : sans historique ni favori, rien ne
 //     s'affiche (le tableau de bord reste court pour un nouvel arrivant) ;
-//   • « Continuer » exclut ce qui est déjà épinglé en favori, pour qu'un
-//     même module n'occupe jamais deux rangées à l'écran.
+//   • « Continuer » ne montre QUE le dernier module ouvert (une seule
+//     carte, demande 2026-11) — même s'il est aussi en favori : c'est
+//     « reprendre là où j'en étais », pas une deuxième liste de raccourcis.
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Lock } from 'lucide-react';
@@ -15,7 +16,7 @@ import { getRecentModules, trackRecentModule } from '@/lib/recentModules';
 import { getFavoriteModules, toggleFavoriteModule } from '@/lib/favoriteModules';
 import MenuItemTile from './MenuItemTile';
 
-const CONTINUE_MAX = 3;
+const CONTINUE_MAX = 1;
 
 export default function PersonalRows({ allItems }) {
   // null tant que le stockage n'a pas été lu : le rendu SERVEUR ne peut pas
@@ -36,7 +37,6 @@ export default function PersonalRows({ allItems }) {
 
   const favoriteItems = favorites.map(byHref).filter(Boolean);
   const continueItems = recents
-    .filter((href) => !favorites.includes(href))
     .map(byHref)
     .filter(Boolean)
     .slice(0, CONTINUE_MAX);
