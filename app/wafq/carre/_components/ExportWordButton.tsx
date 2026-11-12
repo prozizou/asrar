@@ -6,6 +6,7 @@
 // initial des 9 pages /wafq/carre/[taille] même pour qui n'exporte jamais.
 import { Download } from 'lucide-react';
 import { useState } from 'react';
+import { useSupport } from '@/components/SupportProvider';
 
 export default function ExportWordButton({
   title,
@@ -18,6 +19,8 @@ export default function ExportWordButton({
   rows: (string | number | null)[][];
   fileName: string;
 }) {
+  // Fenêtre « Soutenir ASRAR PRO » après une réussite (règle : lib/supportPrompt.js).
+  const { celebrate } = useSupport();
   const [busy, setBusy] = useState(false);
 
   async function handleClick() {
@@ -26,6 +29,7 @@ export default function ExportWordButton({
     try {
       const { exportSquareToDocx } = await import('@/lib/kanzouExportDocx');
       await exportSquareToDocx({ title, subtitle, rows, fileName });
+      celebrate();
     } catch {
       // Échec silencieux (ex. Blob non supporté) : pas de UI d'erreur dédiée
       // pour un simple export, même choix que la version d'origine.

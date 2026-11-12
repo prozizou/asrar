@@ -36,6 +36,7 @@ import {
   splitFr,
 } from '@/lib/combinaisons';
 import { SponsoredLink } from '@/components/AdsterraAds';
+import { useSupport } from '@/components/SupportProvider';
 const AccessibleModal = AccessibleModalUntyped as any;
 
 
@@ -99,6 +100,8 @@ function comboCopyText(indices: Combo) {
 }
 
 export default function CombinaisonsPage() {
+  // Fenêtre « Soutenir ASRAR PRO » après une réussite (règle : lib/supportPrompt.js).
+  const { celebrate } = useSupport();
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
@@ -234,7 +237,8 @@ export default function CombinaisonsPage() {
       }
     }
     setOutcome({ results: found, elapsed, pruned, stopped, target: t, k, empty: found.length === 0 && !stopped });
-  }, [isSearching, target, k]);
+    if (found.length > 0 && !stopped) celebrate();
+  }, [isSearching, target, k, celebrate]);
 
   const handleSearch = useCallback(async () => {
     // Paywall au clic : abonné → recherche ; sinon → portail d'abonnement.

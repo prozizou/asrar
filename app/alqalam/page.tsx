@@ -20,6 +20,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Link from 'next/link';
 import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
+import { useSupport } from '@/components/SupportProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
 import SpinnerUntyped from '@/components/Spinner';
 import {
@@ -132,6 +133,8 @@ export default function AlQalamPage() {
   // Menu de sélection préalable : quel type d'écriture ? null = pas encore choisi
   // (écran de choix affiché). 'simple' = répétition ; 'intercalee' = intercaler
   // avec les versets d'une sourate ; 'rasmique' = écriture sans points ni voyelles.
+  // Fenêtre « Soutenir ASRAR PRO » après une réussite (règle : lib/supportPrompt.js).
+  const { celebrate } = useSupport();
   const [writingMode, setWritingMode] = useState<WritingMode>(null);
 
   const [inputText, setInputText] = useState('');
@@ -532,6 +535,7 @@ export default function AlQalamPage() {
     setIntercalatedPhrase('');
     setEditingResult(false);
     setResultEdited(false);
+    celebrate();
   };
 
   // ─── Intercalation (protégé) ───
@@ -589,6 +593,7 @@ export default function AlQalamPage() {
     setEditingResult(false);
     setResultEdited(false);
     showToast('Texte combiné généré.', 'info');
+    celebrate();
   };
 
   // ─── Sourate seule, sans intercalation (protégé) ───
@@ -613,6 +618,7 @@ export default function AlQalamPage() {
     setEditingResult(false);
     setResultEdited(false);
     showToast('Sourate insérée.', 'info');
+    celebrate();
   };
 
   // ─── Cumuler (protégé) ───
@@ -714,6 +720,7 @@ export default function AlQalamPage() {
         onProgress: (pct: number, text: string) => setProgress({ pct, text }),
       });
       showToast('Document Word généré (compatible WPS Office).', 'info');
+      celebrate();
     } catch (e) {
       showToast('Échec de la génération Word.', 'error');
     } finally {
@@ -737,6 +744,7 @@ export default function AlQalamPage() {
         'info',
         7000
       );
+      celebrate();
     } catch (e) {
       showToast('Échec de la préparation du PDF.', 'error');
     } finally {

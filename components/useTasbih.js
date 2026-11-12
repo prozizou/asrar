@@ -6,6 +6,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { playBeadSound, playGoalSound } from '@/lib/audio';
 import { getStreak, recordCompletion } from '@/lib/dhikrStreak';
+import { useSupport } from './SupportProvider';
 
 const ls = {
   get: (k) => {
@@ -43,6 +44,8 @@ const vibrate = (pattern) => {
  *   l'appelant, cf. components/TasbihChapelet.js, prop `collectifRestant`).
  */
 export function useTasbih(id, autoTarget, uncapped = false) {
+  // Fenêtre « Soutenir ASRAR PRO » après une réussite (règle : lib/supportPrompt.js).
+  const { celebrate } = useSupport();
   const initialTarget = (() => {
     const t = ls.get(`tasbih_target_${id}`);
     return t === null || t === '' ? String(autoTarget || '') : t;
@@ -100,6 +103,7 @@ export function useTasbih(id, autoTarget, uncapped = false) {
     }
 
     if (goalDone) {
+      celebrate(); // objectif atteint : le comptage est terminé
       playGoalSound();
       vibrate([100, 50, 100, 50, 200]);
       setFlash(true);
@@ -123,7 +127,7 @@ export function useTasbih(id, autoTarget, uncapped = false) {
 
     setCount(c);
     ls.set(`tasbih_asma_${id}`, c);
-  }, [count, seriesCount, grand, base, loopCur, id]);
+  }, [count, seriesCount, grand, base, loopCur, id, celebrate]);
 
   const setTarget = useCallback(
     (v) => {

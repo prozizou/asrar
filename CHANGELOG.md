@@ -1,3 +1,10 @@
+## SW v46.77 — Fenêtre « Soutenir ASRAR PRO » (contribution volontaire)
+
+- Après une action réussie (texte généré, Sourate seule, export Word ou PDF dans Écriture spirituelle ; écu de Géomancie ; résultats de Combinaisons ; calcul des Rouwhanes ; export Word des Hatims ; objectif du chapelet atteint), une fenêtre propose de soutenir l’application : Wave (montant libre), PI-SPI (alias à copier), WhatsApp.
+- Au plus une fois par jour, pour tous les comptes ; « Plus tard » : pas avant 3 jours ; « J’ai déjà contribué » : pas avant 30 jours. Jamais pendant une action, ni par-dessus une autre fenêtre.
+- Entrée « Soutenir l’application » toujours disponible dans le menu profil et dans Mon compte.
+- Test zikr-warning adapté à la règle « retrait seulement à 0 grain ».
+
 ## SW v46.76 — Android : bouton retour direct vers le menu (APK 8.0.5)
 
 - Le bouton retour d’Android ne repasse plus par toutes les pages déjà visitées : il ferme d’abord la fenêtre ou la fiche ouverte, puis ramène directement au menu depuis n’importe quel module (même une sous-page, ex. carré 7 × 7), puis du menu au Marché ; sur le Marché, double appui pour quitter.
