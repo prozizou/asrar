@@ -61,7 +61,7 @@ async function queueSessionReminders(db, now, stats) {
     if (group.ownerUid) uids.add(group.ownerUid);
     if (uids.size) {
       await enqueueNotification(db, { type: "users", uids: [...uids].sort() }, {
-        type: "zikr_session", title: "🔔 " + (group.name || "Zikr collectif"),
+        type: "zikr_session", title: group.name || "Zikr collectif",
         body: "Une session de ce zikr collectif commence bientôt.", targetUrl: `/zikr?item=${gid}`,
         expiresAt: Number(group.sessionAt) + SESSION_GRACE_MS,
         meta: { tagSuffix: gid, reminder: { kind: "session", gid, sessionAt: group.sessionAt } },
@@ -100,7 +100,7 @@ async function queueRenewalReminders(db, now, stats) {
     const days = daysUntil(purchase.expiresAt, now);
     await enqueueNotification(db, { type: "users", uids: [user.uid] }, {
       type: kind,
-      title: reminder ? "⏳ Votre abonnement expire bientôt" : "🔒 Votre abonnement a expiré",
+      title: reminder ? "Votre abonnement expire bientôt" : "Votre abonnement a expiré",
       body: reminder ? `Il vous reste ${days} jour${days > 1 ? "s" : ""} — renouvelez pour garder votre accès à ASRAR PRO.` :
         "Votre accès premium ASRAR PRO a expiré. Renouvelez pour le retrouver.",
       targetUrl: renewalWhatsAppUrl({ email, expiresAt: purchase.expiresAt, expired: !reminder }),

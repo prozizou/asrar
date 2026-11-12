@@ -5,6 +5,7 @@
 // d'emoji, catégories, recherche) : le clavier mobile a de toute façon déjà
 // son propre picker complet (⌨️→😊) — celui-ci n'est qu'un raccourci pour les
 // plus courants dans une discussion de dhikr, pas un remplacement.
+import { Smile } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const EMOJIS = [
@@ -36,7 +37,7 @@ export default function EmojiPicker({ onPick }) {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        😊
+        <Smile size={20} aria-hidden="true" />
       </button>
       {open && (
         <div className="zk-emoji-pop" role="menu">

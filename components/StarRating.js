@@ -5,12 +5,22 @@
 // pour l'assemblage complet (liste + formulaire). Styles : app/globals.css,
 // section « Avis » (préfixe .sr-).
 
+// Étoile pleine en SVG (taille = 1em, couleur = currentColor) : remplace le
+// caractère étoile, rendu en emoji ou dans une police imprévisible selon l'appareil.
+function StarIcon() {
+  return (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" style={{ display: 'block' }}>
+      <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
+    </svg>
+  );
+}
+
 export function StarRatingDisplay({ value, count = 0, size = '1rem', compact = false, numeric = false }) {
   const rounded = Math.round(Number(value) || 0);
   const stars = (
     <span className="sr-stars" aria-hidden="true">
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={'sr-star' + (i < rounded ? ' on' : '')}>★</span>
+        <span key={i} className={'sr-star' + (i < rounded ? ' on' : '')}><StarIcon /></span>
       ))}
     </span>
   );
@@ -24,7 +34,7 @@ export function StarRatingDisplay({ value, count = 0, size = '1rem', compact = f
   if (numeric) {
     return (
       <span className="sr-display sr-display-numeric" style={{ fontSize: size }} aria-label={label}>
-        <span className="sr-star on" aria-hidden="true">★</span>
+        <span className="sr-star on" aria-hidden="true"><StarIcon /></span>
         <span className="sr-numeric-value">{(Number(value) || 0).toFixed(1).replace('.', ',')}</span>
         {count > 0 && <span className="sr-count">· {count} avis</span>}
       </span>
@@ -63,7 +73,7 @@ export function StarRatingInput({ value, onChange }) {
             aria-pressed={n <= value}
             onClick={() => onChange(n)}
           >
-            ★
+            <StarIcon />
           </button>
         );
       })}

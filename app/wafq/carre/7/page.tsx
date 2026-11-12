@@ -1,6 +1,7 @@
 'use client';
 // Carré 7×7 — porté depuis prozizou/Kanzou app/carre/7/page.tsx (voir
 // lib/kanzouWafq.ts carre7() pour la formule).
+import { ArrowLeft } from 'lucide-react';
 import '../carre.css';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -38,7 +39,7 @@ export default function Carre7Page() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq/carre" className="back-btn">← Retour</Link>
+      <Link href="/wafq/carre" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 7 × 7</h1>
 

@@ -2,6 +2,7 @@
 // Contexte d'accès (paywall) — remplace le cache global _accessStatus + les
 // fonctions ensureAccess()/getSubscriptionLevel() éparpillées. Le portail
 // d'abonnement est rendu ici et piloté par un simple état React.
+import { X, Megaphone, Ban } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus, isAccessCacheValid } from '@/lib/access';
 import { consumeAdCredit, isUnityAdsAvailable, prepareNativeActionAd, showNativeActionAd } from '@/lib/unityAds';
@@ -256,9 +257,9 @@ export default function AccessProvider({ children }) {
         <Modal className="sg-overlay" onClose={() => setAdBlocked(false)} label="Publicité nécessaire">
           <div className="sg-box">
             <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setAdBlocked(false)}>
-              ✕
+              <X size={20} strokeWidth={2.2} aria-hidden="true" />
             </button>
-            <div style={{ fontSize: '2.4rem' }}>📢</div>
+            <div className="sg-hero-icon"><Megaphone size={40} strokeWidth={1.8} aria-hidden="true" /></div>
             <h2>Une publicité est nécessaire</h2>
             <p className="sg-sub">
               {adBlocked.reason === 'blocked'
@@ -278,7 +279,7 @@ export default function AccessProvider({ children }) {
               style={{ width: '100%', marginTop: 8 }}
               onClick={() => { setAdBlocked(false); openGate('noads'); }}
             >
-              🚫 Retirer les publicités
+              <Ban size={16} aria-hidden="true" /> Retirer les publicités
             </button>
           </div>
         </Modal>

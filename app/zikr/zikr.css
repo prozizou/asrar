@@ -1262,3 +1262,10 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
 }
 .zk-message-actions .zk-danger svg { color: currentColor; }
 .zk-message-actions .zk-reaction-picker button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Icônes SVG en ligne (remplacent les emojis 🔒 🔔 🤲 🌙). */
+.zk-inline-icon { display: inline-block; vertical-align: -3px; color: var(--accent); flex-shrink: 0; }
+.zk-link { display: inline-flex; align-items: center; gap: 4px; }
+.zk-btn.main { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+/* Code pays (texte) à la place du drapeau emoji. */
+.zk-phone-flag.zk-phone-iso { font-size: .72rem; font-weight: 800; letter-spacing: .04em; padding: 2px 5px; border-radius: 5px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }

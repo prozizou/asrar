@@ -67,12 +67,12 @@ test('des crons concurrents livrent un seul rappel de session aux membres', asyn
   expect((await request.get('/api/cron/notifications', { headers })).status()).toBe(200);
   for (const role of ['free', 'premium']) {
     const list = await (await postAs(role, 'notifications', { action: 'list' })).json();
-    expect(list.items.filter((item: any) => item.title === '🔔 Session fiable')).toHaveLength(1);
+    expect(list.items.filter((item: any) => item.title === 'Session fiable')).toHaveLength(1);
   }
   await prepare();
   await request.get('/api/cron/notifications', { headers });
   const list = await (await postAs('free', 'notifications', { action: 'list' })).json();
-  expect(list.items.filter((item: any) => item.title === '🔔 Session fiable')).toHaveLength(1);
+  expect(list.items.filter((item: any) => item.title === 'Session fiable')).toHaveLength(1);
 });
 
 test('les rappels obsolètes sont écartés après reprogrammation ou prolongation', async ({ request }) => {
@@ -87,7 +87,7 @@ test('les rappels obsolètes sont écartés après reprogrammation ou prolongati
   expect(drain.status()).toBe(200);
   expect((await drain.json()).skipped).toBeGreaterThanOrEqual(2);
   const own = (await db.ref('notifications/fixture-free').once('value')).val() || {};
-  expect(Object.values(own).some((item: any) => item.title === '🔔 Session déplacée')).toBe(false);
+  expect(Object.values(own).some((item: any) => item.title === 'Session déplacée')).toBe(false);
   const expired = (await db.ref('notifications/fixture-expired').once('value')).val() || {};
   expect(Object.values(expired).some((item: any) => item.type === 'renewal')).toBe(false);
 });

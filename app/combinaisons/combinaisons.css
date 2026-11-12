@@ -516,7 +516,7 @@
   user-select: none;
 }
 .cc-page details summary::-webkit-details-marker { display: none; }
-.cc-page details summary::before { content: '▶'; font-size: 0.6rem; transition: transform 0.2s; color: var(--gold); }
+.cc-page details summary::before { content: ''; display: inline-block; width: 0.9rem; height: 0.9rem; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; flex-shrink: 0; transition: transform 0.2s; color: var(--gold); }
 .cc-page details[open] summary::before { transform: rotate(90deg); }
 
 /* Footer resserré (revue design v2 : « beaucoup d'espace vide en bas ») —
@@ -556,3 +556,8 @@
 .cc-page .rb-btn-dismiss { background: transparent; color: var(--muted); border: 1px solid var(--gold-border); }
 
 .cc-page input:not([type="checkbox"]), .cc-page select { min-height: 44px; font-size: 16px; }
+
+/* Icônes SVG en ligne (remplacent 💾 ⚠️ ⏸ 🔎 ✓). */
+.cc-inline-icon { display: inline-block; vertical-align: -3px; margin-right: 4px; flex-shrink: 0; }
+.rc-allah-badge svg, .rc-action svg { vertical-align: -2px; }
+.rc-fav { display: inline-flex; align-items: center; justify-content: center; }

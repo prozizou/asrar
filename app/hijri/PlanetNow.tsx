@@ -3,6 +3,7 @@
 // avec la phase du mois. Position GPS tentée en douceur : sans elle, lever et
 // coucher par défaut (06:30 / 18:00) et mention « approximatif ».
 import { useEffect, useState } from 'react';
+import PlanetGlyph from '@/components/PlanetGlyph';
 import Link from 'next/link';
 import { ChevronRight, Clock } from 'lucide-react';
 import { planetNow } from '@/lib/hijriPlanet';
@@ -43,14 +44,14 @@ export default function PlanetNow() {
       </div>
       <div className="hijri-planet-grid">
         <div className="hijri-planet-item">
-          <span className="hijri-planet-glyph" aria-hidden="true">{r.dayEmoji}</span>
+          <span className="hijri-planet-glyph" aria-hidden="true"><PlanetGlyph planet={r.dayPlanet} /></span>
           <div>
             <strong>{r.dayPlanet}</strong>
             <span>Planète du jour</span>
           </div>
         </div>
         <div className="hijri-planet-item">
-          <span className="hijri-planet-glyph" aria-hidden="true">{r.hourEmoji}</span>
+          <span className="hijri-planet-glyph" aria-hidden="true"><PlanetGlyph planet={r.hourPlanet} /></span>
           <div>
             <strong>{r.hourPlanet}</strong>
             <span>Heure planétaire actuelle</span>

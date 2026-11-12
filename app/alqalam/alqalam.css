@@ -60,7 +60,6 @@ html[data-theme='light']
 
 .alq-page .top-textarea { min-height: 80px; resize: vertical; direction: rtl; font-family: 'Scheherazade New', serif; font-size: 24px; }
 
-.alq-page .grid-row-2-1 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; width: 100%; min-width: 0; }
 .alq-page .grid-row-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; min-width: 0; }
 
 /* Nom du document + bouton DOCS sur une seule ligne (au lieu de 2 lignes
@@ -140,39 +139,7 @@ html[data-theme='light']
   .alq-page .mode-card-desc { font-size: 0.8rem; }
 }
 
-.alq-page .mode-current {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: var(--text-gray);
-}
-.alq-page .mode-current strong { color: var(--text-main); }
-.alq-page .mode-change-btn {
-  background: none;
-  border: 1px solid var(--glass-border);
-  color: var(--text-gray);
-  border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-.alq-page .mode-change-btn:hover { color: var(--text-main); border-color: var(--accent); }
 
-/* Version du texte (intercalation) : sans voyelles / avec voyelles (API). */
-.alq-page .version-toggle { display: flex; gap: 8px; }
-.alq-page .version-btn {
-  flex: 1;
-  background: var(--surface-input);
-  border: 1px solid var(--glass-border);
-  color: var(--text-gray);
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.alq-page .version-btn.active { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); font-weight: 700; }
 
 .alq-page .btn-glass { background: var(--accent); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--button-ink); font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; padding: 12px; min-width: 0; max-width: 100%; }
 .alq-page .btn-glass:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
@@ -319,24 +286,12 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 
 /* Présentation Écriture spirituelle — classes propres au module. */
 .alq-page .app-container { flex-direction: column; width: 100%; max-width: 760px; min-height: auto; margin: 0 auto; padding: 16px 14px max(24px, env(safe-area-inset-bottom)); gap: 16px; }
-.alq-page .alq-heading { display: flex; align-items: center; gap: 12px; }
-.alq-heading h1 { font-size: clamp(1.25rem, 5vw, 1.8rem); margin: 0; line-height: 1.2; }
-.alq-heading a { display: grid; place-items: center; width: 44px; min-height: 44px; color: var(--accent); flex-shrink: 0; }
 /* ── Vue compacte et hiérarchisée ───────────────────────────────────────────
    1. Carte de saisie : mode et changement sur une ligne, champs resserrés.
    2. Résultat : titre + actions sur une ligne, UNE ligne de repères
       (texte × répétitions), puis le texte, dense et justifié. */
 .alq-page .controls-section { width: 100%; padding: 16px; gap: 12px; overflow: visible; border-radius: 20px; background: var(--glass-bg); }
-.alq-page .mode-current { gap: 10px; margin: 0; padding: 0; align-items: center; }
-.alq-page .mode-current > span { flex: 1; min-width: 0; font-size: .85rem; color: var(--text-muted); }
-.alq-page .mode-current strong { display: inline; font-size: .95rem; margin: 0 0 0 4px; }
-.alq-page .mode-change-btn { width: auto; flex: 0 0 auto; min-height: 36px; margin: 0; padding: 6px 12px; font-size: .8rem; }
-.alq-text-field > label, .alq-repeat-row > label { display: block; font-size: .8rem; color: var(--text-muted); margin-bottom: 6px; }
 .alq-page .top-textarea { display: block; min-height: 72px; height: 84px; max-height: 240px; font-size: 26px; line-height: 1.45; margin: 0; padding: 10px 14px; }
-.alq-page .alq-repeat-row { grid-template-columns: minmax(72px, .6fr) minmax(0, 1.7fr); gap: 8px; align-items: stretch; }
-.alq-repeat-row > label { grid-column: 1 / -1; margin: 0; }
-.alq-page .alq-repeat-row .glass-input { min-width: 0; margin: 0; min-height: 46px; padding: 8px 12px; }
-.alq-page .alq-repeat-row .btn-glass { margin: 0; min-height: 46px; text-transform: none; font-size: .9rem; line-height: 1.3; background: var(--accent); color: var(--button-ink); }
 .alq-tools { border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; }
 .alq-tools summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-height: 44px; cursor: pointer; font-weight: 600; font-size: .9rem; list-style: none; }
 .alq-tools summary::-webkit-details-marker { display: none; }
@@ -371,12 +326,178 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
 .alq-page .alq-edit-save { border: 1px solid transparent; background: var(--accent); color: var(--button-ink); }
 .alq-result-empty, .alq-result-status { margin: 0; color: var(--text-muted); font-size: .8rem; line-height: 1.5; }
 .alq-result-empty { padding: 12px 0; }
-/* Téléphone étroit : les trois actions passent sous le titre, à parts égales. */
-@media (max-width: 430px) {
-  .alq-result-actions { width: 100%; }
-  .alq-page .alq-result-actions button { flex: 1 1 0; }
-}
 @media (max-width: 360px) {
   .alq-page .controls-section, .alq-page .alq-result { padding: 14px; }
-  .alq-page .alq-repeat-row .btn-glass { font-size: .85rem; padding: 8px; }
+}
+
+/* ═════════ Refonte « Material 3 » (2026-11) ═════════
+   Une seule surface de réglages (pas de cartes imbriquées), contrôles de 44 px,
+   rayons 12–20 px, accent orange du thème, espacements resserrés (8/12/16). */
+.alq-page .app-container { gap: 12px; padding-top: 8px; }
+
+/* En-tête : retour — titre — ⋮ */
+.alq-appbar { display: flex; align-items: center; gap: 4px; min-height: 52px; }
+.alq-appbar h1 { flex: 1; min-width: 0; margin: 0; font-size: clamp(1.15rem, 4.6vw, 1.45rem); font-weight: 700; letter-spacing: -.01em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alq-page .alq-icon-btn {
+  display: inline-grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; margin: 0; padding: 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--accent); box-shadow: none; cursor: pointer; text-decoration: none;
+}
+.alq-page .alq-icon-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); transform: none; box-shadow: none; }
+.alq-menu { position: relative; }
+.alq-menu .alq-icon-btn { color: var(--text-main); }
+.alq-menu-list {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 210px; padding: 6px;
+  background: var(--bg-alt, var(--bg-deep)); border: 1px solid var(--glass-border); border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .35); display: flex; flex-direction: column;
+}
+.alq-page .alq-menu-list button {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; margin: 0; padding: 0 12px;
+  border: 0; border-radius: 10px; background: transparent; color: var(--text-main); font: 500 .92rem var(--font-ui);
+  text-align: left; box-shadow: none; cursor: pointer;
+}
+.alq-page .alq-menu-list button:hover { background: var(--surface); transform: none; box-shadow: none; }
+.alq-menu-list svg { color: var(--accent); flex-shrink: 0; }
+
+/* Surface de réglages */
+.alq-page .alq-settings { gap: 14px; padding: 14px; border-radius: 20px; background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+.alq-mode-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.alq-mode-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 12px 6px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-size: .85rem; font-weight: 700;
+}
+.alq-mode-chip svg { flex-shrink: 0; }
+.alq-page .alq-text-btn {
+  width: auto; min-height: 40px; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; background: transparent;
+  color: var(--accent); font: 600 .85rem var(--font-ui); box-shadow: none; cursor: pointer;
+}
+.alq-page .alq-text-btn:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); transform: none; box-shadow: none; }
+
+.alq-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.alq-field > label, .alq-rep-row > label { font-size: .78rem; font-weight: 600; letter-spacing: .02em; color: var(--text-muted); }
+
+/* Sélecteur de sourate : nom + nombre de versets */
+.alq-select { position: relative; display: flex; align-items: center; min-height: 48px; border: 1px solid var(--glass-border); border-radius: 12px; background: var(--surface-input); }
+.alq-select:focus-within { border-color: var(--accent); }
+.alq-select > svg:first-child { position: absolute; left: 12px; color: var(--accent); pointer-events: none; }
+.alq-page .alq-select select {
+  flex: 1; min-width: 0; height: 46px; margin: 0; padding: 0 40px; border: 0; background: transparent;
+  color: var(--text-main); font: 600 1rem var(--font-ui); appearance: none; -webkit-appearance: none; outline: none; cursor: pointer;
+  text-overflow: ellipsis;
+}
+.alq-select-chevron { position: absolute; right: 12px; color: var(--text-muted); pointer-events: none; }
+.alq-page .alq-select option { color: var(--text-main); background: var(--bg-deep); }
+
+/* Contrôle segmenté (Sans / Avec voyelles) */
+.alq-segmented { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border-strong, var(--glass-border)); border-radius: 999px; overflow: hidden; }
+.alq-page .alq-segmented button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; margin: 0; padding: 0 10px;
+  border: 0; border-radius: 0; background: transparent; color: var(--text-main); font: 600 .85rem var(--font-ui); box-shadow: none; cursor: pointer;
+}
+.alq-page .alq-segmented button + button { border-left: 1px solid var(--border-strong, var(--glass-border)); }
+.alq-page .alq-segmented button.is-active { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.alq-page .alq-segmented button:hover { transform: none; box-shadow: none; }
+
+/* Champ arabe : RTL, hauteur ajustée au contenu (page.tsx) */
+.alq-page .alq-settings .top-textarea {
+  height: auto; min-height: 56px; max-height: 220px; resize: none; overflow-y: auto; margin: 0; padding: 8px 14px;
+  font-size: 26px; line-height: 1.5; border-radius: 12px; unicode-bidi: plaintext; text-align: right;
+}
+
+/* Répétitions : libellé à gauche, compteur − [n] + à droite */
+.alq-rep-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.alq-stepper { display: inline-flex; align-items: stretch; height: 44px; border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; background: var(--surface-input); }
+.alq-stepper.is-invalid { border-color: var(--danger); }
+.alq-page .alq-stepper button {
+  display: grid; place-items: center; width: 44px; margin: 0; padding: 0; border: 0; border-radius: 0;
+  background: transparent; color: var(--accent); box-shadow: none; cursor: pointer;
+}
+.alq-page .alq-stepper button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, transparent); transform: none; box-shadow: none; }
+.alq-page .alq-stepper button:disabled { color: var(--text-dim); cursor: default; }
+.alq-page .alq-stepper input {
+  width: 76px; min-width: 0; margin: 0; padding: 0 4px; border: 0; border-inline: 1px solid var(--glass-border); border-radius: 0;
+  background: transparent; color: var(--text-main); font: 700 1.05rem var(--font-ui); text-align: center; font-variant-numeric: tabular-nums; outline: none;
+}
+.alq-help { margin: 0; font-size: .76rem; line-height: 1.4; color: var(--text-muted); }
+.alq-help.is-error { color: var(--status-danger-text, var(--danger)); }
+
+/* Actions : principale + secondaire (Sourate seule) */
+.alq-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.alq-actions.has-secondary { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.alq-page .alq-btn-primary, .alq-page .alq-btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 0; padding: 0 14px;
+  border-radius: 999px; font: 700 .95rem var(--font-ui); text-transform: none; letter-spacing: 0; cursor: pointer; box-shadow: none; white-space: nowrap;
+}
+.alq-page .alq-btn-primary { border: 0; background: var(--accent); color: var(--button-ink, var(--text-on-accent)); }
+.alq-page .alq-btn-primary:hover:not(:disabled) { filter: brightness(1.06); transform: none; box-shadow: 0 4px 14px var(--accent-glow); }
+.alq-page .alq-btn-primary:disabled { opacity: .5; cursor: default; }
+.alq-page .alq-btn-secondary { border: 1px solid var(--accent); background: transparent; color: var(--accent); }
+.alq-page .alq-btn-secondary:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); transform: none; box-shadow: none; }
+@media (max-width: 359px) { .alq-actions.has-secondary { grid-template-columns: 1fr; } }
+
+/* Outils : repliés dans la même surface, séparés par un filet */
+.alq-page .alq-settings .alq-tools { border: 0; border-top: 1px solid var(--glass-border); border-radius: 0; margin: 0 -14px -14px; }
+.alq-page .alq-settings .alq-tools summary { padding: 4px 14px; min-height: 48px; font-size: .9rem; color: var(--text-main); }
+.alq-page .alq-settings .alq-tools summary svg:first-child { color: var(--accent); }
+.alq-page .alq-settings .alq-tools-content { border-top: 0; padding: 0 14px 14px; gap: 12px; }
+.alq-tool-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.alq-page .alq-tool-chips button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin: 0; padding: 0 12px;
+  border: 1px solid var(--border-strong, var(--glass-border)); border-radius: 10px; background: transparent;
+  color: var(--text-main); font: 600 .82rem var(--font-ui); box-shadow: none; cursor: pointer;
+}
+.alq-page .alq-tool-chips button:hover { transform: none; box-shadow: none; border-color: var(--accent); }
+.alq-page .alq-tool-chips button.is-active { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); color: var(--accent); }
+
+/* Résultat directement sous les réglages */
+.alq-page .alq-result { padding: 12px 14px 14px; gap: 10px; border-radius: 20px; background: var(--surface); }
+.alq-result-header h2 { font-size: .95rem; }
+.alq-result-header h2 svg { color: var(--accent); }
+.alq-result-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
+.alq-page .alq-result-actions button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 54px; width: 100%; padding: 6px 2px; margin: 0; border: 1px solid var(--glass-border);
+  border-radius: 12px; background: var(--surface-input); color: var(--text-main); font: 600 .72rem var(--font-ui); box-shadow: none;
+}
+.alq-page .alq-result-actions button svg { color: var(--accent); }
+.alq-page .alq-result-actions button:hover { border-color: var(--accent); transform: none; box-shadow: none; }
+.alq-page .alq-result .output-area { max-height: 55dvh; }
+@media (min-width: 600px) {
+  .alq-page .alq-result-actions button { flex-direction: row; min-height: 40px; font-size: .8rem; gap: 6px; }
+}
+
+/* Outils : puces compactes et boutons « tonals » (même famille que le reste). */
+.alq-page .alq-tool-chips button { width: auto; flex: 0 0 auto; }
+.alq-page .alq-tools-content .doc-name-row { align-items: stretch; gap: 8px; }
+.alq-page .alq-tools-content .doc-name-row > * { margin: 0; }
+.alq-page .alq-tools-content .doc-name-row .glass-input { height: 44px; min-height: 44px; padding: 8px 12px; border-radius: 12px; }
+.alq-page .alq-tools-content .doc-name-row .alq-btn-tonal { height: 44px; }
+.alq-page .alq-tools-content .grid-row-1-1 { gap: 8px; }
+.alq-page .alq-btn-tonal {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; margin: 0; padding: 0 12px;
+  border: 0; border-radius: 12px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
+  font: 700 .85rem var(--font-ui); text-transform: none; box-shadow: none; cursor: pointer; white-space: nowrap;
+}
+.alq-page .doc-name-row .alq-btn-tonal { width: auto; flex: 0 0 auto; }
+.alq-page .alq-btn-tonal:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 24%, transparent); transform: none; box-shadow: none; }
+.alq-page .alq-btn-tonal.is-danger { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--status-danger-text, var(--danger)); }
+.alq-page .alq-btn-tonal:disabled { opacity: .45; cursor: default; }
+.alq-page .alq-acc-toggle { background: var(--surface-input); color: var(--text-main); }
+.alq-page .alq-tools-content .alq-btn-primary { width: 100%; }
+
+/* Icônes SVG (lucide) à la place des emojis : alignées sur le texte. */
+.alq-page .acc-btn, .alq-page .acc-item-meta { display: inline-flex; align-items: center; gap: 5px; }
+.alq-page .acc-btn { width: auto; flex: 0 0 auto; min-height: 36px; margin: 0; padding: 0 10px; box-shadow: none; }
+.alq-page .acc-btn:hover:not(:disabled) { transform: none; box-shadow: none; color: var(--button-ink, var(--text-on-accent)); }
+.alq-page .acc-item-meta { gap: 4px; }
+.alq-page .popup-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; font-weight: 600; color: var(--accent); }
+.alq-page .orne-loading { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.alq-page .orne-overflow svg { vertical-align: -2px; margin-right: 4px; color: var(--status-danger-text, var(--danger)); }
+.alq-page .orne-spin { animation: alq-spin 1s linear infinite; }
+@keyframes alq-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .alq-page .orne-spin { animation: none; } }
+/* Avertissement d'aperçu (HTML de lib/alqalam.js) : icône SVG en fond. */
+.alq-page .preview-warning::before {
+  content: ''; display: block; width: 22px; height: 22px; margin: 0 auto 6px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
 }

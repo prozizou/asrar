@@ -793,7 +793,7 @@ async function sendPushToUid(db, uid, payload, logTag) {
 async function pushInactivityWarning(db, uids, gid) {
   if (!configureVapid()) return; // pas configuré : l'avertissement en app suffit
   const payload = JSON.stringify({
-    title: '⏳ Zikr collectif',
+    title: 'Zikr collectif',
     body: MESSAGE_INACTIVITE,
     url: '/s?k=zikr&i=' + gid,
     tag: 'zikr-inactivite-' + gid,
@@ -820,7 +820,7 @@ async function notifyReciting(db, gid, senderUid, senderEmail, fait) {
   const groupName = nameSnap.val() || "Zikr collectif";
   const now = Date.now();
   const payload = JSON.stringify({
-    title: '🟢 ' + groupName,
+    title: groupName,
     body: `${senderEmail || "Un membre"} est en train de réciter — ${Number(fait).toLocaleString("fr-FR")} grains.`,
     url: '/s?k=zikr&i=' + gid,
     tag: 'zikr-reciting-' + gid,

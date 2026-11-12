@@ -21,7 +21,7 @@ import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
 import SubscriptionPlansUntyped from '@/components/SubscriptionPlans';
 import { BOUTIQUE_PLAN } from '@/lib/plans';
-import { Share2 } from 'lucide-react';
+import { Share2, ArrowLeft, Store, ChartColumn, Eye, Heart, MessageCircle, ShoppingBag, Pencil, Trash2, ArrowRight } from 'lucide-react';
 import { shareShop } from '@/lib/share';
 import { formatCount } from '@/lib/market';
 import { useToast } from '@/components/useToast';
@@ -165,7 +165,7 @@ export default function BoutiquePage() {
       let logoUrl;
       if (logoFile) logoUrl = await uploadImage(logoFile, 'shop_logos');
       await apiPost('shop', { action: 'save-shop', shop: { name: shopName.trim(), description: shopDesc.trim(), phone: shopPhone.trim() }, logoUrl });
-      notify('✅ Boutique enregistrée.');
+      notify('Boutique enregistrée.', 'success');
       await loadStatus();
     } catch (e: any) {
       setActionError('La boutique n’a pas été enregistrée. Vos modifications sont conservées ; réessayez.');
@@ -192,11 +192,11 @@ export default function BoutiquePage() {
   return (
     <div className="container boutique-page">
       <Link href="/" className="back-btn" aria-label="Retour au marché">
-        ← Marché
+        <ArrowLeft size={18} aria-hidden="true" /> Marché
       </Link>
 
       <div className="glass-panel">
-        <h1 className="module-title">🏪 Ma Boutique</h1>
+        <h1 className="module-title"><Store size={26} className="title-icon" aria-hidden="true" /> Ma Boutique</h1>
         <p className="subtitle">Vendez vos produits sur le Marché Mystique.</p>
 
         {view === 'loading' && (
@@ -248,23 +248,23 @@ export default function BoutiquePage() {
 
             {stats && (
               <div className="bq-stats">
-                <h3>📊 Statistiques de la boutique</h3>
+                <h3><ChartColumn size={18} className="bq-h-icon" aria-hidden="true" /> Statistiques de la boutique</h3>
                 <div className="bq-stats-grid">
                   <div className="bq-stat">
                     <span className="bq-stat-num">{formatCount(stats.totalViews)}</span>
-                    <span className="bq-stat-label">👁 Vues</span>
+                    <span className="bq-stat-label"><Eye size={14} aria-hidden="true" /> Vues</span>
                   </div>
                   <div className="bq-stat">
                     <span className="bq-stat-num">{formatCount(stats.totalLikes)}</span>
-                    <span className="bq-stat-label">❤️ Likes</span>
+                    <span className="bq-stat-label"><Heart size={14} aria-hidden="true" /> Likes</span>
                   </div>
                   <div className="bq-stat">
                     <span className="bq-stat-num">{formatCount(stats.totalComments)}</span>
-                    <span className="bq-stat-label">💬 Commentaires</span>
+                    <span className="bq-stat-label"><MessageCircle size={14} aria-hidden="true" /> Commentaires</span>
                   </div>
                   <div className="bq-stat">
                     <span className="bq-stat-num">{formatCount(stats.totalOrders)}</span>
-                    <span className="bq-stat-label">🛍️ Commandes confirmées</span>
+                    <span className="bq-stat-label"><ShoppingBag size={14} aria-hidden="true" /> Commandes confirmées</span>
                   </div>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default function BoutiquePage() {
                           onError={() => markImgError(p._key)}
                         />
                       ) : (
-                        '🔮'
+                        <Store size={26} strokeWidth={1.7} aria-hidden="true" />
                       )}
                     </div>
                     <div className="bq-prod-body">
@@ -334,14 +334,16 @@ export default function BoutiquePage() {
                       <div className="bq-prod-chain">{p.chain || ''}</div>
                       {stats && stats.perProduct[p._key] && (
                         <div className="bq-prod-stats">
-                          👁 {formatCount(stats.perProduct[p._key].views)} · ❤️ {formatCount(stats.perProduct[p._key].likes)} · 💬{' '}
-                          {formatCount(stats.perProduct[p._key].comments)} · 🛍️ {formatCount(stats.perProduct[p._key].orders)}
+                          <span><Eye size={14} aria-hidden="true" /> {formatCount(stats.perProduct[p._key].views)}</span>
+                          <span><Heart size={14} aria-hidden="true" /> {formatCount(stats.perProduct[p._key].likes)}</span>
+                          <span><MessageCircle size={14} aria-hidden="true" /> {formatCount(stats.perProduct[p._key].comments)}</span>
+                          <span><ShoppingBag size={14} aria-hidden="true" /> {formatCount(stats.perProduct[p._key].orders)}</span>
                         </div>
                       )}
                     </div>
                     <div className="bq-prod-actions">
-                      <button type="button" aria-label={"Modifier « " + (p.produit || "Produit") + " »"} onClick={() => setFormProduct(p)}>✏️</button>
-                      <button type="button" aria-label={"Supprimer « " + (p.produit || "Produit") + " »"} onClick={() => { setActionError(''); setDeletingKey(p._key); }}>🗑️</button>
+                      <button type="button" aria-label={"Modifier « " + (p.produit || "Produit") + " »"} onClick={() => setFormProduct(p)}><Pencil size={17} aria-hidden="true" /></button>
+                      <button type="button" aria-label={"Supprimer « " + (p.produit || "Produit") + " »"} onClick={() => { setActionError(''); setDeletingKey(p._key); }}><Trash2 size={17} aria-hidden="true" /></button>
                     </div>
                   </div>
                 ))
@@ -374,7 +376,7 @@ export default function BoutiquePage() {
         />
       )}
 
-      <Link href="/commandes?vue=boutique" className="back-btn">Gérer les demandes et commandes reçues →</Link>
+      <Link href="/commandes?vue=boutique" className="back-btn">Gérer les demandes et commandes reçues <ArrowRight size={18} aria-hidden="true" /></Link>
       {toast}
     </div>
   );

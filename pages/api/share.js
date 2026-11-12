@@ -204,6 +204,7 @@ export default async function handler(req, res) {
  .btn:hover{transform:translateY(-2px)}
  .cont{display:inline-block;margin-top:14px;color:var(--accent);font-size:.92rem;font-weight:600;text-decoration:none}
  .cont:hover{text-decoration:underline}
+ .ic{display:inline-block;vertical-align:-3px;flex-shrink:0}
  .note{margin-top:16px;font-size:.72rem;color:var(--dim);line-height:1.5}
  .steps{margin-top:18px;text-align:left;display:flex;flex-direction:column;gap:9px}
  .step{display:flex;align-items:flex-start;gap:9px;font-size:.86rem;color:var(--muted)}
@@ -224,17 +225,17 @@ export default async function handler(req, res) {
   <h1>${esc(heading)}</h1>
   <p class="sub">${esc(subline)}</p>
 
-  <button class="btn" id="install" hidden type="button">📲 Installer l'application</button>
+  <button class="btn" id="install" hidden type="button"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> Installer l'application</button>
 
   <div class="steps" id="ios" hidden>
-    <div class="step"><span class="num">1</span><span>Appuyez sur <b>Partager</b> ⎋ en bas de Safari</span></div>
-    <div class="step"><span class="num">2</span><span>Choisissez <b>« Sur l'écran d'accueil »</b> ➕</span></div>
+    <div class="step"><span class="num">1</span><span>Appuyez sur <b>Partager</b> <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg> en bas de Safari</span></div>
+    <div class="step"><span class="num">2</span><span>Choisissez <b>« Sur l'écran d'accueil »</b> <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span></div>
     <div class="step"><span class="num">3</span><span>Ouvrez <b>ASRAR PRO</b> : le contenu partagé s'affiche directement</span></div>
   </div>
 
-  <p class="sub" id="installed" hidden>✅ Application installée — ouvrez <b>ASRAR PRO</b> depuis votre écran d'accueil.</p>
+  <p class="sub" id="installed" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Application installée — ouvrez <b>ASRAR PRO</b> depuis votre écran d'accueil.</p>
 
-  <a class="cont" id="continue" href="${esc(to)}">Continuer dans le navigateur →</a>
+  <a class="cont" id="continue" href="${esc(to)}">Continuer dans le navigateur <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
   <p class="note">Déjà installée ? Ce lien s'ouvre directement dans l'application.</p>
 </main>
 

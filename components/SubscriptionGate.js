@@ -6,7 +6,7 @@
 // uniquement) — une publicité regardée en entier débloque UNE utilisation
 // (voir lib/unityAds.js, server/adReward.js).
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, WifiOff, Clapperboard } from 'lucide-react';
 import Modal from './Modal';
 import { watchRewardedAd } from '@/lib/unityAds';
 import SubscriptionPlans from './SubscriptionPlans';
@@ -65,9 +65,9 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
       <Modal className="sg-overlay" onClose={onClose} label={isNetworkGate ? 'Connexion trop lente' : 'Abonnement'}>
         <div className="sg-box">
           <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={onClose}>
-            ✕
+            <X size={20} strokeWidth={2.2} aria-hidden="true" />
           </button>
-          <div style={{ fontSize: '2.4rem' }}>📶</div>
+          <div className="sg-hero-icon"><WifiOff size={40} strokeWidth={1.8} aria-hidden="true" /></div>
           <h2>Connexion trop lente</h2>
           <p className="sg-sub">
             Impossible de vérifier votre accès pour le moment — vérifiez votre connexion et réessayez.
@@ -97,7 +97,7 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
         {!ADS_PAUSED && adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
             <button type="button" className="sg-ad-btn" onClick={watchAd} disabled={adBusy}>
-              {adBusy ? 'Publicité en cours…' : '🎬 Regarder une publicité'}
+              {adBusy ? 'Publicité en cours…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
             </button>
             <p className="sg-ad-hint">Gratuit : une publicité regardée en entier débloque cette utilisation.</p>
             {adMessage && <p className="sg-ad-msg" role="status">{adMessage}</p>}

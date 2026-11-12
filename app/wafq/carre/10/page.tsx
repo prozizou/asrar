@@ -2,6 +2,7 @@
 // Carré 10×10 — porté depuis prozizou/Kanzou app/carre/10/page.tsx (voir
 // lib/kanzouWafq.ts carre10() : jamais implémenté dans l'app d'origine,
 // carré de référence fourni décalé uniformément).
+import { ArrowLeft } from 'lucide-react';
 import '../carre.css';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -38,7 +39,7 @@ export default function Carre10Page() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq/carre" className="back-btn">← Retour</Link>
+      <Link href="/wafq/carre" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 10 × 10</h1>
 

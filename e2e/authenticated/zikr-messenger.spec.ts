@@ -116,7 +116,7 @@ test('éditeur d’image local, aperçu zoomable et vitesse du vocal', async ({ 
   await page.locator('.zk-messenger input[type=file]').first().setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: png });
   const editor = page.getByRole('dialog', { name: 'Modifier l’image', exact: true }); await expect(editor).toBeVisible();
   await expect.poll(async () => editor.locator('canvas').getAttribute('width')).toBe('640');
-  await editor.getByRole('button', { name: 'Pivoter ↻', exact: true }).click();
+  await editor.getByRole('button', { name: 'Pivoter', exact: true }).click();
   await expect.poll(async () => editor.locator('canvas').getAttribute('width')).toBe('320');
   await editor.getByLabel('Légende', { exact: true }).fill('Ma photo');
   await editor.getByRole('button', { name: 'Envoyer l’image', exact: true }).click();

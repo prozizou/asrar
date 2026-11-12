@@ -197,3 +197,21 @@ l’annulation pendant le chargement, une connexion indisponible et un compte
 abonné. Le premier téléchargement et la disponibilité des annonces restent
 tributaires du réseau et des régies : les tests automatisés ne mesurent pas
 la latence réelle d’un fournisseur publicitaire.
+
+## Bouton retour (8.0.5)
+
+Le retour Android ne remonte plus tout l'historique de la WebView. `MainActivity`
+appelle d'abord `window.__asrarBack()` (`components/AndroidBackHandler.js`,
+règle dans `lib/androidBack.js`) :
+
+1. une fenêtre ouverte se ferme ;
+2. sinon une fiche ouverte (produit, boutique, secret…) se ferme ;
+3. sinon, sur un module ou une de ses sous-pages, retour direct au **menu** ;
+4. sur le menu, retour au **Marché** ;
+5. sur le Marché, double appui pour quitter.
+
+Une page qui ne définit pas `window.__asrarBack` (ancienne version du site)
+garde l'ancien comportement (historique, puis accueil). Les APK antérieurs
+à 8.0.5 gardent eux aussi l'ancien retour : il faut publier cette version
+sur le Play Store (et, si besoin, relever la version minimale imposée par
+`NativeUpdateGate`).

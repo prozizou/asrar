@@ -26,7 +26,7 @@
 import './marche/marche.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon } from 'lucide-react';
+import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon, Store, ImageOff, BadgeCheck } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
 import { deepLink, shopDeepLink, cleanUrl } from '@/lib/share';
@@ -440,7 +440,7 @@ export default function Home() {
                           onError={(e: any) => (e.currentTarget.style.display = 'none')}
                         />
                       ) : (
-                        '🔮'
+                        <Store size={22} strokeWidth={1.8} aria-hidden="true" />
                       )}
                     </div>
                     <div className="vendor-info">
@@ -548,7 +548,7 @@ export default function Home() {
                               onError={() => markImgError(p._key)}
                             />
                           ) : (
-                            <span className="prod-img-placeholder" role="img" aria-label="Image indisponible">🖼️</span>
+                            <span className="prod-img-placeholder" role="img" aria-label="Image indisponible"><ImageOff size={28} strokeWidth={1.6} aria-hidden="true" /></span>
                           )}
                           {top && (
                             <span className="prod-top-badge">
@@ -585,7 +585,7 @@ export default function Home() {
                               )}
                             </span>
                             <span className="prod-vendor-name">{vendor?.name || 'Boutique'}</span>
-                            {vendor?.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée">✔</span>}
+                            {vendor?.verified && <span className="verified-badge" title="Boutique vérifiée" aria-label="Boutique vérifiée"><BadgeCheck size={14} strokeWidth={2.4} aria-hidden="true" /></span>}
                           </div>
                           <div className="prod-meta">
                             {p.chain ? <span className="prod-chain">{chainLabel(p.chain)}</span> : <span />}

@@ -1,6 +1,7 @@
 'use client';
 // Carré 8×8 — porté depuis prozizou/Kanzou app/carre/8/page.tsx (voir
 // lib/kanzouWafq.ts carre8()/diamond8() pour les formules).
+import { ArrowLeft } from 'lucide-react';
 import '../carre.css';
 import { useState } from 'react';
 import MethodSelector from '../_components/MethodSelector';
@@ -72,7 +73,7 @@ export default function Carre8Page() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      <Link href="/wafq/carre" className="back-btn">← Retour</Link>
+      <Link href="/wafq/carre" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       <div className="glass-panel kz-wrap">
         <h1 className="kz-title">Carré 8 × 8</h1>
 

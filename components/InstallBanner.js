@@ -15,6 +15,7 @@
 // En flux normal (sticky, pas fixed), même choix que .expiry-banner : le
 // bandeau pousse le contenu au lieu de recouvrir l'en-tête d'une page ou un
 // bouton d'action situé juste dessous.
+import { X, Share, SquarePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall } from '@/lib/installPrompt';
@@ -95,7 +96,7 @@ export default function InstallBanner() {
           onClick={close}
           aria-label="Masquer cette proposition"
         >
-          ✕
+          <X size={20} strokeWidth={2.2} aria-hidden="true" />
         </button>
       </div>
 
@@ -104,13 +105,13 @@ export default function InstallBanner() {
           <div className="install-step">
             <span className="install-step-num">1</span>
             <span>
-              Appuyez sur <b>Partager</b> ⎋ en bas de Safari
+              Appuyez sur <b>Partager</b> <Share size={15} aria-hidden="true" className="install-inline-icon" /> en bas de Safari
             </span>
           </div>
           <div className="install-step">
             <span className="install-step-num">2</span>
             <span>
-              Choisissez <b>« Sur l&apos;écran d&apos;accueil »</b> ➕
+              Choisissez <b>« Sur l&apos;écran d&apos;accueil »</b> <SquarePlus size={15} aria-hidden="true" className="install-inline-icon" />
             </span>
           </div>
           <div className="install-step">

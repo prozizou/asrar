@@ -141,3 +141,7 @@
 .pr-rules li { margin-bottom: 5px; }
 
 .pr-copy-btn, .pr-rules-toggle { min-height: 44px; }
+/* Message d'activation avec icône SVG (remplace ✅ / ❌). */
+.pr-msg { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pr-msg-success svg { color: var(--success); }
+.pr-msg-error { color: var(--status-danger-text, var(--danger)); }

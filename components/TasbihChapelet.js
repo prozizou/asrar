@@ -10,6 +10,7 @@
 // position est lue directement sur le tracé (getPointAtLength), donc ils le
 // suivent exactement, y compris dans la courbe de l'arc, et transitent
 // réellement par l'arc pour passer d'un brin à l'autre.
+import { Settings, Target, Repeat, Shuffle, RotateCcw, PartyPopper, Flame, Award } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { objSubdivisions } from '@/lib/objSubdivisions';
 
@@ -322,7 +323,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
             aria-expanded={settingsOpen}
             onClick={() => setSettingsOpen((v) => !v)}
           >
-            <span aria-hidden>⚙️</span> Réglages du compteur
+            <Settings size={16} aria-hidden="true" /> Réglages du compteur
             {t.seriesCount > 0 && (
               <span className="tc-loop">
                 Série {t.loopCur}/{t.seriesCount}
@@ -333,7 +334,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
           {settingsOpen && (
             <>
               <div className="tc-group" title="Objectif de récitation">
-                <span aria-hidden>🎯</span>
+                <Target size={16} aria-hidden="true" />
                 <input
                   type="number"
                   min="0"
@@ -345,7 +346,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
               </div>
 
               <div className="tc-group" title="Nombre de séries — l'objectif est réparti dessus, le reste va sur la dernière">
-                <span aria-hidden>🔁</span>
+                <Repeat size={16} aria-hidden="true" />
                 <input
                   type="number"
                   min="0"
@@ -362,7 +363,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
                 // ex. 100000), ce qui débordait sur plusieurs lignes en <select>
                 // compact, un seul contrôle quel que soit le nombre de suggestions.
                 <div className="tc-group tc-subdiv" title="Suggestions de répartition (base × séries)">
-                  <span aria-hidden>🔀</span>
+                  <Shuffle size={16} aria-hidden="true" />
                   <select
                     aria-label="Suggestions de répartition"
                     value={subs.some((sub) => sub.series === t.seriesCount) ? String(t.seriesCount) : ''}
@@ -380,7 +381,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
                   direct (revue design) : un tap accidentel sur un bouton
                   toujours visible pouvait effacer une série en cours. */}
               <button type="button" className="tc-reset" aria-label="Réinitialiser le compteur" onClick={t.reset}>
-                <span aria-hidden>↺</span> Réinitialiser
+                <RotateCcw size={16} aria-hidden="true" /> Réinitialiser
               </button>
             </>
           )}
@@ -404,7 +405,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
       >
         {isCollectif && collectifDone && (
           <div className="tc-group-done" title="Objectif du Zikr collectif atteint">
-            <span aria-hidden>🎉</span> Objectif atteint
+            <PartyPopper size={16} aria-hidden="true" /> Objectif atteint
           </div>
         )}
 
@@ -430,11 +431,11 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         {t.streak > 0 && (
           <div className="tc-streak" aria-live="polite">
             <span>
-              🔥 Série : {t.streak} jour{t.streak > 1 ? 's' : ''}
+              <Flame size={15} aria-hidden="true" /> Série : {t.streak} jour{t.streak > 1 ? 's' : ''}
             </span>
             {t.newBadge && (
               <span className="tc-badge">
-                {t.newBadge.icon} Badge « {t.newBadge.label} » débloqué !
+                <Award size={15} aria-hidden="true" /> Badge « {t.newBadge.label} » débloqué !
               </span>
             )}
           </div>

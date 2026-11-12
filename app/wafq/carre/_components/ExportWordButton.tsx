@@ -4,6 +4,7 @@
 // projet, cf. son en-tête). Import DYNAMIQUE (pas en tête de fichier) :
 // `docx` est une librairie volumineuse — sans ça, elle alourdirait le JS
 // initial des 9 pages /wafq/carre/[taille] même pour qui n'exporte jamais.
+import { Download } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ExportWordButton({
@@ -35,7 +36,7 @@ export default function ExportWordButton({
 
   return (
     <button type="button" className="kz-export-btn" onClick={handleClick} disabled={busy}>
-      {busy ? '…' : '⬇ Word (.docx)'}
+      {busy ? '…' : <><Download size={16} aria-hidden="true" /> Word (.docx)</>}
     </button>
   );
 }

@@ -18,6 +18,7 @@
 // Pièce TOUJOURS à l'encre noire sur fond blanc, quel que soit le thème de
 // l'app : l'aperçu doit montrer exactement ce qui sortira à l'impression.
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { TriangleAlert, LoaderCircle } from 'lucide-react';
 import { composePhrasePages, PHRASE_PIECE } from '@/lib/alqalamOrne';
 import { loadShaper } from '@/lib/alqalamShaper';
 import { vectorizePage, pageSvgMarkup } from '@/lib/alqalamVector';
@@ -160,10 +161,10 @@ const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProp
   );
 
   if (loadError) {
-    return <div className="orne-loading">⚠️ Impossible de charger la police calligraphique. Vérifiez la connexion puis rouvrez l&apos;Ornement.</div>;
+    return <div className="orne-loading"><TriangleAlert size={16} aria-hidden="true" /> Impossible de charger la police calligraphique. Vérifiez la connexion puis rouvrez l&apos;Ornement.</div>;
   }
   if (!piece) {
-    return <div className="orne-loading">⏳ Chargement du moteur calligraphique…</div>;
+    return <div className="orne-loading"><LoaderCircle size={16} className="orne-spin" aria-hidden="true" /> Chargement du moteur calligraphique…</div>;
   }
 
   return (
@@ -199,20 +200,20 @@ const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProp
 
       {piece.overflowReason === 'vow' && (
         <p className="orne-hint orne-overflow" role="status">
-          ⚠️ Le vœu saisi ({innerText.trim().length} caractères) ne tient pas dans {piece.loops > 1 ? 'les boucles' : 'la boucle'}.
+          <TriangleAlert size={15} aria-hidden="true" /> Le vœu saisi ({innerText.trim().length} caractères) ne tient pas dans {piece.loops > 1 ? 'les boucles' : 'la boucle'}.
           Raccourcissez-le pour exporter la pièce sans perdre de texte.
         </p>
       )}
       {piece.overflowReason === 'pages' && (
         <p className="orne-hint orne-overflow" role="status">
-          ⚠️ Ce texte est trop long : au-delà de {PHRASE_PIECE.MAX_PAGES} pages, la pièce ressemblerait moins à un
+          <TriangleAlert size={15} aria-hidden="true" /> Ce texte est trop long : au-delà de {PHRASE_PIECE.MAX_PAGES} pages, la pièce ressemblerait moins à un
           ouvrage calligraphié qu&apos;à un tirage industriel. Raccourcissez-le, ou choisissez moins de lettres à
           gonfler.
         </p>
       )}
       {piece.overflowReason === 'layout' && (
         <p className="orne-hint orne-overflow" role="status">
-          ⚠️ Ce texte contient un segment trop large pour la page, même en réduisant les boucles au minimum.
+          <TriangleAlert size={15} aria-hidden="true" /> Ce texte contient un segment trop large pour la page, même en réduisant les boucles au minimum.
           Raccourcissez-le, ou choisissez d&apos;autres lettres à gonfler.
         </p>
       )}

@@ -133,7 +133,7 @@
   cursor: pointer;
 }
 :where(.boutique-page) .bq-select-wrap::after {
-  content: '⌄';
+  content: ''; width: 16px; height: 16px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
   position: absolute;
   right: 14px;
   top: 50%;
@@ -410,3 +410,9 @@
 :where(.boutique-page) .bq-form-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 
 :where(.boutique-page) .bq-save-error { color: var(--status-danger-text); }
+/* Icônes SVG (remplacent 📊 👁 ❤️ 💬 🛍️ ✏️ 🗑️ 🔮). */
+:where(.boutique-page) .bq-h-icon { display: inline-block; vertical-align: -3px; color: var(--accent); }
+:where(.boutique-page) .bq-stat-label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+:where(.boutique-page) .bq-prod-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+:where(.boutique-page) .bq-prod-stats > span { display: inline-flex; align-items: center; gap: 3px; }
+:where(.boutique-page) .bq-prod-actions button { display: inline-flex; align-items: center; justify-content: center; }

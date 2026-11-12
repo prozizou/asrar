@@ -1,3 +1,35 @@
+## SW v46.76 — Android : bouton retour direct vers le menu (APK 8.0.5)
+
+- Le bouton retour d’Android ne repasse plus par toutes les pages déjà visitées : il ferme d’abord la fenêtre ou la fiche ouverte, puis ramène directement au menu depuis n’importe quel module (même une sous-page, ex. carré 7 × 7), puis du menu au Marché ; sur le Marché, double appui pour quitter.
+- Nécessite l’application Android 8.0.5 (MainActivity demande la décision à la page). Les versions précédentes gardent l’ancien retour.
+
+## SW v46.75 — Icônes SVG à la place des emojis dans toute l’application
+
+- Toutes les icônes emoji de l’interface sont remplacées par des icônes SVG (même famille, couleur du thème) : boutons Retour et Fermer, étoiles d’avis, statistiques et actions de la boutique, Bibliothèque, Combinaisons, chapelet (réglages, objectif, séries, série de jours, badge), Zikr (privé, rappel, vœux), Marché (boutique vérifiée, lieu, image indisponible), installation et abonnement, mise à jour requise, publicités, page d’erreur, Rouwhanes, Géomancie, export Word des Hatims.
+- Symboles des sept planètes (Planète, Date du jour) dessinés en SVG (`components/PlanetGlyph.js`) au lieu des caractères ♄ ♃ ♂ ☉ ♀ ☿ ☽, souvent affichés en emoji couleur sur Android.
+- Messages éphémères (toasts) : icône SVG selon le type (succès, erreur, info) au lieu de « ✅ » / « ❌ » dans le texte.
+- Indicatif téléphonique du Zikr : code pays (« SN +221 ») au lieu du drapeau emoji.
+- Marqueurs CSS (chevrons, main) et page d’aperçu des liens partagés : SVG.
+- Titres des notifications sans emoji (le centre de notifications affiche déjà une icône par type).
+- Conservés volontairement : messages WhatsApp pré-remplis et textes de partage (texte envoyé à d’autres applications), réactions et emojis saisis dans la discussion des Zikr (contenu des messages), notifications locales des alarmes planétaires (texte système).
+
+## SW v46.74 — Écriture spirituelle : nouvelle interface
+
+- En-tête compact (retour, titre, menu ⋮ : changer de mode, outils, réinitialiser) et une seule surface de réglages, nettement moins haute.
+- Mode d’écriture en pastille avec un bouton « Changer » discret.
+- Sourate : sélecteur compact affichant le nom et le nombre de versets ; « Sans voyelles / Avec voyelles » en contrôle segmenté.
+- Champ arabe RTL qui s’agrandit avec le texte (jusqu’à 220 px, puis défile).
+- Répétitions : compteur − / + avec saisie numérique, validation (1 à 30 000) et accord singulier/pluriel ; l’aide indique l’effet (« insérée 3 fois entre chaque verset (7 versets) »).
+- Un seul bouton principal « Générer le texte » (répétition ou intercalation selon le mode) ; « Sourate seule » reste en action secondaire.
+- Outils (Documents, Recherche, Ornement, taille du texte) repliés dans la même surface, en puces.
+- Résultat juste sous les réglages, avec Copier, Modifier, Partager, PDF et DOCX ; les exports utilisent un nom par défaut si aucun n’est saisi.
+- Plus aucun emoji : blocs cumulés (monter, descendre, modifier, supprimer, enregistrer, annuler, Rasm), fenêtres d’export, messages de l’ornement et avertissement d’aperçu utilisent de vraies icônes SVG.
+
+## SW v46.73 — Hatims : triangle et liste des carrés
+
+- Liste des carrés : quand le nombre de cartes est impair, la dernière (11 × 11) occupe toute la largeur au lieu de laisser un vide à côté, avec sa miniature et son texte centrés.
+- Les traits du Hatim triangulaire (carré 3 × 3, méthode « Triangulaire ») s’arrêtent au bord de chaque cercle au lieu de le traverser jusqu’au nombre ; le fond des cercles est désormais opaque.
+
 ## SW v46.72 — Hatims : carrés ajustés à la largeur, pourtour orange
 
 - Les carrés (3 × 3 à 11 × 11) tiennent toujours dans la largeur de l’écran, sans défilement : chaque case vaut 1/N de la largeur (7 × 7 → 14,29 % par case). La taille des chiffres s’adapte à la case ; le curseur A⁻/A⁺ l’agrandit jusqu’à la place disponible.

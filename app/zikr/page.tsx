@@ -23,6 +23,7 @@ import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, ChevronRight, Zap,
   Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
+  HandHeart, Moon,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -40,7 +41,7 @@ import {
   RYTHME_SUSPECT, chatDisplayName, avatarColorFor,
   normalizePhone,
 } from '@/lib/zikrLogic';
-import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone, flagOf } from '@/lib/phoneCountries';
+import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone } from '@/lib/phoneCountries';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, notifyInactiveMembers, dismissWarning,
@@ -194,7 +195,7 @@ export default function ZikrCollectifPage() {
 
   return (
     <div className="container" style={{ maxWidth: 640 }}>
-      <Link href="/menu" className="back-btn">← Retour</Link>
+      <Link href="/menu" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
       {selected ? (
         <GroupDetail groupId={selected} uid={user?.uid || ''} notify={notify} onBack={() => setSelected(null)} />
       ) : (
@@ -206,7 +207,7 @@ export default function ZikrCollectifPage() {
 }
 
 // ─────────────────────────── LISTE + CRÉATION ───────────────────────────
-function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: (id: string) => void }) {
+function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' | 'error' | 'info') => void; onOpen: (id: string) => void }) {
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
@@ -229,7 +230,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
       for (const grp of next) {
         const before = prevStatus[grp.id];
         if (before === 'pending' && grp.status === 'member') {
-          notify(`✅ Votre demande pour « ${grp.name} » a été acceptée !`);
+          notify(`Votre demande pour « ${grp.name} » a été acceptée !`, 'success');
         } else if (before === 'pending' && grp.status === 'none') {
           notify(`Votre demande pour « ${grp.name} » a été refusée.`);
         }
@@ -271,14 +272,14 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
     try {
       if (accept) {
         await approveMember(g.id, r.uid);
-        notify(`✅ ${who} a rejoint « ${g.name} ».`);
+        notify(`${who} a rejoint « ${g.name} ».`, 'success');
       } else {
         await rejectMember(g.id, r.uid);
         notify(`Demande de ${who} refusée.`);
       }
       await load();
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
     } finally {
       setDeciding(null);
     }
@@ -290,14 +291,14 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
     try {
       if (approve) {
         await approveZikr(g.id);
-        notify(`✅ « ${g.name} » approuvé — visible dans la liste publique.`);
+        notify(`« ${g.name} » approuvé — visible dans la liste publique.`, 'success');
       } else {
         await deleteGroup(g.id);
         notify(`« ${g.name} » refusé et supprimé.`);
       }
       await load();
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
     } finally {
       setModerating(null);
     }
@@ -393,7 +394,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string) => void; onOpen: 
       ) : error ? (
         <p className="zk-error">{error} <button className="zk-link" onClick={load}>Réessayer</button></p>
       ) : listed.length === 0 ? (
-        <p className="zk-empty">Aucun zikr collectif pour l’instant. Soyez le premier à en créer un 🌙</p>
+        <p className="zk-empty">Aucun zikr collectif pour l’instant. Soyez le premier à en créer un <Moon size={16} className="zk-inline-icon" aria-hidden="true" /></p>
       ) : (
         <>
           {/* Titre de section (revue design, point 4) — sépare clairement la
@@ -491,7 +492,7 @@ function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   );
 }
 
-function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCreated: (id: string) => void }) {
+function CreateForm({ notify, onCreated }: { notify: (msg: string, type?: 'success' | 'error' | 'info') => void; onCreated: (id: string) => void }) {
   const [name, setName] = useState('');
   const [presetId, setPresetId] = useState(DHIKR_PRESETS[0].id);
   const [customArabic, setCustomArabic] = useState('');
@@ -517,10 +518,10 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
         name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate,
         sessionAt: sessionAt ? new Date(sessionAt).getTime() : undefined,
       });
-      notify('✅ Zikr collectif créé — en attente de validation par l’administrateur avant d’apparaître dans la liste publique.');
+      notify('Zikr collectif créé — en attente de validation par l’administrateur avant d’apparaître dans la liste publique.', 'success');
       onCreated(d.id);
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
       setBusy(false);
     }
   };
@@ -554,7 +555,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
       </label>
       <label className="zk-checkbox-field">
         <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-        <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
+        <span><Lock size={15} className="zk-inline-icon" aria-hidden="true" /> Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
       </label>
       <label className="zk-field">
         <span>Prochaine session <em className="zk-optional">optionnel</em></span>
@@ -562,7 +563,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
       </label>
       {sessionAt && (
         <p className="zk-preview">
-          🔔 Un rappel push sera envoyé aux membres approuvés (ayant activé les
+          <Bell size={15} className="zk-inline-icon" aria-hidden="true" /> Un rappel push sera envoyé aux membres approuvés (ayant activé les
           notifications) avant l’heure choisie.
         </p>
       )}
@@ -581,7 +582,7 @@ function CreateForm({ notify, onCreated }: { notify: (msg: string) => void; onCr
 // La formule (presetId/arabe) se verrouille dès que le groupe a commencé à
 // réciter (g.total > 0) — voir handleUpdate, pages/api/zikr.js.
 function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
-  groupId: string; g: GroupDetailData; notify: (msg: string) => void; onSaved: () => void; onCancel: () => void;
+  groupId: string; g: GroupDetailData; notify: (msg: string, type?: 'success' | 'error' | 'info') => void; onSaved: () => void; onCancel: () => void;
 }) {
   const [name, setName] = useState(g.name);
   const [presetId, setPresetId] = useState(g.presetId || DHIKR_PRESETS[0].id);
@@ -605,10 +606,10 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
         name, presetId, arabic: isLibre ? customArabic : undefined, target, private: isPrivate,
         sessionAt: sessionAt ? new Date(sessionAt).getTime() : undefined,
       });
-      notify('✅ Zikr collectif mis à jour.');
+      notify('Zikr collectif mis à jour.', 'success');
       onSaved();
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
       setBusy(false);
     }
   };
@@ -636,7 +637,7 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
       )}
       {formulaLocked && (
         <p className="zk-preview">
-          🔒 La formule ne peut plus changer : des grains ont déjà été comptabilisés pour ce zikr.
+          <Lock size={15} className="zk-inline-icon" aria-hidden="true" /> La formule ne peut plus changer : des grains ont déjà été comptabilisés pour ce zikr.
         </p>
       )}
       <label className="zk-field">
@@ -646,7 +647,7 @@ function EditGroupForm({ groupId, g, notify, onSaved, onCancel }: {
       </label>
       <label className="zk-checkbox-field">
         <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-        <span>🔒 Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
+        <span><Lock size={15} className="zk-inline-icon" aria-hidden="true" /> Zikr privé — invisible dans la liste publique, partageable uniquement par lien</span>
       </label>
       <label className="zk-field">
         <span>Prochaine session <em className="zk-optional">optionnel</em></span>
@@ -725,19 +726,19 @@ function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boo
         <label className="zk-join-label" htmlFor="zk-join-phone">Numéro WhatsApp</label>
         <div className={'zk-phone' + (showError ? ' is-invalid' : normalized ? ' is-valid' : '')}>
           <label className={'zk-phone-country' + (international ? ' is-ignored' : '')}>
-            <span className="zk-phone-flag" aria-hidden="true">{flagOf(country.iso)}</span>
+            <span className="zk-phone-flag zk-phone-iso" aria-hidden="true">{country.iso}</span>
             <span className="zk-phone-dial" aria-hidden="true">+{country.dial}</span>
             <ChevronDown size={14} strokeWidth={2.4} aria-hidden="true" />
             {/* <select> natif transparent par-dessus : liste système du
                 téléphone (défilement, recherche au clavier) et accessibilité
-                gratuites, sous l'apparence compacte « 🇸🇳 +221 ». */}
+                gratuites, sous l'apparence compacte « SN +221 ». */}
             <select
               value={country.iso}
               aria-label="Indicatif du pays"
               onChange={(e) => { countryChosen.current = true; setIso(e.target.value); }}
             >
               {COUNTRIES.map((c) => (
-                <option key={c.iso} value={c.iso}>{flagOf(c.iso)} {c.name} (+{c.dial})</option>
+                <option key={c.iso} value={c.iso}>{c.name} (+{c.dial})</option>
               ))}
             </select>
           </label>
@@ -800,7 +801,7 @@ function ZikrHero({ name, arabic, transliteration, presetId }: {
 }
 
 // ─────────────────────────────── DÉTAIL ─────────────────────────────────
-function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string) => void; onBack: () => void }) {
+function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: string; notify: (msg: string, type?: 'success' | 'error' | 'info') => void; onBack: () => void }) {
   const [g, setG] = useState<GroupDetailData | null>(null);
   const [error, setError] = useState('');
   const loadedOnce = useRef(false);
@@ -850,7 +851,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       const d = await getGroup(groupId);
       const before = prevStatusRef.current;
       if (before === 'pending' && d.status === 'member') {
-        notify(`✅ Vous avez été accepté(e) dans « ${d.name} » !`);
+        notify(`Vous avez été accepté(e) dans « ${d.name} » !`, 'success');
       } else if (before === 'pending' && d.status === 'none') {
         notify(`Votre demande pour « ${d.name} » a été refusée.`);
       }
@@ -865,7 +866,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
         for (const m of d.members || []) {
           if (m.uid === uid) continue;
           if (!prevOnline[m.uid] && m.online) {
-            notify(`🟢 ${m.email || 'Un membre'} est en train de réciter — ${fmt(m.fait)} grains.`);
+            notify(`${m.email || 'Un membre'} est en train de réciter — ${fmt(m.fait)} grains.`, 'info');
           }
         }
       }
@@ -894,15 +895,15 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     setJoinBusy(true);
     try {
       const d = await joinGroup(groupId, phone);
-      notify(d.status === 'pending' ? '⏳ Demande envoyée au créateur.' : '✓ Vous avez rejoint le groupe.');
+      notify(d.status === 'pending' ? 'Demande envoyée au créateur.' : 'Vous avez rejoint le groupe.', d.status === 'pending' ? 'info' : 'success');
       load();
-    } catch (e: any) { notify('❌ ' + (e.message || e)); }
+    } catch (e: any) { notify(String(e.message || e), 'error'); }
     finally { setJoinBusy(false); }
   };
   const doLeave = async () => {
     if (!window.confirm('Quitter ce zikr collectif ?')) return;
     try { await leaveGroup(groupId); notify('Vous avez quitté le groupe.'); onBack(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
   };
   const doDelete = async () => {
     // Deux points d'entrée : le créateur (bouton en pied de page, seulement
@@ -913,17 +914,17 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       : 'Supprimer définitivement ce zikr collectif ?';
     if (!window.confirm(msg)) return;
     try { await deleteGroup(groupId); notify('Zikr collectif supprimé.'); onBack(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
   };
   const doShareWish = async (shared: boolean) => {
     if (shareBusy) return;
     setShareBusy(true);
     try {
       await shareWish(groupId, shared);
-      notify(shared ? '🤲 Vœu partagé avec le groupe.' : 'Vœu retiré du partage.');
+      notify(shared ? 'Vœu partagé avec le groupe.' : 'Vœu retiré du partage.', shared ? 'success' : 'info');
       load();
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
     } finally {
       setShareBusy(false);
     }
@@ -932,7 +933,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     if (amineBusy) return;
     setAmineBusy(wishUid);
     try { await amineWish(groupId, wishUid); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
     finally { setAmineBusy(null); }
   };
   const doDismissWarning = async () => {
@@ -950,12 +951,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       const n = Number(d.notified) || 0;
       notify(
         n > 0
-          ? `🔔 ${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.`
+          ? `${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.`
           : 'Aucun compte inactif pour l’instant.'
       );
       load();
     } catch (e: any) {
-      notify('❌ ' + (e.message || e));
+      notify(String(e.message || e), 'error');
     } finally {
       setNotifyBusy(false);
     }
@@ -963,7 +964,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   const doExclude = async (targetUid: string, email: string) => {
     if (!window.confirm(`Exclure ${email} de ce zikr collectif ?`)) return;
     try { await excludeMember(groupId, targetUid); notify(`${email} a été retiré du zikr collectif.`); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
   };
   const doShare = () => {
     if (!g) return;
@@ -975,25 +976,25 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     });
   };
   const doOpenWishes = async () => {
-    try { await openWishes(groupId); notify('🤲 Les vœux sont maintenant ouverts aux participants.'); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    try { await openWishes(groupId); notify('Les vœux sont maintenant ouverts aux participants.', 'success'); load(); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
   };
   const doCloseWishes = async () => {
     try { await closeWishes(groupId); notify('Les vœux sont refermés.'); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
   };
   const doSubmitWish = async () => {
     const t = wishText.trim();
     if (!t || wishBusy) return;
     setWishBusy(true);
-    try { await submitWish(groupId, t); notify('🤲 Vœu envoyé.'); load(); }
-    catch (e: any) { notify('❌ ' + (e.message || e)); }
+    try { await submitWish(groupId, t); notify('Vœu envoyé.', 'success'); load(); }
+    catch (e: any) { notify(String(e.message || e), 'error'); }
     finally { setWishBusy(false); }
   };
 
   if (error) return (
     <div className="glass-panel">
-      <button className="zk-link" onClick={onBack}>← Liste</button>
+      <button className="zk-link" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" /> Liste</button>
       <p className="zk-error">{error}</p>
     </div>
   );
@@ -1351,14 +1352,14 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
       {isMember && tab === 'zikr' && g.full && (
         g.status === 'owner' ? (
           <div className="zk-owner-panel">
-            <h3>🤲 Vœux des participants {g.wishes && g.wishes.length > 0 && <span className="zk-pill">{g.wishes.length}</span>}</h3>
+            <h3><HandHeart size={18} className="zk-inline-icon" aria-hidden="true" /> Vœux des participants {g.wishes && g.wishes.length > 0 && <span className="zk-pill">{g.wishes.length}</span>}</h3>
             {!g.wishesOpen ? (
               <>
                 <p className="zk-muted">
                   Une fois ouverts, chaque participant pourra laisser un vœu (dua) après ce
                   dhikr accompli ensemble — visible seulement de vous, jamais des autres membres.
                 </p>
-                <button className="zk-btn main" onClick={doOpenWishes}>🤲 Ouvrir les vœux</button>
+                <button className="zk-btn main" onClick={doOpenWishes}><HandHeart size={18} aria-hidden="true" /> Ouvrir les vœux</button>
               </>
             ) : (
               <>
@@ -1380,7 +1381,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           </div>
         ) : g.wishesOpen ? (
           <div className="zk-owner-panel">
-            <h3>🤲 Faites un vœu</h3>
+            <h3><HandHeart size={18} className="zk-inline-icon" aria-hidden="true" /> Faites un vœu</h3>
             <p className="zk-muted">
               Le créateur a ouvert la possibilité de faire un vœu (dua) maintenant que
               l’objectif est atteint — visible seulement de vous et du créateur.
@@ -1416,7 +1417,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           ci-dessus. Chacun peut y dire Amine (handleAmineWish). */}
       {isMember && tab === 'zikr' && g.sharedWishes && g.sharedWishes.length > 0 && (
         <div className="zk-owner-panel">
-          <h3>🤲 Vœux partagés <span className="zk-pill">{g.sharedWishes.length}</span></h3>
+          <h3><HandHeart size={18} className="zk-inline-icon" aria-hidden="true" /> Vœux partagés <span className="zk-pill">{g.sharedWishes.length}</span></h3>
           <div className="zk-wish-list">
             {g.sharedWishes.map((w) => (
               <div key={w.uid} className="zk-wish-item zk-wish-shared">

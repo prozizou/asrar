@@ -1,4 +1,5 @@
 'use client';
+import { ArrowLeft, X, Library, BookOpen, Heart, MessageCircle, Share2 } from 'lucide-react';
 import { reserveExternalWindow } from '@/lib/externalWindow';
 // Module « Bibliothèque Almaqtab » — port de bibliotheque/bibliotheque.html.
 // Grille de livres (via /api/list-content kind=book), social (likes +
@@ -240,11 +241,11 @@ export default function BibliothequePage() {
   return (
     <div className="container library-page">
       <Link href="/" className="back-btn">
-        ← Retour
+        <ArrowLeft size={18} aria-hidden="true" /> Retour
       </Link>
 
       <div className="glass-panel">
-        <h1 className="module-title">📚 Bibliothèque Almaqtab</h1>
+        <h1 className="module-title"><Library size={26} className="title-icon" aria-hidden="true" /> Bibliothèque Almaqtab</h1>
         <p className="subtitle">Manuscrits, traités et ouvrages mystiques.</p>
         <div id="bookCount">{!loading && !error ? `${books.length} livre(s)` : ''}</div>
       </div>
@@ -274,7 +275,7 @@ export default function BibliothequePage() {
                       onError={() => markImgError(book._key)}
                     />
                   ) : (
-                    '📖'
+                    <BookOpen size={34} strokeWidth={1.6} aria-hidden="true" />
                   )}
                 </button>
                 <div className="book-info">
@@ -282,13 +283,13 @@ export default function BibliothequePage() {
                   {book.author && <p className="book-author">{book.author}</p>}
                   <div className="book-social">
                     <button type="button" aria-label={(s.liked ? 'Retirer des favoris : ' : 'Aimer : ') + book.text} aria-pressed={!!s.liked} className={'bs-btn' + (s.liked ? ' liked' : '')} onClick={() => toggleLike(book._key)}>
-                      ❤ <span>{s.likes}</span>
+                      <Heart size={16} fill={s.liked ? 'currentColor' : 'none'} aria-hidden="true" /> <span>{s.likes}</span>
                     </button>
                     <button type="button" className="bs-btn" aria-label={"Commentaires de « " + book.text + " »"} onClick={() => openComments(book)}>
-                      💬 <span>{s.comments}</span>
+                      <MessageCircle size={16} aria-hidden="true" /> <span>{s.comments}</span>
                     </button>
                     <button type="button" className="bs-btn" aria-label={"Partager « " + book.text + " »"} title="Partager" onClick={() => share(book._key)}>
-                      📤
+                      <Share2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -305,9 +306,9 @@ export default function BibliothequePage() {
         <Modal className="sg-overlay" onClose={() => setReadyBook(null)} label="Document prêt">
           <div className="sg-box">
             <button type="button" aria-label="Fermer la fenêtre" className="sg-close" onClick={() => setReadyBook(null)}>
-              ✕
+              <X size={20} strokeWidth={2.2} aria-hidden="true" />
             </button>
-            <div style={{ fontSize: '2.4rem' }}>📖</div>
+            <div className="sg-hero-icon"><BookOpen size={40} strokeWidth={1.6} aria-hidden="true" /></div>
             <h2>Votre document est prêt</h2>
             <p className="sg-sub" dir="auto">{readyBook.title}</p>
             <a

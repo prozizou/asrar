@@ -7,6 +7,7 @@
 //   • L'écran d'installation plein écran BLOQUANT au démarrage est désactivé
 //     (FORCE_INSTALL = false) : l'app s'ouvre toujours directement dans le
 //     navigateur, installée ou non. Repasser à true pour le réactiver.
+import { CircleCheck, Download, Share, SquarePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall as promptInstallShared } from '@/lib/installPrompt';
@@ -86,7 +87,7 @@ export default function PwaGate({ children }) {
 
             {installed ? (
               <>
-                <p style={txt}>✅ Application installée.</p>
+                <p style={txt}><CircleCheck size={16} aria-hidden="true" style={{ verticalAlign: -3, color: '#4ade80' }} /> Application installée.</p>
                 <p style={txt}>Ouvrez maintenant <b>ASRAR PRO</b> depuis votre écran d'accueil pour continuer.</p>
               </>
             ) : (
@@ -100,7 +101,7 @@ export default function PwaGate({ children }) {
 
                 {canPrompt && (
                   <button onClick={promptInstall} style={btn}>
-                    📲 Installer l'application
+                    <Download size={16} aria-hidden="true" style={{ verticalAlign: -3 }} /> Installer l'application
                   </button>
                 )}
 
@@ -108,11 +109,11 @@ export default function PwaGate({ children }) {
                   <div style={steps}>
                     <div style={step}>
                       <span style={num}>1</span> Appuyez sur <b>Partager</b>{' '}
-                      <span style={{ fontSize: '1.1em' }}>⎋</span> en bas de Safari
+                      <Share size={16} aria-hidden="true" style={{ verticalAlign: -3 }} /> en bas de Safari
                     </div>
                     <div style={step}>
                       <span style={num}>2</span> Choisissez <b>« Sur l'écran d'accueil »</b>{' '}
-                      <span style={{ fontSize: '1.1em' }}>➕</span>
+                      <SquarePlus size={16} aria-hidden="true" style={{ verticalAlign: -3 }} />
                     </div>
                     <div style={step}>
                       <span style={num}>3</span> Ouvrez <b>ASRAR PRO</b> depuis votre écran d'accueil

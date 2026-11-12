@@ -1,5 +1,6 @@
 // Page 404 (convention app router) — appliquée automatiquement pour toute
 // route inexistante, avec la même identité visuelle que le reste de l'app.
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SponsoredLink } from '@/components/AdsterraAds';
 export default function NotFound() {
@@ -11,7 +12,7 @@ export default function NotFound() {
           <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Cette page n'existe pas ou plus.</p>
         </div>
         <Link href="/" className="back-btn">
-          ← Accueil
+          <ArrowLeft size={18} aria-hidden="true" /> Accueil
         </Link>
         <SponsoredLink label="En attendant, découvrir une offre partenaire" />
       </div>

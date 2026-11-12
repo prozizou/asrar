@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { me, share as shareApp, copy, post, toast } from '@/lib/share';
 import { useAccess } from '@/components/AccessProvider';
 import SpinnerUntyped from '@/components/Spinner';
-import { Gift, Lock, Copy as CopyIcon, Share2, ChevronRight, PartyPopper } from 'lucide-react';
+import { Gift, Lock, Copy as CopyIcon, Share2, ChevronRight, PartyPopper, ArrowLeft, CircleCheck, CircleAlert } from 'lucide-react';
 
 // Spinner.js reste en .js pour l'instant (composant partagé, hors scope de
 // ce batch — cf. tsconfig.json) : sans JSDoc, TS infère depuis son
@@ -42,6 +42,7 @@ export default function ParrainagePage() {
   const { invalidate } = useAccess() as unknown as { invalidate: () => void };
   const [info, setInfo] = useState<ReferralInfo | null>(null);
   const [msg, setMsg] = useState('');
+  const [msgKind, setMsgKind] = useState<'info' | 'success' | 'error'>('info');
   const [redeeming, setRedeeming] = useState(false);
   const [error, setError] = useState('');
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -86,6 +87,7 @@ export default function ParrainagePage() {
     if (!window.confirm(`Convertir ${info.pointsForReward} points en ${info.rewardDays} jours d'abonnement ?`)) return;
     setRedeeming(true);
     setMsg('Activation en cours…');
+    setMsgKind('info');
     try {
       const storageKey = 'referral_redemption_' + auth.currentUser?.uid;
       try { redemptionId.current ||= localStorage.getItem(storageKey); } catch {}
@@ -95,10 +97,12 @@ export default function ParrainagePage() {
       try { localStorage.removeItem(storageKey); } catch {}
       redemptionId.current = null;
       invalidate(); // équivalent de invalidateAccessCache()
-      setMsg('✅ Abonnement activé jusqu\'au ' + new Date(r.expiresAt).toLocaleDateString('fr-FR') + '.');
+      setMsg('Abonnement activé jusqu\'au ' + new Date(r.expiresAt).toLocaleDateString('fr-FR') + '.');
+      setMsgKind('success');
       load(true);
     } catch (e: any) {
-      setMsg('❌ ' + (e.message || e));
+      setMsg(String(e.message || e));
+      setMsgKind('error');
     } finally {
       setRedeeming(false);
     }
@@ -130,7 +134,7 @@ export default function ParrainagePage() {
   return (
     <div className="container" style={{ maxWidth: 620 }}>
       <Link href="/" className="back-btn">
-        ← Retour
+        <ArrowLeft size={18} aria-hidden="true" /> Retour
       </Link>
 
       <div className="glass-panel">
@@ -207,7 +211,11 @@ export default function ParrainagePage() {
           <button className="pr-btn main pr-share-btn" onClick={partagerApp}>
             <Share2 size={18} strokeWidth={2} aria-hidden="true" /> Partager mon invitation
           </button>
-          <p className="pr-msg">{msg}</p>
+          <p className={'pr-msg pr-msg-' + msgKind}>
+            {msg && msgKind === 'success' && <CircleCheck size={16} aria-hidden="true" />}
+            {msg && msgKind === 'error' && <CircleAlert size={16} aria-hidden="true" />}
+            {msg}
+          </p>
         </div>
 
         {/* Statistiques */}

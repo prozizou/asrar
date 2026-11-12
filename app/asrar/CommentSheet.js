@@ -1,5 +1,6 @@
 'use client';
 // Bottom-sheet des commentaires — port du bloc #commentSheet + postComment().
+import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Modal from '@/components/Modal';
 import SmartImage from '@/components/SmartImage';
@@ -42,7 +43,7 @@ export default function CommentSheet({ open, comments, onClose, onPost }) {
         <div className="comment-sheet-header">
           <strong>Commentaires</strong>
           <button aria-label="Fermer les commentaires" onClick={onClose} disabled={sending} className="close-sheet-btn">
-            ✕
+            <X size={20} strokeWidth={2.2} aria-hidden="true" />
           </button>
         </div>
         <div className="comment-list" ref={listRef}>
