@@ -2226,5 +2226,6 @@ a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6p
 .support-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
 .support-actions button { width: 100%; min-height: 44px; margin: 0; border-radius: 12px; font: 600 .88rem var(--font-ui); cursor: pointer; box-shadow: none; }
 .support-actions .support-later { border: 1px solid var(--border-strong, var(--border)); background: transparent; color: var(--text-main); }
+.support-actions .support-later:disabled { opacity: .6; cursor: default; font-variant-numeric: tabular-nums; }
 .support-actions .support-done { border: 0; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .support-actions button:hover { transform: none; box-shadow: none; }

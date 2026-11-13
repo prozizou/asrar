@@ -15,6 +15,11 @@ async function login(page: Page, role: string) {
     if (url.hostname === '127.0.0.1' && ['3102', '9099', '9000'].includes(url.port)) return route.continue();
     return route.abort();
   });
+  // Fenêtre « Soutenir » du menu (1×/session, 5 s) neutralisée dans les
+  // parcours, sauf le test dédié qui pose e2e_support_gate.
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('e2e_support_gate')) sessionStorage.setItem('asrar_support_menu_session', '1');
+  });
   await page.goto('/');
   await expect(page.getByRole('button', { name: /continuer avec google/i })).toBeVisible();
   await page.addScriptTag({ content: loginScript });
