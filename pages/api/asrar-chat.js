@@ -48,7 +48,7 @@ const ACTIONS = {
   "conv.role": ["write", (db, u, b) => chat.setMemberRole(db, u, b)],
   "conv.remove": ["write", (db, u, b) => chat.removeMember(db, u, b)],
   "conv.mute": ["write", (db, u, b) => chat.setMuted(db, u, b)],
-  "msg.list": ["read", (db, u, b, admin) => chat.listMessages(db, u, b, (d, pid, uid) => posts.postCard(d, pid, uid, admin))],
+  "msg.list": ["read", (db, u, b) => chat.listMessages(db, u, b, (d, pid, uid) => posts.postCard(d, pid, uid))],
   "msg.send": ["send", (db, u, b) => chat.sendMessage(db, u, b)],
   "msg.edit": ["write", (db, u, b) => chat.mutateMessage(db, u, b, "edit")],
   "msg.delete": ["write", (db, u, b) => chat.mutateMessage(db, u, b, "delete")],
@@ -58,7 +58,9 @@ const ACTIONS = {
 
   "post.save": ["write", (db, u, b, admin) => posts.savePost(db, u, b, admin)],
   "post.delete": ["write", (db, u, b, admin) => posts.deletePost(db, u, b, admin)],
-  "post.open": ["read", (db, u, b, admin) => posts.openPost(db, u, b, admin)],
+  // Contenu payant : l'administration ne le voit qu'en vue modération
+  // explicite (signalement), jamais en navigation normale.
+  "post.open": ["read", (db, u, b, admin) => posts.openPost(db, u, b, admin && b.moderation === true)],
   "post.mine": ["read", (db, u) => posts.myPosts(db, u)],
   "post.favorite": ["write", (db, u, b) => posts.toggleFavorite(db, u, b)],
   "post.favorites": ["read", (db, u) => posts.listFavorites(db, u)],
@@ -94,11 +96,13 @@ const ACTIONS = {
 };
 
 // Actions qui n'ont pas besoin du statut administrateur (évite une lecture).
-const NEEDS_ADMIN = (action) => action === "me" || action.startsWith("admin.") || action.startsWith("order.") || action.startsWith("post.") || action === "msg.list";
+const NEEDS_ADMIN = (action) => action === "me" || action.startsWith("admin.") || action.startsWith("order.") || action.startsWith("post.");
 
 async function me(db, user, body, isAdmin) {
-  const p = await getProfile(db, user.uid);
   const suspended = !!(await read(db, P.suspended + "/" + user.uid));
+  // Profil créé automatiquement depuis le compte Google (nom, photo,
+  // pseudonyme tiré de l'e-mail) : modifiable ensuite dans Profil.
+  const p = (await getProfile(db, user.uid)) || (suspended ? null : await profiles.ensureProfile(db, user));
   return {
     uid: user.uid,
     profile: p && p.handle ? publicProfile(user.uid, p, { includePayment: true }) : null,

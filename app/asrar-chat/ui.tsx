@@ -130,14 +130,21 @@ export function PostCard({ post, onOpen, compact = false }: { post: any; onOpen:
   );
 }
 
-export function Sheet({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: any; wide?: boolean }) {
+/**
+ * Feuille Material 3 : fond assombri plein écran (dialogue natif) et panneau
+ * réel — feuille du bas sur téléphone, centrée sur grand écran. `compact` :
+ * petit dialogue centré (menus d'actions, choix rapides).
+ */
+export function Sheet({ title, onClose, children, wide = false, compact = false }: { title: string; onClose: () => void; children: any; wide?: boolean; compact?: boolean }) {
   return (
-    <Modal className={'ac-sheet' + (wide ? ' wide' : '')} label={title} onClose={onClose}>
-      <div className="ac-sheet-head">
-        <h2>{title}</h2>
-        <button type="button" className="ac-icon-btn" aria-label="Fermer" onClick={onClose}><X size={20} /></button>
+    <Modal className={'ac-overlay' + (compact ? ' compact' : '')} label={title} onClose={onClose}>
+      <div className={'ac-sheet' + (wide ? ' wide' : '') + (compact ? ' compact' : '')}>
+        <div className="ac-sheet-head">
+          <h2>{title}</h2>
+          <button type="button" className="ac-icon-btn" aria-label="Fermer" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="ac-sheet-body">{children}</div>
       </div>
-      <div className="ac-sheet-body">{children}</div>
     </Modal>
   );
 }

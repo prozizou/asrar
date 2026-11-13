@@ -283,7 +283,7 @@ function Bubble({ m, mine, author, showAuthor, readState, onMenu, onOpenPost, on
 
 function MessageActions({ m, mine, canModerate, canPost, onClose, onReply, onReact, onEdit, onDelete, onForward, onReport, onCopy }: any) {
   return (
-    <Sheet title="Message" onClose={onClose}>
+    <Sheet title="Message" onClose={onClose} compact>
       <div className="ac-reaction-picker" role="group" aria-label="Réagir">
         {REACTIONS.map((r) => <button key={r} type="button" onClick={() => onReact(m.reactions?.[m.uid] === r ? null : r)} aria-label={`Réagir ${r}`}>{r}</button>)}
         <button type="button" onClick={() => onReact(null)} aria-label="Retirer ma réaction"><Smile size={18} /></button>
@@ -412,7 +412,7 @@ function ForwardSheet({ cid, m, onClose }: { cid: string; m: any; onClose: () =>
     catch (e: any) { notify(e.message, 'error'); }
   };
   return (
-    <Sheet title="Transférer vers…" onClose={onClose}>
+    <Sheet title="Transférer vers…" onClose={onClose} compact>
       {!convs ? <Loading /> : convs.length === 0 ? <p className="ac-hint">Aucune autre discussion.</p> : (
         <ul className="ac-list">
           {convs.map((c) => (

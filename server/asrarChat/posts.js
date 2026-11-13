@@ -85,7 +85,7 @@ async function deletePost(db, user, body, isAdmin) {
 async function accessFor(db, pid, post, uid, isAdmin) {
   if (!post) return { unlocked: false };
   if (post.sellerUid === uid) return { unlocked: true, owner: true };
-  if (isAdmin) return { unlocked: true, admin: true };
+  if (isAdmin) return { unlocked: true, moderation: true };
   if (!(Number(post.price) > 0)) return { unlocked: post.status === "published" };
   const ent = await read(db, `${P.entitlements}/${uid}/${pid}`);
   if (entitlementActive(ent, Date.now())) return { unlocked: true, expiresAt: Number(ent.expiresAt) || 0 };
@@ -101,7 +101,7 @@ function cardOf(pid, post, seller, access, extra = {}) {
     createdAt: post.createdAt || 0, status: post.status, seller,
     sales: Number(stats.sales) || 0, favorites: Number(stats.favorites) || 0,
     rating: stats.ratingCount ? Math.round((stats.ratingSum / stats.ratingCount) * 10) / 10 : 0, ratingCount: Number(stats.ratingCount) || 0,
-    unlocked: !!access.unlocked, owner: !!access.owner, ...(access.expiresAt ? { expiresAt: access.expiresAt } : {}),
+    unlocked: !!access.unlocked, owner: !!access.owner, ...(access.moderation ? { moderation: true } : {}), ...(access.expiresAt ? { expiresAt: access.expiresAt } : {}),
     ...(access.expired ? { expired: true } : {}),
     ...extra,
   };

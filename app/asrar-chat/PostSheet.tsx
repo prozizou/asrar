@@ -17,7 +17,7 @@ import ReportSheet from './ReportSheet';
 
 const METHOD_ICONS: Record<string, any> = { wave: Wallet, pispi: Landmark, whatsapp: MessageCircle };
 
-export default function PostSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
+export default function PostSheet({ pid, moderation = false, onClose }: { pid: string; moderation?: boolean; onClose: () => void }) {
   const { notify, openProfile, openChat, openOrder } = useAc();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -25,9 +25,9 @@ export default function PostSheet({ pid, onClose }: { pid: string; onClose: () =
   const [viewer, setViewer] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    try { setData(await ac('post.open', { pid })); setError(''); }
+    try { setData(await ac('post.open', { pid, ...(moderation ? { moderation: true } : {}) })); setError(''); }
     catch (e: any) { setError(e.message); }
-  }, [pid]);
+  }, [pid, moderation]);
   useEffect(() => { load(); }, [load]);
 
   const post = data?.post;
@@ -67,6 +67,7 @@ export default function PostSheet({ pid, onClose }: { pid: string; onClose: () =
           )}
           <h3 className="ac-post-h">{post.title}</h3>
           <div className="ac-post-tags">
+            <span className={'ac-chip static price' + (post.price ? '' : ' free')}>{post.price ? <><Lock size={13} aria-hidden="true" /> {fcfa(post.price)}</> : 'Gratuit'}</span>
             <span className="ac-chip static">{CATEGORIES.find((c) => c.id === post.category)?.label}</span>
             <Stars value={post.rating} count={post.ratingCount} />
             {post.sales > 0 && <span className="ac-hint">{post.sales} vente{post.sales > 1 ? 's' : ''}</span>}
@@ -78,6 +79,10 @@ export default function PostSheet({ pid, onClose }: { pid: string; onClose: () =
             </button>
           )}
           {post.description && <p className="ac-about">{post.description}</p>}
+          {post.moderation && <p className="ac-note warn"><ShieldCheck size={15} aria-hidden="true" /> <span>Vue modération : contenu affiché pour examiner le signalement.</span></p>}
+          {post.owner && post.price > 0 && (
+            <p className="ac-note"><Lock size={15} aria-hidden="true" /> <span>Vous êtes l’auteur : vous voyez votre contenu. Les autres comptes ne voient que l’aperçu flouté, la description et le prix ({fcfa(post.price)}) tant que vous n’avez pas confirmé leur paiement.</span></p>
+          )}
           {post.price > 0 && !post.unlocked && post.previewText && <blockquote className="ac-preview-text">{post.previewText}</blockquote>}
 
           {data.content ? (
@@ -245,7 +250,7 @@ function Unlock({ data, onChanged, onOrder }: { data: any; onChanged: () => Prom
         </>
       )}
       {confirmOpen && (
-        <Sheet title="Déclarer le paiement" onClose={() => setConfirmOpen(false)}>
+        <Sheet title="Déclarer le paiement" onClose={() => setConfirmOpen(false)} compact>
           <form className="ac-form" onSubmit={declare}>
             <label className="ac-field"><span>Référence de la transaction</span>
               <input value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} maxLength={80} placeholder="Reçue par SMS ou dans l’application" required autoFocus />

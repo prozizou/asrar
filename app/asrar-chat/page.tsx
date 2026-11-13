@@ -35,7 +35,7 @@ export default function AsrarChatPage() {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('chats');
   const [chat, setChat] = useState<string | null>(null);
-  const [post, setPost] = useState<string | null>(null);
+  const [post, setPost] = useState<{ pid: string; moderation: boolean } | null>(null);
   const [order, setOrder] = useState<string | null>(null);
   const [profile, setProfile] = useState<string | null>(null);
   const [publishCid, setPublishCid] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function AsrarChatPage() {
     const c = params.get('c'), p = params.get('p'), o = params.get('o'), u = params.get('u'), join = params.get('join');
     if (c || p || o || u || join) window.history.replaceState(null, '', '/asrar-chat');
     if (c) setChat(c);
-    if (p) setPost(p);
+    if (p) setPost({ pid: p, moderation: false });
     if (o) setOrder(o);
     if (u) ac('profile.get', { handle: u }).then((r) => setProfile(r.profile.uid)).catch((e) => notify(e.message, 'error'));
     if (join) ac('conv.join', { inviteCode: join }).then((r) => { setChat(r.id); notify('Vous avez rejoint la discussion.', 'success'); }).catch((e) => notify(e.message, 'error'));
@@ -63,7 +63,7 @@ export default function AsrarChatPage() {
   const value: AcContext = {
     me, reloadMe, notify,
     openChat: (cid) => { setPost(null); setOrder(null); setProfile(null); setChat(cid); },
-    openPost: (pid) => setPost(pid),
+    openPost: (pid, moderation = false) => setPost({ pid, moderation }),
     openOrder: (oid) => setOrder(oid),
     openProfile: (uid) => setProfile(uid),
     publishIn: (cid) => { setPublishCid(cid); setChat(null); setTab('publish'); },
@@ -107,7 +107,7 @@ export default function AsrarChatPage() {
       </nav>
       {chat && <ChatRoom cid={chat} onClose={() => setChat(null)} />}
       {profile && <Storefront uid={profile} onClose={() => setProfile(null)} />}
-      {post && <PostSheet pid={post} onClose={() => setPost(null)} />}
+      {post && <PostSheet key={post.pid} pid={post.pid} moderation={post.moderation} onClose={() => setPost(null)} />}
       {order && <OrderSheet oid={order} onClose={() => setOrder(null)} />}
     </>
   );
