@@ -1,3 +1,11 @@
+## SW v46.82 — Asrar-chat : paiement direct par Wave Business ou WhatsApp
+
+- Lien Wave Business renseigné par le vendeur : « Payer X FCFA avec Wave » ouvre Wave directement, montant prérempli.
+- Numéro Wave seulement : « Payer par Wave via WhatsApp » ouvre la discussion WhatsApp du vendeur avec la commande déjà écrite (plus de numéro à recopier).
+- PI-SPI : alias à copier et bouton « Contacter le vendeur sur WhatsApp ».
+- Le contact WhatsApp utilise le numéro WhatsApp du vendeur, sinon son numéro Wave.
+- Le contenu reste verrouillé jusqu’à la confirmation de réception par le vendeur.
+
 ## SW v46.81 — Asrar-chat : corrections après les premiers essais
 
 - Contenu payant : l’administration ne le voit plus déverrouillé en navigation normale (seulement en « vue modération » depuis un signalement) ; l’auteur voit un bandeau rappelant que les autres comptes n’ont que l’aperçu flouté et le prix ; prix affiché en pastille avec cadenas.

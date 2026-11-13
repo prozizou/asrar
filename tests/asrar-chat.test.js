@@ -179,6 +179,32 @@ describe('Scénario : vidéo exclusive à 1 500 FCFA', () => {
     expect((await ok(db, U.buyer, 'library')).items).toHaveLength(0);
   });
 
+  it('sans lien Wave Business : redirection WhatsApp par le numéro Wave du vendeur', async () => {
+    const db = await setup();
+    await ok(db, U.seller, 'seller.save', { wavePhone: '221781234567', acceptTerms: true });
+    const pid = await publishVideo(db);
+    const opened = await ok(db, U.buyer, 'post.open', { pid });
+    expect(opened.paymentMethods).toEqual(['wave', 'whatsapp']);
+    expect(opened.paymentInfo).toEqual({ waveDirect: false, whatsapp: true });
+    const { pay } = await ok(db, U.buyer, 'order.create', { pid, method: 'wave' });
+    expect(pay.waveUrl).toBe('');
+    const wa = new URL(pay.whatsappUrl);
+    expect(wa.searchParams.get('phone')).toBe('221781234567');
+    expect(wa.searchParams.get('text')).toContain('payer par Wave');
+    expect(wa.searchParams.get('text')).toContain(pay.ref);
+    // Toujours verrouillé tant que le vendeur n'a pas confirmé.
+    expect((await ok(db, U.buyer, 'post.open', { pid })).content).toBeUndefined();
+  });
+
+  it('avec lien Wave Business : paiement direct et contact WhatsApp proposés', async () => {
+    const db = await setup();
+    const pid = await publishVideo(db);
+    expect((await ok(db, U.buyer, 'post.open', { pid })).paymentInfo).toEqual({ waveDirect: true, whatsapp: true });
+    const { pay } = await ok(db, U.buyer, 'order.create', { pid, method: 'pispi' });
+    expect(pay.pispiAlias).toBe('vendeur@pispi');
+    expect(new URL(pay.whatsappUrl).searchParams.get('text')).toContain('PI-SPI');
+  });
+
   it('signale une référence de transaction déjà utilisée chez ce vendeur', async () => {
     const db = await setup();
     const p1 = await publishVideo(db);

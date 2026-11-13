@@ -32,18 +32,31 @@ async function notify(db, uid, title, body, oid) {
   }, { eventId: "ac-order:" + oid + ":" + title + ":" + Date.now() }).catch(() => {});
 }
 
+// Numéro WhatsApp du vendeur : celui renseigné pour WhatsApp, sinon son
+// numéro Wave (souvent le même au Sénégal).
+function sellerWhatsapp(s) {
+  return s.whatsapp || s.wavePhone || "";
+}
+
 function instructions(order, seller) {
   const s = (seller && seller.seller) || {};
   const out = { ref: order.ref, amount: order.amount, method: order.method };
+  const what = `« ${order.postTitle} » (${fcfa(order.amount)}), commande ${order.ref} sur Asrar-chat`;
+  let text = `Assalamou aleykoum, je souhaite acheter ${what}.`;
   if (order.method === "wave") {
+    // Lien Wave Business : paiement direct, montant prérempli. Sinon le
+    // vendeur est contacté sur WhatsApp pour le paiement Wave.
     out.waveUrl = waveCheckoutUrl(s.waveLink, order.amount);
-    out.wavePhone = s.wavePhone || "";
+    text = out.waveUrl
+      ? `Assalamou aleykoum, je viens de payer par Wave ${what}.`
+      : `Assalamou aleykoum, je souhaite payer par Wave ${what}. Comment dois-je procéder ?`;
   }
-  if (order.method === "pispi") out.pispiAlias = s.pispiAlias || "";
-  if (s.whatsapp) {
-    const text = `Assalamou aleykoum, commande ${order.ref} sur Asrar-chat : « ${order.postTitle} » (${fcfa(order.amount)}).`;
-    out.whatsappUrl = "https://api.whatsapp.com/send?phone=" + s.whatsapp + "&text=" + encodeURIComponent(text);
+  if (order.method === "pispi") {
+    out.pispiAlias = s.pispiAlias || "";
+    text = `Assalamou aleykoum, je paie par PI-SPI ${what}.`;
   }
+  const phone = sellerWhatsapp(s);
+  if (phone) out.whatsappUrl = "https://api.whatsapp.com/send?phone=" + phone + "&text=" + encodeURIComponent(text);
   return out;
 }
 
@@ -73,7 +86,7 @@ async function createOrder(db, user, body) {
   const seller = await getProfile(db, post.sellerUid);
   const s = (seller && seller.seller) || {};
   if (!s.enabled) fail(409, "Ce vendeur n'accepte pas de paiement pour le moment.");
-  const available = { wave: !!(s.waveLink || s.wavePhone), pispi: !!s.pispiAlias, whatsapp: !!s.whatsapp };
+  const available = { wave: !!(s.waveLink || s.wavePhone), pispi: !!s.pispiAlias, whatsapp: !!sellerWhatsapp(s) };
   if (!available[method]) fail(400, "Ce moyen de paiement n'est pas proposé par le vendeur.");
 
   // Une seule commande ouverte par acheteur et par publication (pas de doublon).

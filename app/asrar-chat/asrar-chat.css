@@ -48,6 +48,15 @@ html.kb-open .ac-nav { display: none; }
 .ac-btn.danger { color: #e0607a; }
 .ac-btn.filled.danger { background: #d9485f; color: #fff; }
 .ac-btn.wave { background: #1dc8f0; color: #04222b; }
+.ac-btn.wa { background: #25d366; color: #052e16; }
+.ac-btn.tonal.wa { background: rgba(37, 211, 102, .16); color: #25d366; }
+.ac-pay-actions { display: flex; flex-direction: column; gap: 8px; }
+.ac-pay-actions .ac-btn { width: 100%; min-height: 46px; }
+.ac-alias { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--bg-deep); }
+.ac-alias > span { font-size: .76rem; color: var(--text-dim); font-weight: 600; }
+.ac-alias code { font-size: .9rem; overflow-wrap: anywhere; padding: 8px 10px; border-radius: 10px; background: var(--ac-container-high); }
+.ac-alias small { font-size: .76rem; color: var(--text-dim); }
+.ac-alias .ac-btn { align-self: flex-start; width: auto; min-height: 34px; }
 .ac-icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; min-width: 40px; margin: 0; padding: 0; border: 0; border-radius: 50%;
   background: transparent; color: var(--text-main); cursor: pointer; text-decoration: none; }
 .ac-icon-btn:hover { background: var(--ac-container-high); }

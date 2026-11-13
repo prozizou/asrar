@@ -135,10 +135,10 @@ function SellerSheet({ onClose }: { onClose: () => void }) {
     <Sheet title="Vente et moyens de paiement" onClose={onClose}>
       <form className="ac-form" onSubmit={submit}>
         <p className="ac-note"><Info size={15} aria-hidden="true" /> <span>Les acheteurs vous paient <strong>directement</strong>. Vous confirmez chaque paiement après l’avoir vu arriver sur votre compte : c’est ce qui déverrouille le contenu.</span></p>
-        <label className="ac-field"><span>Lien marchand Wave <em>recommandé</em></span><input value={waveLink} onChange={(e) => setWaveLink(e.target.value)} placeholder="https://pay.wave.com/m/…" autoCapitalize="none" spellCheck={false} /></label>
-        <label className="ac-field"><span>ou numéro Wave</span><input value={wavePhone} onChange={(e) => setWavePhone(e.target.value)} inputMode="tel" placeholder="221770000000" /></label>
+        <label className="ac-field"><span>Lien Wave Business <em>recommandé : paiement direct, montant prérempli</em></span><input value={waveLink} onChange={(e) => setWaveLink(e.target.value)} placeholder="https://pay.wave.com/m/…" autoCapitalize="none" spellCheck={false} /></label>
+        <label className="ac-field"><span>ou numéro Wave <em>l’acheteur vous contacte alors sur WhatsApp</em></span><input value={wavePhone} onChange={(e) => setWavePhone(e.target.value)} inputMode="tel" placeholder="221770000000" /></label>
         <label className="ac-field"><span>Alias PI-SPI</span><input value={pispiAlias} onChange={(e) => setPispiAlias(e.target.value)} autoCapitalize="none" spellCheck={false} /></label>
-        <label className="ac-field"><span>WhatsApp (contact acheteurs)</span><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" placeholder="221770000000" /></label>
+        <label className="ac-field"><span>WhatsApp <em>si différent du numéro Wave</em></span><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" placeholder="221770000000" /></label>
         <label className="ac-check"><input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} /> Je m’engage à ne vendre que des contenus dont je détiens les droits, à livrer ce qui est annoncé, à ne confirmer un paiement qu’après réception effective et à rembourser en cas de litige justifié. La commission éventuelle de la plateforme reste due sur chaque vente confirmée.</label>
         {error && <p className="ac-error" role="alert">{error}</p>}
         <button type="submit" className="ac-btn filled" disabled={busy}>{busy ? 'Enregistrement…' : me.profile.seller ? 'Enregistrer' : 'Activer la vente'}</button>

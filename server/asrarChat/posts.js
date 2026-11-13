@@ -149,9 +149,14 @@ async function openPost(db, user, body, isAdmin) {
   if (card.seller && card.price > 0) {
     const sp = await getProfile(db, card.seller.uid);
     result.post.seller = publicProfile(card.seller.uid, sp);
-    result.paymentMethods = sp && sp.seller && sp.seller.enabled
-      ? ["wave", "pispi", "whatsapp"].filter((m) => (m === "wave" ? sp.seller.waveLink || sp.seller.wavePhone : m === "pispi" ? sp.seller.pispiAlias : sp.seller.whatsapp))
+    const seller = (sp && sp.seller && sp.seller.enabled && sp.seller) || null;
+    const whatsapp = !!(seller && (seller.whatsapp || seller.wavePhone));
+    result.paymentMethods = seller
+      ? ["wave", "pispi", "whatsapp"].filter((m) => (m === "wave" ? seller.waveLink || seller.wavePhone : m === "pispi" ? seller.pispiAlias : whatsapp))
       : [];
+    // Parcours proposé : lien Wave Business → paiement direct ; sinon
+    // contact du vendeur sur WhatsApp (numéro WhatsApp ou Wave).
+    result.paymentInfo = { waveDirect: !!(seller && seller.waveLink), whatsapp };
   }
   return result;
 }

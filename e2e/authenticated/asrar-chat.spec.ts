@@ -24,7 +24,7 @@ test('vente d’un contenu payant dans une chaîne, paiement direct confirmé pa
   await expect(seller.getByRole('button', { name: 'Discussions', exact: true })).toBeVisible();
   await seller.getByRole('button', { name: 'Profil', exact: true }).click();
   await seller.getByRole('button', { name: /Devenir vendeur/ }).click();
-  await seller.getByLabel(/Lien marchand Wave/).fill('https://pay.wave.com/m/M_sn_E2E123/c/sn/');
+  await seller.getByLabel(/Lien Wave Business/).fill('https://pay.wave.com/m/M_sn_E2E123/c/sn/');
   await seller.getByRole('checkbox').check();
   await seller.getByRole('button', { name: 'Activer la vente' }).click();
   await expect(seller.getByRole('button', { name: /Vente et moyens de paiement/ })).toBeVisible();
@@ -69,7 +69,10 @@ test('vente d’un contenu payant dans une chaîne, paiement direct confirmé pa
   const sheet = buyer.getByRole('dialog', { name: 'Article' });
   await expect(sheet.getByText('Sommaire : variables, boucles, fonctions.')).toBeVisible();
   await expect(sheet.getByText(SECRET)).toHaveCount(0);
-  await sheet.getByRole('button', { name: /Déverrouiller pour 2\s000 FCFA/ }).click();
+  // Lien Wave Business renseigné : le bouton ouvre Wave directement.
+  const popup = buyer.waitForEvent('popup');
+  await sheet.getByRole('button', { name: /Payer 2\s000 FCFA avec Wave/ }).click();
+  await (await popup).close();
   const wave = sheet.getByRole('link', { name: /Payer 2\s000 FCFA avec Wave/ });
   await expect(wave).toHaveAttribute('href', 'https://pay.wave.com/m/M_sn_E2E123/c/sn/?amount=2000');
   await shot(buyer, 'asrar-chat-2-paiement');
@@ -128,4 +131,31 @@ test('discussion privée entre deux comptes', async ({ browser, login }) => {
   await expect(dm.locator('.ac-text', { hasText: 'Bonjour, avez-vous d’autres formations ?' })).toBeVisible();
   await expect(dm.getByLabel('Message', { exact: true })).toHaveValue('');
   await a.screenshot({ path: test.info().outputPath('asrar-chat-5-discussion.png') });
+});
+
+test('vendeur sans lien Wave Business : paiement Wave via WhatsApp, PI-SPI avec alias', async ({ browser, login }) => {
+  test.setTimeout(60_000);
+  const db = app().database();
+  const now = Date.now();
+  await db.ref('ac_profiles/fixture-seller/seller').set({ enabled: true, wavePhone: '221781234567', pispiAlias: 'vendeur@pispi', waveLink: '', whatsapp: '', termsAt: now });
+  await db.ref().update({
+    'ac_posts/e2e-doc': { sellerUid: 'fixture-seller', kind: 'text', title: 'Compilation de protections', description: 'Recueil complet', category: 'livres',
+      price: 30000, accessDays: 0, conditions: 'Usage personnel', previewText: 'Sommaire du recueil', previewImage: '', media: { count: 0, kinds: {} },
+      status: 'published', createdAt: now, updatedAt: now, titleLower: 'compilation de protections' },
+    'ac_post_content/e2e-doc': { contentText: 'Texte réservé aux acheteurs', assets: [] },
+  });
+  const buyer = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await login('basic', buyer);
+  await buyer.goto('/asrar-chat?p=e2e-doc');
+  const sheet = buyer.getByRole('dialog', { name: 'Article' });
+  await expect(sheet.getByText('Texte réservé aux acheteurs')).toHaveCount(0);
+  const popup = buyer.waitForEvent('popup');
+  await sheet.getByRole('button', { name: 'Payer par Wave via WhatsApp' }).click();
+  await (await popup).close();
+  const wa = sheet.getByRole('link', { name: 'Payer par Wave via WhatsApp' });
+  const href = new URL((await wa.getAttribute('href'))!);
+  expect(href.searchParams.get('phone')).toBe('221781234567');
+  expect(href.searchParams.get('text')).toMatch(/payer par Wave.*AC-/);
+  await expect(sheet.getByText('+221781234567')).toHaveCount(0); // pas de numéro à recopier
+  await buyer.screenshot({ path: test.info().outputPath('asrar-chat-7-wave-via-whatsapp.png') });
 });
