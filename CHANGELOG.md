@@ -1,3 +1,11 @@
+## SW v46.79 — Visioconférence Google Meet
+
+- Nouveau module « Visioconférence » (menu Spiritualité) : chaque utilisateur peut proposer une réunion Google Meet (titre, lien Meet, date, durée, description).
+- Comme le Zikr collectif, l’administration valide chaque proposition : en attente, elle n’est visible que de son créateur ; une fois approuvée, tous les utilisateurs sont notifiés et la voient dans la liste.
+- Refus par l’administration : la proposition est supprimée et son créateur averti. Une modification par le créateur repasse en validation.
+- Seuls les liens meet.google.com sont acceptés ; au plus 3 visioconférences programmées par compte ; les réunions terminées disparaissent de la liste.
+- Badges « Bientôt » et « En cours », bouton « Rejoindre sur Google Meet » (application Meet ou navigateur).
+
 ## SW v46.78 — Durcissement de sécurité (audit complet)
 
 - Tâches planifiées : le secret n’est plus accepté dans l’URL (`?secret=`), seulement dans l’en-tête `Authorization: Bearer`, pour qu’il ne finisse jamais dans les journaux.

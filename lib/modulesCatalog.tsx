@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { FREE_FOR_ALL } from './plans';
 import {
   Scroll, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
-  Feather, Grid3x3, Hash, Moon, Layers, Calendar,
+  Feather, Grid3x3, Hash, Moon, Layers, Calendar, Video,
 } from 'lucide-react';
 
 export interface ModuleTile {
@@ -51,6 +51,7 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     icon: <Moon {...CAT_ICON} />,
     items: [
       { icon: <Users {...ICON} />, label: 'Zikr collectif', desc: 'Dhikr en groupe', href: '/zikr', keywords: ['dhikr', 'tasbih', 'chapelet', 'groupe', 'hatim'] },
+      { icon: <Video {...ICON} />, label: 'Visioconférence', desc: 'Réunions Google Meet', href: '/visio', keywords: ['google meet', 'meet', 'video', 'reunion', 'cours', 'conference', 'visio'] },
       { icon: <Wand2 {...ICON} />, label: 'Rouwhanes', desc: "Noms d'anges et vœu", href: '/rouwhania', keywords: ['anges', 'rouhanya', 'rouwhania', 'voeu'] },
     ],
   },
