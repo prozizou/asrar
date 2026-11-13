@@ -172,7 +172,7 @@ Aucune permission de notification plein écran ou de contournement de Ne pas
 déranger n'est demandée. Publier l'AAB signé avec la même clé que l'application
 existante. Le workflow `Android release` accepte la piste `production` et
 `upload=true` ; l'envoi nécessite `PLAY_SERVICE_ACCOUNT_JSON`. Le nom de version
-est 8.0.4 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
+est 8.1.0 et le code CI vaut `100 + GITHUB_RUN_NUMBER` (croissant par rapport aux
 versions précédentes du même workflow).
 
 
