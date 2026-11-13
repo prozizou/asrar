@@ -18,6 +18,7 @@ import { ChevronRight, Crown } from 'lucide-react';
 import UserBar from './UserBar';
 import MenuSearch from './MenuSearch';
 import PersonalRows from './PersonalRows';
+import MenuSupportGate from './MenuSupportGate';
 import { CATEGORIES, ALL_MODULES, categoryOf } from '@/lib/modulesCatalog';
 
 // La recherche affiche la famille de chaque résultat : elle est résolue ici,
@@ -28,6 +29,7 @@ const SEARCH_ITEMS = ALL_MODULES.map((m) => ({ ...m, category: categoryOf(m.href
 export default function MenuPage() {
   return (
     <div className="container menu-home">
+      <MenuSupportGate />
       {/* Le retour au Marché est dans la barre d'en-tête (UserBar). */}
       <UserBar />
       <MenuSearch items={SEARCH_ITEMS} />

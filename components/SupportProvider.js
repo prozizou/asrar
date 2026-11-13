@@ -4,10 +4,12 @@
 //   • celebrate() — appelé par un module APRÈS une action réussie (export,
 //     texte généré, calcul, objectif atteint). N'ouvre la fenêtre que si la
 //     règle de lib/supportPrompt.js l'autorise (au plus une fois par jour,
-//     pause après « Plus tard » / « J'ai déjà contribué », pour tous les
+//     pause après « Plus tard », pour tous les
 //     comptes) et seulement si aucune autre fenêtre n'est ouverte ;
 //   • openSupport() — entrée « Soutenir l'application » (menu, Mon compte),
-//     toujours disponible.
+//     toujours disponible ;
+//   • menuGate() — à l'ouverture du menu (page la plus visitée) : une fois
+//     par session, bouton « Passer » actif après 5 s (lib/supportPrompt.js).
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Check, Copy, HandHeart, Landmark, LockKeyhole, MessageCircle, Wallet, X } from 'lucide-react';
@@ -15,13 +17,20 @@ import Modal from './Modal';
 import { PISPI_ALIAS, supportWaveUrl } from '@/lib/subscriptionPayments';
 import { reserveExternalWindow } from '@/lib/externalWindow';
 import { openSupport as openSupportWhatsApp } from '@/lib/whatsapp';
-import { STORAGE_KEY, parseState, shouldPrompt, afterShown, afterAnswer } from '@/lib/supportPrompt';
+import {
+  STORAGE_KEY, MENU_SESSION_KEY, GATE_SECONDS, parseState, shouldPrompt, shouldPromptMenu, afterShown, afterAnswer,
+} from '@/lib/supportPrompt';
 
-const SupportCtx = createContext({ celebrate: () => {}, openSupport: () => {} });
+const SupportCtx = createContext({ celebrate: () => {}, openSupport: () => {}, menuGate: () => {} });
 export const useSupport = () => useContext(SupportCtx);
 
 // Laisse à l'utilisateur le temps de voir son résultat avant la fenêtre.
 const CELEBRATE_DELAY_MS = 1200;
+// Menu : laisse la page s'afficher avant la fenêtre.
+const MENU_DELAY_MS = 900;
+
+const sessionShown = () => { try { return sessionStorage.getItem(MENU_SESSION_KEY) === '1'; } catch { return false; } };
+const markSession = () => { try { sessionStorage.setItem(MENU_SESSION_KEY, '1'); } catch {} };
 
 const readState = () => {
   try { return parseState(localStorage.getItem(STORAGE_KEY)); } catch { return parseState(null); }
@@ -32,6 +41,7 @@ const writeState = (state) => {
 
 export default function SupportProvider({ children }) {
   const [open, setOpen] = useState(false);
+  const [gate, setGate] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -43,12 +53,34 @@ export default function SupportProvider({ children }) {
       if (!shouldPrompt({ now, state: readState() })) return;
       if (document.querySelector('dialog[open]')) return; // une autre fenêtre est déjà ouverte
       writeState(afterShown(readState(), now));
+      setGate(false);
       setOpen(true);
     }, CELEBRATE_DELAY_MS);
   }, []);
 
+  const menuGate = useCallback(() => {
+    clearTimeout(timer.current);
+    let tries = 0;
+    const attempt = () => {
+      const now = Date.now();
+      if (!shouldPromptMenu({ sessionShown: sessionShown() })) return;
+      // Une autre fenêtre est ouverte (installation, mise à jour…) : on
+      // réessaie un peu plus tard plutôt que de la recouvrir.
+      if (document.querySelector('dialog[open]')) { if (++tries < 5) timer.current = setTimeout(attempt, 3000); return; }
+      markSession();
+      writeState(afterShown(readState(), now));
+      setGate(true);
+      setOpen(true);
+    };
+    timer.current = setTimeout(attempt, MENU_DELAY_MS);
+    // Quitter le menu avant l'affichage annule la présentation (elle ne doit
+    // jamais surgir sur une autre page).
+    return () => clearTimeout(timer.current);
+  }, []);
+
   const openSupport = useCallback(() => {
     clearTimeout(timer.current);
+    setGate(false);
     setOpen(true);
   }, []);
 
@@ -58,17 +90,25 @@ export default function SupportProvider({ children }) {
   }, []);
 
   return (
-    <SupportCtx.Provider value={{ celebrate, openSupport }}>
+    <SupportCtx.Provider value={{ celebrate, openSupport, menuGate }}>
       {children}
-      {open && <SupportDialog onAnswer={answer} />}
+      {open && <SupportDialog onAnswer={answer} gate={gate} />}
     </SupportCtx.Provider>
   );
 }
 
-function SupportDialog({ onAnswer }) {
+function SupportDialog({ onAnswer, gate = false }) {
   const id = useId();
+  // Présentation du menu : fermeture possible seulement après GATE_SECONDS.
+  const [wait, setWait] = useState(gate ? GATE_SECONDS : 0);
+  useEffect(() => {
+    if (wait <= 0) return undefined;
+    const t = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [wait]);
+  const locked = wait > 0;
+  const close = () => { if (!locked) onAnswer('close'); };
   const [method, setMethod] = useState('wave');
-  const [paidVia, setPaidVia] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const aliasInput = useRef(null);
@@ -79,7 +119,6 @@ function SupportDialog({ onAnswer }) {
     if (!destination) { setError('Autorisez l’ouverture de Wave dans votre navigateur, puis réessayez.'); return; }
     try {
       await destination.navigate(supportWaveUrl());
-      setPaidVia('wave');
     } catch { destination.close(); setError('Wave n’a pas pu être ouvert. Réessayez ou choisissez WhatsApp.'); }
   };
   const copyAlias = async () => {
@@ -90,9 +129,10 @@ function SupportDialog({ onAnswer }) {
       try { aliasInput.current?.focus(); aliasInput.current?.select(); ok = !!document.execCommand?.('copy'); } catch {}
       if (!ok) { setError('Copie indisponible : appuyez longuement sur l’alias pour le copier.'); return; }
     }
-    setCopied(true); setPaidVia('pispi');
+    setCopied(true);
   };
-  const whatsapp = () => openSupportWhatsApp({ paidVia: paidVia || undefined });
+  // WhatsApp : demander comment effectuer l'envoi (pas de justificatif).
+  const whatsapp = () => openSupportWhatsApp();
 
   const METHODS = [
     { id: 'wave', name: 'Wave', Icon: Wallet },
@@ -101,11 +141,13 @@ function SupportDialog({ onAnswer }) {
   ];
 
   return (
-    <Modal className="sg-overlay" onClose={() => onAnswer('close')} labelledBy={id + '-title'}>
+    <Modal className="sg-overlay" onClose={close} labelledBy={id + '-title'}>
       <div className="sg-box support-box">
-        <button type="button" className="sg-close" aria-label="Fermer" onClick={() => onAnswer('close')}>
-          <X size={20} strokeWidth={2.2} aria-hidden="true" />
-        </button>
+        {!locked && (
+          <button type="button" className="sg-close" aria-label="Fermer" onClick={close}>
+            <X size={20} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        )}
         <div className="sg-hero-icon"><HandHeart size={40} strokeWidth={1.7} aria-hidden="true" /></div>
         <h2 id={id + '-title'}>Soutenir ASRAR PRO</h2>
         <p className="sg-sub">
@@ -146,27 +188,27 @@ function SupportDialog({ onAnswer }) {
           )}
           {method === 'whatsapp' && (
             <>
-              <p className="support-hint">Écrivez-nous sur WhatsApp : nous vous indiquerons comment contribuer.</p>
+              <p className="support-hint">Une question sur l’envoi ? Écrivez-nous sur WhatsApp : nous vous expliquons comment envoyer votre contribution par Wave ou PI-SPI.</p>
               <button type="button" className="subscription-continue" onClick={whatsapp}>
-                <MessageCircle size={17} aria-hidden="true" /> Écrire sur WhatsApp
+                <MessageCircle size={17} aria-hidden="true" /> Demander comment envoyer
               </button>
             </>
-          )}
-          {paidVia && method !== 'whatsapp' && (
-            <button type="button" className="subscription-proof" onClick={whatsapp}>
-              <MessageCircle size={17} aria-hidden="true" /> Envoyer le justificatif sur WhatsApp (facultatif)
-            </button>
           )}
           {error && <p className="subscription-error" role="alert">{error}</p>}
           <p className="subscription-simple-note">
             <LockKeyhole size={13} aria-hidden="true" />
-            <span>Contribution volontaire, en plus de l’éventuel abonnement : elle ne modifie pas votre accès. Voir <Link href="/compte" onClick={() => onAnswer('close')}>mon abonnement</Link>.</span>
+            <span>Contribution volontaire, en plus de l’éventuel abonnement : elle ne modifie pas votre accès. Voir <Link href="/compte" onClick={close}>mon abonnement</Link>.</span>
           </p>
         </div>
 
         <div className="support-actions">
-          <button type="button" className="support-later" onClick={() => onAnswer('later')}>Plus tard</button>
-          <button type="button" className="support-done" onClick={() => onAnswer('contributed')}>J’ai déjà contribué</button>
+          {gate ? (
+            <button type="button" className="support-later" disabled={locked} aria-live="polite" onClick={close}>
+              {locked ? `Passer dans ${wait} s` : 'Passer'}
+            </button>
+          ) : (
+            <button type="button" className="support-later" onClick={() => onAnswer('later')}>Plus tard</button>
+          )}
         </div>
       </div>
     </Modal>

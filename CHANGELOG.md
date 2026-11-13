@@ -1,3 +1,15 @@
+## SW v46.84 — Soutien : sans « J’ai déjà contribué », WhatsApp pour se renseigner
+
+- Bouton « J’ai déjà contribué » retiré partout : la fenêtre du menu s’affiche à chaque session, pour tous.
+- WhatsApp sert à demander comment effectuer l’envoi : bouton « Demander comment envoyer », message prérempli « Pouvez-vous m’indiquer comment effectuer l’envoi (Wave ou PI-SPI) ? ». Le bouton d’envoi de justificatif est retiré.
+- « Passer » / « Plus tard » sur toute la largeur.
+
+## SW v46.83 — Menu : soutien présenté à chaque session
+
+- À l’ouverture du menu (page la plus visitée), la fenêtre « Soutenir ASRAR PRO » s’affiche une fois par session ; le bouton « Passer » devient actif après un compte à rebours de 5 secondes (ni croix, ni Échap, ni clic à côté pendant l’attente).
+- « J’ai déjà contribué » l’écarte pendant 30 jours ; « Passer » ne vaut que pour la session en cours.
+- Quitter le menu avant son apparition l’annule (jamais par-dessus une autre page ou une autre fenêtre).
+
 ## SW v46.82 — Asrar-chat : paiement direct par Wave Business ou WhatsApp
 
 - Lien Wave Business renseigné par le vendeur : « Payer X FCFA avec Wave » ouvre Wave directement, montant prérempli.
