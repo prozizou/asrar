@@ -28,6 +28,28 @@
     "push_subscriptions": { "$uid": { ".indexOn": ["updatedAt"] } },
     "fcm_devices": { "$uid": { ".indexOn": ["updatedAt"] } },
 
+    "ac_signals": {
+      "$cid": { ".read": "auth != null && auth.token.email_verified == true && root.child('ac_members').child($cid).child(auth.uid).exists()", ".write": false }
+    },
+    "ac_inbox_signals": {
+      "$uid": { ".read": "auth != null && auth.uid == $uid && auth.token.email_verified == true", ".write": false }
+    },
+    "ac_typing": {
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true && root.child('ac_members').child($cid).child(auth.uid).exists()",
+        "$uid": {
+          ".write": "auth != null && auth.uid == $uid && auth.token.email_verified == true && root.child('ac_members').child($cid).child(auth.uid).exists() && !root.child('ac_suspended').child(auth.uid).exists()",
+          ".validate": "newData.isNumber() && newData.val() <= now + 5000 && newData.val() >= now - 60000"
+        }
+      }
+    },
+    "ac_profiles": { ".indexOn": ["handle", "seller/enabled"] },
+    "ac_posts": { ".indexOn": ["createdAt", "sellerUid"] },
+    "ac_convs": { ".indexOn": ["inviteCode", "visibility"] },
+    "ac_orders": { ".indexOn": ["status"] },
+    "ac_reports": { ".indexOn": ["status"] },
+    "ac_audit": { ".indexOn": ["at"] },
+
     "sourate": { ".read": "auth != null" },
     "versetRef": { ".read": "auth != null" },
     "data": {

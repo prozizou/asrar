@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { FREE_FOR_ALL } from './plans';
 import {
   Scroll, Globe, Sparkles, Users, Wand2, BookOpen, Gift,
-  Feather, Grid3x3, Hash, Moon, Layers, Calendar, Video,
+  Feather, Grid3x3, Hash, Moon, Layers, Calendar, Video, MessagesSquare,
 } from 'lucide-react';
 
 export interface ModuleTile {
@@ -51,6 +51,7 @@ const RAW_CATEGORIES: ModuleCategory[] = [
     icon: <Moon {...CAT_ICON} />,
     items: [
       { icon: <Users {...ICON} />, label: 'Zikr collectif', desc: 'Dhikr en groupe', href: '/zikr', keywords: ['dhikr', 'tasbih', 'chapelet', 'groupe', 'hatim'] },
+      { icon: <MessagesSquare {...ICON} />, label: 'Asrar-chat', desc: 'Messagerie et vente de contenus', href: '/asrar-chat', keywords: ['chat', 'messagerie', 'discussion', 'groupe', 'chaine', 'telegram', 'whatsapp', 'vendre', 'acheter', 'marketplace', 'formation'] },
       { icon: <Video {...ICON} />, label: 'Visioconférence', desc: 'Réunions Google Meet', href: '/visio', keywords: ['google meet', 'meet', 'video', 'reunion', 'cours', 'conference', 'visio'] },
       { icon: <Wand2 {...ICON} />, label: 'Rouwhanes', desc: "Noms d'anges et vœu", href: '/rouwhania', keywords: ['anges', 'rouhanya', 'rouwhania', 'voeu'] },
     ],

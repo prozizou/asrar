@@ -7,7 +7,7 @@
 // navigateur — mais la liste reste à jour SANS recharger la page.
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Scroll, BookOpen, MessageCircle, Check, PackageSearch, Heart, CalendarDays, Video } from 'lucide-react';
+import { Bell, Scroll, BookOpen, MessageCircle, Check, PackageSearch, Heart, CalendarDays, Video, MessagesSquare, Receipt } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import ViewState from '@/components/ViewState';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/notificationsClient';
@@ -24,6 +24,8 @@ const ICON_BY_TYPE = {
   [NOTIF_TYPES.SOCIAL]: Heart,
   [NOTIF_TYPES.DATE_DU_JOUR]: CalendarDays,
   [NOTIF_TYPES.VISIO]: Video,
+  [NOTIF_TYPES.ASRAR_CHAT]: MessagesSquare,
+  [NOTIF_TYPES.ASRAR_CHAT_ORDER]: Receipt,
 };
 
 // Horodatage compact : heure si aujourd'hui, jour+mois sinon (+ année si une
