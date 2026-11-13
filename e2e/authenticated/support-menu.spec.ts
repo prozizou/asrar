@@ -16,6 +16,9 @@ test('menu : soutien présenté une fois par session, passable après 5 s', asyn
   await expect(dialog.getByRole('button', { name: 'Fermer' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('J’ai déjà contribué')).toHaveCount(0);
+  await dialog.getByRole('radio', { name: 'WhatsApp' }).check();
+  await expect(dialog.getByRole('button', { name: 'Demander comment envoyer' })).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('support-menu-attente.png') });
   await expect(skip).toBeEnabled({ timeout: 7000 });
   await expect(skip).toHaveText('Passer');

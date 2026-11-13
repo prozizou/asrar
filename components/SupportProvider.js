@@ -4,7 +4,7 @@
 //   • celebrate() — appelé par un module APRÈS une action réussie (export,
 //     texte généré, calcul, objectif atteint). N'ouvre la fenêtre que si la
 //     règle de lib/supportPrompt.js l'autorise (au plus une fois par jour,
-//     pause après « Plus tard » / « J'ai déjà contribué », pour tous les
+//     pause après « Plus tard », pour tous les
 //     comptes) et seulement si aucune autre fenêtre n'est ouverte ;
 //   • openSupport() — entrée « Soutenir l'application » (menu, Mon compte),
 //     toujours disponible ;
@@ -63,7 +63,7 @@ export default function SupportProvider({ children }) {
     let tries = 0;
     const attempt = () => {
       const now = Date.now();
-      if (!shouldPromptMenu({ now, state: readState(), sessionShown: sessionShown() })) return;
+      if (!shouldPromptMenu({ sessionShown: sessionShown() })) return;
       // Une autre fenêtre est ouverte (installation, mise à jour…) : on
       // réessaie un peu plus tard plutôt que de la recouvrir.
       if (document.querySelector('dialog[open]')) { if (++tries < 5) timer.current = setTimeout(attempt, 3000); return; }
@@ -109,7 +109,6 @@ function SupportDialog({ onAnswer, gate = false }) {
   const locked = wait > 0;
   const close = () => { if (!locked) onAnswer('close'); };
   const [method, setMethod] = useState('wave');
-  const [paidVia, setPaidVia] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const aliasInput = useRef(null);
@@ -120,7 +119,6 @@ function SupportDialog({ onAnswer, gate = false }) {
     if (!destination) { setError('Autorisez l’ouverture de Wave dans votre navigateur, puis réessayez.'); return; }
     try {
       await destination.navigate(supportWaveUrl());
-      setPaidVia('wave');
     } catch { destination.close(); setError('Wave n’a pas pu être ouvert. Réessayez ou choisissez WhatsApp.'); }
   };
   const copyAlias = async () => {
@@ -131,9 +129,10 @@ function SupportDialog({ onAnswer, gate = false }) {
       try { aliasInput.current?.focus(); aliasInput.current?.select(); ok = !!document.execCommand?.('copy'); } catch {}
       if (!ok) { setError('Copie indisponible : appuyez longuement sur l’alias pour le copier.'); return; }
     }
-    setCopied(true); setPaidVia('pispi');
+    setCopied(true);
   };
-  const whatsapp = () => openSupportWhatsApp({ paidVia: paidVia || undefined });
+  // WhatsApp : demander comment effectuer l'envoi (pas de justificatif).
+  const whatsapp = () => openSupportWhatsApp();
 
   const METHODS = [
     { id: 'wave', name: 'Wave', Icon: Wallet },
@@ -189,16 +188,11 @@ function SupportDialog({ onAnswer, gate = false }) {
           )}
           {method === 'whatsapp' && (
             <>
-              <p className="support-hint">Écrivez-nous sur WhatsApp : nous vous indiquerons comment contribuer.</p>
+              <p className="support-hint">Une question sur l’envoi ? Écrivez-nous sur WhatsApp : nous vous expliquons comment envoyer votre contribution par Wave ou PI-SPI.</p>
               <button type="button" className="subscription-continue" onClick={whatsapp}>
-                <MessageCircle size={17} aria-hidden="true" /> Écrire sur WhatsApp
+                <MessageCircle size={17} aria-hidden="true" /> Demander comment envoyer
               </button>
             </>
-          )}
-          {paidVia && method !== 'whatsapp' && (
-            <button type="button" className="subscription-proof" onClick={whatsapp}>
-              <MessageCircle size={17} aria-hidden="true" /> Envoyer le justificatif sur WhatsApp (facultatif)
-            </button>
           )}
           {error && <p className="subscription-error" role="alert">{error}</p>}
           <p className="subscription-simple-note">
@@ -215,7 +209,6 @@ function SupportDialog({ onAnswer, gate = false }) {
           ) : (
             <button type="button" className="support-later" onClick={() => onAnswer('later')}>Plus tard</button>
           )}
-          <button type="button" className="support-done" onClick={() => onAnswer('contributed')}>J’ai déjà contribué</button>
         </div>
       </div>
     </Modal>
