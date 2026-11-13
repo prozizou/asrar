@@ -60,7 +60,7 @@ export default function Chats() {
       )}
       <button type="button" className="ac-fab" aria-label="Nouvelle discussion" onClick={() => setCreating('menu')}><Plus size={24} /></button>
       {creating === 'menu' && (
-        <Sheet title="Nouvelle discussion" onClose={() => setCreating(null)}>
+        <Sheet title="Nouvelle discussion" onClose={() => setCreating(null)} compact>
           <div className="ac-menu-list">
             <button type="button" onClick={() => setCreating('dm')}><UserPlus size={20} aria-hidden="true" /> Discussion privée</button>
             <button type="button" onClick={() => setCreating('group')}><Users size={20} aria-hidden="true" /> Nouveau groupe</button>

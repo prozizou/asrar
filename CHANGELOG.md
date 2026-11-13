@@ -1,3 +1,10 @@
+## SW v46.81 — Asrar-chat : corrections après les premiers essais
+
+- Contenu payant : l’administration ne le voit plus déverrouillé en navigation normale (seulement en « vue modération » depuis un signalement) ; l’auteur voit un bandeau rappelant que les autres comptes n’ont que l’aperçu flouté et le prix ; prix affiché en pastille avec cadenas.
+- Profil créé automatiquement depuis le compte Google (nom, photo, pseudonyme tiré de l’e-mail), modifiable dans Profil : plus d’écran d’accueil.
+- Fenêtres : vraies feuilles (bas d’écran sur téléphone, centrées sur ordinateur) au lieu de pages entières ; menu d’un message, nouvelle discussion, transfert et déclaration de paiement en petit dialogue centré.
+- Champ pseudonyme : double contour supprimé ; plus d’effet de soulèvement des boutons au survol.
+
 ## SW v46.80 — Asrar-chat : messagerie sociale et vente de contenus
 
 - Nouveau module « Asrar-chat » (menu Spiritualité), navigation Discussions · Explorer · Publier · Achats · Profil, thèmes clair/sombre.

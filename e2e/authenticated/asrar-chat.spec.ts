@@ -18,10 +18,10 @@ test('vente d’un contenu payant dans une chaîne, paiement direct confirmé pa
   // ── Vendeur : profil, vente, chaîne, publication payante ──
   const seller = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await login('seller', seller);
+  // Profil créé automatiquement depuis le compte Google : pas d'écran d'accueil.
   await seller.goto('/asrar-chat');
-  await seller.getByLabel('Pseudonyme').fill('vendeur_e2e');
-  await seller.getByLabel('Nom affiché').fill('Vendeur E2E');
-  await seller.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(seller.getByText('Bienvenue sur Asrar-chat')).toHaveCount(0);
+  await expect(seller.getByRole('button', { name: 'Discussions', exact: true })).toBeVisible();
   await seller.getByRole('button', { name: 'Profil', exact: true }).click();
   await seller.getByRole('button', { name: /Devenir vendeur/ }).click();
   await seller.getByLabel(/Lien marchand Wave/).fill('https://pay.wave.com/m/M_sn_E2E123/c/sn/');
@@ -45,14 +45,19 @@ test('vente d’un contenu payant dans une chaîne, paiement direct confirmé pa
   await seller.getByLabel('Texte de l’article').fill(SECRET);
   await seller.getByRole('button', { name: /^Publier à/ }).click();
   await expect(seller.getByRole('dialog', { name: 'Chaîne E2E' }).getByText('Formation Python')).toBeVisible();
+  // L'auteur voit son contenu, avec le rappel de ce que voient les autres.
+  await seller.getByRole('dialog', { name: 'Chaîne E2E' }).getByRole('button', { name: /Formation Python/ }).click();
+  await expect(seller.getByText(/Vous êtes l’auteur/)).toBeVisible();
+  await shot(seller, 'asrar-chat-0-vue-auteur');
+  await seller.getByRole('button', { name: 'Fermer' }).click();
 
   // ── Acheteur : découvre la chaîne, voit le contenu verrouillé ──
   const buyer = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await login('basic', buyer);
+  // Profil créé automatiquement depuis le compte Google : pas d'écran d'accueil.
   await buyer.goto('/asrar-chat');
-  await buyer.getByLabel('Pseudonyme').fill('acheteur_e2e');
-  await buyer.getByLabel('Nom affiché').fill('Acheteur E2E');
-  await buyer.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(buyer.getByText('Bienvenue sur Asrar-chat')).toHaveCount(0);
+  await expect(buyer.getByRole('button', { name: 'Discussions', exact: true })).toBeVisible();
   await buyer.getByRole('button', { name: 'Explorer', exact: true }).click();
   await buyer.getByRole('button', { name: /Chaîne E2E/ }).click();
   const channel = buyer.getByRole('dialog', { name: 'Chaîne E2E' });
@@ -105,19 +110,21 @@ test('discussion privée entre deux comptes', async ({ browser, login }) => {
   const a = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await login('basic', a);
   await a.goto('/asrar-chat');
-  // Profil déjà créé par le scénario précédent (même base), sinon on le crée.
-  if (await a.getByLabel('Pseudonyme').isVisible().catch(() => false)) {
-    await a.getByLabel('Pseudonyme').fill('acheteur_e2e');
-    await a.getByLabel('Nom affiché').fill('Acheteur E2E');
-    await a.getByRole('button', { name: 'Enregistrer' }).click();
-  }
   await a.getByRole('button', { name: 'Nouvelle discussion' }).click();
   await a.getByRole('button', { name: 'Discussion privée' }).click();
-  await a.getByLabel('Pseudonyme').fill('vendeur');
-  await a.getByRole('button', { name: /Vendeur E2E/ }).click();
-  const dm = a.getByRole('dialog', { name: 'Vendeur E2E' });
+  await a.getByLabel('Pseudonyme').fill('seller');
+  await a.getByRole('button', { name: /@seller/ }).click();
+  const dm = a.getByRole('dialog', { name: 'seller' });
   await dm.getByLabel('Message', { exact: true }).fill('Bonjour, avez-vous d’autres formations ?');
   await dm.getByRole('button', { name: 'Envoyer' }).click();
+  // Menu d'un message : petit dialogue centré, pas une page entière.
+  await dm.getByRole('button', { name: 'Actions sur le message' }).last().click();
+  const menu = a.getByRole('dialog', { name: 'Message' });
+  const box = (await menu.locator('.ac-sheet').boundingBox())!;
+  expect(box.width).toBeLessThanOrEqual(340);
+  expect(box.height).toBeLessThan(844 * 0.75);
+  await a.screenshot({ path: test.info().outputPath('asrar-chat-6-menu-message.png') });
+  await menu.getByRole('button', { name: 'Fermer' }).click();
   await expect(dm.locator('.ac-text', { hasText: 'Bonjour, avez-vous d’autres formations ?' })).toBeVisible();
   await expect(dm.getByLabel('Message', { exact: true })).toHaveValue('');
   await a.screenshot({ path: test.info().outputPath('asrar-chat-5-discussion.png') });

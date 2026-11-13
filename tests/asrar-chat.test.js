@@ -302,6 +302,34 @@ describe('Modération', () => {
     expect((await ok(db, U.other, 'me')).suspended).toBe(true);
   });
 
+  it('profil créé automatiquement depuis le compte Google', async () => {
+    const db = database({});
+    const google = { uid: 'g1', email: 'Moussa.Diop@gmail.com', name: 'Moussa Diop', picture: 'https://lh3.googleusercontent.com/a/photo=s96' };
+    const first = await ok(db, google, 'me');
+    expect(first.profile).toMatchObject({ handle: 'moussa_diop', displayName: 'Moussa Diop', photo: google.picture });
+    expect(db.read('ac_handles/moussa_diop')).toBe('g1');
+    // Même début d'e-mail : pseudonyme rendu unique.
+    const twin = await ok(db, { uid: 'g2', email: 'moussa.diop@yahoo.fr', name: 'Autre', picture: 'https://evil.example/x.png' }, 'me');
+    expect(twin.profile.handle).toMatch(/^moussa_diop_\d+$/);
+    expect(twin.profile.photo).toBe('');
+    expect((await ok(db, google, 'me')).profile.handle).toBe('moussa_diop');
+  });
+
+  it('l’administration ne voit un contenu payant qu’en vue modération', async () => {
+    const db = await setup();
+    const pid = await publishVideo(db);
+    expect((await ok(db, U.admin, 'post.open', { pid })).content).toBeUndefined();
+    const moderated = await ok(db, U.admin, 'post.open', { pid, moderation: true });
+    expect(moderated.content.text).toBe('Notes privées du cours');
+    expect(moderated.post.moderation).toBe(true);
+    // Un compte ordinaire ne peut pas s'attribuer la vue modération.
+    expect((await ok(db, U.other, 'post.open', { pid, moderation: true })).content).toBeUndefined();
+    // Dans une discussion, la carte reste verrouillée pour l'administration.
+    const ch = (await ok(db, U.seller, 'conv.create', { type: 'channel', title: 'Chaîne', visibility: 'public' })).id;
+    await ok(db, U.seller, 'msg.send', { cid: ch, postId: pid });
+    expect((await ok(db, U.admin, 'msg.list', { cid: ch })).messages[0].post.unlocked).toBe(false);
+  });
+
   it('pseudonyme unique', async () => {
     const db = await setup();
     expect((await call(db, U.other, 'profile.save', { handle: 'vendeur', displayName: 'Copie' })).code).toBe(409);

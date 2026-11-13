@@ -9,7 +9,8 @@ export interface AcContext {
   reloadMe: () => Promise<void>;
   notify: Notify;
   openChat: (cid: string) => void;
-  openPost: (pid: string) => void;
+  /** `moderation` : administration, depuis un signalement (contenu visible). */
+  openPost: (pid: string, moderation?: boolean) => void;
   openOrder: (oid: string) => void;
   openProfile: (uid: string) => void;
   publishIn: (cid: string | null) => void;

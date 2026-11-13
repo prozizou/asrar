@@ -1,8 +1,9 @@
 // server/asrarChat/profiles.js — Profils, vitrine vendeur, blocages.
 const { P, fail, key, read, audit, getProfile, publicProfile, assertNotSuspended } = require("./core");
 const { publicUrl } = require("./media");
+const crypto = require("crypto");
 const {
-  normalizeProfileInput, normalizeSellerInput, normalizeHandle, normalizeAsset, SELLER_ERRORS,
+  normalizeProfileInput, cleanLine, normalizeSellerInput, normalizeHandle, normalizeAsset, SELLER_ERRORS,
 } = require("../../lib/asrarChat/logic");
 
 const PROFILE_ERRORS = {
@@ -83,4 +84,38 @@ async function listBlocked(db, user) {
   return { blocked: profiles.filter(Boolean) };
 }
 
-module.exports = { saveProfile, saveSeller, getPublicProfile, setBlock, listBlocked };
+// Pseudonyme de départ tiré de l'e-mail Google (partie avant @), rendu
+// unique par un suffixe aléatoire si nécessaire.
+function baseHandle(email) {
+  const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").replace(/_+/g, "_");
+  const base = local.slice(0, 18);
+  return base.length >= 3 ? base : ("membre_" + base).slice(0, 18);
+}
+
+const GOOGLE_PHOTO = /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s"'<>]{1,500}$/;
+
+async function ensureProfile(db, user) {
+  const existing = await getProfile(db, user.uid);
+  if (existing && existing.handle) return existing;
+  const base = baseHandle(user.email);
+  let handle = "";
+  for (let i = 0; i < 6 && !handle; i++) {
+    const candidate = normalizeHandle(i === 0 ? base : base + "_" + crypto.randomInt(100, 10000));
+    if (!candidate) continue;
+    const claim = await db.ref(P.handles + "/" + candidate).transaction((owner) => (owner && owner !== user.uid ? undefined : user.uid));
+    if (claim.committed) handle = candidate;
+  }
+  if (!handle) return null;
+  const now = Date.now();
+  const profile = {
+    handle,
+    displayName: cleanLine(user.name, 60) || base,
+    bio: "",
+    photo: GOOGLE_PHOTO.test(String(user.picture || "")) ? String(user.picture) : "",
+    createdAt: now, updatedAt: now, auto: true,
+  };
+  await db.ref(P.profiles + "/" + user.uid).update(profile);
+  return profile;
+}
+
+module.exports = { ensureProfile, saveProfile, saveSeller, getPublicProfile, setBlock, listBlocked };

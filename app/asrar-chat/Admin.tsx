@@ -107,7 +107,7 @@ function Reports() {
                   {r.snapshot.title && <strong>{r.snapshot.title}</strong>}
                   {(r.snapshot.text || r.snapshot.description || r.snapshot.about) && <p>{r.snapshot.text || r.snapshot.description || r.snapshot.about}</p>}
                   {r.snapshot.media && <a href={r.snapshot.media.url} target="_blank" rel="noopener noreferrer" className="ac-link">Voir la pièce jointe signalée</a>}
-                  {r.pid && <button type="button" className="ac-link" onClick={() => openPost(r.pid)}>Ouvrir la publication</button>}
+                  {r.pid && <button type="button" className="ac-link" onClick={() => openPost(r.pid, true)}>Examiner la publication</button>}
                 </div>
               )}
               {r.status === 'open' ? (

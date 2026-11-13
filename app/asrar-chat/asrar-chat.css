@@ -15,6 +15,9 @@
   color: var(--text-main); font-family: var(--font-ui);
 }
 body:has(.ac-app) { padding-bottom: 0; }
+.ac-app button:hover { transform: none; box-shadow: none; }
+.ac-app .ac-fab:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
+.ac-prefix input, .ac-prefix input:focus, .ac-prefix input:focus-visible { border: 0; box-shadow: none; outline: none; margin: 0; }
 html.kb-open .ac-nav { display: none; }
 
 .ac-top { display: flex; align-items: center; gap: 6px; padding: 8px 10px 4px; }
@@ -92,6 +95,8 @@ html.kb-open .ac-nav { display: none; }
   color: var(--text-main); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; }
 .ac-chip.on { background: var(--ac-tonal-strong); border-color: transparent; color: var(--accent); }
 .ac-chip.static { cursor: default; }
+.ac-chip.price { border-color: transparent; background: var(--ac-tonal-strong); color: var(--accent); gap: 5px; }
+.ac-chip.price.free { background: rgba(45, 212, 160, .16); color: #2dd4a0; }
 .ac-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ac-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--ac-outline); }
 .ac-tabs.scroll { overflow-x: auto; scrollbar-width: none; }
@@ -270,16 +275,30 @@ button.ac-row:hover { background: var(--ac-container); }
 .ac-stats { display: flex; gap: 16px; align-items: center; justify-content: center; font-size: .84rem; color: var(--text-muted); margin-top: 4px; }
 .ac-store { display: flex; flex-direction: column; gap: 10px; }
 
-/* ── Feuilles (dialogue natif) ── */
-.ac-sheet { width: min(560px, 100vw); max-width: 100vw; max-height: min(92dvh, 900px); margin: auto auto 0; padding: 0; border: 0; border-radius: 28px 28px 0 0;
-  background: var(--bg-deep); color: var(--text-main); display: flex; flex-direction: column; }
-.ac-sheet[open] { display: flex; }
-.ac-sheet.wide { width: min(760px, 100vw); }
-.ac-sheet::backdrop { background: rgba(0, 0, 0, .5); }
-@media (min-width: 720px) { .ac-sheet { margin: auto; border-radius: 28px; } }
+/* ── Feuilles ── (.app-dialog de globals.css = calque plein écran ; le
+   panneau visible est .ac-sheet, à l'intérieur) */
+.ac-overlay[open] { display: flex; align-items: flex-end; justify-content: center; padding: var(--sat) 0 0; background: rgba(0, 0, 0, .5); }
+.ac-overlay.compact[open] { align-items: center; padding: 24px; }
+.ac-sheet { width: min(560px, 100%); max-height: calc(100dvh - var(--sat) - 16px); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg-deep); color: var(--text-main); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0, 0, 0, .35); }
+.ac-sheet.wide { width: min(760px, 100%); }
+.ac-sheet.compact { width: min(340px, 100%); max-height: 80dvh; border-radius: 24px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); }
+.ac-sheet.compact .ac-sheet-body { padding-bottom: 16px; }
+@media (min-width: 720px) {
+  .ac-overlay[open] { align-items: center; padding: 24px; }
+  .ac-sheet { border-radius: 28px; max-height: calc(100dvh - 48px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ac-overlay[open] .ac-sheet { animation: ac-sheet-in .2s ease-out; }
+  .ac-overlay.compact[open] .ac-sheet { animation: ac-pop-in .16s ease-out; }
+  @keyframes ac-sheet-in { from { transform: translateY(24px); } to { transform: none; } }
+  @keyframes ac-pop-in { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+}
 .ac-sheet-head { display: flex; align-items: center; gap: 8px; padding: 14px 10px 6px 20px; }
 .ac-sheet-head h2 { flex: 1; margin: 0; font-size: 1.05rem; font-family: var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-sheet-body { overflow-y: auto; padding: 6px 18px calc(18px + var(--sab)); display: flex; flex-direction: column; gap: 10px; }
+.ac-sheet.compact .ac-reaction-picker { justify-content: center; flex-wrap: wrap; }
+.ac-sheet.compact .ac-reaction-picker button { width: 40px; height: 40px; font-size: 1.2rem; }
 .ac-viewer { width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; margin: 0; padding: 0; border: 0; background: rgba(0, 0, 0, .94); display: grid; place-items: center; }
 .ac-viewer img { max-width: 100%; max-height: 100dvh; object-fit: contain; }
 .ac-viewer-close { position: fixed; top: calc(var(--sat) + 8px); right: 8px; color: #fff; }
