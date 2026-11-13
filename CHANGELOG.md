@@ -1,3 +1,21 @@
+## SW v46.80 — Asrar-chat : messagerie sociale et vente de contenus
+
+- Nouveau module « Asrar-chat » (menu Spiritualité), navigation Discussions · Explorer · Publier · Achats · Profil, thèmes clair/sombre.
+- Messagerie : discussions privées, groupes et chaînes (publics ou sur invitation), texte, vocaux, photos, vidéos, documents ; réponses, réactions, transferts, modification, suppression ; accusés de lecture, présence, « en train d’écrire », notifications push, recherche globale, partage de profil, administration des groupes, blocage et signalement.
+- Publications gratuites ou payantes (article, photo, album, vidéo, audio, document, prestation) avec titre, description, aperçu, prix en FCFA, durée d’accès et conditions ; publiables directement dans une discussion ou une chaîne. Avant paiement : aperçu flouté et cadenas, bouton « Déverrouiller pour X FCFA ».
+- Paiement direct au vendeur (Wave avec montant prérempli, PI-SPI, WhatsApp) : commande à référence unique, déclaration de la référence par l’acheteur, déverrouillage uniquement après confirmation du vendeur (ou de l’administration), jamais sur simple déclaration ; référence réutilisée signalée ; litiges, remboursements (accès retiré).
+- Bibliothèque des achats, favoris, notes ; vitrine vendeur ; tableau des ventes et revenus (commission configurable suivie par vente).
+- Fichiers dans un espace privé, servis par liens signés temporaires (15 min) ; aperçus floutés calculés dans le navigateur.
+- Administration : statistiques, commission, signalements (copie du seul élément signalé), litiges, suspensions, journal d’audit.
+
+## SW v46.79 — Visioconférence Google Meet
+
+- Nouveau module « Visioconférence » (menu Spiritualité) : chaque utilisateur peut proposer une réunion Google Meet (titre, lien Meet, date, durée, description).
+- Comme le Zikr collectif, l’administration valide chaque proposition : en attente, elle n’est visible que de son créateur ; une fois approuvée, tous les utilisateurs sont notifiés et la voient dans la liste.
+- Refus par l’administration : la proposition est supprimée et son créateur averti. Une modification par le créateur repasse en validation.
+- Seuls les liens meet.google.com sont acceptés ; au plus 3 visioconférences programmées par compte ; les réunions terminées disparaissent de la liste.
+- Badges « Bientôt » et « En cours », bouton « Rejoindre sur Google Meet » (application Meet ou navigateur).
+
 ## SW v46.78 — Durcissement de sécurité (audit complet)
 
 - Tâches planifiées : le secret n’est plus accepté dans l’URL (`?secret=`), seulement dans l’en-tête `Authorization: Bearer`, pour qu’il ne finisse jamais dans les journaux.

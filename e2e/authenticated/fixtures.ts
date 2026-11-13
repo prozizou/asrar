@@ -40,8 +40,8 @@ async function postAs(request: APIRequestContext, role: string, path: string, bo
   return request.post('/api/' + path, { data: { ...body, idToken } });
 }
 
-export const test = base.extend<{ login: (role: string) => Promise<void>; postAs: (role: string, path: string, body?: object) => Promise<any> }>({
-  login: async ({ page }, provide) => provide((role) => login(page, role)),
+export const test = base.extend<{ login: (role: string, other?: Page) => Promise<void>; postAs: (role: string, path: string, body?: object) => Promise<any> }>({
+  login: async ({ page }, provide) => provide((role, other) => login(other || page, role)),
   postAs: async ({ request }, provide) => provide((role, path, body) => postAs(request, role, path, body)),
 });
 export { expect };
