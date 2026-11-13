@@ -17,6 +17,7 @@ const { reportError } = require("../../server/log");
 const { notifyUsers } = require("../../server/notify");
 const { adminUids, shortName } = require("../../server/shopOwners");
 const { likeNotification, commentNotification } = require("../../lib/notifyTemplates");
+const { rateLimit } = require("../../lib/rateLimit");
 
 const BAD_KEY = /[.#$\[\]\/\u0000-\u001F\u007F]/;
 const validKey = (k) => { const s = String(k ?? ""); return s.length > 0 && s.length <= 768 && !BAD_KEY.test(s); };
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+  if (!rateLimit("book-social:" + user.uid, 120, 60000)) return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
 
   const db = app().database();
   try {

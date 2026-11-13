@@ -1,3 +1,15 @@
+## SW v46.78 — Durcissement de sécurité (audit complet)
+
+- Tâches planifiées : le secret n’est plus accepté dans l’URL (`?secret=`), seulement dans l’en-tête `Authorization: Bearer`, pour qu’il ne finisse jamais dans les journaux.
+- Contact WhatsApp : l’ancien lien `/api/wa?product=` ne redirige plus vers le numéro du vendeur (fin de l’aspiration des numéros) ; le contact boutique passe par une commande.
+- Likes et commentaires : seules les catégories de l’application sont acceptées (plus d’écriture dans des nœuds arbitraires).
+- Discussion Zikr : les pièces jointes doivent venir du compte Cloudinary d’ASRAR PRO.
+- Boutique : limite de requêtes par vendeur et au plus une annonce « nouveau produit » à tous toutes les 30 minutes (anti-spam de notifications).
+- Limites de requêtes sur la lecture des contenus, catalogues, thèmes, accès et avis de la Bibliothèque.
+- Administration : un jeton révoqué (compte désactivé, déconnexion forcée) est refusé immédiatement.
+- Android 8.0.6 : sauvegarde automatique désactivée et session WebView exclue des sauvegardes et transferts (empêche la copie de la session sur un autre appareil).
+- Dépendance fast-xml-parser mise à jour (alerte de sécurité).
+
 ## SW v46.77 — Fenêtre « Soutenir ASRAR PRO » (contribution volontaire)
 
 - Après une action réussie (texte généré, Sourate seule, export Word ou PDF dans Écriture spirituelle ; écu de Géomancie ; résultats de Combinaisons ; calcul des Rouwhanes ; export Word des Hatims ; objectif du chapelet atteint), une fenêtre propose de soutenir l’application : Wave (montant libre), PI-SPI (alias à copier), WhatsApp.

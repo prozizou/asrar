@@ -13,6 +13,7 @@ const { reportError } = require("../../server/log");
 const { vendorKey } = require("../../lib/market");
 const { secretIntro } = require("../../lib/secretPresentation");
 const { publicCatalog } = require("../../server/publicCatalogCache");
+const { rateLimit } = require("../../lib/rateLimit");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
 
   try {
     const user = await verifyUser(idToken); // identité requise (page réservée aux connectés)
+    if (!rateLimit("list-content:" + user.uid, 300, 60000)) return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
 
     if (kind === 'formation') return res.status(410).json({ error: 'Cette fonctionnalité a été retirée.', code: 'FEATURE_RETIRED' });
     const db = app().database();

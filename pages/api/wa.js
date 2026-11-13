@@ -6,17 +6,14 @@
 //   • Plateforme :  /api/wa?text=<message>
 //       → lit la variable d'environnement WHATSAPP_NUMBER et redirige (302).
 //
-//   • Vendeur du Marché :  /api/wa?product=<cléProduit>&text=<message>
-//       → lit det_produits/<clé>.number via l'Admin SDK (ce champ n'est jamais
-//         renvoyé au client par /api/get-content) et redirige vers le WhatsApp
-//         du vendeur. Les coordonnées des vendeurs ne sont donc plus exposées.
+//   • Vendeur du Marché :  /api/wa?order=<id>&token=<jeton>
+//       → uniquement pour une commande existante, avec son jeton à durée
+//         limitée (le numéro du vendeur n'est jamais lisible sans commande).
 
 const { app } = require("../../server/grant");
 const crypto = require("node:crypto");
 const { orderWhatsAppMessage } = require('../../lib/whatsappMessages');
 
-// Clé produit Firebase : alphanumérique + - _ uniquement.
-function safeKey(v) { return String(v == null ? "" : v).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
 
 function htmlMessage(res, status, msg) {
   res.statusCode = status;
@@ -53,28 +50,18 @@ export default async function handler(req, res) {
   const q = (req.query && typeof req.query.text === "string") ? req.query.text : "";
   const text = q.slice(0, 1500); // garde-fou longueur
 
-  const productKey = safeKey(req.query && req.query.product);
-  let number = "";
-
-  if (productKey) {
-    // — Contact d'un VENDEUR : numéro lu côté serveur, jamais exposé au client —
-    try {
-      const db = app().database();
-      const snap = await db.ref("det_produits/" + productKey + "/number").once("value");
-      number = String(snap.val() || "").replace(/\D/g, "");
-    } catch (e) {
-      return htmlMessage(res, 500, "Service indisponible, réessayez plus tard.");
-    }
-    if (!number) {
-      return htmlMessage(res, 404, "Le numéro WhatsApp de la boutique n'est pas disponible.");
-    }
-  } else {
-    // — Contact de la PLATEFORME : numéro global (variable d'environnement) —
-    number = String(process.env.WHATSAPP_NUMBER || "").replace(/\D/g, "");
-    if (!number) {
-      return htmlMessage(res, 500,
-        "Le contact de l'assistance est temporairement indisponible. Réessayez plus tard.");
-    }
+  // Contact de la PLATEFORME uniquement (numéro global). L'ancien
+  // ?product=<clé> renvoyait le numéro d'un vendeur à n'importe qui, sans
+  // connexion : les clés produit étant publiques, tous les numéros pouvaient
+  // être aspirés. Le contact d'un vendeur passe désormais par une commande
+  // (?order=…&token=…, jeton à durée limitée, ci-dessus).
+  if (req.query && req.query.product) {
+    return htmlMessage(res, 410, "Ce lien n'est plus valable. Ouvrez le produit dans l'application pour contacter la boutique.");
+  }
+  const number = String(process.env.WHATSAPP_NUMBER || "").replace(/\D/g, "");
+  if (!number) {
+    return htmlMessage(res, 500,
+      "Le contact de l'assistance est temporairement indisponible. Réessayez plus tard.");
   }
 
   return sendWhatsApp(req, res, whatsappUrl(number, text));

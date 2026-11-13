@@ -25,6 +25,14 @@ const { reportError } = require("../../server/log");
 const { publishAndNotify } = require("../../server/notify");
 const { newProductNotification } = require("../../lib/notifyTemplates");
 const { invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const { rateLimit } = require("../../lib/rateLimit");
+
+// Annonce « Nouveau produit au Marché » envoyée à TOUS les utilisateurs : au
+// plus une par vendeur sur cette fenêtre (mémorisée dans la base, donc valable
+// sur toutes les instances). Au-delà, le produit est publié sans annonce —
+// un compte vendeur abusif ou piraté ne peut pas inonder toute la base.
+const BROADCAST_WINDOW_MS = 30 * 60 * 1000;
+const WRITE_ACTIONS = ["save-product", "delete-product", "save-shop"];
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -36,6 +44,11 @@ export default async function handler(req, res) {
   let user;
   try { user = await verifyUser(idToken); }
   catch (e) { return res.status(e.statusCode || 401).json({ error: e.message }); }
+
+  const writing = WRITE_ACTIONS.includes(action);
+  if (!rateLimit("shop:" + (writing ? "write:" : "read:") + user.uid, writing ? 20 : 60, 60000)) {
+    return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
+  }
 
   const db = app().database();
 
@@ -203,14 +216,23 @@ export default async function handler(req, res) {
         vendeurAvatar: shopLogo,     // logo de la boutique (pour le Marché)
         updatedAt: Date.now()
       };
+      // Réserve l'annonce du vendeur (transaction : deux enregistrements
+      // simultanés n'annoncent qu'un seul produit).
+      let announce = false;
       if (isNew) {
+        const now = Date.now();
+        const slot = await db.ref("shop_broadcasts/" + user.uid).transaction((last) =>
+          (typeof last === "number" && now - last < BROADCAST_WINDOW_MS) ? undefined : now);
+        announce = !!slot.committed;
+      }
+      if (isNew && announce) {
         await publishAndNotify(db, "det_produits/" + key, record, {
           ...newProductNotification({ vendorName: shopName, productName: nom }),
           senderName: shopName, targetUrl: "/?item=" + key,
           meta: { key, tagSuffix: key },
         }, { eventId: "product:" + key });
       } else await db.ref("det_produits/" + key).update(record);
-      return res.status(200).json({ ok: true, key, product: { _key: key, ...record } });
+      return res.status(200).json({ ok: true, key, announced: announce, product: { _key: key, ...record } });
     }
 
     if (action === "delete-product") {

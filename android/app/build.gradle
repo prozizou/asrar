@@ -44,7 +44,7 @@ android {
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
         // local, repli sur la valeur 127 définie plus haut.
         versionCode asrarVersionCode
-        versionName "8.0.5"
+        versionName "8.0.6"
         buildConfigField 'boolean', 'LEVELPLAY_ENABLED', levelPlayEnabled.toString()
         buildConfigField 'String', 'LEVELPLAY_APP_KEY', groovy.json.JsonOutput.toJson(levelPlayAppKey)
         buildConfigField 'String', 'LEVELPLAY_REWARDED_ID', groovy.json.JsonOutput.toJson(levelPlayRewardedId)

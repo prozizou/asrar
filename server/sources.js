@@ -38,7 +38,8 @@ const SOURCES = {
     secretFields: ["description", "number", "email"],
     // privateFields : JAMAIS renvoyés au client, même par get-content (fiche détail).
     // Les coordonnées du vendeur (téléphone, e-mail) restent côté serveur ; le
-    // contact passe par /api/wa?product=<clé> qui redirige sans exposer le numéro.
+    // contact passe par une commande (/api/wa?order=…&token=…), jamais par la
+    // seule clé du produit, pour qu'aucun numéro ne puisse être aspiré en masse.
     privateFields: ["number", "email"],
     authOnly: true
   },

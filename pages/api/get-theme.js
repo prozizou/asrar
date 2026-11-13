@@ -11,6 +11,7 @@ const { verifyUser, getAccessLevel, PREMIUM_LEVEL } = require("../../server/acce
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
+const { rateLimit } = require("../../lib/rateLimit");
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
 
   try {
     const user = await verifyUser(idToken);
+    if (!rateLimit("get-theme:" + user.uid, 180, 60000)) return res.status(429).json({ error: "Trop de requêtes. Réessayez dans une minute." });
 
     const level = await getAccessLevel(user);
     if (level < PREMIUM_LEVEL) {

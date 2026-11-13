@@ -8,6 +8,17 @@ async function signal(db, gid) {
   try { await db.ref(`zikr_chat_signals/${gid}`).set({ at: Date.now(), nonce: randomUUID() }); }
   catch { /* A committed message remains successful; API polling reconciles. */ }
 }
+// Pièce jointe : uniquement un fichier du compte Cloudinary d'ASRAR PRO
+// (déposé avec une signature de /api/cloudinary-sign).
+// Vérifier le seul domaine res.cloudinary.com laissait passer le fichier du
+// compte Cloudinary de n'importe qui (image piégée, pixel de suivi).
+function isOwnCloudinaryUrl(value) {
+  const url = String(value || '');
+  if (url.length > 600 || !/^https:\/\/res\.cloudinary\.com\/[^\s"'<>]+$/.test(url)) return false;
+  const cloud = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
+  if (!cloud) return true; // configuration absente (tests locaux) : contrôle du domaine seul
+  return url.startsWith('https://res.cloudinary.com/' + cloud + '/');
+}
 function fail(code, message) { throw Object.assign(new Error(message), { statusCode: code }); }
 async function member(db, gid, uid) {
   if (!isValidKey(gid)) fail(400, 'Groupe manquant ou invalide.');
@@ -40,7 +51,7 @@ async function quotes(db, gid, messages) {
 function media(body) {
   const text = cleanText(body.text, CHAT_MESSAGE_MAX);
   const mediaType = CHAT_MEDIA_TYPES.includes(body.mediaType) ? body.mediaType : null;
-  const mediaUrl = mediaType && /^https:\/\/res\.cloudinary\.com\//.test(String(body.mediaUrl || '')) ? String(body.mediaUrl) : null;
+  const mediaUrl = mediaType && isOwnCloudinaryUrl(body.mediaUrl) ? String(body.mediaUrl) : null;
   if (!isValidChatMessage(text, mediaType, mediaUrl)) fail(400, 'Écrivez un message ou joignez une image/un audio avant d’envoyer.');
   const result = { text };
   if (mediaUrl) {

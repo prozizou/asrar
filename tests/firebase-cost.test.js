@@ -60,6 +60,7 @@ describe('Volume des lectures RTDB', () => {
     let verified = true;
     const load = runtime(db, { stubs: { 'server/access.js': { verifyUser: async () => {
       if (!verified) throw Object.assign(new Error('Session refusée'), { statusCode: 403 });
+      return { uid: 'tester', email_verified: true };
     } } } });
     const handler = load('pages/api/list-content.js').default;
     expect((await invoke(handler, { kind: 'book' })).code).toBe(200);
