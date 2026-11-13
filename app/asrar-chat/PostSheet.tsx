@@ -9,7 +9,7 @@ import {
   FileText, Download, Trash2, ShieldCheck,
 } from 'lucide-react';
 import { ac } from '@/lib/asrarChat/client';
-import { handleExternalLinkClick } from '@/lib/externalWindow';
+import { handleExternalLinkClick, reserveExternalWindow, reserveWhatsAppWindow } from '@/lib/externalWindow';
 import { fcfa, METHOD_LABELS, ORDER_LABELS, POST_KIND_LABELS, CATEGORIES } from '@/lib/asrarChat/logic';
 import { useAc } from './context';
 import { Sheet, Loading, ErrorState, Avatar, Stars, bytes, dateTime, Modal } from './ui';
@@ -162,12 +162,21 @@ function Unlock({ data, onChanged, onOrder }: { data: any; onChanged: () => Prom
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const info = data.paymentInfo || {};
+  // Destination ouverte dès le clic (fenêtre réservée pendant le geste, avant
+  // l'appel API) : lien Wave Business, ou WhatsApp du vendeur.
+  const directTarget = method === 'wave' ? (info.waveDirect ? 'wave' : info.whatsapp ? 'whatsapp' : null) : method === 'whatsapp' ? 'whatsapp' : null;
+
   const start = async () => {
     setBusy(true);
+    const win = directTarget === 'wave' ? reserveExternalWindow() : directTarget === 'whatsapp' ? reserveWhatsAppWindow() : null;
     try {
       const r = await ac('order.create', { pid: post.id, method });
       setOrder(r.order); setPay(r.pay);
-    } catch (e: any) { notify(e.message, 'error'); }
+      const url = directTarget === 'wave' ? r.pay.waveUrl : directTarget === 'whatsapp' ? r.pay.whatsappUrl : '';
+      if (win && url) await win.navigate(url);
+      else win?.close();
+    } catch (e: any) { win?.close(); notify(e.message, 'error'); }
     finally { setBusy(false); }
   };
   // Données relues (après déclaration, confirmation…) : état de commande à jour.
@@ -226,25 +235,44 @@ function Unlock({ data, onChanged, onOrder }: { data: any; onChanged: () => Prom
               );
             })}
           </div>
-          <button type="button" className="ac-btn filled" disabled={!method || busy} onClick={start}>{busy ? 'Préparation…' : `Déverrouiller pour ${fcfa(post.price)}`}</button>
-          <p className="ac-hint">Vous payez directement le vendeur. Le contenu s’ouvre uniquement quand il a constaté la réception du paiement.</p>
+          <button type="button" className={'ac-btn filled' + (directTarget === 'wave' ? ' wave' : directTarget === 'whatsapp' ? ' wa' : '')} disabled={!method || busy} onClick={start}>
+            {busy ? 'Préparation…' : directTarget === 'wave' ? <><Wallet size={17} aria-hidden="true" /> Payer {fcfa(post.price)} avec Wave</>
+              : directTarget === 'whatsapp' ? <><MessageCircle size={17} aria-hidden="true" /> {method === 'wave' ? 'Payer par Wave via WhatsApp' : 'Commander sur WhatsApp'}</>
+              : `Déverrouiller pour ${fcfa(post.price)}`}
+          </button>
+          <p className="ac-hint">{directTarget === 'wave' ? 'Wave s’ouvre avec le montant déjà rempli, sur le compte du vendeur.'
+            : directTarget === 'whatsapp' ? 'WhatsApp s’ouvre sur la discussion avec le vendeur, avec votre commande déjà écrite.'
+            : 'Vous payez directement le vendeur.'} Le contenu s’ouvre quand le vendeur a constaté la réception du paiement.</p>
         </>
       ) : (
         <>
           <p className="ac-unlock-title">Commande <strong>{pay.ref}</strong> · {fcfa(pay.amount)}</p>
           {order.status === 'rejected' && <p className="ac-note warn"><AlertTriangle size={15} aria-hidden="true" /> Le vendeur n’a pas trouvé votre paiement. Vérifiez la référence, ou ouvrez un litige depuis la commande.</p>}
-          <ol className="ac-steps">
-            <li>
-              {order.method === 'wave' && (pay.waveUrl
-                ? <a className="ac-btn filled wave" href={pay.waveUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => handleExternalLinkClick(e, pay.waveUrl)}><Wallet size={17} aria-hidden="true" /> Payer {fcfa(pay.amount)} avec Wave <ExternalLink size={14} aria-hidden="true" /></a>
-                : <span>Envoyez <strong>{fcfa(pay.amount)}</strong> par Wave au <strong>+{pay.wavePhone}</strong> <button type="button" className="ac-icon-btn" aria-label="Copier le numéro" onClick={() => copy('+' + pay.wavePhone)}><Copy size={15} /></button></span>)}
-              {order.method === 'pispi' && <span>Envoyez <strong>{fcfa(pay.amount)}</strong> à l’alias PI-SPI <code>{pay.pispiAlias}</code> <button type="button" className="ac-icon-btn" aria-label="Copier l’alias" onClick={() => copy(pay.pispiAlias)}><Copy size={15} /></button></span>}
-              {order.method === 'whatsapp' && <span>Contactez le vendeur : il vous transmettra son lien ou ses coordonnées de paiement.</span>}
-            </li>
-            <li>Indiquez la référence <strong>{pay.ref}</strong> en motif si possible.</li>
-            {pay.whatsappUrl && <li><a href={pay.whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => handleExternalLinkClick(e, pay.whatsappUrl)} className="ac-link"><MessageCircle size={14} aria-hidden="true" /> Écrire au vendeur sur WhatsApp</a></li>}
-            <li>Après paiement, déclarez la référence de transaction :</li>
-          </ol>
+          <div className="ac-pay-actions">
+            {order.method === 'wave' && pay.waveUrl && (
+              <a className="ac-btn filled wave" href={pay.waveUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => handleExternalLinkClick(e, pay.waveUrl)}>
+                <Wallet size={17} aria-hidden="true" /> Payer {fcfa(pay.amount)} avec Wave <ExternalLink size={14} aria-hidden="true" />
+              </a>
+            )}
+            {order.method === 'pispi' && pay.pispiAlias && (
+              <div className="ac-alias">
+                <span>Alias PI-SPI du vendeur</span>
+                <code>{pay.pispiAlias}</code>
+                <button type="button" className="ac-btn tonal small" onClick={() => copy(pay.pispiAlias)}><Copy size={15} aria-hidden="true" /> Copier l’alias</button>
+                <small>Envoyez {fcfa(pay.amount)} depuis votre application PI-SPI, motif {pay.ref}.</small>
+              </div>
+            )}
+            {pay.whatsappUrl && (
+              <a className={'ac-btn ' + ((order.method === 'wave' && !pay.waveUrl) || order.method === 'whatsapp' ? 'filled wa' : 'tonal')} href={pay.whatsappUrl} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => handleExternalLinkClick(e, pay.whatsappUrl)}>
+                <MessageCircle size={17} aria-hidden="true" /> {order.method === 'wave' && !pay.waveUrl ? 'Payer par Wave via WhatsApp' : 'Contacter le vendeur sur WhatsApp'}
+              </a>
+            )}
+            {!pay.waveUrl && !pay.whatsappUrl && order.method === 'wave' && (
+              <p className="ac-note"><AlertTriangle size={15} aria-hidden="true" /> <span>Ce vendeur n’a indiqué ni lien Wave ni WhatsApp : écrivez-lui depuis Asrar-chat.</span></p>
+            )}
+          </div>
+          <p className="ac-hint">Référence à indiquer : <strong>{pay.ref}</strong>. Après paiement, déclarez la référence de transaction reçue par SMS ou dans l’application.</p>
           <button type="button" className="ac-btn filled" onClick={() => setConfirmOpen(true)}><CheckCircle2 size={17} aria-hidden="true" /> J’ai payé</button>
           <button type="button" className="ac-btn text small" onClick={() => onOrder(order.id)}>Détails de la commande</button>
         </>

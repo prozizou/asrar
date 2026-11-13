@@ -47,8 +47,14 @@ accordé sur la seule déclaration de l'acheteur** (référence, capture).
 
 1. L'acheteur choisit Wave, PI-SPI ou WhatsApp parmi les moyens du vendeur ;
    une commande unique est créée (pas de doublon par publication).
-2. Instructions : lien marchand Wave avec montant prérempli, ou numéro Wave,
-   alias PI-SPI, lien WhatsApp avec la référence.
+2. Parcours selon ce que le vendeur a renseigné :
+   - lien **Wave Business** → « Payer X FCFA avec Wave » ouvre Wave avec le
+     montant prérempli ;
+   - numéro Wave seulement → « Payer par Wave via WhatsApp » ouvre la
+     discussion WhatsApp du vendeur, commande déjà écrite ;
+   - PI-SPI → alias à copier + « Contacter le vendeur sur WhatsApp » ;
+   - WhatsApp → commande envoyée au vendeur sur WhatsApp.
+   Le numéro WhatsApp est celui du vendeur, sinon son numéro Wave.
 3. L'acheteur déclare la référence de transaction → `declared`. Rien n'est
    débloqué ; le vendeur est notifié.
 4. Le vendeur vérifie **sur son propre compte** la réception et confirme en
