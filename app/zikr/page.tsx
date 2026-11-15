@@ -24,7 +24,7 @@ import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, ChevronRight,
   Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
-  HandHeart, Moon, UserRound,
+  HandHeart, Moon, UserRound, Search,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -832,6 +832,8 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // zikr (créateur) s'ouvre dans une fenêtre depuis le menu ⋮.
   const [tab, setTab] = useState<'zikr' | 'participants' | 'discussion'>('zikr');
   const [invocationOpen, setInvocationOpen] = useState(false);
+  // Recherche dans la discussion (loupe de l'en-tête, écran Discussion).
+  const [chatSearch, setChatSearch] = useState(false);
 
   const [unreadCount, setUnreadCount] = useState(0);
   // Vœu (dua) : champ local préchargé UNE SEULE FOIS avec `myWish` (sinon le
@@ -1047,15 +1049,27 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           aria-label={`${invocationOpen ? 'Masquer' : 'Afficher'} l’invocation du groupe ${g.name}`}
           aria-expanded={invocationOpen} aria-controls="zk-chat-invocation" aria-describedby="zk-chat-presence">
           <span><strong>{g.name || 'Zikr collectif'}</strong><ChevronDown size={14} aria-hidden="true" /></span>
-          <small id="zk-chat-presence">{fmt(g.membersCount)} participants{g.onlineCount > 0 ? ` · ${g.onlineCount} en ligne` : ''}</small>
+          <small id="zk-chat-presence">{fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}{g.onlineCount > 0 && <> <span aria-hidden="true">·</span> <span className="zp-dot on" aria-hidden="true" /> {fmt(g.onlineCount)} en ligne</>}</small>
         </button> : <span className="zk-topbar-title">Zikr collectif</span>}
         <span className="zk-topbar-actions">
-          <button type="button" className="zk-icon-btn" onClick={doShare}
-            title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
-            <Share2 size={17} strokeWidth={2.5} aria-hidden="true" />
-          </button>
+          {chatMode ? (
+            <button type="button" className={'zk-icon-btn' + (chatSearch ? ' on' : '')} onClick={() => setChatSearch((v) => !v)}
+              aria-label="Rechercher dans la discussion" aria-pressed={chatSearch}>
+              <Search size={20} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          ) : (
+            <button type="button" className="zk-icon-btn" onClick={doShare}
+              title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
+              <Share2 size={17} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+          )}
           {isMember && (
             <MoreMenu label="Plus d’actions sur ce zikr collectif">
+              {chatMode && (
+                <button type="button" className="zk-attach-item" onClick={doShare}>
+                  <Share2 size={16} strokeWidth={2.5} aria-hidden="true" /> Partager le zikr
+                </button>
+              )}
               {g.status === 'owner' && (
                 <button type="button" className="zk-attach-item" onClick={() => setEditing(true)}>
                   <Pencil size={16} strokeWidth={2.5} aria-hidden="true" /> Modifier le zikr
@@ -1236,7 +1250,8 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           messages consécutifs d'un même auteur sont regroupés (revue design :
           « l'identité est répétée inutilement ») — un seul en-tête (avatar/
           nom/heure) par groupe, voir groupChatMessages (lib/zikrLogic.js). */}
-      {isMember && <ZikrMessenger key={groupId + ':' + uid} groupId={groupId} uid={uid} active={tab === 'discussion'} onUnread={setUnreadCount} notify={notify} />}
+      {isMember && <ZikrMessenger key={groupId + ':' + uid} groupId={groupId} uid={uid} active={tab === 'discussion'} onUnread={setUnreadCount} notify={notify}
+        searchOpen={chatSearch && tab === 'discussion'} onSearchClose={() => setChatSearch(false)} />}
 
       {/* Vœux (dua) : ouverts par le créateur une fois l'objectif ATTEINT —
           voir handleOpenWishes (pages/api/zikr.js), refusé côté serveur avant.

@@ -1,3 +1,14 @@
+## SW v46.86 — Zikr collectif : discussion refondue
+
+- En-tête compact : nom du Zikr (invocation repliable), participants et présence en ligne, loupe de recherche et menu (« Partager le zikr » y passe).
+- Bulles : gris foncé reçues, vert profond envoyées (clair : blanc / vert pâle), 85 % de largeur maximum, regroupement par auteur (nom et avatar une seule fois), « queue » en tête de série.
+- Pied de bulle sur une ligne : réactions en petites pastilles, heure, statut (coche envoyé, double coche lu ; le détail des lecteurs reste au toucher).
+- Plus de « ⋮ » permanent : appui long ou glissement (réponse) sur mobile, clic droit ou survol à la souris, touche Entrée au clavier ; nouvelle action « Partager ».
+- Recherche dans la discussion : compteur, résultat précédent/suivant, message trouvé encadré, recherche dans les messages précédents.
+- Dates en filet et pastille (« Aujourd’hui », « Hier », sinon jj/mm/aaaa) ; citation de réponse compacte à barre orange ; lecteur vocal compact (lecture, onde, durée, vitesse).
+- Saisie : bouton « + » (photo, appareil), champ arrondi extensible, micro remplacé par Envoyer dès la saisie.
+- Vignettes d’images allégées (Cloudinary f_auto/q_auto/720 px), image complète à l’agrandissement ; styles centralisés (variables --zm-*).
+
 ## SW v46.85 — Zikr collectif : écran Participants refondu
 
 - En-tête : une seule flèche retour, titre « Zikr collectif », partage et menu.

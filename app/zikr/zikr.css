@@ -1394,3 +1394,119 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
   .zp-pace { padding: 1px 6px; }
   .zp-menu-placeholder { width: 30px; }
 }
+
+/* ── Discussion v3 (maquette 2026-11) — styles centralisés de la messagerie
+   du Zikr collectif. Variables uniques (--zm-*), thèmes sombre et clair ;
+   règles en fin de fichier : elles priment sur les versions précédentes.
+   Composant : app/zikr/ZikrMessenger.tsx. ───────────────────────────────── */
+.zk-messenger {
+  --zm-in: #2a2b30; --zm-in-ink: #f2f2f4;
+  --zm-out: #1e4b38; --zm-out-ink: #eef8f2;
+  --zm-meta: color-mix(in srgb, currentColor 62%, transparent);
+  --zm-line: color-mix(in srgb, var(--text-main) 12%, transparent);
+  --zm-read: #7fd3ff;
+  --zm-radius: 18px;
+}
+[data-theme="light"] .zk-messenger { --zm-in: #ffffff; --zm-in-ink: #1d1d22; --zm-out: #d6efdf; --zm-out-ink: #12301f; --zm-read: #1683c7; }
+
+/* Liste : pas de rendu différé (content-visibility) — des hauteurs estimées
+   décaleraient le défilement et fausseraient les accusés de lecture ; la
+   pagination par 50 messages garde la liste légère. */
+.zk-messenger .zk-chat-list { padding: 8px 2px 12px; gap: 0; }
+.zk-messenger .zk-chat-group { max-width: none; margin: 2px 0; gap: 8px; }
+.zk-messenger .zk-chat-group.zk-group-first { margin-top: 10px; }
+.zk-messenger .zk-chat-group:focus-visible { outline: none; }
+.zk-messenger .zk-chat-group:focus-visible .zk-chat-msg { outline: 2px solid var(--accent); outline-offset: 2px; }
+.zk-messenger .zk-chat-bubbles { max-width: 85%; min-width: 0; gap: 2px; }
+.zk-messenger .zk-chat-group:not(.me) { padding-inline-start: 42px; }
+.zk-messenger .zk-chat-avatar { width: 34px; height: 34px; flex: 0 0 34px; margin: 0; font-size: .85rem; font-weight: 700; object-fit: cover; }
+.zk-messenger .zk-chat-group:not(.me) .zk-chat-avatar { top: 20px; }
+.zk-messenger .zk-chat-author { padding: 0 2px 2px; font-size: .82rem; font-weight: 700; color: var(--text-main); }
+
+/* Bulles : gris foncé reçues, vert profond envoyées, coin « queue » en tête de série. */
+.zk-messenger .zk-chat-msg { padding: 7px 11px 5px; min-width: 64px; border-radius: var(--zm-radius); background: var(--zm-in); color: var(--zm-in-ink); box-shadow: none; border: 1px solid transparent; }
+.zk-messenger .zk-chat-group.me .zk-chat-msg { background: var(--zm-out); color: var(--zm-out-ink); }
+[data-theme="light"] .zk-messenger .zk-chat-msg { border-color: var(--zm-line); }
+.zk-messenger .zk-chat-group.zk-message-continuation .zk-chat-msg { border-radius: var(--zm-radius); }
+.zk-messenger .zk-group-first:not(.me) .zk-chat-msg { border-top-left-radius: 6px; }
+.zk-messenger .zk-group-first.me .zk-chat-msg { border-top-right-radius: 6px; }
+.zk-messenger .zk-chat-group .zk-chat-text { padding-right: 0; font-size: .95rem; line-height: 1.42; }
+.zk-messenger .zk-chat-msg.deleted { background: transparent; border: 1px solid var(--zm-line); }
+.zk-messenger .zk-chat-group.me .zk-chat-msg.deleted { border-color: color-mix(in srgb, var(--zm-out) 70%, transparent); }
+.zk-messenger .zk-chat-msg.deleted .zk-chat-text { opacity: .7; }
+.zk-messenger .zk-forwarded { margin: 0 0 3px; }
+
+/* Pied de bulle : réactions à gauche, heure et statut à droite, sur une ligne. */
+.zk-msg-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.zk-msg-foot .zk-message-meta { margin: 0 0 0 auto; font-size: .7rem; color: var(--zm-meta); opacity: 1; gap: 3px; flex-wrap: nowrap; white-space: nowrap; }
+.zk-message-meta .zk-read-state { min-height: 0; padding: 0 0 0 2px; color: var(--zm-meta); }
+.zk-message-meta .zk-read-state.read { color: var(--zm-read); }
+.zk-messenger .zk-message-reactions { margin: 0; gap: 4px; }
+.zk-messenger .zk-message-reactions button { display: inline-flex; align-items: center; gap: 3px; min-height: 24px; padding: 1px 7px; border-radius: 12px; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); background: transparent; font-size: .76rem; line-height: 1; }
+.zk-messenger .zk-message-reactions button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.zk-messenger .zk-message-reactions span { font-size: .72rem; font-weight: 600; }
+
+/* Plus de « ⋮ » permanent : appui long / glissement sur mobile ; à la souris,
+   l'accès rapide n'apparaît qu'au survol ou au focus. */
+.zk-messenger .zk-message-menu { top: 2px; right: 2px; width: 28px; height: 28px; border-radius: 50%; opacity: 0; transition: opacity .12s; background: color-mix(in srgb, var(--zm-in) 85%, transparent); }
+.zk-messenger .zk-chat-group.me .zk-message-menu { background: color-mix(in srgb, var(--zm-out) 85%, transparent); }
+.zk-messenger .zk-chat-msg:hover .zk-message-menu, .zk-messenger .zk-message-menu:focus-visible { opacity: 1; }
+@media (hover: none) { .zk-messenger .zk-message-menu { display: none; } }
+
+/* Citation de réponse : barre orange, nom de l'auteur, aperçu d'une ligne. */
+.zk-messenger .zk-reply-preview { margin: 1px 0 5px; padding: 5px 9px; border-radius: 10px; border-inline-start: 3px solid var(--accent); background: color-mix(in srgb, #000 22%, transparent); font-size: .8rem; }
+[data-theme="light"] .zk-messenger .zk-reply-preview { background: color-mix(in srgb, #000 6%, transparent); }
+.zk-messenger .zk-reply-preview strong { font-size: .8rem; color: inherit; }
+.zk-messenger .zk-compose-reply { margin: 6px 0 0; border-radius: 14px; border: 1px solid var(--zm-line); border-inline-start: 3px solid var(--accent); background: var(--zm-in); }
+
+/* Date : filets et pastille discrète. */
+.zk-messenger .zk-chat-date { display: flex; align-items: center; gap: 12px; width: 100%; margin: 14px 0 6px; padding: 0 12%; background: none; font-size: .74rem; color: var(--text-muted); }
+.zk-messenger .zk-chat-date::before, .zk-messenger .zk-chat-date::after { content: ''; flex: 1; height: 1px; background: var(--zm-line); }
+.zk-messenger .zk-chat-date span { padding: 4px 12px; border-radius: 12px; background: var(--zm-in); color: var(--text-main); font-variant-numeric: tabular-nums; }
+
+/* Images : coins harmonisés, hauteur maîtrisée. */
+.zk-messenger .zk-photo-open { margin: 2px 0 4px; border-radius: 12px; }
+.zk-messenger .zk-chat-media-img { max-height: 280px; border-radius: 12px; }
+
+/* Vocal : lecteur horizontal compact. */
+.zk-messenger .zk-audio-wrapper { width: min(300px, 100%); }
+.zk-messenger .zk-audio-player { gap: 8px; padding-right: 0; min-height: 44px; }
+.zk-messenger .zk-audio-play, .zk-messenger .zk-chat-group.me .zk-audio-play { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: 2px solid currentColor; background: transparent; color: inherit; }
+.zk-messenger .zk-audio-wave svg rect { fill: color-mix(in srgb, currentColor 45%, transparent); }
+.zk-messenger .zk-audio-time { font-size: .74rem; opacity: .9; }
+.zk-messenger .zk-audio-speed { min-width: 36px; min-height: 28px; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); background: transparent; border-radius: 8px; font-size: .74rem; }
+
+/* Recherche dans la discussion. */
+.zk-chat-search { display: flex; align-items: center; gap: 4px; margin: 0 0 6px; padding: 0 4px 0 12px; min-height: 44px; border-radius: 22px; background: var(--zm-in); color: var(--text-dim); flex-shrink: 0; }
+.zk-chat-search input { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: var(--text-main); font: inherit; font-size: .92rem; outline: none; box-shadow: none; }
+.zk-chat-search input::-webkit-search-cancel-button { display: none; }
+.zk-chat-search input:focus, .zk-chat-search input:focus-visible { outline: none; border: 0; box-shadow: none; }
+.zk-chat-search:focus-within { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent); }
+.zk-chat-search-count { font-size: .76rem; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
+.zk-chat-search button { display: grid; place-items: center; width: 36px; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-main); box-shadow: none; }
+.zk-chat-search button:disabled { opacity: .35; }
+.zk-search-hit .zk-chat-msg { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+.zk-search-current .zk-chat-msg { box-shadow: inset 0 0 0 2px var(--accent); }
+.zk-search-older { margin-top: 0; }
+.zk-detail-topbar .zk-icon-btn.on { color: var(--accent); }
+
+/* Saisie : « + », champ arrondi extensible, micro remplacé par Envoyer. */
+.zk-messenger .zk-chat-composer { gap: 8px; padding-top: 8px; align-items: flex-end; }
+.zk-messenger .zk-chat-plus, .zk-messenger .zk-record-trigger { width: 46px; height: 46px; min-width: 46px; border-radius: 50%; border: 1.5px solid var(--zm-line); background: transparent; color: var(--text-main); }
+.zk-messenger .zk-chat-field { flex: 1; min-width: 0; min-height: 46px; border-radius: 23px; border: 1.5px solid var(--zm-line); background: transparent; padding: 2px 6px 2px 14px; }
+.zk-messenger .zk-chat-field:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.zk-messenger .zk-chat-field textarea { padding: 10px 2px; font-size: .98rem; caret-color: var(--accent); }
+.zk-messenger .zk-chat-field .zk-emoji-wrap { order: 2; }
+.zk-messenger .zk-chat-field .zk-chat-tool { width: 38px; height: 38px; min-width: 38px; color: var(--text-muted); }
+.zk-messenger .zk-chat-send { width: 46px; height: 46px; min-width: 46px; border-radius: 50%; }
+.zk-messenger .zk-attach-popover { border-radius: 16px; }
+
+/* Bouton « nouveaux messages » et fils plus discrets. */
+.zk-messenger .zk-new-messages { background: var(--zm-in); border-color: var(--zm-line); }
+.zk-messenger .zk-history-button { background: transparent; border-color: var(--zm-line); }
+
+@media (max-width: 360px) {
+  .zk-messenger .zk-chat-bubbles { max-width: 88%; }
+  .zk-messenger .zk-chat-avatar { width: 28px; height: 28px; flex-basis: 28px; }
+  .zk-messenger .zk-chat-group:not(.me) { padding-inline-start: 36px; }
+}
