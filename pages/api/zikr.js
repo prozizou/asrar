@@ -729,12 +729,17 @@ async function handleNotifyInactive(db, res, user, gid) {
   if ((Number(g.total) || 0) >= Number(g.target)) return res.status(409).json({ error: "L’objectif du groupe est déjà atteint." });
   const membersSnap = await db.ref("zikr_members/" + gid).once("value");
   const targets = [];
+  let alreadyWarned = 0;
   membersSnap.forEach((m) => {
     if (m.key === g.ownerUid || m.key === user.uid) return; // jamais le créateur ni soi-même
     const v = m.val() || {};
-    if (isActiveZikrMember(v) && (Number(v.fait) || 0) === 0) targets.push({ uid: m.key, member: v });
+    if (!isActiveZikrMember(v) || (Number(v.fait) || 0) !== 0) return;
+    // Déjà averti (échéance en cours) : pas de second rappel ni de push en
+    // double ; l'échéance n'aurait de toute façon pas bougé (warnParticipant).
+    if (v.warning && Number(v.warning.deadline) > 0) { alreadyWarned++; return; }
+    targets.push({ uid: m.key, member: v });
   });
-  if (targets.length === 0) return res.status(200).json({ ok: true, notified: 0 });
+  if (targets.length === 0) return res.status(200).json({ ok: true, notified: 0, alreadyWarned });
 
   await Promise.all(
     targets.map(({ uid, member }) => warnParticipant(db, gid, uid, user.uid, zikrWarningMessage(g, member)))
@@ -743,7 +748,7 @@ async function handleNotifyInactive(db, res, user, gid) {
   // même si VAPID est mal configuré ou qu'un envoi échoue.
   await pushInactivityWarning(db, targets.map((target) => target.uid), gid).catch(() => {});
 
-  return res.status(200).json({ ok: true, notified: targets.length });
+  return res.status(200).json({ ok: true, notified: targets.length, alreadyWarned });
 }
 
 // Configure VAPID (mêmes clés que pages/api/cron/reminders.js et

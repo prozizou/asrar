@@ -1,3 +1,24 @@
+## SW v46.86 — Zikr collectif : discussion refondue
+
+- En-tête compact : nom du Zikr (invocation repliable), participants et présence en ligne, loupe de recherche et menu (« Partager le zikr » y passe).
+- Bulles : gris foncé reçues, vert profond envoyées (clair : blanc / vert pâle), 85 % de largeur maximum, regroupement par auteur (nom et avatar une seule fois), « queue » en tête de série.
+- Pied de bulle sur une ligne : réactions en petites pastilles, heure, statut (coche envoyé, double coche lu ; le détail des lecteurs reste au toucher).
+- Plus de « ⋮ » permanent : appui long ou glissement (réponse) sur mobile, clic droit ou survol à la souris, touche Entrée au clavier ; nouvelle action « Partager ».
+- Recherche dans la discussion : compteur, résultat précédent/suivant, message trouvé encadré, recherche dans les messages précédents.
+- Dates en filet et pastille (« Aujourd’hui », « Hier », sinon jj/mm/aaaa) ; citation de réponse compacte à barre orange ; lecteur vocal compact (lecture, onde, durée, vitesse).
+- Saisie : bouton « + » (photo, appareil), champ arrondi extensible, micro remplacé par Envoyer dès la saisie.
+- Vignettes d’images allégées (Cloudinary f_auto/q_auto/720 px), image complète à l’agrandissement ; styles centralisés (variables --zm-*).
+
+## SW v46.85 — Zikr collectif : écran Participants refondu
+
+- En-tête : une seule flèche retour, titre « Zikr collectif », partage et menu.
+- Carte compacte du zikr : légende, nom, formule arabe, translittération, créateur · participants · en ligne.
+- 4 indicateurs : participants, ont récité, en ligne, inactifs.
+- Recherche instantanée (nom, e-mail pour le créateur), tri (total, aujourd’hui, en ligne d’abord, nom) et filtres Tous / En ligne / Actifs / Inactifs avec compteurs.
+- Liste : rang (podium pour les 3 premiers, indépendant des filtres), avatar et présence, nom, total de grains, progression du jour, rythme et actions de modération selon le rôle ; votre ligne mise en évidence (« Vous »).
+- « Notifier les inactifs » : les comptes déjà avertis ne sont plus relancés (pas de notification en double) ; suivi « N déjà avertis · prochaine échéance dans X j ».
+- Adapté aux petits écrans (320 px : noms sur deux lignes au lieu d’être coupés).
+
 ## SW v46.84 — Soutien : sans « J’ai déjà contribué », WhatsApp pour se renseigner
 
 - Bouton « J’ai déjà contribué » retiré partout : la fenêtre du menu s’affiche à chaque session, pour tous.

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { ArrowDown, Camera, Check, Copy, Forward, ImagePlus, Info, MoreVertical, Reply, Send, Trash2, X, Pencil } from 'lucide-react';
+import { ArrowDown, Camera, Check, CheckCheck, ChevronDown, ChevronUp, Copy, Forward, Image as ImageIcon, Info, MoreVertical, Plus, Reply, Search, Send, Share2, Trash2, X, Pencil } from 'lucide-react';
 import ModalUntyped from '@/components/Modal';
 import EmojiPickerUntyped from '@/components/EmojiPicker';
 import AudioMessageUntyped from '@/components/AudioMessage';
@@ -22,11 +22,21 @@ import VoiceComposer from './VoiceComposer';
 const Modal = ModalUntyped as any; const EmojiPicker = EmojiPickerUntyped as any; const AudioMessage = AudioMessageUntyped as any;
 
 type Message = { id: string; uid: string; email?: string; name?: string; picture?: string; at: number; text: string; version?: number; reactions?: Record<string, string>; deleted?: boolean; editedAt?: number; forwarded?: boolean; replyTo?: string; reply?: any; mediaType?: 'image' | 'audio'; mediaUrl?: string; mediaDuration?: number; mediaWaveform?: number[] };
-type Props = { groupId: string; uid: string; active: boolean; onUnread: Dispatch<SetStateAction<number>>; notify: (message: string, type?: 'success' | 'error' | 'info') => void };
+type Props = { groupId: string; uid: string; active: boolean; onUnread: Dispatch<SetStateAction<number>>; notify: (message: string, type?: 'success' | 'error' | 'info') => void; searchOpen?: boolean; onSearchClose?: () => void };
 const time = (value: number) => new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const preview = (message: any) => message?.deleted ? 'Message supprimé' : message?.text || (message?.mediaType === 'image' ? 'Photo' : message?.mediaType === 'audio' ? 'Message vocal' : 'Message');
 const merge = mergeChatMessages as (previous: Message[], incoming: Message[]) => Message[];
-export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }: Props) {
+// Séparateur de date : « Aujourd’hui », « Hier », sinon jj/mm/aaaa.
+const dayLabel = (value: number) => {
+  const d = new Date(value), today = new Date(), yesterday = new Date(Date.now() - 86400000);
+  if (d.toDateString() === today.toDateString()) return 'Aujourd’hui';
+  if (d.toDateString() === yesterday.toDateString()) return 'Hier';
+  return d.toLocaleDateString('fr-FR');
+};
+// Vignette allégée dans la liste (l'image complète reste pour l'agrandissement).
+const thumb = (url: string) => url.includes('res.cloudinary.com') && url.includes('/image/upload/') && !url.includes('/image/upload/f_auto') ? url.replace('/image/upload/', '/image/upload/f_auto,q_auto,c_limit,w_720/') : url;
+const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+export default function ZikrMessenger({ groupId, uid, active, onUnread, notify, searchOpen = false, onSearchClose }: Props) {
   const [messages, setMessages] = useState<Message[]>(() => getChatCache(uid, groupId));
   const [quoteUpdates, setQuoteUpdates] = useState<Record<string, Message>>({});
   const [text, setText] = useState(''); const [reply, setReply] = useState<Message | null>(null);
@@ -43,6 +53,9 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
   const [info, setInfo] = useState<Message | null>(null); const [readers, setReaders] = useState<any[]>([]); const [infoLoading, setInfoLoading] = useState(false);
   const infoRequest = useRef(0);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  // Recherche dans les messages chargés (en-tête : icône loupe).
+  const [query, setQuery] = useState(''); const [hit, setHit] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [unsent, setUnsent] = useState<Blob | null>(null); const [unsentDuration, setUnsentDuration] = useState(0); const [unsentReply, setUnsentReply] = useState<string | null>(null); const [unsentUrl, setUnsentUrl] = useState('');
   const [voiceChecking, setVoiceChecking] = useState(false); const voiceStarting = useRef(false);
   const listRef = useRef<HTMLDivElement>(null); const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -242,7 +255,35 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
     finally { setBusy(false); }
   };
 
+  const q = fold(query.trim());
+  const matches = searchOpen && q.length >= 2 ? messages.filter((m) => !m.deleted && m.text && fold(m.text).includes(q)).map((m) => m.id) : [];
+  const currentHit = matches.length ? matches[Math.min(hit, matches.length - 1)] : '';
+  useEffect(() => { if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50); else { setQuery(''); setHit(0); } }, [searchOpen]);
+  useEffect(() => { setHit(matches.length ? matches.length - 1 : 0); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps -- dernier résultat (le plus récent) à chaque nouvelle recherche
+  useEffect(() => {
+    if (!currentHit) return;
+    document.getElementById('zk-message-' + currentHit)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [currentHit]);
+  const shareMessage = async (message: Message) => {
+    setMenu(null);
+    const value = message.text || preview(message);
+    try {
+      if (navigator.share) await navigator.share({ text: value });
+      else { await navigator.clipboard.writeText(value); notify('Texte copié : collez-le pour le partager.'); }
+    } catch { /* partage annulé */ }
+  };
+
   return <section className="zk-chat-panel zk-messenger" aria-label="Discussion du Zikr collectif" style={!active ? { display: 'none' } : undefined}>
+    {searchOpen && <div className="zk-chat-search" role="search">
+      <Search size={18} aria-hidden="true" />
+      <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans la discussion" aria-label="Rechercher dans la discussion"
+        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); setHit((value) => (value > 0 ? value - 1 : Math.max(0, matches.length - 1))); } if (event.key === 'Escape') onSearchClose?.(); }} />
+      <span className="zk-chat-search-count" aria-live="polite">{q.length < 2 ? '' : matches.length ? `${Math.min(hit, matches.length - 1) + 1}/${matches.length}` : '0'}</span>
+      <button type="button" aria-label="Résultat précédent" disabled={!matches.length} onClick={() => setHit((value) => (value > 0 ? value - 1 : matches.length - 1))}><ChevronUp size={18} /></button>
+      <button type="button" aria-label="Résultat suivant" disabled={!matches.length} onClick={() => setHit((value) => (value + 1) % matches.length)}><ChevronDown size={18} /></button>
+      <button type="button" aria-label="Fermer la recherche" onClick={() => onSearchClose?.()}><X size={18} /></button>
+    </div>}
+    {searchOpen && q.length >= 2 && !matches.length && hasOlder && <button type="button" className="zk-history-button zk-search-older" onClick={older} disabled={loadingOlder}>{loadingOlder ? 'Chargement…' : 'Chercher aussi dans les messages précédents'}</button>}
     <div className="zk-chat-list" ref={listRef} tabIndex={0} role="log" aria-live={entered.current ? 'polite' : 'off'} aria-label="Messages de la discussion" onScroll={() => {
       const list = listRef.current; if (!list) return;
       nearBottom.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
@@ -254,13 +295,17 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
         const mine = message.uid === uid;
         const previous = messages[index - 1];
         const first = !previous || previous.uid !== message.uid || message.at - previous.at > 300000;
-        const date = new Date(message.at).toLocaleDateString('fr-FR');
-        const showDate = !previous || new Date(previous.at).toLocaleDateString('fr-FR') !== date;
+        const date = dayLabel(message.at);
+        const showDate = !previous || new Date(previous.at).toDateString() !== new Date(message.at).toDateString();
         const candidates = message.replyTo ? [message.reply, messages.find((m) => m.id === message.replyTo), quoteUpdates[message.replyTo]].filter(Boolean) : [];
         const quote = candidates.find((candidate) => candidate.deleted) || candidates.sort((a, b) => (b.version || 0) - (a.version || 0))[0];
-        return <div key={message.id}>
-          {showDate && <p className="zk-chat-date">{date}</p>}
-          <article id={'zk-message-' + message.id} data-chat-id={message.id} className={'zk-chat-group' + (mine ? ' me' : '') + (!first && !showDate ? ' zk-message-continuation' : '')} onContextMenu={(event) => { if (!message.deleted) { event.preventDefault(); setMenu(message); } }}
+        const isHit = matches.includes(message.id);
+        return <div key={message.id} className={'zk-chat-row' + (isHit ? ' zk-search-hit' : '') + (message.id === currentHit ? ' zk-search-current' : '')}>
+          {showDate && <p className="zk-chat-date"><span>{date}</span></p>}
+          <article id={'zk-message-' + message.id} data-chat-id={message.id} tabIndex={message.deleted ? -1 : 0}
+            aria-label={`${mine ? 'Vous' : chatDisplayName(message.email, message.name)}, ${time(message.at)} : ${preview(message)}`}
+            onKeyDown={(event) => { if (!message.deleted && event.target === event.currentTarget && (event.key === 'Enter' || event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) { event.preventDefault(); setMenu(message); } }}
+            className={'zk-chat-group' + (mine ? ' me' : '') + (!first && !showDate ? ' zk-message-continuation' : '') + (first || showDate ? ' zk-group-first' : '')} onContextMenu={(event) => { if (!message.deleted) { event.preventDefault(); setMenu(message); } }}
             onPointerDown={(event) => {
               if (message.deleted || (event.target as HTMLElement).closest('button,input,a,textarea,audio')) return;
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -290,7 +335,7 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
                   </button>}
                   {message.mediaType === 'image' && message.mediaUrl && <button type="button" className="zk-photo-open" onClick={() => { setZoom(1); setZoomed(message); }} aria-label="Agrandir la photo">
                     {/* eslint-disable-next-line @next/next/no-img-element -- Public Cloudinary image. */}
-                    <img className="zk-chat-media-img" src={message.mediaUrl} alt={message.text || 'Photo partagée dans le groupe'} loading="lazy" />
+                    <img className="zk-chat-media-img" src={thumb(message.mediaUrl)} alt={message.text || 'Photo partagée dans le groupe'} loading="lazy" />
                   </button>}
                   {message.mediaType === 'audio' && message.mediaUrl && <AudioMessage src={message.mediaUrl} duration={message.mediaDuration} waveform={message.mediaWaveform} onListened={() => {
                     if (!mine && activeRef.current && document.visibilityState !== 'hidden') readChatMessages(groupId, [message.id], 'played').catch(() => {});
@@ -298,10 +343,15 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
                   {message.text && <p className="zk-chat-text" dir="auto">{message.text}</p>}
                   <button type="button" className="zk-message-menu" aria-label={`Actions du message de ${mine ? 'vous' : chatDisplayName(message.email, message.name)}`} onClick={() => setMenu(message)}><MoreVertical size={17} aria-hidden="true" /></button>
                 </>}
-                {!message.deleted && message.reactions && <div className="zk-message-reactions">{Object.entries(Object.values(message.reactions).reduce((values: Record<string, number>, emoji) => ({ ...values, [emoji]: (values[emoji] || 0) + 1 }), {})).map(([emoji, count]) =>
-                  <button type="button" key={emoji} aria-label={`Réaction ${emoji} : ${count}`} aria-pressed={message.reactions?.[uid] === emoji} onClick={() => perform(async () => { const data = await reactChatMessage(groupId, message.id, emoji); setMessages((previous) => merge(previous, [data.message])); })}>{emoji} {count}</button>)}</div>}
-                <div className="zk-message-meta"><span>{message.editedAt ? 'Modifié · ' : ''}{time(message.at)}</span>
-                  {mine && !message.deleted && <button type="button" onClick={() => openInfo(message)} aria-label="Informations de lecture"><Check size={13} aria-hidden="true" />{counts[message.id] ? `Vu par ${counts[message.id]}` : 'Envoyé'}</button>}
+                <div className="zk-msg-foot">
+                  {!message.deleted && message.reactions && <div className="zk-message-reactions">{Object.entries(Object.values(message.reactions).reduce((values: Record<string, number>, emoji) => ({ ...values, [emoji]: (values[emoji] || 0) + 1 }), {})).map(([emoji, count]) =>
+                    <button type="button" key={emoji} aria-label={`Réaction ${emoji} : ${count}`} aria-pressed={message.reactions?.[uid] === emoji} onClick={() => perform(async () => { const data = await reactChatMessage(groupId, message.id, emoji); setMessages((previous) => merge(previous, [data.message])); })}>{emoji}{count > 1 ? <span>{count}</span> : null}</button>)}</div>}
+                  <div className="zk-message-meta"><span>{message.editedAt ? 'Modifié · ' : ''}{time(message.at)}</span>
+                    {mine && !message.deleted && <button type="button" className={'zk-read-state' + (counts[message.id] ? ' read' : '')} onClick={() => openInfo(message)} aria-label="Informations de lecture">
+                      {counts[message.id] ? <CheckCheck size={15} aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}
+                      <span className="sr-only">{counts[message.id] ? `Vu par ${counts[message.id]}` : 'Envoyé'}</span>
+                    </button>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -322,8 +372,8 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
       <div className="zk-composer-body" style={{ display: voice.recording ? 'none' : 'contents' }}>
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(event) => { chooseImage(event.target.files?.[0]); event.target.value = ''; }} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(event) => { chooseImage(event.target.files?.[0]); event.target.value = ''; }} />
-      <details className="zk-attach-menu"><summary className="zk-chat-tool" aria-label="Joindre une image"><ImagePlus size={18} /></summary><div className="zk-attach-popover">
-        <button type="button" disabled={busy} onClick={(event) => { event.currentTarget.closest('details')!.open = false; fileRef.current?.click(); }}>Choisir une photo</button>
+      <details className="zk-attach-menu"><summary className="zk-chat-tool zk-chat-plus" aria-label="Joindre une pièce"><Plus size={22} /></summary><div className="zk-attach-popover">
+        <button type="button" disabled={busy} onClick={(event) => { event.currentTarget.closest('details')!.open = false; fileRef.current?.click(); }}><ImageIcon size={16} /> Choisir une photo</button>
         <button type="button" disabled={busy} onClick={(event) => { event.currentTarget.closest('details')!.open = false; cameraRef.current?.click(); }}><Camera size={16} /> Prendre une photo</button>
       </div></details>
       <div className="zk-chat-field"><EmojiPicker onPick={(emoji: string) => setText((value) => (value + emoji).slice(0, CHAT_MESSAGE_MAX))} />
@@ -345,6 +395,7 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify }
       <button type="button" onClick={() => { setReply(menu); setMenu(null); inputRef.current?.focus(); }}><Reply size={18} /> Répondre</button>
       {menu.text && <button type="button" onClick={async () => { const value = menu.text; setMenu(null); try { await navigator.clipboard.writeText(value); notify('Texte copié.'); } catch { setCopyText(value); } }}><Copy size={18} /> Copier le texte</button>}
       <button type="button" onClick={() => openForward(menu)} disabled={busy}><Forward size={18} /> Transférer</button>
+      {!!(menu.text || menu.mediaType) && <button type="button" onClick={() => shareMessage(menu)}><Share2 size={18} /> Partager</button>}
       {menu.uid === uid && <>
         <button type="button" onClick={() => openInfo(menu)}><Info size={18} /> Informations de lecture</button>
         {menu.mediaType !== 'audio' && <button type="button" onClick={() => {
