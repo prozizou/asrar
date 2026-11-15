@@ -42,7 +42,7 @@ import {
   chatDisplayName, avatarColorFor,
   normalizePhone,
 } from '@/lib/zikrLogic';
-import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone } from '@/lib/phoneCountries';
+import { FREQUENT_COUNTRIES, OTHER_COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone } from '@/lib/phoneCountries';
 import {
   listGroups, createGroup, updateGroup, getGroup, joinGroup,
   approveMember, rejectMember, saveProgress, notifyInactiveMembers, dismissWarning,
@@ -707,7 +707,7 @@ function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boo
       ? 'Numéro international détecté : l’indicatif sélectionné est ignoré.'
       : normalized
         ? `Numéro enregistré : ${normalized}`
-        : 'Saisissez votre numéro sans l’indicatif.';
+        : 'Choisissez votre pays, puis saisissez votre numéro sans l’indicatif (ou le numéro complet avec +).';
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -740,9 +740,12 @@ function JoinForm({ onJoin, busy }: { onJoin: (phone: string) => void; busy: boo
               aria-label="Indicatif du pays"
               onChange={(e) => { countryChosen.current = true; setIso(e.target.value); }}
             >
-              {COUNTRIES.map((c) => (
-                <option key={c.iso} value={c.iso}>{c.name} (+{c.dial})</option>
-              ))}
+              <optgroup label="Pays fréquents">
+                {FREQUENT_COUNTRIES.map((c) => <option key={c.iso} value={c.iso}>{c.name} (+{c.dial})</option>)}
+              </optgroup>
+              <optgroup label="Tous les pays (A–Z)">
+                {OTHER_COUNTRIES.map((c) => <option key={c.iso} value={c.iso}>{c.name} (+{c.dial})</option>)}
+              </optgroup>
             </select>
           </label>
           <input

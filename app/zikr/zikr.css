@@ -821,7 +821,10 @@
 /* CTA : pleine largeur, plus haut que les boutons secondaires, état
    « envoi » explicite (icône qui tourne) plutôt qu'un simple grisage. */
 .zk-join-cta { min-height: 50px; font-size: 0.98rem; border-radius: 14px; margin: 0; }
-.zk-join-cta:disabled { opacity: 0.5; }
+/* Actif : orange plein, texte foncé (contraste) ; désactivé : neutre et
+   nettement différent (le blanc sur dégradé clair semblait déjà désactivé). */
+.zk-join-cta:not(:disabled) { background: var(--accent); color: var(--text-on-accent); }
+.zk-join-cta:disabled { opacity: 1; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--glass-border); }
 .zk-spin { animation: zk-spin 0.9s linear infinite; }
 @keyframes zk-spin { to { transform: rotate(360deg); } }
 

@@ -1,3 +1,9 @@
+## SW v46.87 — Zikr collectif : tous les pays pour le numéro WhatsApp
+
+- Rejoindre un zikr : la liste des indicatifs passe de 47 pays à tous les pays et territoires (224, indicatifs UIT) ; « Pays fréquents » en tête, puis « Tous les pays (A–Z) ».
+- Détection automatique du pays par la langue du navigateur pour tous les pays ; aide précisant qu’on peut aussi saisir le numéro complet avec « + ».
+- Bouton « Demander à rejoindre » plus lisible : orange plein et texte foncé quand il est actif, neutre quand il est désactivé.
+
 ## SW v46.86 — Zikr collectif : discussion refondue
 
 - En-tête compact : nom du Zikr (invocation repliable), participants et présence en ligne, loupe de recherche et menu (« Partager le zikr » y passe).
