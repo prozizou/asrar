@@ -13,7 +13,8 @@ test('le modérateur prépare un WhatsApp personnalisé, enregistre le badge pri
   await page.setViewportSize({ width: 390, height: 850 });
   await login('admin'); await page.goto('/zikr?item=warning-ui');
   await page.getByRole('button', { name: 'Participants', exact: true }).click();
-  await page.getByRole('button', { name: 'Préparer un message WhatsApp pour Participant test', exact: true }).click();
+  await page.getByRole('button', { name: 'Actions de modération pour premium@asrar.test', exact: true }).click();
+  await page.getByRole('button', { name: 'Message et avertissement', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Message et avertissement', exact: true });
   await expect(dialog).toBeVisible();
   const message = dialog.getByLabel('Message personnalisé', { exact: true });

@@ -1,3 +1,13 @@
+## SW v46.85 — Zikr collectif : écran Participants refondu
+
+- En-tête : une seule flèche retour, titre « Zikr collectif », partage et menu.
+- Carte compacte du zikr : légende, nom, formule arabe, translittération, créateur · participants · en ligne.
+- 4 indicateurs : participants, ont récité, en ligne, inactifs.
+- Recherche instantanée (nom, e-mail pour le créateur), tri (total, aujourd’hui, en ligne d’abord, nom) et filtres Tous / En ligne / Actifs / Inactifs avec compteurs.
+- Liste : rang (podium pour les 3 premiers, indépendant des filtres), avatar et présence, nom, total de grains, progression du jour, rythme et actions de modération selon le rôle ; votre ligne mise en évidence (« Vous »).
+- « Notifier les inactifs » : les comptes déjà avertis ne sont plus relancés (pas de notification en double) ; suivi « N déjà avertis · prochaine échéance dans X j ».
+- Adapté aux petits écrans (320 px : noms sur deux lignes au lieu d’être coupés).
+
 ## SW v46.84 — Soutien : sans « J’ai déjà contribué », WhatsApp pour se renseigner
 
 - Bouton « J’ai déjà contribué » retiré partout : la fenêtre du menu s’affiche à chaque session, pour tous.

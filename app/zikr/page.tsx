@@ -17,13 +17,14 @@
 import './zikr.css';
 import ParticipantWarning from './ParticipantWarning';
 import ZikrMessenger from './ZikrMessenger';
+import ParticipantsBoard from './ParticipantsBoard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
-  Trash2, Check, Handshake, AlertTriangle, ChevronRight, Zap,
+  Trash2, Check, Handshake, AlertTriangle, ChevronRight,
   Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
-  HandHeart, Moon,
+  HandHeart, Moon, UserRound,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -38,7 +39,7 @@ import { handleExternalLinkClick } from '@/lib/externalWindow';
 import { DHIKR_PRESETS, LIBRE_PRESET_ID, findPreset } from '@/lib/dhikrPresets';
 import {
   progressPct, formatPct, sortByProgress, remainingOf, NAME_MAX, ARABIC_MAX, TARGET_MIN, TARGET_MAX, WISH_MAX,
-  RYTHME_SUSPECT, chatDisplayName, avatarColorFor,
+  chatDisplayName, avatarColorFor,
   normalizePhone,
 } from '@/lib/zikrLogic';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, detectCountryIso, composePhone } from '@/lib/phoneCountries';
@@ -195,7 +196,9 @@ export default function ZikrCollectifPage() {
 
   return (
     <div className="container" style={{ maxWidth: 640 }}>
-      <Link href="/menu" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>
+      {/* Une seule flèche retour : celle de la page en liste, celle de
+          l'en-tête du zikr en détail. */}
+      {!selected && <Link href="/menu" className="back-btn"><ArrowLeft size={18} aria-hidden="true" /> Retour</Link>}
       {selected ? (
         <GroupDetail groupId={selected} uid={user?.uid || ''} notify={notify} onBack={() => setSelected(null)} />
       ) : (
@@ -949,10 +952,12 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
     try {
       const d = await notifyInactiveMembers(groupId);
       const n = Number(d.notified) || 0;
+      const already = Number(d.alreadyWarned) || 0;
+      const skipped = already > 0 ? ` ${already} déjà averti${already > 1 ? 's' : ''} : pas de second rappel.` : '';
       notify(
         n > 0
-          ? `${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.`
-          : 'Aucun compte inactif pour l’instant.'
+          ? `${n} compte${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''}.${skipped}`
+          : already > 0 ? `Les inactifs ont déjà été avertis.${skipped}` : 'Aucun compte inactif pour l’instant.'
       );
       load();
     } catch (e: any) {
@@ -1008,16 +1013,6 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
   // conservée en profondeur : `g` reste alors un objet exploitable plutôt
   // que de plonger tout l'écran dans un TypeError.
   const members = g.members || [];
-  // Compte purement indicatif (bouton « Notifier les inactifs ») — le
-  // décompte qui fait foi est celui recalculé par le serveur, voir
-  // handleNotifyInactive (jamais celui-ci, qui ne reflète que le dernier
-  // sondage affiché côté client).
-  const inactiveCount = members.filter((m) => m.uid !== uid && m.uid !== g.ownerUid && m.fait === 0).length;
-  // Résumé de l'onglet Participants — comptés sur la liste RÉELLEMENT
-  // affichée (plutôt que g.onlineCount, recalculé côté serveur) : le résumé
-  // et les lignes en dessous racontent ainsi toujours la même chose.
-  const onlineCount = members.filter((m) => m.online).length;
-  const activeCount = members.filter((m) => m.fait > 0).length;
   // Email et rythme instantané sont des signaux de MODÉRATION (identifier un
   // compte, repérer un tapotement mécanique) : réservés au créateur/admin,
   // comme le téléphone côté serveur (pages/api/zikr.js handleGet). Pour les
@@ -1053,7 +1048,7 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           aria-expanded={invocationOpen} aria-controls="zk-chat-invocation" aria-describedby="zk-chat-presence">
           <span><strong>{g.name || 'Zikr collectif'}</strong><ChevronDown size={14} aria-hidden="true" /></span>
           <small id="zk-chat-presence">{fmt(g.membersCount)} participants{g.onlineCount > 0 ? ` · ${g.onlineCount} en ligne` : ''}</small>
-        </button> : <span className="zk-topbar-title">Zikr</span>}
+        </button> : <span className="zk-topbar-title">Zikr collectif</span>}
         <span className="zk-topbar-actions">
           <button type="button" className="zk-icon-btn" onClick={doShare}
             title="Partager ce zikr collectif" aria-label="Partager ce zikr collectif">
@@ -1094,27 +1089,33 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           <ZikrHero name={g.name} arabic={g.arabic} transliteration={g.transliteration} presetId={g.presetId} />
         ) : (
           <>
-            {/* Hiérarchie (revue UX 2026-09-28, priorité 2) : la FORMULE
-                arabe domine, le nom du groupe passe en titre sobre au-dessus,
-                la translittération en sous-titre discret, puis une ligne de
-                métadonnées à icônes (créateur · participants · en ligne). */}
-            {/* Même identité que l'écran Zikr (ZikrHero) en version compacte :
-                légende capitales violettes, formule arabe, translittération. */}
+            {/* Carte compacte (écran Participants, visiteurs) : légende,
+                nom, formule arabe + translittération, puis créateur ·
+                participants · en ligne. Discussion : invocation repliable. */}
             {chatMode ? <div id="zk-chat-invocation" className="zk-chat-invocation">
               {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
               {g.transliteration && <span className="zk-head-translit">{g.transliteration}</span>}
             </div> : <>
-            <h1 className="zk-hero-caption zk-head-caption">Zikr collectif · {g.name}</h1>
-            {g.arabic && <div className="zk-phrase-big" dir="rtl" lang="ar">{g.arabic}</div>}
-            {g.transliteration && <span className="zk-head-translit">{g.transliteration}</span>}
-            </>}
-            <div className="zk-owner">
-              <span className="zk-meta-item"><Crown size={12} strokeWidth={2.4} aria-hidden="true" /> {chatDisplayName(g.ownerEmail, g.ownerName)}</span>
-              <span className="zk-meta-item"><Users size={12} strokeWidth={2.4} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
-              {g.onlineCount > 0 && (
-                <span className="zk-meta-item zk-online-text"><span className="zk-meta-online-dot" aria-hidden="true" /> {g.onlineCount} en ligne</span>
-              )}
+            <div className="zp-head">
+              <div className="zp-head-top">
+                <div className="zp-head-titles">
+                  <span className="zp-head-caption">Zikr collectif</span>
+                  <h1 className="zp-head-name">{g.name}</h1>
+                </div>
+                {(g.arabic || g.transliteration) && (
+                  <div className="zp-head-phrase">
+                    {g.arabic && <div className="zp-head-arabic" dir="rtl" lang="ar">{g.arabic}</div>}
+                    {g.transliteration && <span className="zp-head-translit">{g.transliteration}</span>}
+                  </div>
+                )}
+              </div>
+              <div className="zp-head-meta">
+                <span><UserRound size={16} strokeWidth={2.2} aria-hidden="true" /> <span className="zp-head-owner">{chatDisplayName(g.ownerEmail, g.ownerName)}</span></span>
+                <span><Users size={16} strokeWidth={2.2} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
+                <span><span className="zp-dot on" aria-hidden="true" /> {fmt(g.onlineCount || 0)} en ligne</span>
+              </div>
             </div>
+            </>}
           </>
         )}
         {/* Les précisions ci-dessous (rappel push, invitation par lien…)
@@ -1216,125 +1217,17 @@ function GroupDetail({ groupId, uid, notify, onBack }: { groupId: string; uid: s
           rejoint), avec les outils de modération pour le créateur (menu par
           ligne, plus les deux boutons colorés en permanence d'avant). */}
       {(isMember || canModerate) && tab === 'participants' && (
-        <div className="zk-board">
-          {/* En-tête : libellé discret + résumé d'UNE ligne (en ligne /
-              ont récité) plutôt qu'un titre seul — le même traitement que
-              « Progression collective » sur l'onglet Zikr, pour que les
-              trois onglets se ressemblent. */}
-          <div className="zk-board-head">
-            <div className="zk-board-heading">
-              <h3 className="zk-board-label">
-                Participants <span className="zk-board-label-count">{members.length}</span>
-              </h3>
-              <p className="zk-board-summary">
-                {onlineCount > 0 && <><span className="zk-online-text">{fmt(onlineCount)} en ligne</span> · </>}
-                {fmt(activeCount)} {activeCount > 1 ? 'ont' : 'a'} récité
-              </p>
-            </div>
-            {canModerate && (
-              <button
-                type="button"
-                className="zk-notify-inactive"
-                onClick={doNotifyInactive}
-                disabled={notifyBusy || inactiveCount === 0 || g.full}
-                title="Avertir les comptes n'ayant récité aucun grain — sinon ils seront retirés du groupe"
-              >
-                <Bell size={13} strokeWidth={2.5} aria-hidden="true" />
-                Notifier les inactifs{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
-              </button>
-            )}
-          </div>
-          <div className="zk-board-list">
-            {members.length === 0 ? (
-              /* État vide travaillé (revue design) plutôt qu'une ligne de
-                 texte atténué : dit aussi quoi FAIRE ensuite. */
-              <div className="zk-board-empty">
-                <Users size={24} strokeWidth={1.75} aria-hidden="true" />
-                <strong>Personne n’a encore rejoint</strong>
-                <span>Partagez le lien du zikr pour inviter des participants.</span>
-              </div>
-            ) : members.map((m) => {
-              const suspect = m.rythme >= RYTHME_SUSPECT;
-              const displayName = chatDisplayName(m.email, m.name);
-              return (
-                <div key={m.uid} className={'zk-board-row' + (m.uid === uid ? ' me' : '')}>
-                  <span className="zk-board-avatar-wrap">
-                    {m.picture ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- avatar Google, URL dynamique
-                      <img className="zk-board-avatar" src={m.picture} alt="" loading="lazy" />
-                    ) : (
-                      <span className="zk-board-avatar zk-board-avatar-fallback" style={{ background: avatarColorFor(m.uid) }}>
-                        {displayName.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                    <span
-                      className={'zk-online-dot' + (m.online ? ' on' : '')}
-                      title={m.online ? 'En ligne' : 'Hors ligne'}
-                      aria-label={m.online ? 'En ligne' : 'Hors ligne'}
-                    />
-                  </span>
-                  {/* Identité : les marqueurs (créateur, vous) rejoignent la
-                      LIGNE DU NOM plutôt que la colonne des chiffres — c'est
-                      de l'identité, pas une statistique. L'email ne s'affiche
-                      que pour le créateur/l'admin (canModerate) : partout
-                      ailleurs c'est une longue adresse répétée à chaque
-                      ligne, sans valeur pour un participant. */}
-                  <span className="zk-board-id">
-                    <span className="zk-board-name">
-                      <span className="zk-board-name-text">{displayName}</span>
-                      {m.uid === g.ownerUid && (
-                        <span className="zk-role-tag" title="Créateur du zikr" aria-label="Créateur du zikr">
-                          <Crown size={11} strokeWidth={2.5} aria-hidden="true" />
-                        </span>
-                      )}
-                      {m.uid === uid && <span className="zk-board-you">vous</span>}
-                    </span>
-                    {canModerate && m.email && <span className="zk-board-email-sub">{m.email}</span>}
-                    {canModerate && m.warning && <span className="zk-warned-tag" title={m.warning.at ? `Averti le ${new Date(m.warning.at).toLocaleString('fr-FR')} · échéance ${new Date(m.warning.deadline).toLocaleString('fr-FR')}` : "Avertissement antérieur, sans délai automatique. Renouvelez-le pour démarrer les 7 jours."}>Averti</span>}
-                  </span>
-                  {/* UN seul nombre dominant par ligne (le total, jamais remis
-                      à zéro) ; le total du jour n'apparaît que s'il y en a
-                      un, et le rythme instantané seulement pour la
-                      modération (voir canModerate). */}
-                  <span className="zk-board-stats">
-                    <span className="zk-board-count">
-                      {fmt(m.fait)} <span className="zk-board-count-unit">grains</span>
-                    </span>
-                    {/* « auj. » et pas « aujourd'hui » : le libellé long
-                        élargissait la colonne des chiffres au point de
-                        tronquer les noms sur un écran de 390 px. */}
-                    {m.dailyTotal > 0 && <span className="zk-board-today">+{fmt(m.dailyTotal)} auj.</span>}
-                    {canModerate && m.rythme > 0 && (
-                      <span className={'zk-pace' + (suspect ? ' suspect' : '')} title="Rythme instantané">
-                        {suspect ? <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> : <Zap size={11} strokeWidth={2.5} aria-hidden="true" />} {m.rythme}/min
-                      </span>
-                    )}
-                  </span>
-                  {/* Contact WhatsApp direct — le téléphone n'arrive ici (m.phone)
-                      que pour le créateur/l'admin, voir pages/api/zikr.js
-                      handleGet : rien à vérifier de plus côté client, son
-                      absence pour tout autre viewer masque déjà ce bouton. */}
-                  {m.phone && m.uid !== uid && m.uid !== g.ownerUid && (
-                    <button type="button" className="zk-icon-btn zk-board-wa" onClick={() => setWarningMember(m)}
-                      title={`Préparer un message WhatsApp pour ${displayName}`} aria-label={`Préparer un message WhatsApp pour ${displayName}`} disabled={g.full}>
-                      <Phone size={15} strokeWidth={2.5} aria-hidden="true" />
-                    </button>
-                  )}
-                  {canModerate && m.uid !== g.ownerUid && m.uid !== uid && (
-                    <MoreMenu label={`Actions de modération pour ${m.email}`}>
-                      <button type="button" className="zk-attach-item" onClick={() => setWarningMember(m)} disabled={g.full}>
-                        <AlertTriangle size={16} strokeWidth={2.5} aria-hidden="true" /> Message et avertissement
-                      </button>
-                      <button type="button" className="zk-attach-item zk-attach-item-danger" onClick={() => doExclude(m.uid, m.email)}>
-                        <X size={16} strokeWidth={2.5} aria-hidden="true" /> Exclure du groupe
-                      </button>
-                    </MoreMenu>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <ParticipantsBoard
+          members={members}
+          uid={uid}
+          ownerUid={g.ownerUid}
+          canModerate={canModerate}
+          full={!!g.full}
+          notifyBusy={notifyBusy}
+          onNotifyInactive={doNotifyInactive}
+          onMessage={(m) => setWarningMember(m as Member)}
+          onExclude={(m) => doExclude(m.uid, m.email)}
+        />
       )}
 
       {/* Discussion du groupe façon WhatsApp — réservée aux membres (voir
