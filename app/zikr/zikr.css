@@ -1513,3 +1513,75 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
   .zk-messenger .zk-chat-avatar { width: 28px; height: 28px; flex-basis: 28px; }
   .zk-messenger .zk-chat-group:not(.me) { padding-inline-start: 36px; }
 }
+
+/* ── Liste des zikrs collectifs (refonte 2026-11) : parcours Découvrir →
+   Choisir → Participer → Réciter. Onglets, une carte par ligne, une action
+   claire par carte, création en bouton secondaire. ─────────────────────── */
+.zd-hero { margin-bottom: 12px; }
+.zd-hero h1 { font-size: 1.6rem; }
+.zd-hint { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-main); font-size: .9rem; line-height: 1.4; }
+.zd-hint svg { flex-shrink: 0; color: var(--accent); }
+.zd-hint strong { color: var(--accent); }
+
+.zd-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin: 0 0 16px; border-radius: 16px;
+  background: var(--surface-2); border: 1px solid var(--glass-border); }
+.zd-tab { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; margin: 0; padding: 0 6px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--text-muted); font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; width: auto; }
+.zd-tab:hover { transform: none; box-shadow: none; color: var(--text-main); }
+.zd-tab.on { background: var(--accent); color: var(--text-on-accent); }
+.zd-tab-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: .72rem; font-weight: 800;
+  background: color-mix(in srgb, var(--text-main) 12%, transparent); }
+.zd-tab.on .zd-tab-count { background: color-mix(in srgb, var(--text-on-accent) 18%, transparent); }
+
+.zd-section .zk-section-title { margin-top: 0; }
+.zd-list { display: flex; flex-direction: column; gap: 12px; }
+.zd-card { display: flex; align-items: stretch; gap: 14px; width: 100%; margin: 0; padding: 14px; border-radius: 18px; text-align: left; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--glass-border); color: var(--text-main); font: inherit; transition: border-color .15s; }
+.zd-card:hover { transform: none; box-shadow: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.zd-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.zd-card-icon { flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; align-self: flex-start;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.zd-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-left: 14px; border-left: 1px solid var(--glass-border); }
+.zd-card-top { display: flex; align-items: flex-start; gap: 8px; }
+.zd-card-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 1.02rem; line-height: 1.3; overflow-wrap: anywhere; }
+.zd-card-name svg { flex-shrink: 0; color: var(--text-muted); }
+.zd-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 12px; font-size: .72rem; font-weight: 700; white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.zd-chip.live { background: rgba(34, 197, 94, .14); color: #22c55e; }
+.zd-chip.wait { background: rgba(217, 164, 65, .16); color: #d9a441; }
+.zd-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.zd-card-phrase { font-family: var(--font-ar); font-size: 1.25rem; line-height: 1.5; color: var(--text-main); overflow-wrap: anywhere; }
+.zd-card-phrase:not([lang]) { font-family: var(--font-ui); font-size: .9rem; color: var(--text-muted); }
+.zd-bar { display: block; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text-main) 12%, transparent); overflow: hidden; }
+.zd-bar > span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); }
+.zd-card.done .zd-bar > span { background: #22c55e; }
+.zd-card-progress { display: flex; justify-content: space-between; gap: 8px; font-size: .84rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.zd-card-pct { font-weight: 700; color: var(--text-main); }
+.zd-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.zd-card-members { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; color: var(--text-muted); }
+.zd-action { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 16px; border-radius: 20px; font-size: .92rem; font-weight: 700;
+  background: var(--accent); color: var(--text-on-accent); white-space: nowrap; }
+.zd-action.muted { background: var(--surface-3, rgba(255,255,255,.08)); color: var(--text-muted); }
+.zd-card.done .zd-action.muted { color: #22c55e; background: rgba(34, 197, 94, .12); }
+
+.zd-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 16px; border-radius: 18px; text-align: center;
+  background: var(--surface-2); border: 1px dashed var(--glass-border); color: var(--text-muted); }
+.zd-empty svg { color: var(--accent); }
+.zd-empty strong { color: var(--text-main); }
+.zd-empty span { font-size: .86rem; }
+.zd-empty-btn { margin: 6px 0 0; min-height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; width: auto; }
+
+.zd-create { display: flex; align-items: center; justify-content: center; gap: 8px; width: min(100%, 340px); margin: 20px auto 8px; min-height: 50px; border-radius: 16px;
+  border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-size: .98rem; font-weight: 700; cursor: pointer; }
+.zd-create:hover { transform: none; box-shadow: none; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+@media (max-width: 380px) {
+  .zd-card { gap: 10px; padding: 12px; }
+  .zd-card-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .zd-card-icon svg { width: 22px; height: 22px; }
+  .zd-card-body { padding-left: 10px; }
+  .zd-tab { font-size: .84rem; }
+  .zd-action { padding: 0 12px; }
+}

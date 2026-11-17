@@ -1,3 +1,11 @@
+## SW v46.88 — Zikr collectif : liste refondue (Découvrir → Participer)
+
+- Titre « Zikrs collectifs », phrase d’explication et, pour un compte qui n’a encore rejoint aucun zikr, une indication « Pour commencer, choisissez un zikr ci-dessous puis appuyez sur Participer ».
+- Onglets Découvrir / Mes zikrs / Terminés avec compteurs.
+- Une carte par ligne : icône (selon la formule), titre, texte arabe, barre de progression, total / objectif, pourcentage, participants, état (En cours, Créé par vous, À valider) et une seule action claire : Participer, Reprendre, En attente ou Complet.
+- « Créer un zikr collectif » en bouton secondaire en bas de liste ; états vides explicites par onglet.
+- Modération (À valider) et demandes d’adhésion conservées en tête ; données, droits et sondage inchangés.
+
 ## SW v46.87 — Zikr collectif : tous les pays pour le numéro WhatsApp
 
 - Rejoindre un zikr : la liste des indicatifs passe de 47 pays à tous les pays et territoires (224, indicatifs UIT) ; « Pays fréquents » en tête, puis « Tous les pays (A–Z) ».
