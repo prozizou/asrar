@@ -24,7 +24,7 @@ import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, ChevronRight,
   Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
-  HandHeart, Moon, UserRound, Search,
+  HandHeart, Moon, UserRound, Search, Sparkles, CircleDot,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -215,6 +215,8 @@ function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' 
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  // Parcours « Découvrir → Choisir → Participer → Réciter » : trois onglets.
+  const [view, setView] = useState<'discover' | 'mine' | 'done'>('discover');
   const [moderating, setModerating] = useState<string | null>(null); // groupId en cours d'approbation/refus
   const [deciding, setDeciding] = useState<string | null>(null); // `${groupId}:${uid}` d'une demande d'adhésion en cours
   // Détecte une demande d'adhésion tranchée (acceptée ou refusée) entre deux
@@ -258,6 +260,16 @@ function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' 
   // horloge), comme avant.
   const toModerate = isAdmin && groups ? groups.filter((g) => g.approved === false) : [];
   const listed = sortByProgress(isAdmin && groups ? groups.filter((g) => g.approved !== false) : groups || []);
+  const isDone = (g: Group) => g.remaining <= 0;
+  const isMine = (g: Group) => g.status === 'owner' || g.status === 'member' || g.status === 'pending';
+  const tabs = {
+    discover: listed.filter((g) => !isDone(g)),
+    mine: listed.filter((g) => isMine(g) && !isDone(g)),
+    done: listed.filter(isDone),
+  };
+  const shown = tabs[view];
+  // Nouvel utilisateur (aucun zikr rejoint) : indication de départ.
+  const newcomer = !!groups && !groups.some((g) => g.status === 'owner' || g.status === 'member');
 
   // Créateur : toutes les demandes d'adhésion de SES zikr, dès la liste (la
   // plus ancienne d'abord — premier arrivé, premier servi) — avant, il
@@ -312,10 +324,16 @@ function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' 
       {/* En-tête resserré (revue design, point 1) : un titre + une ligne de
           sens, plus le grand emoji ni le paragraphe qui repoussaient l'action
           principale et les zikrs existants hors du premier écran. */}
-      <div className="zk-hero">
-        <h1>Zikr collectif</h1>
-        <p>Récitez ensemble pour atteindre un objectif commun.</p>
+      <div className="zk-hero zd-hero">
+        <h1>Zikrs collectifs</h1>
+        <p>Choisissez un zikr et participez à un objectif commun.</p>
       </div>
+      {newcomer && (
+        <p className="zd-hint" role="note">
+          <Sparkles size={20} aria-hidden="true" />
+          <span>Pour commencer, choisissez un zikr ci-dessous puis appuyez sur <strong>Participer</strong>.</span>
+        </p>
+      )}
 
       {toModerate.length > 0 && (
         <section className="zk-moderation" aria-label="Zikr à valider">
@@ -380,51 +398,47 @@ function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' 
         </section>
       )}
 
-      <button className="zk-btn main zk-create-toggle" onClick={() => setCreating((v) => !v)}>
-        {creating ? (
-          <><X size={16} strokeWidth={2.5} aria-hidden="true" /> Annuler</>
-        ) : (
-          <><Plus size={16} strokeWidth={2.5} aria-hidden="true" /> Créer un zikr collectif</>
-        )}
-      </button>
-
-      {creating && (
-        <CreateForm notify={notify} onCreated={(id: string) => { setCreating(false); load(); onOpen(id); }} />
-      )}
+      <div className="zd-tabs" role="tablist" aria-label="Zikrs collectifs">
+        {([['discover', 'Découvrir'], ['mine', 'Mes zikrs'], ['done', 'Terminés']] as const).map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={view === id} className={'zd-tab' + (view === id ? ' on' : '')} onClick={() => setView(id)}>
+            {label}{groups && tabs[id].length > 0 && <span className="zd-tab-count">{tabs[id].length}</span>}
+          </button>
+        ))}
+      </div>
 
       {groups === null ? (
         <div className="zk-loading"><Spinner /> Chargement…</div>
       ) : error ? (
         <p className="zk-error">{error} <button className="zk-link" onClick={load}>Réessayer</button></p>
-      ) : listed.length === 0 ? (
-        <p className="zk-empty">Aucun zikr collectif pour l’instant. Soyez le premier à en créer un <Moon size={16} className="zk-inline-icon" aria-hidden="true" /></p>
       ) : (
-        <>
-          {/* Titre de section (revue design, point 4) — sépare clairement la
-              création des zikrs déjà en cours, au lieu d'un enchaînement direct
-              sans repère. Grille 2 colonnes, du plus avancé au moins avancé
-              (sortByProgress, lib/zikrLogic.js). */}
-          <h2 className="zk-section-title">Zikrs en cours <span className="zk-pill">{listed.length}</span></h2>
-          <div className="zk-list">
-            {listed.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
-          </div>
-        </>
+        <section className="zd-section" aria-label={{ discover: 'Zikrs disponibles', mine: 'Mes zikrs', done: 'Zikrs terminés' }[view]}>
+          <h2 className="zk-section-title">
+            {{ discover: 'Zikrs disponibles', mine: 'Mes zikrs', done: 'Zikrs terminés' }[view]} <span className="zk-pill">{shown.length}</span>
+          </h2>
+          {shown.length === 0 ? (
+            <div className="zd-empty">
+              {view === 'mine' ? <Users size={26} aria-hidden="true" /> : view === 'done' ? <Trophy size={26} aria-hidden="true" /> : <Moon size={26} aria-hidden="true" />}
+              <strong>{view === 'mine' ? 'Vous n’avez rejoint aucun zikr' : view === 'done' ? 'Aucun zikr terminé pour l’instant' : 'Aucun zikr disponible'}</strong>
+              <span>{view === 'mine' ? 'Ouvrez Découvrir et appuyez sur Participer.' : view === 'done' ? 'Les zikrs dont l’objectif est atteint apparaîtront ici.' : 'Créez le premier zikr collectif.'}</span>
+              {view === 'mine' && <button type="button" className="zd-empty-btn" onClick={() => setView('discover')}>Découvrir les zikrs</button>}
+            </div>
+          ) : (
+            <div className="zd-list">
+              {shown.map((g) => <GroupCard key={g.id} g={g} onOpen={() => onOpen(g.id)} />)}
+            </div>
+          )}
+        </section>
       )}
+
+      {creating && (
+        <CreateForm notify={notify} onCreated={(id: string) => { setCreating(false); load(); onOpen(id); }} />
+      )}
+      <button type="button" className="zd-create" onClick={() => setCreating((v) => !v)} aria-expanded={creating}>
+        {creating ? <><X size={18} strokeWidth={2.4} aria-hidden="true" /> Annuler la création</> : <><Plus size={18} strokeWidth={2.4} aria-hidden="true" /> Créer un zikr collectif</>}
+      </button>
     </div>
   );
 }
-
-// Revue design (points 5, 6, 7) : le badge de statut ("👑 Créateur", "✓
-// Membre"…) décrivait un ÉTAT mais ne disait pas à l'utilisateur quoi faire
-// ensuite — remplacé par un verbe d'action clair (Continuer/Participer),
-// distinct visuellement des états non actionnables (En attente/Complet). Le
-// badge "Créateur", trop voyant, devient une mention discrète à côté du nom.
-const CTA_BY_STATUS: Record<GroupStatus, { label: string; active: boolean }> = {
-  owner: { label: 'Continuer', active: true },
-  member: { label: 'Continuer', active: true },
-  pending: { label: 'En attente', active: false },
-  none: { label: 'Participer', active: true },
-};
 
 // Carte de modération (administrateur) : mêmes infos essentielles qu'une
 // GroupCard + qui l'a créé, et les deux décisions directement sur la carte.
@@ -462,35 +476,52 @@ function PendingZikrCard({ g, busy, onOpen, onApprove, onReject }: {
   );
 }
 
+// Icône de la carte, déduite de la formule (la liste ne renvoie pas presetId).
+// Voyelles et tatwil retirés, variantes de l'alif (أ إ آ ٱ) ramenées à ا.
+const stripMarks = (v: string) => (v || '').replace(/[\u064B-\u065F\u0670\u0640\u06E1]/g, '').replace(/[\u0623\u0625\u0622\u0671]/g, '\u0627').replace(/\s+/g, ' ').trim();
+function zikrIcon(g: Group) {
+  const a = stripMarks(g.arabic);
+  if (/استغفر/.test(a)) return HandHeart;
+  if (/صل/.test(a)) return Sparkles;
+  if (/لا اله/.test(a)) return Moon;
+  return CircleDot;
+}
+
+// Carte d'un zikr (une par ligne) : icône, titre, formule arabe, progression,
+// participants et UNE action claire selon la situation de l'utilisateur.
 function GroupCard({ g, onOpen }: { g: Group; onOpen: () => void }) {
   const pct = progressPct(g.total, g.target);
-  const full = g.remaining <= 0 && g.status === 'none';
-  const cta = full ? { label: 'Complet', active: false } : CTA_BY_STATUS[g.status];
-
+  const done = g.remaining <= 0;
+  const Icon = zikrIcon(g);
+  const action = done
+    ? { label: 'Complet', active: false }
+    : g.status === 'owner' || g.status === 'member' ? { label: 'Reprendre', active: true }
+      : g.status === 'pending' ? { label: 'En attente', active: false }
+        : { label: 'Participer', active: true };
   return (
-    <button className="zk-card" onClick={onOpen}>
-      <div className="zk-card-top">
-        <span className="zk-card-name">
-          {g.private && <Lock size={13} strokeWidth={2.5} aria-label="Zikr privé" />}
-          {g.approved === false && <Clock size={13} strokeWidth={2.5} aria-label="En attente de validation par l'administrateur" />}
-          {g.name}
+    <button type="button" className={'zd-card' + (done ? ' done' : '')} onClick={onOpen}
+      aria-label={`${g.name}, ${fmt(g.total)} sur ${fmt(g.target)}, ${fmt(g.membersCount)} participant${g.membersCount > 1 ? 's' : ''} — ${action.label}`}>
+      <span className="zd-card-icon" aria-hidden="true"><Icon size={28} strokeWidth={1.8} /></span>
+      <span className="zd-card-body">
+        <span className="zd-card-top">
+          <span className="zd-card-name">
+            {g.private && <Lock size={14} strokeWidth={2.4} aria-label="Zikr privé" />}
+            {g.name}
+          </span>
+          {g.status === 'owner' ? <span className="zd-chip">Créé par vous</span>
+            : g.status === 'member' && !done ? <span className="zd-chip live"><span className="zd-dot" aria-hidden="true" /> En cours</span>
+              : g.approved === false ? <span className="zd-chip wait"><Clock size={12} aria-hidden="true" /> À valider</span> : null}
         </span>
-        {g.status === 'owner' && (
-          <span className="zk-owner-tag"><Crown size={11} strokeWidth={2.5} aria-hidden="true" /> Créé par vous</span>
-        )}
-      </div>
-      <div className="zk-card-phrase" dir="auto">{g.arabic || g.transliteration}</div>
-      <div className="zk-bar"><span style={{ width: pct + '%' }} /></div>
-      <div className="zk-card-progress-row">
-        <span>{fmt(g.total)} / {fmt(g.target)}</span>
-        <span className="zk-card-pct">{fmtPct(pct)}</span>
-      </div>
-      <div className="zk-card-meta">
-        <span className="zk-card-members"><Users size={13} strokeWidth={2.5} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
-        <span className={'zk-cta' + (cta.active ? ' zk-cta-active' : ' zk-cta-muted')}>
-          {cta.label} {cta.active && <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />}
+        {(g.arabic || g.transliteration) && <span className="zd-card-phrase" dir="auto" lang={g.arabic ? 'ar' : undefined}>{g.arabic || g.transliteration}</span>}
+        <span className="zd-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}><span style={{ width: Math.min(100, pct) + '%' }} /></span>
+        <span className="zd-card-progress"><span>{fmt(g.total)} / {fmt(g.target)}</span><span className="zd-card-pct">{fmtPct(pct)}</span></span>
+        <span className="zd-card-foot">
+          <span className="zd-card-members"><Users size={16} strokeWidth={2.2} aria-hidden="true" /> {fmt(g.membersCount)} participant{g.membersCount > 1 ? 's' : ''}</span>
+          <span className={'zd-action' + (action.active ? '' : ' muted')}>
+            {done && <Trophy size={14} aria-hidden="true" />}{action.label}{action.active && <ChevronRight size={16} strokeWidth={2.4} aria-hidden="true" />}
+          </span>
         </span>
-      </div>
+      </span>
     </button>
   );
 }
