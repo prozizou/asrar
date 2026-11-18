@@ -19,6 +19,8 @@ import { ArrowLeft, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
 import { splitSentences } from '@/lib/readableText';
+import { useAuth } from '@/components/AuthProvider';
+import { SUPER_ADMIN_EMAIL } from '@/lib/plans';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -639,7 +641,55 @@ function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'b
   );
 }
 
+// Raisonnement affiché : occupant de la maison + figure de repos = Parole ;
+// Parole + Juge (M15) = secret final (lib/geomancie.js houseModalData).
+function CalcSteps({ houseIndex, c }: { houseIndex: number; c: any }) {
+  const here = houseIndex + 1;
+  const fig = (name: string, key: string) => <><strong>{name}</strong> <span className="geo-calc-key">({key})</span></>;
+  return (
+    <div className="geo-calc">
+      <p className="geo-calc-lead">
+        {c.occupantHome === here
+          ? <>{fig(c.occupantName, c.occupantKey)} est dans sa propre maison (M{here}).</>
+          : <>{fig(c.occupantName, c.occupantKey)} occupe la maison de {fig(c.restingName, c.restingKey)} : la figure de M{c.occupantHome} se trouve en M{here}.</>}
+      </p>
+      <ol>
+        <li><span className="geo-calc-step">Parole</span><span>{c.occupantName} + {c.restingName} = {fig(c.step1Name, c.step1Key)} · M{c.step1Home}</span></li>
+        <li><span className="geo-calc-step">Juge (M15)</span><span>{fig(c.judgeName, c.judgeKey)}</span></li>
+        <li><span className="geo-calc-step">Parole + Juge</span><span>{c.step1Name} + {c.judgeName} = {fig(c.step2Name, c.step2Key)} · M{c.step2Home}</span></li>
+      </ol>
+    </div>
+  );
+}
+
+function ReadingBlocks({ data, showMethod }: { data: any; showMethod: boolean }) {
+  return (
+    <>
+      {showMethod && <CalcSteps houseIndex={data.houseIndex} c={data.calc} />}
+      <ModalBlock
+        tone="blue"
+        title={`Parole : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
+        domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison'}
+        interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
+        prefix="Interprétation :"
+      />
+      <ModalBlock
+        tone="gold"
+        title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
+        domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge'}
+        interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
+        prefix="Interprétation :"
+      />
+    </>
+  );
+}
+
 function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
+  // Méthodologie (calcul de la Parole et du secret, formule de la Sentence)
+  // réservée au propriétaire de l'application ; les autres comptes ne voient
+  // que les résultats et leurs interprétations.
+  const { user } = useAuth() as any;
+  const showMethod = String(user?.email || '').toLowerCase() === SUPER_ADMIN_EMAIL;
   return (
     <AccessibleModal className="geo-modal-overlay" onClose={onClose} label="Détail de la maison">
       <div className="geo-modal">
@@ -676,6 +726,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
         {data.kind === 'sentence' && (
           <>
             <div className="copulation-steps">
+              {showMethod && <>
               <div className="step-fig">
                 <strong>Juge</strong>
                 <br />
@@ -689,6 +740,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
                 <small>{data.m1Name}</small>
               </div>
               <span style={{ fontSize: '1.3rem', color: 'var(--gold)' }}>=</span>
+              </>}
               <div className="step-fig" style={{ border: '2px solid var(--gold)' }}>
                 <strong>Sentence</strong>
                 <br />
@@ -706,24 +758,9 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           </>
         )}
 
-        {data.kind === 'normal' && (
-          <>
-            <ModalBlock
-              tone="blue"
-              title={`Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
-              domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
-              interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
-              prefix="Interprétation :"
-            />
-            <ModalBlock
-              tone="gold"
-              title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
-              domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
-              interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
-              prefix="Interprétation :"
-            />
-          </>
-        )}
+        {/* Même méthode pour toutes les maisons, Juge (M15) et Sentence (M16)
+            compris : raisonnement, Parole, puis Parole + Juge. */}
+        {data.calc && <ReadingBlocks data={data} showMethod={showMethod} />}
       </div>
     </AccessibleModal>
   );

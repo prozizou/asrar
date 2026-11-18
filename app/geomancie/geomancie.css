@@ -420,3 +420,11 @@ html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
 .geo-modal ol.geo-reading { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .geo-modal ol.geo-reading li { font-size: .95rem; line-height: 1.7; text-align: justify; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word; color: var(--text-main); }
 .geo-modal .geo-reading-num { display: inline-block; color: var(--accent); font-weight: 800; white-space: nowrap; }
+
+/* Raisonnement de la maison : occupant, Parole, Juge, secret final. */
+.geo-modal .geo-calc { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--glass-border); text-align: left; }
+.geo-modal .geo-calc-lead { margin: 0 0 8px; font-size: .9rem; line-height: 1.55; }
+.geo-modal .geo-calc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.geo-modal .geo-calc li { display: grid; grid-template-columns: 7.4em minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: .88rem; line-height: 1.5; color: var(--text-main); }
+.geo-modal .geo-calc-step { font-weight: 800; color: var(--accent); }
+.geo-modal .geo-calc-key { color: var(--text2); font-variant-numeric: tabular-nums; font-size: .85em; }
