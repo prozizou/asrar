@@ -660,6 +660,28 @@ function CalcSteps({ houseIndex, c }: { houseIndex: number; c: any }) {
   );
 }
 
+function ReadingBlocks({ data }: { data: any }) {
+  return (
+    <>
+      <CalcSteps houseIndex={data.houseIndex} c={data.calc} />
+      <ModalBlock
+        tone="blue"
+        title={`Parole : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
+        domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
+        interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
+        prefix="Interprétation :"
+      />
+      <ModalBlock
+        tone="gold"
+        title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
+        domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
+        interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
+        prefix="Interprétation :"
+      />
+    </>
+  );
+}
+
 function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
   return (
     <AccessibleModal className="geo-modal-overlay" onClose={onClose} label="Détail de la maison">
@@ -727,25 +749,9 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
           </>
         )}
 
-        {data.kind === 'normal' && (
-          <>
-            {data.calc && <CalcSteps houseIndex={data.houseIndex} c={data.calc} />}
-            <ModalBlock
-              tone="blue"
-              title={`Parole : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
-              domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
-              interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
-              prefix="Interprétation :"
-            />
-            <ModalBlock
-              tone="gold"
-              title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
-              domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
-              interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
-              prefix="Interprétation :"
-            />
-          </>
-        )}
+        {/* Même méthode pour toutes les maisons, Juge (M15) et Sentence (M16)
+            compris : raisonnement, Parole, puis Parole + Juge. */}
+        {data.calc && <ReadingBlocks data={data} />}
       </div>
     </AccessibleModal>
   );

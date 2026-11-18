@@ -31,6 +31,18 @@ test('géomancie : une phrase par ligne « Interprétation N : »', async ({ pag
     await expect(lines.nth(1)).toHaveText(/^Interprétation 2 : Elle symbolise/);
     expect(await lines.first().evaluate((li) => getComputedStyle(li).textAlign)).toBe('justify');
     await page.screenshot({ path: test.info().outputPath('geomancie-lecture.png') });
+    // Juge (M15) et Sentence (M16) : même raisonnement.
+    await page.keyboard.press('Escape');
+    for (const house of ['Maison 15', 'Maison 16']) {
+      await page.getByRole('button', { name: house, exact: true }).click();
+      const m = page.getByRole('dialog', { name: 'Détail de la maison' });
+      await expect(m.locator('.geo-calc')).toContainText('Parole + Juge');
+      await expect(m.getByRole('heading', { name: /^Parole :/ })).toBeVisible();
+      await expect(m.getByRole('heading', { name: /^Secret final :/ })).toBeVisible();
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: test.info().outputPath(`geomancie-${house.replace(' ', '-')}.png`) });
+      await page.keyboard.press('Escape');
+    }
   } finally {
     await db.ref('theme_fondamental').set(previous);
   }

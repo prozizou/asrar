@@ -2,6 +2,7 @@
 
 - Fenêtre d’une maison (M1 à M14) : nouveau bloc de calcul — « Adama (1222) occupe la maison d’Issa (1212) : la figure de M2 se trouve en M6 », puis Parole (occupant + figure de repos, avec la maison de la figure obtenue), Juge (occupant de M15) et Parole + Juge (secret final).
 - « Étape 1 » devient « Parole ». Méthode inchangée et vérifiée par un test reprenant l’exemple : Adama + Issa = Idrissa (M4) ; Idrissa + Ibrahima = Youssouf (M1).
+- Même méthode appliquée au Juge (M15, repos : Ousmane) et à la Sentence (M16, repos : Moussa), quelles que soient les figures qui les occupent : raisonnement, Parole et Parole + Juge s’ajoutent au verdict et à la Sentence.
 
 ## SW v46.91 — Géomancie : interprétations aérées et justifiées
 
