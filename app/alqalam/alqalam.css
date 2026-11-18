@@ -501,3 +501,23 @@ html[data-theme='light'] .alq-page .popup-overlay { background: rgba(30, 40, 60,
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
+/* ── Panneau « Fichier et outils » : deux onglets. Fichier regroupe les
+   actions sur le résultat (copier, modifier, partager, PDF, Word), le nom
+   du document, le cumul et la recherche ; Outils : ornement et taille. ── */
+.alq-panel-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--text-main) 5%, transparent); border: 1px solid var(--glass-border); }
+.alq-page .alq-panel-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: auto; min-height: 42px; margin: 0; padding: 0 10px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text-muted); font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; }
+.alq-page .alq-panel-tabs button:hover { transform: none; box-shadow: none; color: var(--text-main); }
+.alq-page .alq-panel-tabs button.is-active { background: var(--accent); color: var(--text-on-accent); }
+.alq-file-panel { display: flex; flex-direction: column; gap: 10px; }
+.alq-file-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
+.alq-page .alq-file-actions button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: auto; min-height: 64px; margin: 0; padding: 8px 2px;
+  border: 1px solid var(--glass-border); border-radius: 14px; background: transparent; color: var(--text-main); font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.alq-page .alq-file-actions button svg { color: var(--accent); }
+.alq-page .alq-file-actions button:hover:not(:disabled) { transform: none; box-shadow: none; border-color: var(--accent); }
+.alq-page .alq-file-actions button:disabled { opacity: .4; cursor: default; }
+.alq-page .alq-search-toggle { width: 100%; justify-content: center; }
+.alq-page .alq-search-toggle.is-active { border-color: var(--accent); color: var(--accent); }
+.alq-page .alq-result-hint.alq-link { width: auto; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--accent); font: inherit; font-size: .76rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.alq-page .alq-result-hint.alq-link:hover { transform: none; box-shadow: none; }

@@ -18,7 +18,7 @@ import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, BookOpen, FileDown, FileType, Search, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { useSupport } from '@/components/SupportProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -159,7 +159,9 @@ export default function AlQalamPage() {
   const [editDraft, setEditDraft] = useState<EditDraft>({ texte: '', totalMultiplier: 1, isRasmMode: false });
   const [docName, setDocName] = useState('');
 
-  const [showDoc, setShowDoc] = useState(false);
+  // Panneau « Fichier et outils » : onglet Fichier (copier, modifier,
+  // partager, exporter, cumuler, rechercher) ou Outils (ornement, taille).
+  const [panelTab, setPanelTab] = useState<'fichier' | 'outils'>('fichier');
   const [showSearch, setShowSearch] = useState(false);
   const [showOrnement, setShowOrnement] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -446,22 +448,20 @@ export default function AlQalamPage() {
     };
   }, [suggestions.length]);
 
-  // ─── Panneau d'outils (Documents / Recherche — sélecteur unique, protégé).
-  // Intercaler et Mode Rasm sont désormais choisis en amont via le menu de
-  // sélection (writingMode), pas ici. ───
-  const activeTool = showDoc ? 'doc' : showSearch ? 'search' : showOrnement ? 'ornement' : '';
-  const onToolSelect = async (value: string) => {
-    if (!value) {
-      setShowDoc(false);
-      setShowSearch(false);
-      setShowOrnement(false);
-      return;
-    }
+  // ─── Panneau « Fichier et outils ». Fichier : actions libres (copier,
+  // modifier, partager) et actions protégées par leur propre contrôle
+  // (exports, cumul, recherche). Outils : l'ornement est protégé. ───
+  const selectPanelTab = async (tab: 'fichier' | 'outils') => {
+    if (tab === 'fichier') { setPanelTab('fichier'); setShowOrnement(false); return; }
     const ok = await ensureAccess(PREMIUM_LEVEL);
     if (!ok) return;
-    setShowDoc(value === 'doc');
-    setShowSearch(value === 'search');
-    setShowOrnement(value === 'ornement');
+    setPanelTab('outils');
+    setShowOrnement(true);
+  };
+  const toggleSearch = async () => {
+    if (showSearch) { setShowSearch(false); setSearchTerm(''); return; }
+    const ok = await ensureAccess(PREMIUM_LEVEL);
+    if (ok) setShowSearch(true);
   };
 
   // ─── Menu de sélection du type d'écriture (précède l'outil) ───
@@ -517,7 +517,7 @@ export default function AlQalamPage() {
     setWritingMode(null);
     setIsRasmMode(false);
     savePref('isRasmMode', 'false');
-    setShowDoc(false);
+    setPanelTab('fichier');
     setShowSearch(false);
     setShowOrnement(false);
   };
@@ -696,8 +696,7 @@ export default function AlQalamPage() {
     setPopupFormat(format);
     setPopupOpen(true);
   };
-  // Nom du fichier : celui saisi dans Outils › Documents, sinon un nom par défaut
-  // (les boutons PDF/DOCX du résultat exportent sans passer par Outils).
+  // Nom du fichier : celui saisi dans Fichier, sinon un nom par défaut.
   const exportName = () => docName.trim() || 'Ecriture spirituelle';
   const onDoc = () => openExportPopup('docx');
   const onPdf = () => openExportPopup('pdf');
@@ -766,8 +765,9 @@ export default function AlQalamPage() {
   );
   const selectedSourate = sourateOptions.find((s) => s.key === interKey);
   const onGenerate = () => (writingMode === 'intercalee' ? onIntercaler() : onWrite());
-  const openTools = () => {
+  const openTools = (tab?: 'fichier') => {
     setMenuOpen(false);
+    if (tab) { setPanelTab('fichier'); setShowOrnement(false); }
     if (toolsRef.current) {
       toolsRef.current.open = true;
       toolsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -783,12 +783,6 @@ export default function AlQalamPage() {
     setResultEdited(false);
     setSearchTerm('');
   };
-  const TOOLS = [
-    { id: 'doc', label: 'Documents', Icon: Layers },
-    { id: 'search', label: 'Recherche', Icon: Search },
-    { id: 'ornement', label: 'Ornement', Icon: Circle },
-  ] as const;
-
   const triggerExport = (useOuv: boolean, useFerm: boolean) =>
     popupFormat === 'orne'
       ? triggerOrnementExport(useOuv, useFerm)
@@ -811,7 +805,7 @@ export default function AlQalamPage() {
               {menuOpen && (
                 <div className="alq-menu-list" role="menu">
                   <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); changeWritingMode(); }}><ArrowLeftRight size={18} aria-hidden="true" /> Changer de mode</button>
-                  <button type="button" role="menuitem" onClick={openTools}><SlidersHorizontal size={18} aria-hidden="true" /> Outils</button>
+                  <button type="button" role="menuitem" onClick={() => openTools()}><SlidersHorizontal size={18} aria-hidden="true" /> Fichier et outils</button>
                   <button type="button" role="menuitem" onClick={resetAll}><RotateCcw size={18} aria-hidden="true" /> Réinitialiser</button>
                 </div>
               )}
@@ -984,24 +978,26 @@ export default function AlQalamPage() {
             </div>
 
             <details className="alq-tools" ref={toolsRef}>
-              <summary><SlidersHorizontal size={18} aria-hidden="true" /> Outils <ChevronDown size={18} className="alq-tools-chevron" aria-hidden="true" /></summary>
+              <summary><SlidersHorizontal size={18} aria-hidden="true" /> Fichier et outils <ChevronDown size={18} className="alq-tools-chevron" aria-hidden="true" /></summary>
               <div className="alq-tools-content">
-            <div className="alq-tool-chips" role="group" aria-label="Outils d'édition">
-              {TOOLS.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={activeTool === id ? 'is-active' : ''}
-                  aria-pressed={activeTool === id}
-                  onClick={() => onToolSelect(activeTool === id ? '' : id)}
-                >
-                  <Icon size={16} aria-hidden="true" /> {label}
-                </button>
-              ))}
+            <div className="alq-panel-tabs" role="tablist" aria-label="Fichier et outils">
+              <button type="button" role="tab" aria-selected={panelTab === 'fichier'} className={panelTab === 'fichier' ? 'is-active' : ''} onClick={() => selectPanelTab('fichier')}>
+                <FileText size={16} aria-hidden="true" /> Fichier
+              </button>
+              <button type="button" role="tab" aria-selected={panelTab === 'outils'} className={panelTab === 'outils' ? 'is-active' : ''} onClick={() => selectPanelTab('outils')}>
+                <Circle size={16} aria-hidden="true" /> Outils
+              </button>
             </div>
 
-            {showDoc && (
-              <div className="hidden-panel show-panel">
+            {panelTab === 'fichier' && (
+              <div className="hidden-panel show-panel alq-file-panel">
+                <div className="alq-file-actions" role="toolbar" aria-label="Actions sur le résultat">
+                  <button type="button" onClick={copyResult} disabled={totalMultiplier === 0 || editingResult}><Copy size={18} aria-hidden="true" /><span>Copier</span></button>
+                  <button type="button" onClick={startEditResult} disabled={totalMultiplier === 0 || editingResult}><Pencil size={18} aria-hidden="true" /><span>Modifier</span></button>
+                  <button type="button" onClick={shareResult} disabled={totalMultiplier === 0 || editingResult}><Share2 size={18} aria-hidden="true" /><span>Partager</span></button>
+                  <button type="button" onClick={onPdf} disabled={totalMultiplier === 0 && accumulatedBlocks.length === 0}><FileDown size={18} aria-hidden="true" /><span>PDF</span></button>
+                  <button type="button" onClick={onDoc} disabled={totalMultiplier === 0 && accumulatedBlocks.length === 0}><FileType size={18} aria-hidden="true" /><span>Word</span></button>
+                </div>
                 <div className="doc-name-row">
                   <input
                     type="text"
@@ -1014,12 +1010,6 @@ export default function AlQalamPage() {
                       savePref('docName', e.target.value);
                     }}
                   />
-                  <button type="button" className="alq-btn-tonal" onClick={onDoc}>
-                    <FileType size={16} aria-hidden="true" /> DOCX
-                  </button>
-                  <button type="button" className="alq-btn-tonal" onClick={onPdf}>
-                    <FileDown size={16} aria-hidden="true" /> PDF
-                  </button>
                 </div>
                 <div className="grid-row-1-1">
                   <button type="button" className="alq-btn-tonal" onClick={onAddTemp}>
@@ -1129,7 +1119,12 @@ export default function AlQalamPage() {
               </div>
             )}
 
-            {showSearch && (
+            {panelTab === 'fichier' && (
+              <button type="button" className={'alq-btn-tonal alq-search-toggle' + (showSearch ? ' is-active' : '')} aria-expanded={showSearch} onClick={toggleSearch}>
+                <Search size={16} aria-hidden="true" /> {showSearch ? 'Fermer la recherche' : 'Rechercher dans le texte'}
+              </button>
+            )}
+            {panelTab === 'fichier' && showSearch && (
               <div className="hidden-panel search-container glass-input show-panel">
                 <input
                   type="text"
@@ -1248,7 +1243,7 @@ export default function AlQalamPage() {
               </div>
             )}
 
-            <div className="slider-container">
+            {panelTab === 'outils' && <div className="slider-container">
               <div className="alq-slider-heading"><label className="slider-label" htmlFor="alq-font-size">Taille du texte</label><output htmlFor="alq-font-size">{fontSize} px</output></div>
               <input
                 type="range"
@@ -1262,7 +1257,7 @@ export default function AlQalamPage() {
                   savePref('fontSize', e.target.value);
                 }}
               />
-            </div>
+            </div>}
               </div>
             </details>
           </div>
@@ -1274,15 +1269,6 @@ export default function AlQalamPage() {
           <div className="alq-result-header">
             <h2 id="alq-result-title"><FileText size={18} aria-hidden="true" /> {showOrnement ? 'Ornement' : 'Résultat'}</h2>
           </div>
-          {totalMultiplier > 0 && !showOrnement && !editingResult && (
-            <div className="alq-result-actions" role="toolbar" aria-label="Actions sur le résultat">
-              <button type="button" onClick={copyResult}><Copy size={18} aria-hidden="true" /><span>Copier</span></button>
-              <button type="button" onClick={startEditResult}><Pencil size={18} aria-hidden="true" /><span>Modifier</span></button>
-              <button type="button" onClick={shareResult}><Share2 size={18} aria-hidden="true" /><span>Partager</span></button>
-              <button type="button" onClick={onPdf}><FileDown size={18} aria-hidden="true" /><span>PDF</span></button>
-              <button type="button" onClick={onDoc}><FileType size={18} aria-hidden="true" /><span>DOCX</span></button>
-            </div>
-          )}
           {/* Une seule ligne de repères : quoi, combien, et l'état (modifié). */}
           {totalMultiplier > 0 && !showOrnement && (
             <p className="alq-result-meta" role="status">
@@ -1294,7 +1280,7 @@ export default function AlQalamPage() {
                   <span>× {totalMultiplier.toLocaleString('fr-FR')}</span>
                 </span>
               )}
-              <span className="alq-result-hint">Copie et exports : texte complet</span>
+              <button type="button" className="alq-result-hint alq-link" onClick={() => openTools('fichier')}>Copier, partager ou exporter : onglet Fichier</button>
             </p>
           )}
           {showOrnement && ornementLetters.length > 0 ? (
