@@ -1,3 +1,8 @@
+## SW v46.92 — Géomancie : raisonnement de chaque maison affiché
+
+- Fenêtre d’une maison (M1 à M14) : nouveau bloc de calcul — « Adama (1222) occupe la maison d’Issa (1212) : la figure de M2 se trouve en M6 », puis Parole (occupant + figure de repos, avec la maison de la figure obtenue), Juge (occupant de M15) et Parole + Juge (secret final).
+- « Étape 1 » devient « Parole ». Méthode inchangée et vérifiée par un test reprenant l’exemple : Adama + Issa = Idrissa (M4) ; Idrissa + Ibrahima = Youssouf (M1).
+
 ## SW v46.91 — Géomancie : interprétations aérées et justifiées
 
 - Le texte d’interprétation (un seul bloc dans Firebase) est affiché une phrase par ligne, introduite par « Interprétation 1 : », « Interprétation 2 : »… : retour à la ligne à chaque point (et après « ! », « ? », « … »), sauts de ligne existants respectés ; « 3.5 » n’est pas coupé.

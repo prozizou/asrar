@@ -639,6 +639,27 @@ function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'b
   );
 }
 
+// Raisonnement affiché : occupant de la maison + figure de repos = Parole ;
+// Parole + Juge (M15) = secret final (lib/geomancie.js houseModalData).
+function CalcSteps({ houseIndex, c }: { houseIndex: number; c: any }) {
+  const here = houseIndex + 1;
+  const fig = (name: string, key: string) => <><strong>{name}</strong> <span className="geo-calc-key">({key})</span></>;
+  return (
+    <div className="geo-calc">
+      <p className="geo-calc-lead">
+        {c.occupantHome === here
+          ? <>{fig(c.occupantName, c.occupantKey)} est dans sa propre maison (M{here}).</>
+          : <>{fig(c.occupantName, c.occupantKey)} occupe la maison de {fig(c.restingName, c.restingKey)} : la figure de M{c.occupantHome} se trouve en M{here}.</>}
+      </p>
+      <ol>
+        <li><span className="geo-calc-step">Parole</span><span>{c.occupantName} + {c.restingName} = {fig(c.step1Name, c.step1Key)} · M{c.step1Home}</span></li>
+        <li><span className="geo-calc-step">Juge (M15)</span><span>{fig(c.judgeName, c.judgeKey)}</span></li>
+        <li><span className="geo-calc-step">Parole + Juge</span><span>{c.step1Name} + {c.judgeName} = {fig(c.step2Name, c.step2Key)} · M{c.step2Home}</span></li>
+      </ol>
+    </div>
+  );
+}
+
 function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
   return (
     <AccessibleModal className="geo-modal-overlay" onClose={onClose} label="Détail de la maison">
@@ -708,9 +729,10 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
 
         {data.kind === 'normal' && (
           <>
+            {data.calc && <CalcSteps houseIndex={data.houseIndex} c={data.calc} />}
             <ModalBlock
               tone="blue"
-              title={`Étape 1 : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
+              title={`Parole : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
               domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
               interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
               prefix="Interprétation :"
