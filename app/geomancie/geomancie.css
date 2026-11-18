@@ -415,3 +415,9 @@ html[data-theme='light'] .geo-page .step.done .step-dot { color: #fff; }
 .geo-modal .geo-reading p { margin: 0 0 .9em; font-size: .95rem; line-height: 1.75; text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word; }
 .geo-modal .geo-reading p:last-child { margin-bottom: 0; }
 .geo-modal .modal-block + .modal-block { margin-top: 14px; }
+
+/* Une phrase par ligne, numérotée (1, 2, 3…) : numéro en accent, texte
+   justifié aligné sur sa propre marge. */
+.geo-modal ol.geo-reading { list-style: none; counter-reset: geo-line; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.geo-modal ol.geo-reading li { counter-increment: geo-line; position: relative; padding-left: 2.1em; font-size: .95rem; line-height: 1.7; text-align: justify; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word; color: var(--text-main); }
+.geo-modal ol.geo-reading li::before { content: counter(geo-line) '.'; position: absolute; left: 0; top: 0; width: 1.6em; text-align: right; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }

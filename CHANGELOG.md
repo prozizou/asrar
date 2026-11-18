@@ -1,7 +1,7 @@
 ## SW v46.91 — Géomancie : interprétations aérées et justifiées
 
-- Le texte d’interprétation (un seul bloc dans Firebase) est découpé en paragraphes courts : sauts de ligne respectés, puis 3 phrases (420 caractères) au plus par paragraphe.
-- Texte justifié avec césure française, interligne 1,75, espace entre paragraphes, libellé « Interprétation » au-dessus ; domaine plus lisible.
+- Le texte d’interprétation (un seul bloc dans Firebase) est affiché une phrase par ligne, numérotée (1, 2, 3…) : retour à la ligne à chaque point (et après « ! », « ? », « … »), sauts de ligne existants respectés ; « 3.5 » n’est pas coupé.
+- Texte justifié avec césure française, interligne 1,7, numéros en orange, libellé « Interprétation » au-dessus ; domaine plus lisible.
 - Logique de découpage testée (lib/readableText.js) ; données Firebase inchangées.
 
 ## SW v46.90 — Écriture spirituelle : onglets Fichier / Outils, sans doublons
