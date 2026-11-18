@@ -18,7 +18,7 @@ import AccessibleModalUntyped from '@/components/Modal';
 import './alqalam.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, Sparkles, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
+import { Repeat, Link as LinkIcon, PenTool, ChevronRight, Printer, ArrowLeft, Copy, Share2, SlidersHorizontal, ChevronDown, FileText, Pencil, Check, X, MoreVertical, Minus, Plus, BookOpen, FileDown, FileType, Search, Layers, Circle, RotateCcw, ArrowLeftRight, Save, ArrowUp, ArrowDown, Trash2, ChevronUp } from 'lucide-react';
 import { useAccess } from '@/components/AccessProvider';
 import { useSupport } from '@/components/SupportProvider';
 import { PREMIUM_LEVEL } from '@/lib/access';
@@ -974,7 +974,7 @@ export default function AlQalamPage() {
 
             <div className={'alq-actions' + (writingMode === 'intercalee' ? ' has-secondary' : '')}>
               <button type="button" className="alq-btn-primary" onClick={onGenerate} disabled={repValue === null}>
-                <Sparkles size={18} aria-hidden="true" /> Générer le texte
+                Générer le texte
               </button>
               {writingMode === 'intercalee' && (
                 <button type="button" className="alq-btn-secondary" onClick={onSourateSeule} title="Insère la sourate seule, sans y intercaler d'expression">

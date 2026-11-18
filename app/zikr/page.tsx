@@ -24,7 +24,7 @@ import {
   Plus, X, Lock, Clock, Users, Crown, Pencil, MessageCircle, Share2, Bell,
   Trash2, Check, Handshake, AlertTriangle, ChevronRight,
   Heart, Trophy, Target, Shield, LogOut, Phone, ChevronDown, Loader2, CheckCircle2, ArrowLeft,
-  HandHeart, Moon, UserRound, Search, Sparkles, CircleDot,
+  HandHeart, Moon, UserRound, Search, Info, CircleDot,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { startVisiblePolling } from '@/lib/visiblePolling';
@@ -330,7 +330,7 @@ function GroupList({ notify, onOpen }: { notify: (msg: string, type?: 'success' 
       </div>
       {newcomer && (
         <p className="zd-hint" role="note">
-          <Sparkles size={20} aria-hidden="true" />
+          <Info size={20} aria-hidden="true" />
           <span>Pour commencer, choisissez un zikr ci-dessous puis appuyez sur <strong>Participer</strong>.</span>
         </p>
       )}
@@ -482,7 +482,7 @@ const stripMarks = (v: string) => (v || '').replace(/[\u064B-\u065F\u0670\u0640\
 function zikrIcon(g: Group) {
   const a = stripMarks(g.arabic);
   if (/استغفر/.test(a)) return HandHeart;
-  if (/صل/.test(a)) return Sparkles;
+  if (/صل/.test(a)) return Heart;
   if (/لا اله/.test(a)) return Moon;
   return CircleDot;
 }
