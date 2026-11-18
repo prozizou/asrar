@@ -1,3 +1,17 @@
+## SW v46.90 — Écriture spirituelle : onglets Fichier / Outils, sans doublons
+
+- La section « Outils » devient « Fichier et outils », en deux onglets :
+  - Fichier : Copier, Modifier, Partager, PDF, Word, nom du document, Cumuler / Vider (blocs cumulés) et Rechercher dans le texte ;
+  - Outils : Ornement et taille du texte.
+- La barre d’actions répétée sous le résultat est retirée ; un lien « Copier, partager ou exporter : onglet Fichier » y mène.
+- Droits inchangés : copier, modifier et partager restent libres ; exports, cumul, recherche et ornement restent réservés aux abonnés.
+
+## SW v46.89 — Apostrophes dans les titres, boutons sans étoile
+
+- Zikr collectif : les titres (et les messages, vœux, formules libres) acceptent l’apostrophe, les guillemets et « & » — « Pour se rapprocher d’Allah » n’est plus transformé en « d Allah ». Seuls « < », « > » et « ` » restent retirés.
+- Boutons « Déterminer les heures planétaires » (Planète) et « Générer le texte » (Écriture spirituelle) : icône étoile retirée.
+- Étoile remplacée ailleurs : horloge (aperçu verrouillé de Planète), icône d’information (indication de la liste des zikrs), cœur (zikrs de salawat).
+
 ## SW v46.88 — Zikr collectif : liste refondue (Découvrir → Participer)
 
 - Titre « Zikrs collectifs », phrase d’explication et, pour un compte qui n’a encore rejoint aucun zikr, une indication « Pour commencer, choisissez un zikr ci-dessous puis appuyez sur Participer ».

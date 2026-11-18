@@ -30,7 +30,7 @@ import NativeAlarmCheck from './NativeAlarmCheck';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  Sparkles, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Clock3, Sunrise, Sunset, MapPin, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Sun, Moon, Bell, AlarmClock, AlarmClockCheck, SlidersHorizontal, Search, LocateFixed, X, Lock, ArrowLeft, Circle } from 'lucide-react';
 import PlanetGlyph from '@/components/PlanetGlyph';
 import { useAccess } from '@/components/AccessProvider';
@@ -400,7 +400,7 @@ export default function PlanetePage() {
                 {/* Gabarit fictif : même mise en page, aucune donnée réelle. */}
                 <div className="pm-locked-body" aria-hidden="true">
                   <div className="pm-now-row">
-                    <span className="pm-glyph lg"><Sparkles size={22} aria-hidden="true" /></span>
+                    <span className="pm-glyph lg"><Clock3 size={22} aria-hidden="true" /></span>
                     <div className="pm-now-id">
                       <p className="pm-now-planet">Planète</p>
                       <p className="pm-now-time">00:00 – 00:00</p>
@@ -501,7 +501,7 @@ export default function PlanetePage() {
             </section>
 
             <button type="button" className="pm-btn-filled pm-cta" onClick={showHours}>
-              <Sparkles size={18} strokeWidth={2} aria-hidden="true" /> Déterminer les heures planétaires
+              Déterminer les heures planétaires
             </button>
           </>
         )}
