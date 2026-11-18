@@ -19,6 +19,8 @@ import { ArrowLeft, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
 import { splitSentences } from '@/lib/readableText';
+import { useAuth } from '@/components/AuthProvider';
+import { SUPER_ADMIN_EMAIL } from '@/lib/plans';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -660,21 +662,21 @@ function CalcSteps({ houseIndex, c }: { houseIndex: number; c: any }) {
   );
 }
 
-function ReadingBlocks({ data }: { data: any }) {
+function ReadingBlocks({ data, showMethod }: { data: any; showMethod: boolean }) {
   return (
     <>
-      <CalcSteps houseIndex={data.houseIndex} c={data.calc} />
+      {showMethod && <CalcSteps houseIndex={data.houseIndex} c={data.calc} />}
       <ModalBlock
         tone="blue"
         title={`Parole : ${data.step1Data ? data.step1Data.titre : data.step1Title}`}
-        domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison (Occupante + Repos)'}
+        domaine={data.step1Data ? data.step1Data.domaine : 'Parole de la Maison'}
         interpretation={data.step1Data ? data.step1Data.interpretation : 'En attente des données Firebase...'}
         prefix="Interprétation :"
       />
       <ModalBlock
         tone="gold"
         title={`Secret final : ${data.step2Data ? data.step2Data.titre : data.step2Title}`}
-        domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge (Parole + Juge)'}
+        domaine={data.step2Data ? data.step2Data.domaine : 'Décret du Juge'}
         interpretation={data.step2Data ? data.step2Data.interpretation : 'En attente des données Firebase...'}
         prefix="Interprétation :"
       />
@@ -683,6 +685,11 @@ function ReadingBlocks({ data }: { data: any }) {
 }
 
 function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
+  // Méthodologie (calcul de la Parole et du secret, formule de la Sentence)
+  // réservée au propriétaire de l'application ; les autres comptes ne voient
+  // que les résultats et leurs interprétations.
+  const { user } = useAuth() as any;
+  const showMethod = String(user?.email || '').toLowerCase() === SUPER_ADMIN_EMAIL;
   return (
     <AccessibleModal className="geo-modal-overlay" onClose={onClose} label="Détail de la maison">
       <div className="geo-modal">
@@ -719,6 +726,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
         {data.kind === 'sentence' && (
           <>
             <div className="copulation-steps">
+              {showMethod && <>
               <div className="step-fig">
                 <strong>Juge</strong>
                 <br />
@@ -732,6 +740,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
                 <small>{data.m1Name}</small>
               </div>
               <span style={{ fontSize: '1.3rem', color: 'var(--gold)' }}>=</span>
+              </>}
               <div className="step-fig" style={{ border: '2px solid var(--gold)' }}>
                 <strong>Sentence</strong>
                 <br />
@@ -751,7 +760,7 @@ function HouseModal({ data, onClose }: { data: any; onClose: () => void }) {
 
         {/* Même méthode pour toutes les maisons, Juge (M15) et Sentence (M16)
             compris : raisonnement, Parole, puis Parole + Juge. */}
-        {data.calc && <ReadingBlocks data={data} />}
+        {data.calc && <ReadingBlocks data={data} showMethod={showMethod} />}
       </div>
     </AccessibleModal>
   );

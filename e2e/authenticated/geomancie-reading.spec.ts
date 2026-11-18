@@ -2,7 +2,8 @@ import { test, expect } from './fixtures';
 const { app } = require('../../server/grant');
 
 // Interprétation de la Géomancie : un long bloc Firebase est affiché en
-// une phrase par ligne, « Interprétation N : », justifiée.
+// une phrase par ligne, « Interprétation N : », justifiée ; méthodologie
+// masquée pour tout autre compte que le propriétaire.
 const LONG = 'La chambre à coucher représente le foyer intime et les possessions personnelles. Elle symbolise l’espace privé du consultant. Elle représente ce qui est intérieur et familier. Elle permet d’explorer son état d’esprit. Elle évoque aussi la vie conjugale. Le lit est un symbole de repos et de sécurité. Il représente la tranquillité ou l’inquiétude. Selon le contexte, il évoque le sommeil ou la santé. Il touche enfin à la paix du foyer.';
 
 test('géomancie : une phrase par ligne « Interprétation N : »', async ({ page, login }) => {
@@ -17,12 +18,12 @@ test('géomancie : une phrase par ligne « Interprétation N : »', async ({ pag
     await page.locator('button.btn.primary').first().click();
     await page.getByRole('button', { name: 'Maison 1', exact: true }).click({ timeout: 20_000 });
     const modal = page.getByRole('dialog', { name: 'Détail de la maison' });
-    // Raisonnement : occupant, Parole, Juge, Parole + Juge.
-    const calc = modal.locator('.geo-calc');
-    await expect(calc).toContainText('Parole');
-    await expect(calc).toContainText('Juge (M15)');
-    await expect(calc).toContainText('Parole + Juge');
+    // Méthodologie réservée au propriétaire : un autre compte ne voit que
+    // les résultats (Parole, Secret final) et leurs interprétations.
+    await expect(modal.locator('.geo-calc')).toHaveCount(0);
+    await expect(modal.getByText(/Occupante \+ Repos|Parole \+ Juge/)).toHaveCount(0);
     await expect(modal.getByRole('heading', { name: /^Parole :/ })).toBeVisible();
+    await expect(modal.getByRole('heading', { name: /^Secret final :/ })).toBeVisible();
     await page.waitForTimeout(400); // fin de l'animation d'ouverture avant la capture
     await page.screenshot({ path: test.info().outputPath('geomancie-calcul.png') });
     const lines = modal.locator('ol.geo-reading').first().locator('li');
@@ -36,7 +37,8 @@ test('géomancie : une phrase par ligne « Interprétation N : »', async ({ pag
     for (const house of ['Maison 15', 'Maison 16']) {
       await page.getByRole('button', { name: house, exact: true }).click();
       const m = page.getByRole('dialog', { name: 'Détail de la maison' });
-      await expect(m.locator('.geo-calc')).toContainText('Parole + Juge');
+      await expect(m.locator('.geo-calc')).toHaveCount(0);
+      if (house === 'Maison 16') await expect(m.getByText('M1 (Âme)')).toHaveCount(0); // formule masquée
       await expect(m.getByRole('heading', { name: /^Parole :/ })).toBeVisible();
       await expect(m.getByRole('heading', { name: /^Secret final :/ })).toBeVisible();
       await page.waitForTimeout(400);
