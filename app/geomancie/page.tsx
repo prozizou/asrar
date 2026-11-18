@@ -18,6 +18,7 @@
 import { ArrowLeft, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
+import { splitParagraphs } from '@/lib/readableText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -619,16 +620,18 @@ function HouseCell({ idx, fig, fbData, active, onOpen, onHover, style, innerRef 
   );
 }
 
+// Bloc d'interprétation : domaine, puis texte découpé en paragraphes courts
+// (le texte Firebase arrive d'un seul bloc), justifié avec césure.
 function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'blue' | 'gold'; title: string; domaine: string; interpretation: string; prefix: string }) {
+  const paragraphs = splitParagraphs(interpretation);
   return (
     <div className={'modal-block ' + tone}>
       <h4 style={{ color: tone === 'blue' ? '#4facfe' : 'var(--gold)' }}>{title}</h4>
-      <p style={{ margin: '0 0 6px 0', fontSize: '0.85rem', color: 'var(--gold)' }}>
-        <strong>Domaine :</strong> {domaine}
-      </p>
-      <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
-        {prefix ? prefix + ' ' : ''}{interpretation}
-      </p>
+      <p className="geo-domaine"><strong>Domaine :</strong> {domaine}</p>
+      {prefix && <p className="geo-reading-label">{prefix.replace(/\s*:\s*$/, '')}</p>}
+      <div className="geo-reading" lang="fr">
+        {paragraphs.map((text, i) => <p key={i}>{text}</p>)}
+      </div>
     </div>
   );
 }
