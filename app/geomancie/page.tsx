@@ -18,6 +18,7 @@
 import { ArrowLeft, Check } from 'lucide-react';
 import AccessibleModalUntyped from '@/components/Modal';
 import './geomancie.css';
+import { splitSentences } from '@/lib/readableText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
@@ -619,16 +620,21 @@ function HouseCell({ idx, fig, fbData, active, onOpen, onHover, style, innerRef 
   );
 }
 
+// Bloc d'interprétation : domaine, puis UNE phrase par ligne, introduite
+// par « Interprétation N : » (le texte Firebase arrive d'un seul bloc ;
+// chaque point = retour à la ligne). `prefix` n'est plus affiché.
 function ModalBlock({ tone, title, domaine, interpretation, prefix }: { tone: 'blue' | 'gold'; title: string; domaine: string; interpretation: string; prefix: string }) {
+  const sentences = splitSentences(interpretation);
   return (
     <div className={'modal-block ' + tone}>
       <h4 style={{ color: tone === 'blue' ? '#4facfe' : 'var(--gold)' }}>{title}</h4>
-      <p style={{ margin: '0 0 6px 0', fontSize: '0.85rem', color: 'var(--gold)' }}>
-        <strong>Domaine :</strong> {domaine}
-      </p>
-      <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
-        {prefix ? prefix + ' ' : ''}{interpretation}
-      </p>
+      <p className="geo-domaine"><strong>Domaine :</strong> {domaine}</p>
+      {/* Chaque phrase = « Interprétation N : » (une ligne par point). */}
+      <ol className="geo-reading" lang="fr">
+        {sentences.map((text, i) => (
+          <li key={i}><strong className="geo-reading-num">Interprétation {sentences.length > 1 ? i + 1 : ''}{sentences.length > 1 ? ' ' : ''}:</strong> {text}</li>
+        ))}
+      </ol>
     </div>
   );
 }

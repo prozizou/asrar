@@ -1,3 +1,9 @@
+## SW v46.91 — Géomancie : interprétations aérées et justifiées
+
+- Le texte d’interprétation (un seul bloc dans Firebase) est affiché une phrase par ligne, introduite par « Interprétation 1 : », « Interprétation 2 : »… : retour à la ligne à chaque point (et après « ! », « ? », « … »), sauts de ligne existants respectés ; « 3.5 » n’est pas coupé.
+- Texte justifié avec césure française, interligne 1,7, « Interprétation N : » en orange ; domaine plus lisible.
+- Logique de découpage testée (lib/readableText.js) ; données Firebase inchangées.
+
 ## SW v46.90 — Écriture spirituelle : onglets Fichier / Outils, sans doublons
 
 - La section « Outils » devient « Fichier et outils », en deux onglets :
