@@ -156,6 +156,30 @@ describe('Collecteur navigateur et APIs', () => {
     await monitor.flushDiagnostics(); expect(fetch).toHaveBeenCalledTimes(1);
     stop(); expect(disconnect).toHaveBeenCalled();
   });
+  it('exclut l’attente native d’impression sans masquer un vrai blocage ultérieur', async () => {
+    let callback, time = 0;
+    const fetch = vi.fn(async () => ({ status: 204 }));
+    class Observer {
+      static supportedEntryTypes = ['longtask'];
+      constructor(fn) { callback = fn; }
+      observe() {} disconnect() {}
+    }
+    const monitor = runtime(database(), { globals: {
+      window: { location: { pathname: '/alqalam' }, addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      document: { visibilityState: 'visible', addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      navigator: { onLine: true }, performance: { now: () => time }, PerformanceObserver: Observer,
+      setInterval: () => 1, clearInterval: vi.fn(), fetch,
+    } })('lib/diagnostics.js');
+    const stop = monitor.startDiagnostics();
+    time = 100;
+    monitor.withBrowserDialog(() => { time = 20100; });
+    callback({ getEntries: () => [{ startTime: 95, duration: 20010 }] });
+    await monitor.flushDiagnostics(); expect(fetch).not.toHaveBeenCalled();
+    callback({ getEntries: () => [{ startTime: 20000, duration: 2000 }, { startTime: 22000, duration: 1200 }] });
+    await monitor.flushDiagnostics(); expect(fetch).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetch.mock.calls[0][1].body).events[0]).toMatchObject({ durationMs: 1900, occurrences: 2 });
+    stop();
+  });
   it('signale une API à 1 001 ms mais pas à 1 000 ms', async () => {
     vi.useFakeTimers();
     const reports = [];
