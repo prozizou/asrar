@@ -12,7 +12,7 @@ test('les diagnostics reçus sont nettoyés et les lectures directes restent int
     uid: 'forged',
   } });
   expect(response.status()).toBe(204);
-  const snap = await app().database().ref('app_diagnostics').orderByKey().limitToLast(500).once('value');
+  const snap = await app().database().ref('app_diagnostics').once('value');
   const item: any = Object.values(snap.val() || {}).find((value: any) => value.endpoint === '/api/diagnostic-fixture');
   expect(item).toMatchObject({ lastUid: 'fixture-free', page: '/zikr', kind: 'api' });
   expect(JSON.stringify(item)).not.toMatch(/private|forged/);
@@ -34,7 +34,7 @@ test('une erreur navigateur est transmise automatiquement avec sa version et la 
     window.dispatchEvent(new ErrorEvent('error', { error, message: error.message }));
   });
   await expect.poll(async () => {
-    const snap = await app().database().ref('app_diagnostics').orderByKey().limitToLast(500).once('value');
+    const snap = await app().database().ref('app_diagnostics').once('value');
     return Object.values(snap.val() || {}).find((value: any) => value.stack === '/_next/static/chunks/diagnostic-fixture.js:7:9');
   }, { timeout: 15000 }).toMatchObject({ kind: 'javascript', name: 'TypeError', page: '/notifications', version: 'v46.93', lastUid: 'fixture-free' });
 });
