@@ -44,6 +44,13 @@ describe('Persistance des diagnostics', () => {
     expect(await a.recordDiagnostic(db, event, { source: 'new-ip' }, now)).toBe(false);
     expect(Object.keys(db.read('app_diagnostic_limits'))).toHaveLength(2);
   });
+  it('compte les répétitions reçues et rejette les lenteurs sous le seuil avant toute écriture', async () => {
+    const db = database(); const { recordDiagnostic } = runtime(db)('server/diagnostics.js');
+    for (const durationMs of [999, 1000]) expect(await recordDiagnostic(db, { kind: 'freeze', durationMs }, {}, now)).toBe(false);
+    expect(db.metrics.transactions).toBe(0);
+    await recordDiagnostic(db, { kind: 'freeze', durationMs: 1000.1, occurrences: 3 }, {}, now);
+    expect(Object.values(db.read('app_diagnostics'))[0]).toMatchObject({ count: 3, durationMs: 1001 });
+  });
   it('nettoie seulement les jours expirés, requêtes indexées et bornées', async () => {
     const db = database({ app_diagnostics: { '20261021_old': {}, '20261024_keep': {} }, app_diagnostic_limits: { '20261021_total': 2, '20261122_total': 3 } });
     const { purgeDiagnostics } = runtime(db)('server/diagnostics.js');
@@ -110,7 +117,57 @@ describe('Collecteur navigateur et APIs', () => {
     for (let t = 56000; t <= 61000; t += 1000) b.tick(t);
     b.tick(65500); await Promise.resolve(); await b.monitor.flushDiagnostics();
     await vi.waitFor(() => expect(b.fetch).toHaveBeenCalledOnce());
-    expect(JSON.parse(b.fetch.mock.calls[0][1].body).events[0]).toMatchObject({ kind: 'freeze', durationMs: 3500 }); b.stop();
+    expect(JSON.parse(b.fetch.mock.calls[0][1].body).events[0]).toMatchObject({ kind: 'freeze', durationMs: 4250 }); b.stop();
+  });
+  it('ne signale que les retards du heartbeat strictement supérieurs à une seconde', async () => {
+    const b = browser();
+    b.tick(1250); // 1 250 - intervalle normal de 250 = 1 000 ms : exclu.
+    await b.monitor.flushDiagnostics(); expect(b.fetch).not.toHaveBeenCalled();
+    b.tick(2501); // retard réel de 1 001 ms : signalé.
+    await b.monitor.flushDiagnostics();
+    expect(JSON.parse(b.fetch.mock.calls[0][1].body).events[0]).toMatchObject({ kind: 'freeze', durationMs: 1001 });
+    b.stop();
+  });
+  it('mesure les longues tâches dès 1 000,1 ms et regroupe les occurrences pour RTDB', async () => {
+    let callback;
+    const disconnect = vi.fn();
+    const docListeners = {};
+    const doc = { visibilityState: 'visible', addEventListener: (k, f) => { docListeners[k] = f; }, removeEventListener: vi.fn() };
+    const fetch = vi.fn(async () => ({ status: 204 }));
+    class Observer {
+      static supportedEntryTypes = ['longtask'];
+      constructor(fn) { callback = fn; }
+      observe() {}
+      disconnect = disconnect;
+    }
+    const monitor = runtime(database(), { globals: {
+      window: { location: { pathname: '/zikr' }, addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      document: doc, navigator: { onLine: true }, performance: { now: () => 0 }, PerformanceObserver: Observer,
+      setInterval: () => 1, clearInterval: vi.fn(), fetch,
+    } })('lib/diagnostics.js');
+    const stop = monitor.startDiagnostics();
+    callback({ getEntries: () => [{ startTime: 1, duration: 999 }, { startTime: 2, duration: 1000 }] });
+    await monitor.flushDiagnostics(); expect(fetch).not.toHaveBeenCalled();
+    callback({ getEntries: () => [{ startTime: 3, duration: 1000.1 }, { startTime: 1010, duration: 1500 }] });
+    await monitor.flushDiagnostics();
+    expect(JSON.parse(fetch.mock.calls[0][1].body).events[0]).toMatchObject({ kind: 'freeze', durationMs: 1500, occurrences: 2 });
+    doc.visibilityState = 'hidden';
+    callback({ getEntries: () => [{ startTime: 3000, duration: 2000 }] });
+    await monitor.flushDiagnostics(); expect(fetch).toHaveBeenCalledTimes(1);
+    stop(); expect(disconnect).toHaveBeenCalled();
+  });
+  it('signale une API à 1 001 ms mais pas à 1 000 ms', async () => {
+    vi.useFakeTimers();
+    const reports = [];
+    let duration = 1000;
+    const api = runtime(database(), { stubs: {
+      'lib/firebase.js': { auth: { currentUser: { getIdToken: async () => 'secret' } } },
+      'lib/diagnostics.js': { LAG_THRESHOLD_MS: 1000, reportDiagnostic: event => reports.push(event) },
+    }, globals: { fetch: async () => { vi.setSystemTime(Date.now() + duration); return { ok: true, status: 200, json: async () => ({ ok: true }) }; } } })('lib/api.js');
+    await api.apiPost('fixture'); expect(reports).toHaveLength(0);
+    duration = 1001;
+    await api.apiPost('fixture'); expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({ kind: 'slow_api', durationMs: 1001 });
   });
   it('signale HTTP 500 et JSON invalide, sans capturer les refus attendus ni les payloads', async () => {
     const reports = [];
