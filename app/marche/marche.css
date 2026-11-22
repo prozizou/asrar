@@ -1225,3 +1225,5 @@ html:not([data-theme="light"]) :where(.market-page) .pm-rating { color: #fbbf24;
 :where(.market-page) .vendor-verified { display: inline-flex; align-items: center; gap: 4px; color: #4caf50; font-size: 1rem; vertical-align: middle; }
 :where(.market-page) .vendor-location { display: flex; align-items: center; gap: 5px; margin: 4px 0; color: var(--text-muted); }
 :where(.market-page) .prod-img-placeholder-icon { display: inline-flex; }
+
+.market-body .market-retry { margin-top: 12px; padding: 10px 16px; border: 1px solid currentColor; border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }

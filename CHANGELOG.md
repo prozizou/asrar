@@ -1,3 +1,10 @@
+## SW v46.96 — Accueil : reprise du catalogue après une coupure réseau
+
+- Une seconde tentative, après 400 ms, pour les échecs réseau brefs et les erreurs de passerelle du catalogue. Les délais de 15 s et les refus 4xx ne sont pas répétés automatiquement.
+- Reprise au retour de la connexion ou au retour au premier plan après un échec, bouton « Réessayer le chargement » et annulation des reprises lorsque la page est quittée.
+- Les produits restent visibles si seules les fiches boutique sont indisponibles ; une boutique partagée n’est pas déclarée supprimée sur la base d’une lecture interrompue.
+- Les diagnostics API distinguent désormais NetworkError, AbortError et SyntaxError, sans enregistrer de message libre ni de jeton.
+
 ## SW v46.95 — Al-Qalam : préparation des exports et interface réactive
 
 - Word/PDF : extraction rapide du texte brut, préparation par étapes et calibration PDF répartie sur plusieurs tâches. Les documents dépassant deux millions de caractères sont refusés avant duplication/compression avec un message permettant de réduire le volume.
