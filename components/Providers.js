@@ -10,12 +10,15 @@ import AdsterraAds from './AdsterraAds';
 import ActivityTracker from './ActivityTracker';
 import AndroidBackHandler from './AndroidBackHandler';
 import SupportProvider from './SupportProvider';
+import BugReporter from './BugReporter';
 
 export default function Providers({ children }) {
   return (
     <>
     {/* Hors d'AuthProvider : le bouton retour Android agit aussi sur l'écran de connexion. */}
     <AndroidBackHandler />
+    {/* Hors d'AuthProvider : un bug avant la connexion est aussi remonté. */}
+    <BugReporter />
     <AuthProvider>
       <ActivityTracker />
       <AccessProvider>

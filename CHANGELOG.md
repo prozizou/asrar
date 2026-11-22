@@ -1,3 +1,11 @@
+## SW v46.93 — Bugs et lenteurs remontés à l'administration
+
+- Détection automatique des problèmes rencontrés par les utilisateurs : erreurs JavaScript non rattrapées, promesses rejetées, écrans plantés (app/error.js), erreurs serveur 5xx, interface figée plus de 2 s, page chargée en plus de 10 s, requête lente (plus de 8 s) ou abandonnée.
+- « Signaler un problème » dans le menu et sur l'écran d'erreur : l'utilisateur décrit le problème ; informations techniques jointes s'il le souhaite (taille d'écran, derniers problèmes détectés).
+- /api/client-error enregistre désormais les rapports dans bug_reports/ (regroupés par bug, 20 dernières occurrences, page sans paramètres, appareil, version, e-mail si connecté), en plus des logs serveur. Un bug résolu qui revient est rouvert.
+- Garde-fous : bruit ignoré (« Script error. », extensions, régies), 3 envois par bug et 30 par session côté client, limite par IP et plafond de 5 000 occurrences par jour côté serveur.
+- Lecture et traitement dans l'onglet « Bugs » du panneau d'administration. Politique de confidentialité complétée. Voir SUIVI_BUGS.md.
+
 ## SW v46.92 — Géomancie : raisonnement de chaque maison affiché
 
 - Fenêtre d’une maison (M1 à M14) : nouveau bloc de calcul — « Adama (1222) occupe la maison d’Issa (1212) : la figure de M2 se trouve en M6 », puis Parole (occupant + figure de repos, avec la maison de la figure obtenue), Juge (occupant de M15) et Parole + Juge (secret final).

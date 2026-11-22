@@ -3,24 +3,20 @@
 // un écran blanc. Ce fichier spécial (convention app router) intercepte
 // l'erreur pour TOUTES les pages et propose de réessayer plutôt que de
 // laisser l'utilisateur bloqué.
-import { ArrowLeft, Frown } from 'lucide-react';
-import { useEffect } from 'react';
+import { ArrowLeft, Bug, Frown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import ReportProblem from '@/components/ReportProblem';
+import { flushBugReports, reportBug } from '@/lib/bugReporter';
 
 export default function GlobalError({ error, reset }) {
+  const [reporting, setReporting] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error(error);
-    // Remontée best-effort vers le suivi d'erreurs serveur (server/log.js) —
-    // fetch direct (pas apiPost) : pas d'idToken requis, réponse 204 ignorée.
-    fetch('/api/client-error', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: error?.message,
-        stack: error?.stack,
-        url: typeof window !== 'undefined' ? window.location.href : '',
-      }),
-    }).catch(() => {});
+    // Remontée vers l'administration (onglet « Bugs ») et le suivi d'erreurs
+    // serveur (server/log.js) — pas d'idToken requis (lib/bugReporter.js).
+    reportBug({ kind: 'error', message: 'Écran planté : ' + (error?.message || String(error)), stack: error?.stack, label: 'react' });
+    flushBugReports();
   }, [error]);
 
   return (
@@ -41,8 +37,12 @@ export default function GlobalError({ error, reset }) {
           <a href="/" className="back-btn">
             <ArrowLeft size={18} aria-hidden="true" /> Accueil
           </a>
+          <button type="button" className="back-btn" onClick={() => setReporting(true)}>
+            <Bug size={18} aria-hidden="true" /> Signaler ce problème
+          </button>
         </div>
       </div>
+      {reporting && <ReportProblem onClose={() => setReporting(false)} />}
     </div>
   );
 }

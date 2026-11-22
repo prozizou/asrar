@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { UserRound, ShoppingBag, Moon, Sun, LogOut, X, Download, ChevronRight, Menu, HandHeart } from 'lucide-react';
+import { UserRound, ShoppingBag, Moon, Sun, LogOut, X, Download, ChevronRight, Menu, HandHeart, Bug } from 'lucide-react';
+import ReportProblem from './ReportProblem';
 import Modal from './Modal';
 import { useAuth } from '@/components/AuthProvider';
 import { useSupport } from './SupportProvider';
@@ -21,7 +22,7 @@ function getSwVersion() {
 export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
   const { user, signOut } = useAuth();
   const { openSupport } = useSupport();
-  const [open, setOpen] = useState(false), [theme, setTheme] = useState('dark'), [swVersion, setSwVersion] = useState(null);
+  const [open, setOpen] = useState(false), [theme, setTheme] = useState('dark'), [swVersion, setSwVersion] = useState(null), [reporting, setReporting] = useState(false);
   const [standalone, setStandalone] = useState(true), [installState, setInstallState] = useState(getInstallState), [ios, setIos] = useState(false);
   const name = user?.displayName || user?.email?.split('@')[0] || 'Mon compte';
   useEffect(() => { setTheme(document.documentElement.getAttribute('data-theme') || 'dark'); }, []);
@@ -54,6 +55,7 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
             <Link href="/compte" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}><UserRound size={20} aria-hidden="true" /><span>Mon compte et mes données</span><ChevronRight size={16} aria-hidden="true" /></Link>
             <Link href="/commandes" className="drawer-row drawer-row-link" onClick={() => setOpen(false)}><ShoppingBag size={20} aria-hidden="true" /><span>Mes demandes et commandes</span><ChevronRight size={16} aria-hidden="true" /></Link>
             <button type="button" className="drawer-row drawer-row-link" onClick={() => { setOpen(false); openSupport(); }}><HandHeart size={20} aria-hidden="true" /><span>Soutenir l’application</span><ChevronRight size={16} aria-hidden="true" /></button>
+            <button type="button" className="drawer-row drawer-row-link" onClick={() => { setOpen(false); setReporting(true); }}><Bug size={20} aria-hidden="true" /><span>Signaler un problème</span><ChevronRight size={16} aria-hidden="true" /></button>
           </nav>
           <p className="drawer-section-label">Préférences</p>
           <div className="drawer-row"><span className="drawer-row-label">{theme === 'light' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />} Mode {theme === 'light' ? 'clair' : 'sombre'}</span>
@@ -67,5 +69,6 @@ export default function AppDrawer({ trigger, triggerClassName, triggerLabel }) {
         </div>
       </div>
     </Modal>}
+    {reporting && <ReportProblem onClose={() => setReporting(false)} />}
   </>;
 }

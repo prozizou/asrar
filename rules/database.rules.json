@@ -20,6 +20,7 @@
       }
     },
     "zikr_inactivity": { ".indexOn": ["deadline"] },
+    "bug_reports": { "groups": { ".indexOn": ["lastAt", "status"] } },
     "zikr_groups": { ".indexOn": ["sessionAt"] },
     "product_requests": { "$vendorId": { ".indexOn": ["uid", "at"] } },
     "orders_v2": { ".indexOn": ["buyerSort", "sellerSort", "sellerUid", "buyerUid", "at"] },

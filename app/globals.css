@@ -2229,3 +2229,15 @@ a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6p
 .support-actions .support-later:disabled { opacity: .6; cursor: default; font-variant-numeric: tabular-nums; }
 .support-actions .support-done { border: 0; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .support-actions button:hover { transform: none; box-shadow: none; }
+
+/* Signaler un problème (components/ReportProblem.js) */
+.report-box { max-width: 440px; text-align: center; }
+.report-box form { text-align: left; }
+.report-box .sg-sub { margin-bottom: 12px; }
+.report-box .sg-sub svg { vertical-align: -3px; color: var(--accent); }
+.report-text { display: block; width: 100%; box-sizing: border-box; min-height: 120px; margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-input); color: var(--text-main); font: 16px/1.45 var(--font-ui); resize: vertical; }
+.report-meta { display: flex; justify-content: flex-end; margin: 4px 0 8px; color: var(--text-dim); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.report-check { display: flex; gap: 8px; align-items: flex-start; color: var(--text-dim); font-size: .82rem; line-height: 1.4; cursor: pointer; }
+.report-check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+.report-actions { display: grid; margin-top: 14px; }
+.report-actions button { width: 100%; min-height: 44px; margin: 0; border-radius: 12px; font: 600 .9rem var(--font-ui); }

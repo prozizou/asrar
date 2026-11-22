@@ -146,6 +146,7 @@ GitHub Actions :
 | Commandes et données personnelles | [COMMANDES_ET_COMPTE.md](COMMANDES_ET_COMPTE.md) |
 | Zikr (discussion, audio) | [MESSAGERIE_ZIKR.md](MESSAGERIE_ZIKR.md), [AUDIO_ZIKR.md](AUDIO_ZIKR.md) |
 | Notifications | [NOTIFICATIONS.md](NOTIFICATIONS.md) |
+| Bugs et lenteurs remontés à l'administration | [SUIVI_BUGS.md](SUIVI_BUGS.md) |
 | Partage et parrainage | [PARTAGE_ET_PARRAINAGE.md](PARTAGE_ET_PARRAINAGE.md) |
 | Déploiement, sécurité, Cloudinary | [DEPLOIEMENT_SECURITE.md](DEPLOIEMENT_SECURITE.md) |
 | Planète (refonte de l'interface) | [INSTALLATION.md](INSTALLATION.md), [CHANGELOG_PLANETE_UI.md](CHANGELOG_PLANETE_UI.md) |
