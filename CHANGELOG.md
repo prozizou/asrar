@@ -1,3 +1,8 @@
+## SW v46.97 — Diagnostics détaillés
+
+- Contexte technique nettoyé, chronologie bornée, réseau et écran pour les incidents ; étapes auth/token/en-têtes/JSON des API et positions de leur appelant.
+- Tâches Word/PDF lentes (> 1 s), erreurs interceptées et temps des dialogues séparés. Les données privées restent exclues.
+
 ## SW v46.96 — Accueil : reprise du catalogue après une coupure réseau
 
 - Une seconde tentative, après 400 ms, pour les échecs réseau brefs et les erreurs de passerelle du catalogue. Les délais de 15 s et les refus 4xx ne sont pas répétés automatiquement.

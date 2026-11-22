@@ -210,3 +210,15 @@ describe('Collecteur navigateur et APIs', () => {
     expect(reports).toHaveLength(2); expect(JSON.stringify(reports)).not.toContain('secret');
   });
 });
+
+it('conserve les détails techniques jusqu’à RTDB sans accepter de contenu libre', async () => {
+  const db = database(); const { recordDiagnostic } = runtime(db)('server/diagnostics.js');
+  const input = { kind: 'slow_task', durationMs: 1001, details: { task: 'export-word', phase: 'complete', outcome: 'success', timings: { total: 1500, dialog: 499, password: 42 }, message: 'PRIVATE', breadcrumbs: [{ type: 'api-start', path: '/api/list-content?token=PRIVATE', target: 'PRIVATE' }] } };
+  await recordDiagnostic(db, input, { source: 'test' }, now);
+  const saved = Object.values(db.read('app_diagnostics'))[0];
+  expect(saved.kind).toBe('slow_task');
+  expect(saved.details).toMatchObject({ task: 'export-word', timings: { total: 1500, dialog: 499 }, breadcrumbs: [{ path: '/api/list-content', target: '' }] });
+  expect(JSON.stringify(saved)).not.toMatch(/PRIVATE|password/);
+  expect(sanitizeDiagnostic(saved).details).toEqual(saved.details);
+  expect(await recordDiagnostic(db, { ...input, durationMs: 1000 }, { source: 'test' }, now)).toBe(false);
+});

@@ -16,12 +16,12 @@ async function recordDiagnostic(db, input, context = {}, now = Date.now()) {
   if (event.kind === 'server' && !context.server) {
     event.kind = 'javascript'; event.title = 'Erreur JavaScript';
   }
-  if (['freeze', 'slow_api'].includes(event.kind) && event.durationMs <= 1000) return false;
+  if (['freeze', 'slow_api', 'slow_task'].includes(event.kind) && event.durationMs <= 1000) return false;
   const bucket = day(now);
   const source = hash(bucket + ':' + (context.source || 'anonymous'));
   if (!await allowance(db, bucket + '_total', 2000)) return false;
   if (!await allowance(db, bucket + '_' + source, 100)) return false;
-  const fingerprint = hash(JSON.stringify([event.kind, event.name, event.page, event.endpoint, event.stack, event.version, context.platform || 'server', event.statusCode]));
+  const fingerprint = hash(JSON.stringify([event.kind, event.name, event.page, event.endpoint, event.stack, event.version, event.details.task, event.details.phase, context.platform || 'server', event.statusCode]));
   const key = bucket + '_' + fingerprint;
   await db.ref('app_diagnostics/' + key).transaction(current => ({
     ...event, platform: context.platform || 'server',

@@ -1,4 +1,5 @@
 'use client';
+import { startDiagnosticTask } from '@/lib/diagnostics';
 // Module « Al-Qalam » — port de alqalam/index.html + app.js.
 // Outil de calligraphie : saisie arabe, répétition, aperçu coloré live, mode
 // Rasm, recherche, intercalation de sourates, cumul de blocs et export Word
@@ -695,6 +696,8 @@ export default function AlQalamPage() {
   const triggerDocx = async (useOuv: boolean, useFerm: boolean) => {
     setPopupOpen(false);
     setProgress({ pct: 0, text: 'Préparation...' });
+    const finishTask = startDiagnosticTask('export-word');
+    let taskError: any = null;
     try {
       await generateDocx({
         useOuv,
@@ -707,8 +710,10 @@ export default function AlQalamPage() {
       showToast('Document Word généré (compatible WPS Office).', 'info');
       celebrate();
     } catch (e) {
+      taskError = e;
       showToast(e instanceof Error && (e as any).code === 'EXPORT_TOO_LARGE' ? e.message : 'Échec de la génération Word.', 'error');
     } finally {
+      finishTask(taskError);
       setProgress(null);
     }
   };
@@ -716,6 +721,8 @@ export default function AlQalamPage() {
   const triggerPdf = async (useOuv: boolean, useFerm: boolean) => {
     setPopupOpen(false);
     setProgress({ pct: 0, text: 'Préparation...' });
+    const finishTask = startDiagnosticTask('export-pdf');
+    let taskError: any = null;
     try {
       await generatePdf({
         useOuv,
@@ -731,8 +738,10 @@ export default function AlQalamPage() {
       );
       celebrate();
     } catch (e) {
+      taskError = e;
       showToast(e instanceof Error && (e as any).code === 'EXPORT_TOO_LARGE' ? e.message : 'Échec de la préparation du PDF.', 'error');
     } finally {
+      finishTask(taskError);
       setProgress(null);
     }
   };
