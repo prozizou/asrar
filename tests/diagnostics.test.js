@@ -231,3 +231,9 @@ it('sépare les fichiers indisponibles et conserve leur type sans paramètres se
   expect(items[0].details).toMatchObject({ measurement: 'resource', resourceType: 'script', sourceFile: '/_next/a.js', outcome: 'error' });
   expect(JSON.stringify(items)).not.toMatch(/SECRET|PRIVATE|token=/);
 });
+
+it('ne conserve jamais le contenu d’une ressource data ou blob', () => {
+  for (const sourceFile of ['data:text/javascript,PRIVATE', 'blob:https://www.asrarpro.com/PRIVATE', 'javascript:PRIVATE']) {
+    expect(sanitizeDiagnostic({ details: { sourceFile } }).details.sourceFile).toBe('');
+  }
+});
