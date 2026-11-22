@@ -50,5 +50,7 @@ it('classe l’erreur réseau du diagnostic sans transmettre le message libre', 
   }, globals: { fetch: async () => { throw new TypeError('PRIVATE CONTENT'); } } })('lib/api.js');
   await expect(api.apiPost('list-content', { kind: 'product' })).rejects.toMatchObject({ status: 0 });
   expect(reports[0]).toMatchObject({ kind: 'api', name: 'NetworkError', statusCode: 0 });
+  expect(reports[0].details).toMatchObject({ task: 'api', phase: 'headers', outcome: 'error', method: 'POST' });
+  expect(reports[0].details.timings.headers).toBeGreaterThanOrEqual(0);
   expect(JSON.stringify(reports)).not.toMatch(/PRIVATE CONTENT|test-session/);
 });
