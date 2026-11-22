@@ -1,3 +1,8 @@
+## SW v46.98 — Identifier les ressources indisponibles
+
+- Les erreurs de scripts et liens indiquent le chemin du fichier sans paramètres, leur type et l’état de connexion à l’observation. Les fichiers distincts ne sont plus regroupés dans un même incident.
+- Le navigateur ne donne pas le statut HTTP pour cet événement : aucun statut ou cause serveur n’est inventé.
+
 ## SW v46.97 — Diagnostics détaillés
 
 - Contexte technique nettoyé, chronologie bornée, réseau et écran pour les incidents ; étapes auth/token/en-têtes/JSON des API et positions de leur appelant.
