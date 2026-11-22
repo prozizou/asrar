@@ -1,17 +1,21 @@
 import { test, expect, tokenAs } from './fixtures';
 const { app } = require('../../server/grant');
 
-test('les diagnostics reçus sont nettoyés et les lectures directes restent interdites', async ({ postAs, request }) => {
-  const response = await postAs('free', 'client-error', {
+test('les diagnostics reçus sont nettoyés et les lectures directes restent interdites', async ({ request }) => {
+  const token = await tokenAs(request, 'free');
+  // La suite ouvre de nombreuses pages depuis 127.0.0.1 ; ses diagnostics
+  // automatiques peuvent épuiser le quota de cette IP. Source de test isolée,
+  // sans désactiver ni relever les limites appliquées au vrai endpoint.
+  const response = await request.post('/api/client-error', { headers: { 'x-forwarded-for': '192.0.2.42' }, data: {
+    idToken: token,
     events: [{ kind: 'api', endpoint: 'diagnostic-fixture', page: '/zikr?token=private', name: 'TypeError', message: 'private message', idToken: 'private', uid: 'forged', version: 'v46.93' }],
     uid: 'forged',
-  });
+  } });
   expect(response.status()).toBe(204);
   const snap = await app().database().ref('app_diagnostics').orderByKey().limitToLast(500).once('value');
   const item: any = Object.values(snap.val() || {}).find((value: any) => value.endpoint === '/api/diagnostic-fixture');
   expect(item).toMatchObject({ lastUid: 'fixture-free', page: '/zikr', kind: 'api' });
   expect(JSON.stringify(item)).not.toMatch(/private|forged/);
-  const token = await tokenAs(request, 'free');
   // Firebase ID token via auth= (Bearer OAuth est traité comme un compte
   // de service par l’émulateur et contournerait les règles à tester).
   const url = 'http://127.0.0.1:9000/app_diagnostics.json?ns=demo-asrar-test-default-rtdb&auth=' + encodeURIComponent(token);
