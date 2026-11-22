@@ -29,6 +29,7 @@ import Link from 'next/link';
 import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon, Store, ImageOff, BadgeCheck } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { apiPost } from '@/lib/api';
+import { readCatalog } from '@/lib/catalogRequest';
 import { deepLink, shopDeepLink, cleanUrl } from '@/lib/share';
 import { vendorKey, emailVendorKey, safeKey, formatCount, formatProductCount, extractVendors, matchesSearch, displayProductName, CHAINS } from '@/lib/market';
 import { avgStars } from '@/lib/reviews';
@@ -67,13 +68,13 @@ interface Vendor {
 // Produits + boutiques. Le nom, le logo et la description d'une boutique viennent
 // du nœud profile_clients (kind « shop ») ; si cette lecture échoue, on retombe
 // sur les champs vendeur* des produits plutôt que de bloquer le Marché.
-async function loadMarket(): Promise<{ products: Product[]; vendors: Vendor[] }> {
+async function loadMarket(signal?: AbortSignal): Promise<{ products: Product[]; vendors: Vendor[]; incomplete: boolean }> {
   const [prod, shop] = await Promise.all([
-    apiPost('list-content', { kind: 'product' }),
-    apiPost('list-content', { kind: 'shop' }).catch(() => ({ items: [] })),
+    readCatalog('product', { signal }),
+    readCatalog('shop', { signal }).catch((error) => { if (error.name === 'AbortError') throw error; return { items: [], incomplete: true }; }),
   ]);
   const products: Product[] = (prod.items || []).map((v: any) => ({ _key: v._key, ...v }));
-  return { products, vendors: extractVendors(products, shop.items || []) };
+  return { products, vendors: extractVendors(products, shop.items || []), incomplete: shop.incomplete === true };
 }
 
 interface PopulariteEntry {
@@ -108,7 +109,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({}); // { [productKey]: true } — image indisponible → repli 🔮
   const markImgError = useCallback((key: string) => setImgErrors((prev) => (prev[key] ? prev : { ...prev, [key]: true })), []);
-  const bootRef = useRef(false);
+  const retryCatalog = useRef<() => void>(() => {});
   // Recherche + catégorie (revue design, point 5) : réintroduites après avoir
   // été volontairement retirées lors d'un précédent nettoyage (voir
   // l'en-tête du fichier, git blame) — cette fois demandées explicitement
@@ -199,35 +200,73 @@ export default function Home() {
     return () => document.body.classList.remove('market-body');
   }, []);
 
+  // Les callbacks de fiche/lien évoluent avec les produits. Leur changement
+  // ne doit ni réinitialiser le chargement ni relancer les requêtes en cours.
+  const initialActions = useRef({ gatedOpenProduct, notify });
+  initialActions.current = { gatedOpenProduct, notify };
   useEffect(() => {
-    if (bootRef.current) return;
-    bootRef.current = true;
-    (async () => {
+    const controller = new AbortController();
+    let running = false, failed = false, queued = false, deepHandled = false;
+    const active = () => navigator.onLine !== false && document.visibilityState !== 'hidden';
+    const load = async () => {
+      if (controller.signal.aborted) return;
+      if (running) { queued = true; return; }
+      running = true; failed = false;
+      setLoading(true); setError('');
       try {
-        const { products, vendors } = await loadMarket();
-        setAllProducts(products);
-        setAllVendors(vendors);
-        setLoading(false);
-        loadPopularite(products);
-        loadVendorLikes(vendors);
-
-        const deep = deepLink();
-        const sharedShop = shopDeepLink();
-        if (deep && deep.key) {
-          cleanUrl();
-          if (products.some((p) => p._key === deep.key)) gatedOpenProduct(deep.key, products);
-          else notify("Ce produit n'est plus disponible.");
-        } else if (sharedShop) {
-          cleanUrl();
-          if (vendors.some((v) => v.id === sharedShop)) setVendorShopId(sharedShop);
-          else notify("Cette boutique n'est plus disponible.");
+        const { products, vendors, incomplete } = await loadMarket(controller.signal);
+        if (controller.signal.aborted) return;
+        failed = incomplete;
+        setAllProducts(products); setAllVendors(vendors);
+        void loadPopularite(products); void loadVendorLikes(vendors);
+        if (!deepHandled) {
+          const deep = deepLink(), sharedShop = shopDeepLink();
+          if (deep?.key) {
+            deepHandled = true;
+            cleanUrl();
+            if (products.some(p => p._key === deep.key)) void initialActions.current.gatedOpenProduct(deep.key, products);
+            else initialActions.current.notify("Ce produit n'est plus disponible.");
+          } else if (sharedShop) {
+            const exists = vendors.some(v => v.id === sharedShop);
+            // Une lecture de boutique interrompue ne prouve pas sa suppression.
+            // Garder le lien jusqu'à la reprise pour ouvrir la bonne fiche.
+            if (exists || !incomplete) {
+              deepHandled = true; cleanUrl();
+              if (exists) setVendorShopId(sharedShop);
+              else initialActions.current.notify("Cette boutique n'est plus disponible.");
+            }
+          } else deepHandled = true;
         }
-      } catch (e: any) {
-        setLoading(false);
-        setError(e.message || 'Erreur de chargement des produits.');
+      } catch (error: any) {
+        if (controller.signal.aborted) return;
+        failed = error.status === 0 || [502, 503, 504].includes(error.status);
+        setError(error.message || 'Erreur de chargement des produits.');
+      } finally {
+        running = false;
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          const resume = queued && failed && active();
+          queued = false;
+          if (resume) void load();
+        }
       }
-    })();
-  }, [loadPopularite, loadVendorLikes, gatedOpenProduct, notify]);
+    };
+    const reconnect = () => {
+      if (!active()) return;
+      if (running) queued = true;
+      else if (failed) void load();
+    };
+    retryCatalog.current = () => { void load(); };
+    window.addEventListener('online', reconnect);
+    document.addEventListener('visibilitychange', reconnect);
+    void load();
+    return () => {
+      controller.abort();
+      retryCatalog.current = () => {};
+      window.removeEventListener('online', reconnect);
+      document.removeEventListener('visibilitychange', reconnect);
+    };
+  }, [loadPopularite, loadVendorLikes]);
 
   const toggleVendorLike = (vendorId: string, ev?: React.MouseEvent) => {
     if (ev) {
@@ -503,7 +542,7 @@ export default function Home() {
             {/* Grille à 2 colonnes triée par engagement (likes + commentaires,
                 voir `filtered`) : le premier porte le badge « Plus populaire »
                 dès qu'il a un engagement réel (jamais sur une liste à zéro). */}
-            <div className="prod-list">
+            <div className="prod-list" aria-busy={loading}>
               {loading ? (
                 <>
                   <div className="skeleton" />
@@ -511,11 +550,13 @@ export default function Home() {
                   <div className="skeleton" />
                 </>
               ) : error ? (
-                <p className="prod-empty">
+                <div className="prod-empty" role="alert">
                   Erreur de chargement des produits.
                   <br />
                   <small>{error}</small>
-                </p>
+                  <br />
+                  <button type="button" className="market-retry" onClick={() => retryCatalog.current()}>Réessayer le chargement</button>
+                </div>
               ) : filtered.length === 0 ? (
                 <p className="prod-empty">Aucun produit trouvé.</p>
               ) : (
