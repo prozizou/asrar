@@ -222,3 +222,12 @@ it('conserve les détails techniques jusqu’à RTDB sans accepter de contenu li
   expect(sanitizeDiagnostic(saved).details).toEqual(saved.details);
   expect(await recordDiagnostic(db, { ...input, durationMs: 1000 }, { source: 'test' }, now)).toBe(false);
 });
+
+it('sépare les fichiers indisponibles et conserve leur type sans paramètres sensibles', async () => {
+  const db = database(); const { recordDiagnostic } = runtime(db)('server/diagnostics.js');
+  for (const file of ['a.js', 'b.js']) await recordDiagnostic(db, { kind: 'resource', details: { measurement: 'resource', resourceType: 'script', sourceFile: 'https://www.asrarpro.com/_next/' + file + '?token=SECRET#PRIVATE', outcome: 'error' } }, { source: 'test' }, now);
+  const items = Object.values(db.read('app_diagnostics'));
+  expect(items).toHaveLength(2);
+  expect(items[0].details).toMatchObject({ measurement: 'resource', resourceType: 'script', sourceFile: '/_next/a.js', outcome: 'error' });
+  expect(JSON.stringify(items)).not.toMatch(/SECRET|PRIVATE|token=/);
+});

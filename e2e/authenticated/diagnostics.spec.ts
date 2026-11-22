@@ -62,3 +62,19 @@ test('un blocage d’interface de plus d’une seconde remonte réellement dans 
     return Object.values(snap.val() || {}).find((value: any) => value.kind === 'freeze' && value.page === '/compte' && value.durationMs > 1000);
   }, { timeout: 20000 }).toMatchObject({ kind: 'freeze', page: '/compte', version: APP_VERSION, lastUid: 'fixture-free', details: { measurement: 'longtask', visibility: 'visible' } });
 });
+
+test('une ressource en échec remonte avec son fichier et son type', async ({ page, login }) => {
+  await login('free');
+  await page.goto('/compte');
+  await expect(page.getByRole('heading', { name: 'Mon compte', exact: true })).toBeVisible();
+  await page.route('**/diagnostic-fixture.js*', route => route.abort('connectionreset'));
+  await page.evaluate(() => {
+    const script = document.createElement('script');
+    script.src = '/diagnostic-fixture.js?private=SECRET';
+    document.head.appendChild(script);
+  });
+  await expect.poll(async () => {
+    const snap = await app().database().ref('app_diagnostics').once('value');
+    return Object.values(snap.val() || {}).find((value: any) => value.kind === 'resource' && value.details?.sourceFile === '/diagnostic-fixture.js');
+  }, { timeout: 20000 }).toMatchObject({ kind: 'resource', name: 'Error', details: { measurement: 'resource', resourceType: 'script', sourceFile: '/diagnostic-fixture.js', outcome: 'error' } });
+});

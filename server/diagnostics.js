@@ -21,7 +21,7 @@ async function recordDiagnostic(db, input, context = {}, now = Date.now()) {
   const source = hash(bucket + ':' + (context.source || 'anonymous'));
   if (!await allowance(db, bucket + '_total', 2000)) return false;
   if (!await allowance(db, bucket + '_' + source, 100)) return false;
-  const fingerprint = hash(JSON.stringify([event.kind, event.name, event.page, event.endpoint, event.stack, event.version, event.details.task, event.details.phase, context.platform || 'server', event.statusCode]));
+  const fingerprint = hash(JSON.stringify([event.kind, event.name, event.page, event.endpoint, event.stack, event.version, event.details.task, event.details.phase, event.kind === 'resource' ? event.details.sourceFile : '', context.platform || 'server', event.statusCode]));
   const key = bucket + '_' + fingerprint;
   await db.ref('app_diagnostics/' + key).transaction(current => ({
     ...event, platform: context.platform || 'server',
