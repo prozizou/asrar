@@ -16,6 +16,7 @@ async function recordDiagnostic(db, input, context = {}, now = Date.now()) {
   if (event.kind === 'server' && !context.server) {
     event.kind = 'javascript'; event.title = 'Erreur JavaScript';
   }
+  if (['freeze', 'slow_api'].includes(event.kind) && event.durationMs <= 1000) return false;
   const bucket = day(now);
   const source = hash(bucket + ':' + (context.source || 'anonymous'));
   if (!await allowance(db, bucket + '_total', 2000)) return false;
@@ -25,7 +26,7 @@ async function recordDiagnostic(db, input, context = {}, now = Date.now()) {
   await db.ref('app_diagnostics/' + key).transaction(current => ({
     ...event, platform: context.platform || 'server',
     firstAt: Math.min(current?.firstAt || now, now), lastAt: Math.max(current?.lastAt || now, now),
-    count: (Number(current?.count) || 0) + 1,
+    count: (Number(current?.count) || 0) + event.occurrences,
     maxDurationMs: Math.max(Number(current?.maxDurationMs) || 0, event.durationMs),
     status: 'open', resolvedAt: null, resolvedBy: null,
     lastUid: context.uid || null,

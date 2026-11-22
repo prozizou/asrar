@@ -1,3 +1,9 @@
+## SW v46.94 — Lenteurs de plus d’une seconde et rapports TXT
+
+- Seuil strictement supérieur à 1 000 ms pour les réponses API lentes et les blocages d’interface ; mesure Long Tasks sur Chrome/Android, heartbeat de repli sur les autres navigateurs.
+- Regroupement des lenteurs répétées en attente avec compteur d’occurrences cumulé dans Firebase RTDB et conservation de la durée maximale.
+- Panneau admin-v38 : téléchargement TXT d’un incident ou des résultats filtrés depuis le navigateur du téléphone, avec les traces et durées exactes pour correction.
+
 ## SW v46.93 — Diagnostics de bugs et lenteurs pour l’administration
 
 - Remontée automatique des erreurs JavaScript/React, ressources indisponibles, échecs et lenteurs API, blocages visibles prolongés de l’interface.
