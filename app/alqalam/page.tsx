@@ -42,6 +42,7 @@ import {
   stepRepetitions,
   plural,
 } from '@/lib/alqalam';
+import { buildOrnementSource } from '@/lib/alqalamOrnementSource';
 import { detectRoundLetters } from '@/lib/alqalamOrne';
 import OrneePhrasePiece, { type OrneePhrasePieceHandle } from './OrneePhrasePiece';
 const AccessibleModal = AccessibleModalUntyped as any;
@@ -229,28 +230,12 @@ export default function AlQalamPage() {
   //   • baseText/totalMultiplier : le brouillon courant (« Écrire », ou le
   //     résultat de « Combiner le texte » en mode intercalé), même sans avoir
   //     cumulé.
-  const buildOrnementSourceText = useCallback((): string => {
-    const parts: string[] = [];
-    accumulatedBlocks.forEach((b) => {
-      const raw = htmlToPlainText(b.texte).trim();
-      if (!raw) return;
-      const t = b.isRasmMode ? convertirEnRasm(raw) : raw;
-      // « + ' ' » AVANT .repeat() — même convention que lib/alqalam.js
-      // (buildPreview, generateDocx) : sans cet espace, deux répétitions
-      // collées bout à bout forment un seul FAUX mot aux yeux du moteur de
-      // rendu arabe, qui shape alors les lettres de la frontière comme si
-      // elles étaient au milieu d'un mot (médiane/finale erronées) — ce
-      // n'est pas un bug de liaison, mais un mot qui n'existe pas.
-      parts.push((t + ' ').repeat(Math.max(1, Number(b.totalMultiplier) || 1)));
-    });
-    if (baseText.trim() && totalMultiplier > 0) {
-      const t = isRasmMode ? convertirEnRasm(baseText) : baseText;
-      parts.push((t + ' ').repeat(totalMultiplier));
-    }
-    return parts.join(' ').trim();
-  }, [accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
-
-  const ornementSourceText = useMemo(() => buildOrnementSourceText(), [buildOrnementSourceText]);
+  const ornementSource = useMemo(() => showOrnement ? buildOrnementSource([
+    ...accumulatedBlocks,
+    ...(baseText.trim() && totalMultiplier > 0 ? [{ texte: baseText, totalMultiplier, isRasmMode, plain: true }] : []),
+  ], { plainText: htmlToPlainText, rasm: convertirEnRasm }) : { text: '', detectionText: '' },
+  [showOrnement, accumulatedBlocks, baseText, totalMultiplier, isRasmMode]);
+  const ornementSourceText = ornementSource?.text || '';
   // Segments de la pièce : ouverture et fermeture RESTENT du texte naturel
   // (aucune lettre à gonfler — demandé explicitement, « ils doivent rester
   // naturelle comme je l'ai écrit ») ; seul X (le texte déjà composé par
@@ -272,15 +257,16 @@ export default function AlQalamPage() {
     () => ornementSegments.map((s) => s.text).join(' '),
     [ornementSegments]
   );
-  const ornementDetected = useMemo(() => detectRoundLetters(ornementSourceText), [ornementSourceText]);
+  const ornementDetected = useMemo(() => detectRoundLetters(ornementSource?.detectionText || ''), [ornementSource]);
 
   useEffect(() => {
+    if (!showOrnement || !ornementSource) return;
     setOrnementLetters((prev) =>
       ornementLettersTouched
         ? prev.filter((l) => ornementDetected.some((d) => d.char === l))
         : ornementDetected.map((d) => d.char)
     );
-  }, [ornementDetected, ornementLettersTouched]);
+  }, [showOrnement, ornementSource, ornementDetected, ornementLettersTouched]);
 
   const toggleOrnementLetter = (char: string) => {
     setOrnementLettersTouched(true);
@@ -721,7 +707,7 @@ export default function AlQalamPage() {
       showToast('Document Word généré (compatible WPS Office).', 'info');
       celebrate();
     } catch (e) {
-      showToast('Échec de la génération Word.', 'error');
+      showToast(e instanceof Error && (e as any).code === 'EXPORT_TOO_LARGE' ? e.message : 'Échec de la génération Word.', 'error');
     } finally {
       setProgress(null);
     }
@@ -745,7 +731,7 @@ export default function AlQalamPage() {
       );
       celebrate();
     } catch (e) {
-      showToast('Échec de la préparation du PDF.', 'error');
+      showToast(e instanceof Error && (e as any).code === 'EXPORT_TOO_LARGE' ? e.message : 'Échec de la préparation du PDF.', 'error');
     } finally {
       setProgress(null);
     }
@@ -1146,7 +1132,9 @@ export default function AlQalamPage() {
 
             {showOrnement && (
               <div className="hidden-panel show-panel">
-                {!ornementSourceText ? (
+                {!ornementSource ? (
+                  <p className="orne-hint orne-overflow" role="status">Ce texte est trop volumineux pour l’ornement sur téléphone. Réduisez les répétitions pour ouvrir cet outil. Le résultat complet reste disponible dans Fichier.</p>
+                ) : !ornementSourceText ? (
                   <p className="orne-hint">
                     Écrivez d&apos;abord un texte (bouton « Écrire », ou « Combiner le texte » en mode intercalé) pour
                     pouvoir y gonfler des lettres.
@@ -1283,7 +1271,7 @@ export default function AlQalamPage() {
               <button type="button" className="alq-result-hint alq-link" onClick={() => openTools('fichier')}>Copier, partager ou exporter : onglet Fichier</button>
             </p>
           )}
-          {showOrnement && ornementLetters.length > 0 ? (
+          {showOrnement && ornementSource && ornementLetters.length > 0 ? (
             <div className="orne-stage glass-panel">
               <OrneePhrasePiece
                 ref={ornementSvgRef}

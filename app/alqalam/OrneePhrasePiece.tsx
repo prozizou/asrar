@@ -19,9 +19,8 @@
 // l'app : l'aperçu doit montrer exactement ce qui sortira à l'impression.
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { TriangleAlert, LoaderCircle } from 'lucide-react';
-import { composePhrasePages, PHRASE_PIECE } from '@/lib/alqalamOrne';
-import { loadShaper } from '@/lib/alqalamShaper';
-import { vectorizePage, pageSvgMarkup } from '@/lib/alqalamVector';
+import { PHRASE_PIECE } from '@/lib/alqalamOrne';
+import { createOrnementClient } from '@/lib/alqalamOrnementClient';
 
 interface OrnementSegment {
   /** Texte de ce segment (ouverture, X ou fermeture). */
@@ -51,120 +50,98 @@ export interface OrneePhrasePieceHandle {
   exportPdf: (docName: string, onProgress?: (pct: number, text: string) => void) => Promise<void>;
 }
 
-type Shaper = Awaited<ReturnType<typeof loadShaper>>;
-type VectorPage = ReturnType<typeof vectorizePage>;
+type Engine = ReturnType<typeof createOrnementClient>;
+type Prepared = { input: object; engine: Engine; piece: any };
 
-/** Une page de l'aperçu : vectorisée quand elle approche de l'écran. */
-function OrnePage({ index, count, label, render }: { index: number; count: number; label: string; render: () => VectorPage }) {
+/** Une page proche de l'écran, calculée hors de l'interface. */
+function OrnePage({ index, count, label, render }: { index: number; count: number; label: string; render: () => Promise<string> }) {
   const holder = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(index < 2);
-
+  const [svg, setSvg] = useState('');
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (visible || !holder.current) return;
-    if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setVisible(true);
-      },
-      { rootMargin: '800px 0px' }
-    );
+    if (!holder.current) return;
+    if (typeof IntersectionObserver === 'undefined') { setVisible(true); return; }
+    const io = new IntersectionObserver(entries => {
+      setVisible(entries.some(entry => entry.isIntersecting));
+    }, { rootMargin: '800px 0px' });
     io.observe(holder.current);
     return () => io.disconnect();
-  }, [visible]);
-
-  const markup = useMemo(
-    () => (visible ? pageSvgMarkup(render(), { pageNumber: index + 1, pageCount: count, label, margin: PHRASE_PIECE.MARGIN }) : ''),
-    [visible, render, index, count, label]
-  );
-
-  return (
-    <div className="orne-page">
-      {count > 1 && (
-        <p className="orne-page-label">
-          Page {index + 1} / {count}
-        </p>
-      )}
-      {markup ? (
-        // Balisage produit par pageSvgMarkup : uniquement des tracés générés
-        // par le moteur (le seul texte libre, l'aria-label, est échappé).
-        <div className="orne-svg-holder" dangerouslySetInnerHTML={{ __html: markup }} />
-      ) : (
-        <div ref={holder} className="orne-svg orne-svg-pending" aria-hidden="true" />
-      )}
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    setSvg(''); setFailed(false);
+    if (visible) render().then(markup => { if (alive) setSvg(markup); }).catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [visible, render]);
+  return <div className="orne-page">
+    {count > 1 && <p className="orne-page-label">Page {index + 1} / {count}</p>}
+    <div ref={holder} className="orne-svg-holder">
+      {svg ? <div dangerouslySetInnerHTML={{ __html: svg }} /> : <div className="orne-svg orne-svg-pending" aria-label={label} role="img" />}
+      {failed && <p className="orne-hint" role="status">Cette page n’a pas pu être préparée. Rouvrez l’outil pour réessayer.</p>}
     </div>
-  );
+  </div>;
 }
 
 const OrneePhrasePiece = forwardRef<OrneePhrasePieceHandle, OrneePhrasePieceProps>(function OrneePhrasePiece(
-  { phrase, letters, innerText, segments, scale = 1 },
-  ref
+  { phrase, letters, innerText, segments, scale = 1 }, ref
 ) {
-  const [shaper, setShaper] = useState<Shaper | null>(null);
-  const [loadError, setLoadError] = useState(false);
-
+  const input = useMemo(() => ({ phrase, letters, innerText, segments, scale }), [phrase, letters, innerText, segments, scale]);
+  const [prepared, setPrepared] = useState<Prepared | null>(null);
+  const [failure, setFailure] = useState<object | null>(null);
+  const jobRef = useRef<{ input: object; ready: Promise<Prepared> } | null>(null);
   useEffect(() => {
-    let alive = true;
-    loadShaper()
-      .then((s) => {
-        if (alive) setShaper(s);
-      })
-      .catch(() => {
-        if (alive) setLoadError(true);
-      });
+    let alive = true, engine: Engine | null = null;
+    let resolveReady!: (value: Prepared) => void, rejectReady!: (error: Error) => void;
+    const ready = new Promise<Prepared>((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
+    // Cette promesse est aussi attendue par l'export. Sans export en cours,
+    // son annulation doit rester silencieuse.
+    ready.catch(() => {});
+    jobRef.current = { input, ready };
+    setFailure(null); setPrepared(null);
+    const timer = setTimeout(async () => {
+      try {
+        engine = createOrnementClient();
+        const piece = await engine.compose(input);
+        const value = { input, engine, piece };
+        if (alive) { setPrepared(value); resolveReady(value); }
+      } catch (error) {
+        engine?.dispose();
+        if (alive) { setFailure(input); rejectReady(error instanceof Error ? error : new Error('Calcul indisponible.')); }
+      }
+    }, 200);
     return () => {
-      alive = false;
+      alive = false; clearTimeout(timer); engine?.dispose();
+      rejectReady(Object.assign(new Error('Composition annulée.'), { name: 'AbortError' }));
     };
-  }, []);
-
-  const piece = useMemo(
-    () => (shaper ? composePhrasePages({ phrase, letters, innerText, measure: shaper.measure, segments, scale }) : null),
-    [shaper, phrase, letters, innerText, segments, scale]
-  );
-
-  // Pages déjà vectorisées, réutilisées par l'export. Remise à zéro dès que
-  // la composition change.
-  const cache = useMemo(() => {
-    void piece; // une nouvelle composition invalide toutes les pages
-    return new Map<number, VectorPage>();
-  }, [piece]);
-  const renderers = useMemo(
-    () =>
-      (piece?.pages || []).map((page, i) => () => {
-        let v = cache.get(i);
-        if (!v && shaper) {
-          v = vectorizePage(page, shaper, { idPrefix: `p${i}q` });
-          cache.set(i, v);
-        }
-        return v as VectorPage;
-      }),
-    [piece, cache, shaper]
-  );
-
-  const label = phrase.trim() || 'sans phrase';
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      exportPdf: async (docName, onProgress) => {
-        if (!piece || !shaper) throw new Error('Le moteur calligraphique n’est pas encore prêt.');
-        if (piece.overflowReason === 'vow') throw new Error('Le vœu est trop long pour les boucles. Raccourcissez-le avant l’export PDF.');
-        if (piece.overflowReason === 'pages') throw new Error(`Le texte dépasse ${PHRASE_PIECE.MAX_PAGES} pages. Réduisez les répétitions avant l’export PDF.`);
-        if (!piece.pages.length) throw new Error('Un mot est trop large pour une page A4. Raccourcissez-le avant l’export PDF.');
-        const { exportOrnementPdf } = await import('@/lib/alqalamPdf');
-        await exportOrnementPdf({ pages: piece.pages, shaper, docName, label, cache, onProgress });
-      },
-    }),
-    [piece, shaper, cache, label]
-  );
+  }, [input]);
+  const current = prepared?.input === input ? prepared : null;
+  const piece = current?.piece;
+  const loadError = failure === input;
+  // Le libellé accessible ne recopie pas l'ouvrage entier dans chaque SVG.
+  const label = phrase.trim().slice(0, 160) || 'sans phrase';
+  const renderers = useMemo(() => (current?.piece.pages || []).map((_: unknown, index: number) =>
+    () => current!.engine.svg(index, `Pièce calligraphique : ${label} — page ${index + 1} sur ${current!.piece.pages.length}`)
+  ), [current, label]);
+  useImperativeHandle(ref, () => ({
+    exportPdf: async (docName, onProgress) => {
+      const job = jobRef.current;
+      if (!job || job.input !== input) throw new Error('Le moteur calligraphique n’est pas encore prêt.');
+      onProgress?.(0, 'Préparation de la composition…');
+      const { piece: composed, engine: active } = await job.ready;
+      if (composed.overflowReason === 'vow') throw new Error('Le vœu est trop long pour les boucles. Raccourcissez-le avant l’export PDF.');
+      if (composed.overflowReason === 'pages') throw new Error(`Le texte dépasse ${PHRASE_PIECE.MAX_PAGES} pages. Réduisez les répétitions avant l’export PDF.`);
+      if (!composed.pages.length) throw new Error('Un mot est trop large pour une page A4. Raccourcissez-le avant l’export PDF.');
+      const { exportOrnementPdf } = await import('@/lib/alqalamPdf');
+      await exportOrnementPdf({ pageCount: composed.pages.length, getPage: active.vector, docName, label, onProgress });
+    },
+  }), [input, label]);
 
   if (loadError) {
-    return <div className="orne-loading"><TriangleAlert size={16} aria-hidden="true" /> Impossible de charger la police calligraphique. Vérifiez la connexion puis rouvrez l&apos;Ornement.</div>;
+    return <div className="orne-loading"><TriangleAlert size={16} aria-hidden="true" /> Impossible de préparer la pièce calligraphique. Vérifiez la connexion puis rouvrez l&apos;Ornement.</div>;
   }
   if (!piece) {
-    return <div className="orne-loading"><LoaderCircle size={16} className="orne-spin" aria-hidden="true" /> Chargement du moteur calligraphique…</div>;
+    return <div className="orne-loading"><LoaderCircle size={16} className="orne-spin" aria-hidden="true" /> Préparation de la pièce calligraphique…</div>;
   }
 
   return (

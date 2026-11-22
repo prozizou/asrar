@@ -1,4 +1,7 @@
 import { test, expect, tokenAs } from './fixtures';
+import { readFileSync } from 'node:fs';
+const APP_VERSION = readFileSync('public/sw.js', 'utf8').match(/\bSW_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1];
+if (!APP_VERSION) throw new Error('Version applicative introuvable.');
 const { app } = require('../../server/grant');
 
 test('les diagnostics reçus sont nettoyés et les lectures directes restent interdites', async ({ request }) => {
@@ -8,7 +11,7 @@ test('les diagnostics reçus sont nettoyés et les lectures directes restent int
   // sans désactiver ni relever les limites appliquées au vrai endpoint.
   const response = await request.post('/api/client-error', { headers: { 'x-forwarded-for': '192.0.2.42' }, data: {
     idToken: token,
-    events: [{ kind: 'api', endpoint: 'diagnostic-fixture', page: '/zikr?token=private', name: 'TypeError', message: 'private message', idToken: 'private', uid: 'forged', version: 'v46.94' }],
+    events: [{ kind: 'api', endpoint: 'diagnostic-fixture', page: '/zikr?token=private', name: 'TypeError', message: 'private message', idToken: 'private', uid: 'forged', version: APP_VERSION }],
     uid: 'forged',
   } });
   expect(response.status()).toBe(204);
@@ -37,7 +40,7 @@ test('une erreur navigateur est transmise automatiquement avec sa version et la 
   await expect.poll(async () => {
     const snap = await app().database().ref('app_diagnostics').once('value');
     return Object.values(snap.val() || {}).find((value: any) => value.stack === '/_next/static/chunks/diagnostic-fixture.js:7:9');
-  }, { timeout: 15000 }).toMatchObject({ kind: 'javascript', name: 'TypeError', page: '/notifications', version: 'v46.94', lastUid: 'fixture-free' });
+  }, { timeout: 15000 }).toMatchObject({ kind: 'javascript', name: 'TypeError', page: '/notifications', version: APP_VERSION, lastUid: 'fixture-free' });
 });
 
 
@@ -57,5 +60,5 @@ test('un blocage d’interface de plus d’une seconde remonte réellement dans 
   await expect.poll(async () => {
     const snap = await app().database().ref('app_diagnostics').once('value');
     return Object.values(snap.val() || {}).find((value: any) => value.kind === 'freeze' && value.page === '/compte' && value.durationMs > 1000);
-  }, { timeout: 20000 }).toMatchObject({ kind: 'freeze', page: '/compte', version: 'v46.94', lastUid: 'fixture-free' });
+  }, { timeout: 20000 }).toMatchObject({ kind: 'freeze', page: '/compte', version: APP_VERSION, lastUid: 'fixture-free' });
 });

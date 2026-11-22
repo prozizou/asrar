@@ -1,3 +1,11 @@
+## SW v46.95 — Al-Qalam : préparation des exports et interface réactive
+
+- Word/PDF : extraction rapide du texte brut, préparation par étapes et calibration PDF répartie sur plusieurs tâches. Les documents dépassant deux millions de caractères sont refusés avant duplication/compression avec un message permettant de réduire le volume.
+- Le temps passé dans une boîte native d’impression/enregistrement est soustrait des mesures de gel ; les vrais blocages de préparation et le temps restant du même traitement restent surveillés au-delà d’une seconde.
+- Ornement et PDF vectoriel : mise en page, HarfBuzz et tracés calculés dans un Worker, annulé lorsque les paramètres changent. L’export attend la composition correspondant au cadre choisi.
+- Réutilisation du calage d’un vœu dans les boucles identiques, cache vectoriel borné à six pages et aperçu limité aux pages proches de l’écran.
+- Le texte de l’ornement n’est développé qu’à l’ouverture de l’outil ; au-delà d’un million de caractères, un message remplace la préparation. Le contenu du document source reste conservé.
+
 ## SW v46.94 — Lenteurs de plus d’une seconde et rapports TXT
 
 - Seuil strictement supérieur à 1 000 ms pour les réponses API lentes et les blocages d’interface ; mesure Long Tasks sur Chrome/Android, heartbeat de repli sur les autres navigateurs.
