@@ -3,6 +3,7 @@
 // idempotents ; le worker conserve les accusés par appareil.
 const { isActiveZikrMember } = require("../../../lib/zikrWarning");
 const { processZikrInactivity } = require("../../../server/zikrInactivity");
+const { purgeDiagnostics } = require("../../../server/diagnostics");
 const { app } = require("../../../server/grant");
 const { reportError } = require("../../../server/log");
 const { authorized } = require("../../../server/cronAuth");
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
   const stats = { sessionQueued: 0, sessionSkipped: 0, renewalQueued: 0, expiredQueued: 0, renewalNoAccount: 0 };
   try {
     const results = await Promise.allSettled([
+      purgeDiagnostics(db, now.getTime()).then(deleted => { stats.diagnosticsPurged = deleted; }),
       queueSessionReminders(db, now, stats),
       queueRenewalReminders(db, now, stats),
       processZikrInactivity(db, now.getTime()).then((result) => { stats.zikrInactivity = result; }),

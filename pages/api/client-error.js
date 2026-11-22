@@ -1,33 +1,31 @@
-// api/client-error.js — Reçoit les erreurs non rattrapées côté client
-// (app/error.js) et les journalise via le même point d'accroche que le
-// serveur (server/log.js). PAS d'authentification requise : un crash peut
-// survenir avant que l'utilisateur soit connecté (écran blanc sinon perdu).
-// Limité en taille/fréquence pour éviter l'abus d'un endpoint public.
-
-const { setCors, parseBody } = require("../../server/http");
-const { reportError } = require("../../server/log");
-const { rateLimit } = require("../../lib/rateLimit");
-
-const RATE_LIMIT = { max: 20, windowMs: 60_000 };
-
-function clip(v, max) {
-  return (v == null ? "" : String(v)).slice(0, max);
-}
-
+// Réception best-effort même avant connexion ; aucune lecture publique.
+const { setCors, parseBody } = require('../../server/http');
+const { app } = require('../../server/grant');
+const { rateLimit } = require('../../lib/rateLimit');
+const { platformOf } = require('../../lib/platform');
+const { recordDiagnostic } = require('../../server/diagnostics');
+export const config = { api: { bodyParser: { sizeLimit: '24kb' } } };
 export default async function handler(req, res) {
   setCors(req, res);
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "POST")    return res.status(405).json({ error: "Méthode non autorisée" });
-
-  // Pas d'identité fiable ici (endpoint public) : la clé de limitation est
-  // l'IP telle que vue par la plateforme (x-forwarded-for côté Vercel).
-  const ip = clip((req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress, 64) || "anon";
-  if (!rateLimit("client-error:" + ip, RATE_LIMIT.max, RATE_LIMIT.windowMs)) {
-    return res.status(204).end(); // best-effort, jamais bloquant pour le client
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'anonymous').split(',')[0].trim().slice(0, 64);
+  if (!rateLimit('client-error:' + ip, 20, 60000)) return res.status(204).end();
+  try {
+    const body = parseBody(req);
+    let uid = null;
+    if (typeof body.idToken === 'string' && body.idToken.length < 8192) {
+      try { uid = (await app().auth().verifyIdToken(body.idToken, true)).uid; } catch { /* anonyme */ }
+    }
+    const events = Array.isArray(body.events) ? body.events.slice(0, 5) : [body];
+    const context = { source: ip, uid, platform: platformOf(req.headers['user-agent']) };
+    for (const event of events) {
+      if (event && typeof event === 'object') await recordDiagnostic(app().database(), event, context);
+    }
+  } catch {
+    // Ne jamais réinjecter une panne du suivi dans le suivi lui-même.
+    console.error('[diagnostics] Enregistrement indisponible');
   }
-
-  const { message, stack, url } = parseBody(req);
-  await reportError("client", { message: clip(message, 500), stack: clip(stack, 4000) }, { url: clip(url, 300), ip });
-
   return res.status(204).end();
-};
+}
