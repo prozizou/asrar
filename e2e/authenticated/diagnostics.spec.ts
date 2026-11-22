@@ -12,8 +12,12 @@ test('les diagnostics reçus sont nettoyés et les lectures directes restent int
   expect(item).toMatchObject({ lastUid: 'fixture-free', page: '/zikr', kind: 'api' });
   expect(JSON.stringify(item)).not.toMatch(/private|forged/);
   const token = await tokenAs(request, 'free');
-  const direct = await request.get('http://127.0.0.1:9000/app_diagnostics.json?ns=demo-asrar-test-default-rtdb', { headers: { Authorization: 'Bearer ' + token } });
-  expect(direct.status()).toBe(401);
+  // Firebase ID token via auth= (Bearer OAuth est traité comme un compte
+  // de service par l’émulateur et contournerait les règles à tester).
+  const url = 'http://127.0.0.1:9000/app_diagnostics.json?ns=demo-asrar-test-default-rtdb&auth=' + encodeURIComponent(token);
+  expect((await request.get(url)).status()).toBe(401);
+  const write = await request.put(url.replace('/app_diagnostics.json', '/app_diagnostics/injected.json'), { data: { count: 999 } });
+  expect(write.status()).toBe(401);
 });
 
 test('une erreur navigateur est transmise automatiquement avec sa version et la session vérifiée', async ({ page, login }) => {
