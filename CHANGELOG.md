@@ -1,3 +1,10 @@
+## SW v46.93 — Diagnostics de bugs et lenteurs pour l’administration
+
+- Remontée automatique des erreurs JavaScript/React, ressources indisponibles, échecs et lenteurs API, blocages visibles prolongés de l’interface.
+- Diagnostics techniques nettoyés avant l’envoi et à la réception : aucun message libre, contenu de formulaire, corps HTTP, paramètre d’URL ou jeton enregistré.
+- Regroupement journalier par incident/version/appareil, quotas partagés, réouverture après réapparition et conservation sur 30 jours UTC avec nettoyage quotidien.
+- Les erreurs serveur existantes sont aussi consultables dans la rubrique « Bugs et lenteurs » du panneau d’administration (mise à jour du projet admin associée).
+
 ## SW v46.92 — Géomancie : raisonnement de chaque maison affiché
 
 - Fenêtre d’une maison (M1 à M14) : nouveau bloc de calcul — « Adama (1222) occupe la maison d’Issa (1212) : la figure de M2 se trouve en M6 », puis Parole (occupant + figure de repos, avec la maison de la figure obtenue), Juge (occupant de M15) et Parole + Juge (secret final).

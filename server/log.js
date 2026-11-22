@@ -29,6 +29,23 @@ async function reportError(scope, error, extra = {}) {
   // captent cette ligne JSON, filtrable/alertable même sans APM dédié.
   console.error(JSON.stringify(payload));
 
+  // Persistance nettoyée pour l'administration, indépendante du webhook.
+  // Aucun objet « extra » libre n'est conservé dans les diagnostics.
+  try {
+    const { recordDiagnostic } = require('./diagnostics');
+    const { app } = require('./grant');
+    let timer;
+    try {
+      await Promise.race([
+        recordDiagnostic(app().database(), {
+          kind: 'server', name: error?.name, stack: error?.stack,
+          endpoint: scope, version: process.env.NEXT_PUBLIC_APP_VERSION,
+        }, { server: true, source: 'server:' + scope, uid: typeof extra.uid === 'string' ? extra.uid : null }),
+        new Promise(resolve => { timer = setTimeout(resolve, 1500); }),
+      ]);
+    } finally { clearTimeout(timer); }
+  } catch { /* Ne pas remplacer l'erreur initiale par une panne du suivi. */ }
+
   const url = process.env.ERROR_WEBHOOK_URL;
   if (!url) return;
   try {

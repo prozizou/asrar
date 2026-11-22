@@ -5,22 +5,13 @@
 // laisser l'utilisateur bloqué.
 import { ArrowLeft, Frown } from 'lucide-react';
 import { useEffect } from 'react';
+import { reportDiagnostic } from '../lib/diagnostics';
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error(error);
-    // Remontée best-effort vers le suivi d'erreurs serveur (server/log.js) —
-    // fetch direct (pas apiPost) : pas d'idToken requis, réponse 204 ignorée.
-    fetch('/api/client-error', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: error?.message,
-        stack: error?.stack,
-        url: typeof window !== 'undefined' ? window.location.href : '',
-      }),
-    }).catch(() => {});
+    reportDiagnostic({ kind: 'render', name: error?.name, stack: error?.stack });
   }, [error]);
 
   return (
