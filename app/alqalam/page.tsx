@@ -352,7 +352,7 @@ export default function AlQalamPage() {
     const raw = htmlToPlainText(formaterTexteIntercale(baseText, intercalatedPhrase));
     const text = isRasmMode ? convertirEnRasm(raw) : raw;
     if ((text.length + 1) * totalMultiplier > 2000000) {
-      throw new Error('Ce résultat est trop volumineux pour le presse-papiers. Utilisez l’export Word ou PDF dans Outils.');
+      throw new Error('Ce résultat est trop volumineux pour le presse-papiers. Réduisez les répétitions ou exportez les blocs séparément.');
     }
     return (text + ' ').repeat(totalMultiplier).trim();
   };
