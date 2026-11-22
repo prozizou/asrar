@@ -47,8 +47,12 @@ test('un blocage d’interface de plus d’une seconde remonte réellement dans 
   await page.goto('/compte');
   await expect(page.getByRole('heading', { name: 'Mon compte', exact: true })).toBeVisible();
   await page.evaluate(() => {
-    const until = performance.now() + 1200;
-    while (performance.now() < until) { /* blocage de test, dans l’émulateur uniquement */ }
+    // Une vraie tâche du navigateur : le code exécuté directement par le
+    // protocole DevTools n’est pas une Long Task observable dans Chromium.
+    setTimeout(() => {
+      const until = performance.now() + 1200;
+      while (performance.now() < until) { /* blocage de test, dans l’émulateur uniquement */ }
+    }, 0);
   });
   await expect.poll(async () => {
     const snap = await app().database().ref('app_diagnostics').once('value');
