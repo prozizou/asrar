@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   try {
     const verified = verifyAdMobQuery(query, await googleKeys());
     if (!verified) return res.status(403).end();
-    await rewardFromAdMob(verified);
+    if (!verified.test) await rewardFromAdMob(verified);
     return res.status(200).end();
   } catch { return res.status(503).end(); } // Google may retry; no client credit on failure.
 }
