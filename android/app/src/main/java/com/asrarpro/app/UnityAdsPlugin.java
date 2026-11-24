@@ -6,281 +6,57 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.unity3d.ads.IUnityAdsInitializationListener;
-import com.unity3d.ads.IUnityAdsLoadListener;
-import com.unity3d.ads.IUnityAdsShowListener;
-import com.unity3d.ads.UnityAds;
-import com.unity3d.ads.UnityAdsShowOptions;
-import com.unity3d.ads.metadata.PlayerMetaData;
-import java.util.ArrayList;
-import java.util.List;
+import com.google.android.ump.UserMessagingPlatform;
+import com.google.android.ump.ConsentInformation;
 
-/**
- * Pont publicitaire compatible Unity Ads / LevelPlay (lib/unityAds.js) :
- * LevelPlay gère les actions lorsque configuré ; sinon Unity direct est conservé.
- * Publicités plein écran aux actions des
- * visiteurs sans abonnement (showInterstitial), et récompensées (showRewarded).
- * Unity n'a pas de SDK web : la WebView appelle ce plugin, qui affiche la
- * publicité en plein écran et indique si elle a été regardée jusqu'au bout.
- *
- * Le crédit n'est PAS accordé ici : le serverId (session créée par
- * /api/ad-reward) est transmis à Unity, dont les serveurs appellent ensuite
- * /api/unity-ads-callback avec une signature — seule source de récompense.
- */
+/** Bridge name retained for deployed web code; AdMob is the sole mediation SDK. */
 @CapacitorPlugin(name = "UnityAds")
 public class UnityAdsPlugin extends Plugin {
+    private LevelPlayActionAds pending;
 
-    private LevelPlayActionAds mediated;
-
-    @PluginMethod
-    public void getCapabilities(PluginCall call) {
+    @PluginMethod public void getCapabilities(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("mediation", BuildConfig.LEVELPLAY_ENABLED ? "levelplay" : "unity-direct");
-        result.put("legacyRewards", !BuildConfig.LEVELPLAY_ENABLED);
-        result.put("actionAdPreload", BuildConfig.LEVELPLAY_ENABLED);
-        result.put("privacyRequired", BuildConfig.LEVELPLAY_ENABLED &&
-            com.google.android.ump.UserMessagingPlatform.getConsentInformation(getContext()).getPrivacyOptionsRequirementStatus()
-                == com.google.android.ump.ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);
+        result.put("mediation", "admob");
+        result.put("adMobRewards", true);
+        result.put("legacyRewards", false);
+        result.put("actionAdPreload", false); // Each ad must bind its own server session.
+        result.put("privacyRequired", UserMessagingPlatform.getConsentInformation(getContext()).getPrivacyOptionsRequirementStatus() == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);
         call.resolve(result);
     }
-
-    @PluginMethod
-    public void prepareActionAd(PluginCall call) {
-        if (!BuildConfig.LEVELPLAY_ENABLED) { call.resolve(); return; }
-        Activity host = getActivity();
-        if (host == null || host.isFinishing() || host.isDestroyed()) { call.resolve(); return; }
-        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", true));
-        host.runOnUiThread(() -> {
-            if (enabled) {
-                if (mediated == null) mediated = new LevelPlayActionAds(this::getActivity);
-                mediated.preload();
-            } else if (mediated != null) {
-                mediated.destroy();
-                mediated = null;
-            }
-            call.resolve();
-        });
+    @PluginMethod public void prepareActionAd(PluginCall call) { call.resolve(); }
+    @PluginMethod public void showInterstitial(PluginCall call) {
+        call.reject("Utilisez une publicité récompensée avec validation serveur", "unavailable");
     }
-
-    @PluginMethod
-    public void showPrivacyOptions(PluginCall call) {
+    @PluginMethod public void showRewarded(PluginCall call) {
+        String sid = call.getString("serverId");
         Activity host = getActivity();
-        if (host == null || host.isFinishing() || host.isDestroyed()) {
-            call.reject("Application en arrière-plan", "background");
-            return;
-        }
+        if (sid == null || !sid.matches("[A-Za-z0-9_-]{1,128}\\.[a-f0-9]{32}")) { call.reject("Session requise", "invalid"); return; }
+        if (host == null || host.isFinishing() || host.isDestroyed()) { call.reject("Application en arrière-plan", "background"); return; }
         host.runOnUiThread(() -> {
-            if (!BuildConfig.LEVELPLAY_ENABLED) { call.reject("Médiation non configurée", "unavailable"); return; }
-            com.google.android.ump.UserMessagingPlatform.showPrivacyOptionsForm(getActivity(), error -> {
-                // Discard any ad prepared with the previous privacy choices.
-                if (mediated != null) {
-                    mediated.destroy();
-                    mediated = new LevelPlayActionAds(this::getActivity);
-                    mediated.preload();
-                }
-                if (error != null) call.reject("Options publicitaires indisponibles pour le moment", "unavailable");
-                else call.resolve();
+            if (pending != null) { call.reject("Publicité déjà en cours", "busy"); return; }
+            pending = new LevelPlayActionAds(this::getActivity, new AdMobAdPlatform(this::getActivity, sid));
+            pending.show((shown, completed, reason) -> {
+                LevelPlayActionAds finished = pending; pending = null;
+                if (finished != null) finished.destroy();
+                JSObject result = new JSObject();
+                result.put("shown", shown); result.put("completed", completed);
+                if (reason != null) result.put("reason", reason);
+                call.resolve(result);
             });
         });
     }
-
-    @Override
-    protected void handleOnDestroy() {
-        if (mediated != null) mediated.destroy();
+    @PluginMethod public void showPrivacyOptions(PluginCall call) {
+        Activity host = getActivity();
+        if (host == null || host.isFinishing() || host.isDestroyed()) { call.reject("Application en arrière-plan", "background"); return; }
+        host.runOnUiThread(() -> {
+            if (pending != null) { call.reject("Une publicité est en cours", "busy"); return; }
+            UserMessagingPlatform.showPrivacyOptionsForm(host, error -> {
+                if (error == null) call.resolve(); else call.reject("Options indisponibles", "unavailable");
+            });
+        });
+    }
+    @Override protected void handleOnDestroy() {
+        if (pending != null) { pending.destroy(); pending = null; }
         super.handleOnDestroy();
-    }
-
-    private interface InitCallback {
-        void done(String error);
-    }
-
-    // Appels arrivés pendant l'initialisation (une seule à la fois).
-    private final List<InitCallback> initWaiters = new ArrayList<>();
-    private boolean initializing = false;
-
-    @PluginMethod
-    public void showRewarded(PluginCall call) {
-        // Historical Unity S2S credits must never be simulated with a LevelPlay callback.
-        if (BuildConfig.LEVELPLAY_ENABLED) {
-            call.reject("Crédits Unity historiques indisponibles avec LevelPlay", "unavailable");
-            return;
-        }
-        String gameId = call.getString("gameId");
-        String placementId = call.getString("placementId");
-        String serverId = call.getString("serverId");
-        boolean testMode = Boolean.TRUE.equals(call.getBoolean("testMode", false));
-        if (gameId == null || gameId.isEmpty() || placementId == null || placementId.isEmpty() || serverId == null || serverId.isEmpty()) {
-            call.reject("gameId, placementId et serverId sont requis", "invalid");
-            return;
-        }
-        ensureInitialized(gameId, testMode, (error) -> {
-            if (error != null) {
-                call.reject(error, "init");
-                return;
-            }
-            loadAndShow(call, placementId, serverId);
-        });
-    }
-
-    /**
-     * Publicité plein écran : résout { shown, completed } quand elle est
-     * fermée, ou { shown: false, reason } si aucune n'est disponible — jamais
-     * d’accès accordé en l’absence d’une publicité complètement regardée.
-     */
-    @PluginMethod
-    public void showInterstitial(PluginCall call) {
-        // Keep the bridge method name compatible with already deployed web code.
-        // LevelPlay uses rewarded inventory for mandatory action completion.
-        if (BuildConfig.LEVELPLAY_ENABLED) {
-            Activity host = getActivity();
-            if (host == null || host.isFinishing() || host.isDestroyed()) {
-                resolveShown(call, false, "background");
-                return;
-            }
-            host.runOnUiThread(() -> {
-                if (mediated == null) mediated = new LevelPlayActionAds(this::getActivity);
-                mediated.show((shown, completed, reason) -> resolveShown(call, shown, reason, completed));
-            });
-            return;
-        }
-        String gameId = call.getString("gameId");
-        String placementId = call.getString("placementId");
-        boolean testMode = Boolean.TRUE.equals(call.getBoolean("testMode", false));
-        if (gameId == null || gameId.isEmpty() || placementId == null || placementId.isEmpty()) {
-            call.reject("gameId et placementId sont requis", "invalid");
-            return;
-        }
-        ensureInitialized(gameId, testMode, (error) -> {
-            if (error != null) {
-                resolveShown(call, false, "init");
-                return;
-            }
-            UnityAds.load(placementId, new IUnityAdsLoadListener() {
-                @Override
-                public void onUnityAdsAdLoaded(String loadedPlacementId) {
-                    Activity activity = getActivity();
-                    if (activity == null) {
-                        resolveShown(call, false, "background");
-                        return;
-                    }
-                    activity.runOnUiThread(() -> UnityAds.show(activity, loadedPlacementId, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
-                        @Override
-                        public void onUnityAdsShowFailure(String id, UnityAds.UnityAdsShowError err, String message) {
-                            resolveShown(call, false, "show");
-                        }
-
-                        @Override
-                        public void onUnityAdsShowStart(String id) {}
-
-                        @Override
-                        public void onUnityAdsShowClick(String id) {}
-
-                        @Override
-                        public void onUnityAdsShowComplete(String id, UnityAds.UnityAdsShowCompletionState state) {
-                            boolean completed = state == UnityAds.UnityAdsShowCompletionState.COMPLETED;
-                            resolveShown(call, true, completed ? null : "skipped", completed);
-                        }
-                    }));
-                }
-
-                @Override
-                public void onUnityAdsFailedToLoad(String failedPlacementId, UnityAds.UnityAdsLoadError err, String message) {
-                    resolveShown(call, false, err == UnityAds.UnityAdsLoadError.NO_FILL ? "no_fill" : "load");
-                }
-            });
-        });
-    }
-
-    private void resolveShown(PluginCall call, boolean shown, String reason) {
-        resolveShown(call, shown, reason, false);
-    }
-
-    private void resolveShown(PluginCall call, boolean shown, String reason, boolean completed) {
-        JSObject ret = new JSObject();
-        ret.put("shown", shown);
-        ret.put("completed", completed);
-        if (reason != null) ret.put("reason", reason);
-        call.resolve(ret);
-    }
-
-    private void ensureInitialized(String gameId, boolean testMode, InitCallback callback) {
-        if (UnityAds.isInitialized()) {
-            callback.done(null);
-            return;
-        }
-        synchronized (initWaiters) {
-            initWaiters.add(callback);
-            if (initializing) return;
-            initializing = true;
-        }
-        UnityAds.initialize(getContext().getApplicationContext(), gameId, testMode, new IUnityAdsInitializationListener() {
-            @Override
-            public void onInitializationComplete() {
-                finishInit(null);
-            }
-
-            @Override
-            public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
-                finishInit("Initialisation Unity Ads impossible : " + message);
-            }
-        });
-    }
-
-    private void finishInit(String error) {
-        List<InitCallback> waiters;
-        synchronized (initWaiters) {
-            initializing = false;
-            waiters = new ArrayList<>(initWaiters);
-            initWaiters.clear();
-        }
-        for (InitCallback w : waiters) w.done(error);
-    }
-
-    private void loadAndShow(PluginCall call, String placementId, String serverId) {
-        UnityAds.load(placementId, new IUnityAdsLoadListener() {
-            @Override
-            public void onUnityAdsAdLoaded(String loadedPlacementId) {
-                Activity activity = getActivity();
-                if (activity == null) {
-                    call.reject("Application en arrière-plan", "error");
-                    return;
-                }
-                activity.runOnUiThread(() -> {
-                    // Relie cette publicité à la session serveur (rappel S2S).
-                    PlayerMetaData meta = new PlayerMetaData(getContext());
-                    meta.setServerId(serverId);
-                    meta.commit();
-                    UnityAds.show(activity, loadedPlacementId, new UnityAdsShowOptions(), showListener(call));
-                });
-            }
-
-            @Override
-            public void onUnityAdsFailedToLoad(String failedPlacementId, UnityAds.UnityAdsLoadError error, String message) {
-                String code = error == UnityAds.UnityAdsLoadError.NO_FILL ? "no_fill" : "error";
-                call.reject("Publicité indisponible : " + message, code);
-            }
-        });
-    }
-
-    private IUnityAdsShowListener showListener(PluginCall call) {
-        return new IUnityAdsShowListener() {
-            @Override
-            public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
-                call.reject("Affichage impossible : " + message, "error");
-            }
-
-            @Override
-            public void onUnityAdsShowStart(String placementId) {}
-
-            @Override
-            public void onUnityAdsShowClick(String placementId) {}
-
-            @Override
-            public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
-                JSObject ret = new JSObject();
-                ret.put("completed", state == UnityAds.UnityAdsShowCompletionState.COMPLETED);
-                call.resolve(ret);
-            }
-        };
     }
 }

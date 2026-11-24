@@ -6,27 +6,26 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.android.ump.ConsentInformation;
 import com.google.android.ump.ConsentRequestParameters;
 import com.google.android.ump.UserMessagingPlatform;
-import com.unity3d.mediation.LevelPlay;
-import com.unity3d.mediation.LevelPlayAdError;
-import com.unity3d.mediation.LevelPlayAdInfo;
-import com.unity3d.mediation.LevelPlayConfiguration;
-import com.unity3d.mediation.LevelPlayInitError;
-import com.unity3d.mediation.LevelPlayInitListener;
-import com.unity3d.mediation.LevelPlayInitRequest;
-import com.unity3d.mediation.rewarded.LevelPlayReward;
-import com.unity3d.mediation.rewarded.LevelPlayRewardedAd;
-import com.unity3d.mediation.rewarded.LevelPlayRewardedAdListener;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions;
 import java.util.function.Supplier;
 
 /** Privacy/SDK adapter; the controller can be tested without requesting real ads. */
-final class LevelPlayAdPlatform implements LevelPlayActionAds.Platform {
-    private static boolean initialized;
+final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
+    private static volatile boolean initialized;
     private final Supplier<Activity> activity;
     private boolean consentChecked;
     private boolean interactive;
     private boolean destroyed;
 
-    LevelPlayAdPlatform(Supplier<Activity> activity) { this.activity = activity; }
+    private final String serverId;
+    AdMobAdPlatform(Supplier<Activity> activity, String serverId) { this.activity = activity; this.serverId = serverId; }
     public void allowConsentPrompt(boolean allowed) { interactive = allowed; }
 
     public void initialize(boolean interactive, LevelPlayActionAds.Prepared callback) {
@@ -65,37 +64,45 @@ final class LevelPlayAdPlatform implements LevelPlayActionAds.Platform {
         if (destroyed) return;
         if (initialized) { callback.done(null); return; }
         try {
-            // Cohérent avec /confidentialite.html : service non destiné aux moins de 13 ans.
-            LevelPlay.setMetaData("CHARTBOOST_COPPA", "NO");
-            LevelPlay.init(activity.get().getApplicationContext(),
-                new LevelPlayInitRequest.Builder(BuildConfig.LEVELPLAY_APP_KEY).build(),
-                new LevelPlayInitListener() {
-                    public void onInitSuccess(LevelPlayConfiguration config) {
+            android.content.Context context = activity.get().getApplicationContext();
+            new Thread(() -> {
+                try {
+                    MobileAds.initialize(context, status -> {
                         initialized = true;
                         if (!destroyed) callback.done(null);
-                    }
-                    public void onInitFailed(LevelPlayInitError error) { if (!destroyed) callback.done("init"); }
-                });
+                    });
+                } catch (RuntimeException error) { if (!destroyed) callback.done("init"); }
+            }, "asrar-admob-init").start();
         } catch (RuntimeException error) { if (!destroyed) callback.done("init"); }
     }
 
     public LevelPlayActionAds.Ad create(LevelPlayActionAds.Events events) {
-        LevelPlayRewardedAd ad = new LevelPlayRewardedAd(BuildConfig.LEVELPLAY_REWARDED_ID);
-        ad.setListener(new LevelPlayRewardedAdListener() {
-            public void onAdLoaded(LevelPlayAdInfo info) { events.loaded(); }
-            public void onAdLoadFailed(LevelPlayAdError error) { events.loadFailed("no_fill"); }
-            public void onAdDisplayed(LevelPlayAdInfo info) { events.displayed(); }
-            public void onAdRewarded(LevelPlayReward reward, LevelPlayAdInfo info) { events.rewarded(); }
-            public void onAdClosed(LevelPlayAdInfo info) { events.closed(); }
-            public void onAdDisplayFailed(LevelPlayAdError error, LevelPlayAdInfo info) { events.displayFailed(); }
-        });
         return new LevelPlayActionAds.Ad() {
-            public void load() { ad.loadAd(); }
-            public boolean ready() { return ad.isAdReady(); }
-            public void show(Activity host) { ad.showAd(host); }
-            public void clear() { ad.setListener(null); }
+            private RewardedAd ad;
+            private boolean cleared;
+            public void load() {
+                String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5224354917" : BuildConfig.ADMOB_REWARDED_ID;
+                RewardedAd.load(activity.get(), unit, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
+                    @Override public void onAdLoaded(RewardedAd loaded) {
+                        if (cleared || destroyed) return;
+                        ad = loaded;
+                        ad.setServerSideVerificationOptions(new ServerSideVerificationOptions.Builder().setCustomData(serverId).build());
+                        ad.setFullScreenContentCallback(new FullScreenContentCallback() {
+                            @Override public void onAdShowedFullScreenContent() { events.displayed(); }
+                            @Override public void onAdDismissedFullScreenContent() { ad = null; events.closed(); }
+                            @Override public void onAdFailedToShowFullScreenContent(AdError error) { ad = null; events.displayFailed(); }
+                        });
+                        events.loaded();
+                    }
+                    @Override public void onAdFailedToLoad(LoadAdError error) { if (!cleared && !destroyed) events.loadFailed("no_fill"); }
+                });
+            }
+            public boolean ready() { return ad != null && !cleared && !destroyed; }
+            public void show(Activity host) { if (ready()) ad.show(host, reward -> events.rewarded()); else events.displayFailed(); }
+            public void clear() { cleared = true; if (ad != null) ad.setFullScreenContentCallback(null); ad = null; }
         };
     }
 
+    public boolean prefetchNext() { return false; }
     public void destroy() { destroyed = true; }
 }

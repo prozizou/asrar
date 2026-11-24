@@ -1,3 +1,5 @@
+> Migration Android 8.2.0 : la médiation de l’application principale passe à AdMob. Voir [la configuration AdMob](docs/admob-mediation.md). Les instructions LevelPlay ci-dessous décrivent les versions antérieures et le diagnostic séparé.
+
 # Médiation Android LevelPlay — préparation locale
 
 ## Pause de diffusion

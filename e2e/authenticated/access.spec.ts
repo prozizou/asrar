@@ -7,7 +7,7 @@ test.describe('Droits vérifiés avec Auth et RTDB réels en émulation', () => 
     test(`${role} reçoit son vrai statut`, async ({ postAs }) => {
       const response = await postAs(role, 'check-access');
       expect(response.status()).toBe(200);
-      expect(await response.json()).toMatchObject({ allowed: FREE_FOR_ALL || adFree, level: FREE_FOR_ALL || adFree ? 999999 : 0, adFree, adsEnabled: false, adCredits: 0 });
+      expect(await response.json()).toMatchObject({ allowed: FREE_FOR_ALL || adFree, level: FREE_FOR_ALL || adFree ? 999999 : 0, adFree, adsEnabled: true, adCredits: 0 });
     });
   }
   test('le catalogue est visible et le détail exige un abonnement actif', async ({ postAs }) => {

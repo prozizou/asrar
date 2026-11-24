@@ -49,7 +49,7 @@ test('un ancien passe publicitaire ne donne pas accès au contenu pendant la pau
   await db.ref(path).set({ until: Date.now() + 60000, uses: 1 });
   try {
     const access = await (await postAs('free', 'check-access')).json();
-    expect(access).toMatchObject({ allowed: false, adsEnabled: false, adCredits: 0 });
+    expect(access).toMatchObject({ allowed: false, adsEnabled: true, adCredits: 0 });
     expect((await postAs('free', 'get-content', { kind: 'secret', cat: 'protection', key: 'secret1' })).status()).toBe(403);
     expect((await db.ref(path).once('value')).val().uses).toBe(1);
     expect((await postAs('free', 'ad-reward', { action: 'start' })).status()).toBe(503);

@@ -1,3 +1,10 @@
+## Android 8.2.0 / SW v46.99 — Médiation AdMob et récompenses signées
+
+- Google Mobile Ads pilote la médiation Android, avec les adaptateurs AdMob Unity/BIGO/Chartboost. Le SDK de médiation ironSource/LevelPlay est retiré de l’application principale.
+- Bloc récompensé fourni par l’éditeur ; annonces Google de démonstration pour les builds debug. Consentement UMP et choix publicitaires conservés.
+- Une publicité complète et un rappel Google SSV signé autorisent un crédit à usage unique. Doublons, signatures invalides, mauvais bloc, sessions périmées et anciens crédits Unity sont refusés.
+- Le site reste sur les paiements manuels sans publicités. Les abonnés Android ne voient pas de publicité ; les modules du palier supérieur conservent leur condition d’accès. Les anciens APK conservent le parcours de paiement.
+
 ## SW v46.98 — Identifier les ressources indisponibles
 
 - Les erreurs de scripts et liens indiquent le chemin du fichier sans paramètres, leur type et l’état de connexion à l’observation. Les fichiers distincts ne sont plus regroupés dans un même incident.

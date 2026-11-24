@@ -94,6 +94,7 @@ jobs:
           export ASRAR_VERSION_CODE=$(( 100 + GITHUB_RUN_NUMBER ))
           echo "versionCode=$ASRAR_VERSION_CODE"
           npm run android:aab
+          cd android && ./gradlew :app:assembleRelease --console=plain
 
       - name: Vérifier signature et absence de Google Play Billing
         run: |
@@ -117,6 +118,13 @@ jobs:
         with:
           name: asrar-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asrar-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
