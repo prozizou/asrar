@@ -65,3 +65,9 @@ it('conserve l’ordre et vérifie le décodage pour une récompense avec caract
   expect(verifyAdMobQuery(q, { 123: publicKey }, now)).toMatchObject({ oid: 'admob:transaction-1' });
   expect(verifyAdMobQuery(q.replace('utilisation', 'fraude'), { 123: publicKey }, now)).toBe(null);
 });
+
+it('accepte les dates Google en ms ou microsecondes avec la même borne de fraîcheur', () => {
+  expect(verifyAdMobQuery(signed({ timestamp: String(now * 1000 + 123) }), { 123: publicKey }, now)).not.toBe(null);
+  expect(verifyAdMobQuery(signed({ timestamp: String((now + 300001) * 1000) }), { 123: publicKey }, now)).toBe(null);
+  expect(verifyAdMobQuery(signed({ timestamp: String((now - 7200001) * 1000) }), { 123: publicKey }, now)).toBe(null);
+});

@@ -28,8 +28,10 @@ function verifyAdMobQuery(query, keys, now = Date.now()) {
   try { if (!crypto.verify('sha256', Buffer.from(decodeURIComponent(signed), 'utf8'), key, Buffer.from(signature, 'base64url'))) return null; }
   catch { return null; }
   const unit = params.get('ad_unit');
-  const timestamp = Number(params.get('timestamp'));
-  if (![AD_UNIT, AD_UNIT.split('/')[1]].includes(unit) || !Number.isSafeInteger(timestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
+  const rawTimestamp = Number(params.get('timestamp'));
+  // Google's documentation declares milliseconds but also shows microsecond examples.
+  const timestamp = rawTimestamp >= 1e14 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
+  if (![AD_UNIT, AD_UNIT.split('/')[1]].includes(unit) || !Number.isSafeInteger(rawTimestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
   const transaction = params.get('transaction_id');
   if (!transaction || transaction.length > 256) return null;
   return { sid: params.get('custom_data'), oid: 'admob:' + transaction };
