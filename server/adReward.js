@@ -24,7 +24,8 @@ const {
 // Secret des rappels server-to-server, fourni par Unity (variable Vercel).
 // Absent : les publicités restent désactivées (l'app n'affiche pas l'option).
 const secret = () => process.env.UNITY_ADS_S2S_SECRET || "";
-const adsEnabled = () => !ADS_PAUSED && !!secret();
+const adsEnabled = () => true; // Google SSV is verified with public keys; Unity remains paused.
+const usableRewards = rewards => ADS_PAUSED ? Object.fromEntries(Object.entries(rewards).filter(([, r]) => r && r.provider === "admob")) : rewards;
 
 const rewardsRef = (uid) => app().database().ref("adRewards/" + uid);
 
@@ -43,13 +44,13 @@ async function readRewards(uid) {
   return (await rewardsRef(uid).once("value")).val() || {};
 }
 
-async function startAdSession(uid) {
+async function startAdSession(uid, provider = "unity") {
   const now = Date.now();
   const rewards = await readRewards(uid);
   const updates = {};
   for (const nonce of staleNonces(rewards, now)) updates[nonce] = null;
   const nonce = newNonce();
-  updates[nonce] = { createdAt: now };
+  updates[nonce] = { createdAt: now, provider };
   await rewardsRef(uid).update(updates);
   return { nonce, serverId: buildServerId(uid, nonce) };
 }
@@ -90,37 +91,54 @@ async function getAdSessionStatus(uid, nonce) {
 }
 
 async function countAdCredits(uid) {
-  return countCredits(await readRewards(uid));
+  return countCredits(usableRewards(await readRewards(uid)));
 }
 
 // Consomme un crédit et ouvre le passe à usage unique (get-content).
 async function consumeAdCredit(uid) {
-  if (ADS_PAUSED) return false;
   const now = Date.now();
-  const nonce = pickCredit(await readRewards(uid), now);
+  const rewards = usableRewards(await readRewards(uid));
+  const nonce = pickCredit(rewards, now);
   if (!nonce) return false;
   const used = await txOnExisting(
     rewardsRef(uid).child(nonce),
-    (s) => (s.rewarded && !s.used ? { ...s, used: true, usedAt: now } : undefined),
+    (s) => (s.rewarded && !s.used && (!ADS_PAUSED || s.provider === "admob") ? { ...s, used: true, usedAt: now } : undefined),
     { key: "usedAt", value: now }
   );
   if (!used) return false;
-  await app().database().ref("adPass/" + uid).set({ until: now + PASS_TTL_MS, uses: 1 });
+  await app().database().ref("adPass/" + uid).set({ until: now + PASS_TTL_MS, uses: 1, provider: rewards[nonce].provider || "unity" });
   return true;
 }
 
 // Utilise le passe (une seule fois) : appelé par get-content sans abonnement.
 async function consumeAdPass(uid) {
-  if (ADS_PAUSED) return false;
   const now = Date.now();
   return txOnExisting(
     app().database().ref("adPass/" + uid),
-    (p) => (isPassUsable(p, now) ? { ...p, uses: p.uses - 1, usedAt: now } : undefined),
+    (p) => (isPassUsable(p, now) && (!ADS_PAUSED || p.provider === "admob") ? { ...p, uses: p.uses - 1, usedAt: now } : undefined),
     { key: "usedAt", value: now }
   );
 }
 
+// Called only after cryptographic Google SSV verification, never by the client.
+async function rewardFromAdMob(params) {
+  const parsed = parseServerId(params.sid);
+  if (!parsed) return false;
+  const { uid, nonce } = parsed;
+  const now = Date.now(), db = app().database();
+  const session = (await rewardsRef(uid).child(nonce).once("value")).val();
+  if (!session || session.provider !== "admob" || !canReward(session, now)) return false;
+  if (countCredits(usableRewards(await readRewards(uid)), now) >= MAX_UNUSED_CREDITS) return false;
+  const offer = await db.ref("adOffers/" + offerKey(params.oid)).transaction(cur => {
+    if (!cur) return { uid, nonce, at: now };
+    // Retry after a transient write failure may finish this SAME session only.
+    return cur.uid === uid && cur.nonce === nonce ? cur : undefined;
+  });
+  if (!offer.committed) return false;
+  return txOnExisting(rewardsRef(uid).child(nonce), s => s.provider === "admob" && canReward(s, now) ? { ...s, rewarded: true, rewardedAt: now, oid: params.oid } : undefined, { key: "rewardedAt", value: now });
+}
 module.exports = {
+  rewardFromAdMob,
   adsEnabled,
   startAdSession,
   rewardFromCallback,

@@ -202,7 +202,7 @@ export default function AccessProvider({ children }) {
       } else { pendingAdAt.current = 0; }
       if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
-      const adEligible = !ADS_PAUSED && !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
+      const adEligible = !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
       if (adEligible && status.adCredits > 0 && (await spendAdCredit())) return true;
       return await new Promise((resolve) => {
         openGate(status.allowed && minLevel ? 'level' : null, { adEligible });

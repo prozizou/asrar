@@ -1,3 +1,5 @@
+> Android 8.2.0 remplace la médiation LevelPlay de l’application principale par AdMob. Voir [la configuration AdMob et SSV](docs/admob-mediation.md). Le workflow de release fournit un AAB et un APK signés, sans publication Play lorsque upload=false.
+
 # Application Android (APK / AAB)
 
 Le dossier `android/` est la coquille native Capacitor d'ASRAR PRO

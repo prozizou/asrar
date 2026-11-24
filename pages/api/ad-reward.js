@@ -45,7 +45,8 @@ export default async function handler(req, res) {
   try {
     switch (body.action) {
       case "start":
-        return res.status(200).json(await startAdSession(user.uid));
+        if (body.provider !== "admob") return res.status(503).json({ error: "Cette régie est en pause." });
+        return res.status(200).json(await startAdSession(user.uid, "admob"));
       case "status":
         if (!/^[a-f0-9]{32}$/.test(body.nonce || "")) return res.status(400).json({ error: "Session invalide." });
         return res.status(200).json(await getAdSessionStatus(user.uid, body.nonce));

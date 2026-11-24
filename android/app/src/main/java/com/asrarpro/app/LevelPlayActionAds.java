@@ -32,6 +32,7 @@ final class LevelPlayActionAds {
         void allowConsentPrompt(boolean allowed);
         Ad create(Events events);
         void destroy();
+        default boolean prefetchNext() { return true; }
     }
     private static final String LOADING_MESSAGE = "Chargement de la publicité… Le bouton Regarder sera disponible dès qu’elle sera prête.";
     private static final String READY_MESSAGE = "Regardez une publicité jusqu’au bout pour débloquer cette action.";
@@ -56,7 +57,6 @@ final class LevelPlayActionAds {
         Request(Result callback) { this.callback = callback; }
     }
 
-    LevelPlayActionAds(Supplier<Activity> activity) { this(activity, new LevelPlayAdPlatform(activity)); }
     LevelPlayActionAds(Supplier<Activity> activity, Platform platform) { this.activity = activity; this.platform = platform; }
 
     void preload() { main.post(() -> prepare(false)); }
@@ -115,7 +115,7 @@ final class LevelPlayActionAds {
                         if (pending != null && pending.slot == slot && owns(slot)) {
                             pending.state.displayed();
                             // Download the following ad while the current video is being watched.
-                            prepare(false);
+                            if (platform.prefetchNext()) prepare(false);
                         }
                     }); }
                     public void rewarded() { main.post(() -> {

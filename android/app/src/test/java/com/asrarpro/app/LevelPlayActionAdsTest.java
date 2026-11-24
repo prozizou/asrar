@@ -34,6 +34,7 @@ public class LevelPlayActionAdsTest {
         final List<FakeAd> ads = new ArrayList<>();
         final List<Boolean> preparations = new ArrayList<>();
         boolean destroyed, interactive;
+        boolean nextPrefetch = true;
         boolean defer;
         String error;
         final List<LevelPlayActionAds.Prepared> callbacks = new ArrayList<>();
@@ -41,6 +42,7 @@ public class LevelPlayActionAdsTest {
         public void allowConsentPrompt(boolean allowed) { interactive = allowed; }
         public LevelPlayActionAds.Ad create(LevelPlayActionAds.Events events) { FakeAd ad = new FakeAd(events); ads.add(ad); return ad; }
         public void destroy() { destroyed = true; }
+        public boolean prefetchNext() { return nextPrefetch; }
     }
     static class Outcome {
         final boolean shown, completed;
@@ -208,4 +210,14 @@ public class LevelPlayActionAdsTest {
         assertEquals(List.of("background"), results); assertTrue(platform.ads.isEmpty());
         ads.destroy();
     }
+    @Test public void googleSessionDoesNotPreloadASecondAdWithTheSameNonce() {
+        Fixture f = new Fixture(); f.platform.nextPrefetch = false;
+        FakeAd ad = f.watch();
+        ad.events.displayed(); idle();
+        assertEquals(1, f.platform.ads.size());
+        ad.events.rewarded(); ad.events.closed(); idle();
+        assertEquals(1, f.results.size()); assertTrue(f.results.get(0).completed);
+        f.controller.destroy();
+    }
+
 }

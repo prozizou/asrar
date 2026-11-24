@@ -94,7 +94,7 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
             ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
             : "Choisissez votre moyen de paiement."}
         </p>
-        {!ADS_PAUSED && adEligible && !isLevelGate && !isNoAdsGate && (
+        {adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
             <button type="button" className="sg-ad-btn" onClick={watchAd} disabled={adBusy}>
               {adBusy ? 'Publicité en cours…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
