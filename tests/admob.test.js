@@ -71,3 +71,17 @@ it('accepte les dates Google en ms ou microsecondes avec la même borne de fraî
   expect(verifyAdMobQuery(signed({ timestamp: String((now + 300001) * 1000) }), { 123: publicKey }, now)).toBe(null);
   expect(verifyAdMobQuery(signed({ timestamp: String((now - 7200001) * 1000) }), { 123: publicKey }, now)).toBe(null);
 });
+
+it('accepte la sonde signée de validation AdMob sans jamais accorder de crédit', async () => {
+  const probe = signed({ ad_unit: '1234567890', transaction_id: '123456789' });
+  expect(verifyAdMobQuery(probe, { 123: publicKey }, now)).toEqual({ test: true });
+  expect(verifyAdMobQuery(probe.replace('timestamp=', 'timestamp=0'), { 123: publicKey }, now)).toBe(null);
+  const reward = vi.fn();
+  const handler = runtime(database(), { stubs: {
+    'server/admobVerification.js': { googleKeys: async () => ({ 123: publicKey }), verifyAdMobQuery },
+    'server/adReward.js': { rewardFromAdMob: reward },
+  } })('pages/api/admob-ssv.js').default;
+  const res = { code: 200, setHeader() {}, status(code) { this.code = code; return this; }, end() { return this; } };
+  await handler({ method: 'GET', url: '/api/admob-ssv?' + probe }, res);
+  expect(res.code).toBe(200); expect(reward).not.toHaveBeenCalled();
+});

@@ -25,9 +25,14 @@ function verifyAdMobQuery(query, keys, now = Date.now()) {
   const key = keys[params.get('key_id')];
   const signature = params.get('signature') || '';
   if (!key || !/^[A-Za-z0-9_-]+={0,2}$/.test(signature)) return null;
-  try { if (!crypto.verify('sha256', Buffer.from(decodeURIComponent(signed), 'utf8'), key, Buffer.from(signature, 'base64url'))) return null; }
+  try {
+    const sig = Buffer.from(signature, 'base64url');
+    if (!crypto.verify('sha256', Buffer.from(signed, 'utf8'), key, sig) && !crypto.verify('sha256', Buffer.from(decodeURIComponent(signed), 'utf8'), key, sig)) return null;
+  }
   catch { return null; }
   const unit = params.get('ad_unit');
+  // AdMob's URL validator sends this signed placeholder, never a real reward.
+  if (unit === '1234567890' && params.get('transaction_id') === '123456789') return { test: true };
   const rawTimestamp = Number(params.get('timestamp'));
   // Google's documentation declares milliseconds but also shows microsecond examples.
   const timestamp = rawTimestamp >= 1e14 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
