@@ -1,4 +1,4 @@
-// Google SSV: verify the original, unmodified query using Google's public keys.
+// Google SSV: preserve parameter order and match Tink URI.getQuery() percent-decoding.
 const crypto = require('node:crypto');
 const AD_UNIT = 'ca-app-pub-3895250961868134/9551701662';
 let cached, expires = 0;
@@ -25,7 +25,7 @@ function verifyAdMobQuery(query, keys, now = Date.now()) {
   const key = keys[params.get('key_id')];
   const signature = params.get('signature') || '';
   if (!key || !/^[A-Za-z0-9_-]+={0,2}$/.test(signature)) return null;
-  try { if (!crypto.verify('sha256', Buffer.from(signed), key, Buffer.from(signature, 'base64url'))) return null; }
+  try { if (!crypto.verify('sha256', Buffer.from(decodeURIComponent(signed), 'utf8'), key, Buffer.from(signature, 'base64url'))) return null; }
   catch { return null; }
   const unit = params.get('ad_unit');
   const timestamp = Number(params.get('timestamp'));

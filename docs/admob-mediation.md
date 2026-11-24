@@ -12,7 +12,7 @@ https://www.asrarpro.com/api/admob-ssv
 
 Cocher aussi « Appliquer à tous les réseaux des groupes de médiation » pour que les réseaux tiers bénéficient du même rappel Google.
 
-Le SDK transmet custom_data (UID.session générée côté serveur) pour chaque visionnage. Ne pas définir une valeur fixe à la place de cette donnée dynamique. Google signe le rappel ; le serveur vérifie le message brut ECDSA SHA-256 avec les clés publiques Google, le bloc, la date, la session et le dédoublonnage. Ne jamais fabriquer de clé secrète SSV.
+Le SDK transmet custom_data (UID.session générée côté serveur) pour chaque visionnage. Ne pas définir une valeur fixe à la place de cette donnée dynamique. Google signe le rappel ; le serveur vérifie le message ECDSA SHA-256 en conservant l’ordre des paramètres et le décodage des caractères échappés du vérificateur Tink officiel avec les clés publiques Google, le bloc, la date, la session et le dédoublonnage. Ne jamais fabriquer de clé secrète SSV.
 
 Créer/configurer les groupes de médiation et associer les instances des régies dans la console AdMob ; leurs identifiants LevelPlay ne sont pas réutilisables. La présence d’un adaptateur dans l’APK ne configure pas les comptes ou les enchères côté console. Les paramètres de confidentialité et messages UMP doivent être disponibles dans AdMob. Le fichier public app-ads.txt conserve l’entrée Google du compte éditeur.
 

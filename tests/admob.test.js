@@ -8,7 +8,7 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', { namedCurve:
 const now = Date.now();
 function signed(overrides = {}, key = privateKey) {
   const content = new URLSearchParams({ ad_unit: AD_UNIT, custom_data: 'user1.' + 'a'.repeat(32), transaction_id: 'transaction-1', timestamp: String(now), ...overrides }).toString();
-  return content + '&signature=' + crypto.sign('sha256', Buffer.from(content), key).toString('base64url') + '&key_id=123';
+  return content + '&signature=' + crypto.sign('sha256', Buffer.from(decodeURIComponent(content), 'utf8'), key).toString('base64url') + '&key_id=123';
 }
 it('vérifie le message SSV exact, son unité et sa date sans accepter une signature modifiée', () => {
   const q = signed();
@@ -58,4 +58,10 @@ it('un rappel retenté après une panne conserve la récompense sans changer de 
   const other = await ads.startAdSession('user2', 'admob');
   expect(await ads.rewardFromAdMob({ sid: other.serverId, oid: reward.oid })).toBe(false);
   expect(await ads.countAdCredits('user2')).toBe(0);
+});
+
+it('conserve l’ordre et vérifie le décodage pour une récompense avec caractères échappés', () => {
+  const q = signed({ reward_item: 'une utilisation é % / & ?' });
+  expect(verifyAdMobQuery(q, { 123: publicKey }, now)).toMatchObject({ oid: 'admob:transaction-1' });
+  expect(verifyAdMobQuery(q.replace('utilisation', 'fraude'), { 123: publicKey }, now)).toBe(null);
 });
