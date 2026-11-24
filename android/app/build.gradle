@@ -94,6 +94,7 @@ dependencies {
     implementation "com.google.android.play:app-update:2.1.0"
     // Publicités récompensées (alternative à l'abonnement), voir UnityAdsPlugin.
     implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    implementation 'com.unity3d.ads:unity-ads:4.21.0'
     implementation 'com.google.ads.mediation:unity:4.21.0.0'
     implementation 'com.google.ads.mediation:bigo:6.2.0.1'
     implementation 'com.google.ads.mediation:chartboost:9.14.1.0'

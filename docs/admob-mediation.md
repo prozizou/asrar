@@ -2,7 +2,7 @@
 
 Application Google : ca-app-pub-3895250961868134~5473242896.
 Bloc récompensé : ca-app-pub-3895250961868134/9551701662.
-Google Mobile Ads 25.5.0 ; adaptateurs AdMob Unity 4.21.0.0, BIGO 6.2.0.1, Chartboost 9.14.1.0 ; UMP 4.0.0. Les anciennes dépendances du moteur LevelPlay sont retirées de l’application principale. Le module séparé mediation-test reste un outil historique LevelPlay et n’est pas utilisé par cette application.
+Google Mobile Ads 25.5.0 ; SDK Unity Ads 4.21.0, adaptateurs AdMob Unity 4.21.0.0, BIGO 6.2.0.1, Chartboost 9.14.1.0 ; UMP 4.0.0. Les anciennes dépendances du moteur LevelPlay sont retirées de l’application principale. Le module séparé mediation-test reste un outil historique LevelPlay et n’est pas utilisé par cette application.
 
 ## Configuration à effectuer dans AdMob
 
