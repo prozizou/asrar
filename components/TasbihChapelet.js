@@ -120,8 +120,12 @@ const FADE_MASK = 'linear-gradient(to bottom, black 0%, black 70%, transparent 1
  *   fond/bordure/padding (.zk-zikr-card, app/zikr/page.tsx) — retire le
  *   cadre PROPRE au chapelet (`.tc`) pour éviter un double encadrement
  *   (revue design : « boîte dans la boîte »).
+ * @param {boolean} [props.locked]  Zikr collectif : compteur figé tant que la vidéo
+ *   demandée tous les 100 grains n'a pas été regardée (app/zikr/ZikrAdGate.tsx) ;
+ *   les appuis sont ignorés et `onLockedTap` est appelé à la place.
+ * @param {() => void} [props.onLockedTap]  appelé quand on touche le compteur figé
  */
-export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedded }) {
+export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedded, locked = false, onLockedTap = undefined }) {
   const isCollectif = collectifRestant !== undefined;
   // Objectif du GROUPE atteint (collectifRestant retombé à 0) : le compteur
   // devient inactif — demandé explicitement. Continuer à taper au-delà de la
@@ -241,6 +245,8 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
 
   const handleTap = () => {
     if (collectifDone) return; // objectif du groupe atteint — plus rien à compter
+    // Compteur figé (Zikr collectif : vidéo à regarder tous les 100 grains, app/zikr/ZikrAdGate.tsx).
+    if (locked) { onLockedTap?.(); return; }
     const nowMs = performance.now();
     if (nowMs - lastTapRef.current < MIN_TAP_GAP_MS) return; // rebond / double événement
     lastTapRef.current = nowMs;
@@ -302,7 +308,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
   return (
     <div
       id={`tasbih-${id}`}
-      className={'tc' + (collectifDone ? ' tc-inactive' : '') + (embedded ? ' tc-embedded' : '')}
+      className={'tc' + (collectifDone ? ' tc-inactive' : '') + (locked ? ' tc-locked' : '') + (embedded ? ' tc-embedded' : '')}
     >
       {/* Réglages personnels (objectif/séries/suggestions/réinitialiser) —
           UNIQUEMENT hors Zikr collectif : en collectif, l'objectif partagé
@@ -399,7 +405,7 @@ export default function TasbihChapelet({ id, t, collectifRestant, myFait, embedd
         role="button"
         tabIndex={collectifDone ? -1 : 0}
         aria-disabled={collectifDone}
-        aria-label={collectifDone ? 'Objectif du groupe atteint — compteur inactif' : 'Toucher pour égrener un grain'}
+        aria-label={collectifDone ? 'Objectif du groupe atteint — compteur inactif' : locked ? 'Compteur en pause — regardez une vidéo pour continuer' : 'Toucher pour égrener un grain'}
         onClick={handleTap}
         onKeyDown={onTapZoneKeyDown}
       >
