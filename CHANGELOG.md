@@ -1,3 +1,10 @@
+## Android 8.3.1 / SW v47.04 — Nouvelle tentative des publicités et abonnement simplifié
+
+- Un échec de chargement d’une publicité récompensée (aucune annonce, erreur réseau ou SDK) redemande une annonce au lieu d’abandonner : jusqu’à 3 nouvelles tentatives (1,5 s, 3 s, 5 s), chacune relançant la mise en concurrence AdMob / Unity Ads. Consentement refusé, arrière-plan, annulation et chargement dépassant 60 s ne sont pas réessayés. Aucun point sans confirmation serveur. Nécessite ce nouvel APK.
+- Fenêtre d’abonnement simplifiée (déjà en ligne via le site) : sous-titre redondant retiré, barre de progression des points, messages publicitaires raccourcis, cartes de paiement compactes.
+- Site et PWA réservés à iOS : Android est redirigé vers Google Play, l’ordinateur voit un écran d’installation (`NEXT_PUBLIC_IOS_WEB_ONLY=0` au build pour le couper).
+- Médiation AdMob : Unity Ads en enchères dans les groupes bannière, récompensé et récompensé intercalaire.
+
 ## Android 8.2.0 / SW v46.99 — Médiation AdMob et récompenses signées
 
 - Google Mobile Ads pilote la médiation Android, avec les adaptateurs AdMob Unity/BIGO/Chartboost. Le SDK de médiation ironSource/LevelPlay est retiré de l’application principale.
