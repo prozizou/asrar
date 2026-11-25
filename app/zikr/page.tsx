@@ -17,6 +17,7 @@
 import './zikr.css';
 import ParticipantWarning from './ParticipantWarning';
 import ZikrMessenger from './ZikrMessenger';
+import ZikrAdOffer from './ZikrAdOffer';
 import ParticipantsBoard from './ParticipantsBoard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -1571,6 +1572,11 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
 
   return (
     <>
+      {/* Invitation facultative à regarder une publicité récompensée tous les
+          100 grains (application Android, comptes sans abonnement). Flottante :
+          elle ne déplace rien pendant la récitation. */}
+      <ZikrAdOffer total={t.total} />
+
       {/* Avertissement privé du créateur — visible seulement de la personne
           concernée, jamais des autres participants. */}
       {g.myWarning && (

@@ -257,6 +257,21 @@ export default function AccessProvider({ children }) {
     refreshAccess().catch(() => {});
   }, [refreshAccess]);
 
+  // Offre publicitaire FACULTATIVE (ex. Zikr collectif, tous les 100 grains) : renvoie
+  // { points } quand l'utilisateur peut regarder une publicité récompensée — application
+  // Android, compte sans abonnement, serveur configuré —, sinon null. N'ouvre aucune fenêtre
+  // et ne bloque rien : la vidéo ne démarre que sur un geste explicite.
+  const getAdOffer = useCallback(async () => {
+    if (!user) return null;
+    const cached = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
+    const status = cached || (await checkAccess(user));
+    if (status.unavailable) return null;
+    if (!cached) { cache.current = status; cacheAt.current = Date.now(); }
+    if (status.adFree || !status.adsEnabled) return null;
+    if (!(await isUnityAdsAvailable())) return null;
+    return { points: status.adCredits };
+  }, [user]);
+
   const finishSmartlinkPrompt = (proceed) => {
     const resolve = adResolve.current;
     adResolve.current = null;
@@ -265,7 +280,7 @@ export default function AccessProvider({ children }) {
   };
 
   return (
-    <AccessCtx.Provider value={{ ensureAccess, requireActionAd, getLevel, openGate, closeGate, invalidate, allowed, adFree, refreshAccess }}>
+    <AccessCtx.Provider value={{ ensureAccess, requireActionAd, getLevel, openGate, closeGate, invalidate, getAdOffer, allowed, adFree, refreshAccess }}>
       {/* Avant {children} : en flux normal (voir .expiry-banner), doit apparaître
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
