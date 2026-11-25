@@ -1585,3 +1585,23 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
   .zd-tab { font-size: .84rem; }
   .zd-action { padding: 0 12px; }
 }
+
+/* Invitation à regarder une publicité récompensée (components Zikr collectif, tous les 100 grains).
+   Flottante : aucun décalage de la mise en page pendant la récitation. */
+.zk-ad-offer {
+  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%);
+  top: calc(var(--sat) + 64px); width: min(calc(100vw - 32px), 420px);
+  display: grid; gap: 10px; padding: 12px 14px;
+  border: 1px solid var(--accent); border-radius: 14px;
+  background: var(--glass-bg); color: var(--text-main);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .35); backdrop-filter: blur(10px);
+}
+.zk-ad-offer p { margin: 0; }
+.zk-ad-offer-text { display: flex; align-items: flex-start; gap: 8px; font-size: .9rem; line-height: 1.4; }
+.zk-ad-offer-text svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+.zk-ad-offer-actions { display: flex; gap: 8px; }
+.zk-ad-offer button { min-height: 44px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; }
+.zk-ad-offer-go { flex: 1; border: 0; background: var(--accent); color: var(--button-ink); }
+.zk-ad-offer-go:disabled { opacity: .6; cursor: default; }
+.zk-ad-offer-later { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 14px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); }
+.zk-ad-offer-msg { font-size: .85rem; color: var(--text-dim); text-align: center; }

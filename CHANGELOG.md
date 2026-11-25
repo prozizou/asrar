@@ -1,3 +1,9 @@
+## Zikr collectif — publicité récompensée facultative tous les 100 grains
+
+- Au 100e, 200e… grain récité (application Android, comptes sans abonnement), une invitation flottante propose de regarder une courte vidéo pour gagner 1 point (10 points ouvrent une action). La vidéo ne démarre que sur « Regarder » : « Plus tard » la referme, et elle se replie seule après 20 s. Une publicité récompensée doit rester proposée, jamais imposée (règle AdMob).
+- Bannière flottante : aucun décalage de la mise en page sous le pouce ; bouton armé après 0,7 s. Les abonnés, le site (iOS) et les restaurations de compteur ne déclenchent rien.
+- Les échecs de chargement sont réessayés par le natif (jusqu'à 3 fois). Le serveur limite les demandes à 30 par 10 minutes.
+
 ## Android 8.3.1 / SW v47.04 — Nouvelle tentative des publicités et abonnement simplifié
 
 - Un échec de chargement d’une publicité récompensée (aucune annonce, erreur réseau ou SDK) redemande une annonce au lieu d’abandonner : jusqu’à 3 nouvelles tentatives (1,5 s, 3 s, 5 s), chacune relançant la mise en concurrence AdMob / Unity Ads. Consentement refusé, arrière-plan, annulation et chargement dépassant 60 s ne sont pas réessayés. Aucun point sans confirmation serveur. Nécessite ce nouvel APK.
