@@ -34,6 +34,10 @@ final class LevelPlayActionAds {
         void destroy();
         default boolean prefetchNext() { return true; }
     }
+    // Échec de chargement (aucune annonce, erreur réseau/SDK) : on redemande une annonce
+    // — AdMob relance alors la mise en concurrence des régies de la médiation — au lieu
+    // d'abandonner. Le consentement, l'arrière-plan et les délais dépassés ne sont pas réessayés.
+    private static final long[] RETRY_DELAYS_MS = {1_500, 3_000, 5_000};
     private static final String LOADING_MESSAGE = "Chargement de la publicité…";
     private static final String READY_MESSAGE = "Regardez la publicité jusqu’au bout pour gagner 1 point après validation.";
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -55,6 +59,8 @@ final class LevelPlayActionAds {
         AlertDialog dialog;
         Runnable deadline;
         boolean autoShow;
+        int loadRetries;
+        Runnable retry;
         Request(Result callback) { this.callback = callback; }
     }
 
@@ -176,7 +182,21 @@ final class LevelPlayActionAds {
     private void loadFailed(Slot slot, String reason) {
         if (cached != slot || !owns(slot)) return;
         discardCache();
-        if (pending != null && pending.slot == null) finish(pending, reason);
+        Request request = pending;
+        if (request == null || request.slot != null) return;
+        if (retryable(reason) && request.loadRetries < RETRY_DELAYS_MS.length) { scheduleRetry(request); return; }
+        finish(request, reason);
+    }
+    private static boolean retryable(String reason) {
+        return "no_fill".equals(reason) || "load".equals(reason) || "init".equals(reason);
+    }
+    private void scheduleRetry(Request request) {
+        long delay = RETRY_DELAYS_MS[request.loadRetries++];
+        request.retry = () -> {
+            request.retry = null;
+            if (active(request) && request.slot == null && cached == null) prepare(true);
+        };
+        main.postDelayed(request.retry, delay);
     }
     private void loadDeadline(Slot slot, long delay) {
         if (slot.deadline != null) main.removeCallbacks(slot.deadline);
@@ -198,6 +218,7 @@ final class LevelPlayActionAds {
         pending = null;
         platform.allowConsentPrompt(false);
         if (request.deadline != null) main.removeCallbacks(request.deadline);
+        if (request.retry != null) main.removeCallbacks(request.retry);
         if (request.slot != null && request.slot.ad != null) request.slot.ad.clear();
         if (request.dialog != null) request.dialog.dismiss();
         request.callback.done(request.state.wasDisplayed(), reason == null && request.state.isComplete(), reason);

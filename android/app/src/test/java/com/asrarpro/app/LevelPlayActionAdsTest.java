@@ -145,14 +145,50 @@ public class LevelPlayActionAdsTest {
         assertFalse(f.results.get(0).completed);
     }
 
-    @Test public void failureNeverGrantsAndNextActionCanRetry() {
+    @Test public void failedLoadRequestsAnotherAdInsteadOfStopping() {
         Fixture f = new Fixture(); f.show();
         f.platform.ads.get(0).events.loadFailed("no_fill"); idle();
-        assertEquals("no_fill", f.results.get(0).reason); assertFalse(f.results.get(0).completed);
-        f.show();
+        assertTrue(f.results.isEmpty()); assertTrue(dialog().isShowing());
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
         assertEquals(2, f.platform.ads.size());
         f.platform.ads.get(1).loaded();
         assertTrue(dialog().getButton(DialogInterface.BUTTON_POSITIVE).isEnabled());
+        assertTrue(f.results.isEmpty());
+        f.controller.destroy();
+    }
+
+    @Test public void givesUpAfterThreeRetriesWithoutGrantingAndNextActionCanRetry() {
+        Fixture f = new Fixture(); f.show();
+        for (int attempt = 0; attempt < 4; attempt++) {
+            assertEquals(attempt + 1, f.platform.ads.size());
+            f.platform.ads.get(attempt).events.loadFailed("no_fill"); idle();
+            Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6));
+        }
+        assertEquals(4, f.platform.ads.size());
+        assertEquals(1, f.results.size());
+        assertEquals("no_fill", f.results.get(0).reason); assertFalse(f.results.get(0).completed);
+        f.show();
+        assertEquals(5, f.platform.ads.size());
+        f.platform.ads.get(4).loaded();
+        assertTrue(dialog().getButton(DialogInterface.BUTTON_POSITIVE).isEnabled());
+        f.controller.destroy();
+    }
+
+    @Test public void consentRefusalIsNotRetried() {
+        Fixture f = new Fixture(); f.platform.error = "consent"; f.show();
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(10));
+        assertEquals(1, f.results.size()); assertEquals("consent", f.results.get(0).reason);
+        assertEquals(0, f.platform.ads.size());
+        f.controller.destroy();
+    }
+
+    @Test public void cancellingWhileWaitingForRetryStopsFurtherRequests() {
+        Fixture f = new Fixture(); f.show();
+        f.platform.ads.get(0).events.loadFailed("no_fill"); idle();
+        dialog().getButton(DialogInterface.BUTTON_NEGATIVE).performClick(); idle();
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(10));
+        assertEquals(1, f.platform.ads.size());
+        assertEquals("skipped", f.results.get(0).reason);
         f.controller.destroy();
     }
 

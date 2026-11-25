@@ -14,10 +14,10 @@ import { ADS_PAUSED } from '@/lib/plans';
 import { AD_POINTS_PER_ACTION } from '@/lib/adPoints';
 
 const AD_MESSAGES = {
-  no_fill: 'Aucune publicité disponible pour le moment. Réessayez dans quelques minutes.',
-  skipped: "Publicité interrompue : regardez-la jusqu’au bout pour gagner 1 point.",
-  pending: 'Confirmation du point en cours. Le solde sera actualisé à la prochaine vérification.',
-  error: 'Publicité indisponible pour le moment. Vérifiez votre connexion et réessayez.',
+  no_fill: 'Aucune publicité disponible. Réessayez plus tard.',
+  skipped: 'Publicité interrompue. Regardez-la jusqu’au bout.',
+  pending: 'Point en cours de confirmation.',
+  error: 'Publicité indisponible. Vérifiez votre connexion.',
   unavailable: 'Publicité indisponible sur cet appareil.',
 };
 
@@ -88,28 +88,29 @@ export default function SubscriptionGate({ open, reason, adEligible, adPoints, r
           <X size={20} strokeWidth={1.8} aria-hidden="true" />
         </button>
         <h2>{isNoAdsGate ? 'Retirer les publicités' : isLevelGate ? 'Forfait 1 An' : 'Votre abonnement'}</h2>
-        <p className="sg-sub">
-          {isNoAdsGate
-            ? "Choisissez votre moyen de paiement."
-            : isLevelGate
-            ? "Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp — l'accès est activé par l'administration."
-            : "Choisissez votre moyen de paiement."}
-        </p>
+        {isLevelGate && (
+          <p className="sg-sub">
+            Ce module est réservé aux abonnés du forfait 1 An (45 000 FCFA). Passez à ce forfait, puis validez votre demande sur WhatsApp.
+          </p>
+        )}
         {adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
             <button type="button" className="sg-ad-btn" onClick={() => watchAd()} disabled={adBusy}>
               {adBusy ? 'Chargement ou validation…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
             </button>
+            <div className="sg-ad-progress" aria-hidden="true">
+              <span style={{ width: `${Math.min(100, Math.max(0, (adPoints / AD_POINTS_PER_ACTION) * 100))}%` }} />
+            </div>
             <p className="sg-ad-hint" aria-live="polite">
-              {adPoints} / {AD_POINTS_PER_ACTION} points pour cette action. Chaque vidéo terminée et validée rapporte 1 point.
+              {adPoints} / {AD_POINTS_PER_ACTION} points · 1 point par vidéo
             </p>
             {rewardedInterstitial && (
               <button type="button" className="sg-ad-btn" onClick={() => watchAd(true)} disabled={adBusy}>
-                Regarder une autre vidéo pour gagner 1 point
+                Regarder une autre vidéo
               </button>
             )}
             {adMessage && <p className="sg-ad-msg" role="status">{adMessage}</p>}
-            <p className="sg-ad-or">ou abonnez-vous</p>
+            <p className="sg-ad-or"><span>ou abonnez-vous</span></p>
           </div>
         )}
         <SubscriptionPlans />
