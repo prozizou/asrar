@@ -29,7 +29,8 @@ export default async function handler(req, res) {
 
     // Le Marché (authOnly) ne demande PAS d'abonnement : l'achat = le prix du produit.
     const hasAccess = src.authOnly || await hasActiveAccess(user);
-    const snap = await app().database().ref(src.ref(cat) + "/" + key).once("value");
+    const contentPath = src.ref(cat) + "/" + key;
+    const snap = await app().database().ref(contentPath).once("value");
     const item = snap.val();
     if (!item || typeof item !== "object" || Array.isArray(item))
       return res.status(404).json({ error: "Élément introuvable." });
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     if (!hasAccess) {
       // Sans abonnement : passe à usage unique ouvert par une publicité
       // récompensée (server/adReward.js), consommé ici.
-      const ok = await consumeAdPass(user.uid);
+      const ok = await consumeAdPass(user.uid, contentPath);
       if (!ok) return res.status(403).json({ error: "Abonnement requis." });
     }
 

@@ -6,6 +6,7 @@
 import AuthProvider from './AuthProvider';
 import AccessProvider from './AccessProvider';
 import PendingDeepLink from './PendingDeepLink';
+import AndroidDisplayAds from './AndroidDisplayAds';
 import AdsterraAds from './AdsterraAds';
 import ActivityTracker from './ActivityTracker';
 import AndroidBackHandler from './AndroidBackHandler';
@@ -24,6 +25,7 @@ export default function Providers({ children }) {
         <SupportProvider>
           <PendingDeepLink />
           {children}
+          <AndroidDisplayAds />
           <AdsterraAds />
         </SupportProvider>
       </AccessProvider>

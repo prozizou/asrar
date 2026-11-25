@@ -108,14 +108,11 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
-        {/* Hors de PwaGate/Providers : la proposition d'installation doit
-            aussi s'afficher AVANT connexion, pour un visiteur qui arrive
-            sur un lien partagé et n'a pas encore de compte. */}
-        <InstallBanner />
         <KeyboardInsets />
         {/* Hors de PwaGate/Providers : bloque aussi avant connexion. */}
         <NativeUpdateGate />
         <PwaGate>
+          <InstallBanner />
           <Providers>{children}</Providers>
         </PwaGate>
       </body>

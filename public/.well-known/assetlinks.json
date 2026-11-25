@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.Asrar",
+      "sha256_cert_fingerprints": [
+        "62:68:53:9D:75:A6:EB:25:02:30:C4:69:12:83:AB:B2:7B:C8:E0:B7:4B:41:D0:8B:1A:D7:87:1B:60:F4:DB:E7"
+      ]
+    }
+  }
+]

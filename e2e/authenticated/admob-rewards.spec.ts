@@ -30,16 +30,23 @@ async function bindReward(page: any) {
     await route.fulfill({ json: { ok: true } });
   });
 }
-test('AdMob : un compte gratuit débloque une seule action après la confirmation serveur', async ({ page, login }) => {
+test('AdMob : un compte gratuit débloque une seule action après dix confirmations serveur', async ({ page, login }) => {
   await installAdMob(page); await login('free'); await bindReward(page); await page.goto('/asrar');
   await page.getByRole('button', { name: /Secret de test/i }).click();
   const ad = page.getByRole('button', { name: 'Regarder une publicité', exact: true });
-  await expect(ad).toBeVisible(); await ad.click();
+  for (let points = 1; points <= 10; points++) {
+    await expect(ad).toBeEnabled();
+    await ad.click();
+    if (points < 10) {
+      await expect(page.getByText(new RegExp(`^${points} / 10 points`))).toBeVisible();
+      await expect(page.locator('.secret-detail')).toHaveCount(0);
+    }
+  }
   await expect(page.locator('.secret-detail')).toBeVisible();
   await page.getByRole('button', { name: 'Retour', exact: true }).click();
   await page.getByRole('button', { name: /Secret de test/i }).click();
   await expect(ad).toBeVisible();
-  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(1);
+  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(10);
 });
 test('AdMob : fermer une publicité sans récompense laisse l’action verrouillée', async ({ page, login }) => {
   await installAdMob(page, false); await login('free'); await bindReward(page); await page.goto('/asrar');

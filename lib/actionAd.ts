@@ -1,5 +1,6 @@
 'use client';
 import { ADS_PAUSED } from './plans';
+import { isIOS } from './installPrompt';
 // Une ouverture d’onglet est une tentative publicitaire, jamais une preuve
 // d’affichage. AccessProvider exige ensuite un bloc chargé et visible.
 
@@ -74,8 +75,12 @@ export function recordAdOutcome(flush?: (stats: AdStats) => void) {
   }
 }
 
+export function isIOSAdsterra() {
+  return typeof window !== 'undefined' && isIOS() && !(window as any).Capacitor?.isNativePlatform?.();
+}
+
 export function openActionAd(): ActionAdResult {
-  if (ADS_PAUSED) return 'blocked';
+  if (ADS_PAUSED && !isIOSAdsterra()) return 'blocked';
   try {
     if ((window as any).Capacitor?.isNativePlatform?.()) return 'native';
     if (!ADSTERRA_SMARTLINK || (navigator.userActivation && !navigator.userActivation.isActive)) return 'blocked';

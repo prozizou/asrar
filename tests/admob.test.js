@@ -16,7 +16,7 @@ it('vérifie le message SSV exact, son unité et sa date sans accepter une signa
   for (const query of [q.replace('transaction-1', 'transaction-2'), signed({ ad_unit: 'other-unit' }), signed({ timestamp: String(now - 7200001) }), signed({ timestamp: String(now + 300001) }), q + '&extra=1', q.replace('ad_unit=', 'ad_unit=other&ad_unit='), signed({}, crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey)]) expect(verifyAdMobQuery(query, { 123: publicKey }, now)).toBe(null);
   expect(verifyAdMobQuery(q, {}, now)).toBe(null);
 });
-it('seul un crédit Google confirmé peut être consommé pendant la pause des autres régies', async () => {
+it('dix points Google confirmés ouvrent un seul passe pendant la pause des autres régies', async () => {
   const nonce = 'a'.repeat(32);
   const db = database();
   const ads = runtime(db, { stubs: { 'server/adReward.js': undefined } })('server/adReward.js');
@@ -25,14 +25,41 @@ it('seul un crédit Google confirmé peut être consommé pendant la pause des a
   const reward = { sid: session.serverId, oid: 'admob:verified-test' };
   expect(await ads.rewardFromAdMob(reward)).toBe(true);
   expect(await ads.rewardFromAdMob(reward)).toBe(false);
-  expect(await ads.consumeAdCredit('user1')).toBe(true);
+  for (let index = 2; index <= 10; index++) {
+    expect(await ads.consumeAdCredit('user1')).toBe(false);
+    const next = await ads.startAdSession('user1', 'admob');
+    expect(await ads.rewardFromAdMob({ sid: next.serverId, oid: 'admob:verified-' + index })).toBe(true);
+  }
+  expect(await ads.countAdCredits('user1')).toBe(10);
+  db.failNext('adRewards/user1', 'transaction');
+  await expect(ads.consumeAdCredit('user1')).rejects.toThrow();
+  expect(await ads.countAdCredits('user1')).toBe(10);
+  const target = 'db_sirr_protection/example';
+  const attempts = await Promise.all([ads.consumeAdCredit('user1', target), ads.consumeAdCredit('user1', target)]);
+  expect(attempts.sort()).toEqual([false, true]);
+  expect(await ads.countAdCredits('user1')).toBe(0);
   expect(await ads.consumeAdCredit('user1')).toBe(false);
-  expect(await ads.consumeAdPass('user1')).toBe(true);
-  expect(await ads.consumeAdPass('user1')).toBe(false);
+  expect(await ads.consumeAdPass('user1', 'almaqtab/other')).toBe(false);
+  expect(await ads.consumeAdPass('user1', target)).toBe(true);
+  expect(await ads.consumeAdPass('user1', target)).toBe(false);
   await db.ref('adRewards/user1/' + nonce).set({ createdAt: Date.now(), rewarded: true, rewardedAt: Date.now(), provider: 'unity' });
   expect(await ads.consumeAdCredit('user1')).toBe(false);
   expect(await ads.rewardFromAdMob({ sid: 'user1.' + nonce, oid: 'admob:legacy' })).toBe(false);
 });
+it('lie chaque récompense AdMob au format demandé et conserve les points inutilisés', async () => {
+  const db = database();
+  const ads = runtime(db, { stubs: { 'server/adReward.js': undefined } })('server/adReward.js');
+  const unit = '3047224257';
+  const session = await ads.startAdSession('user1', 'admob', true);
+  const reward = verifyAdMobQuery(signed({ ad_unit: unit, custom_data: session.serverId }), { 123: publicKey }, now);
+  expect(reward).toMatchObject({ interstitial: true });
+  expect(await ads.rewardFromAdMob({ ...reward, interstitial: false })).toBe(false);
+  expect(await ads.rewardFromAdMob(reward)).toBe(true);
+  await db.ref('adRewards/user1/' + session.nonce).update({ rewardedAt: now - 48 * 60 * 60 * 1000 });
+  await ads.startAdSession('user1', 'admob');
+  expect(await ads.countAdCredits('user1')).toBe(1);
+});
+
 it('le endpoint SSV ne traite jamais un rappel invalide ou une requête POST', async () => {
   const reward = vi.fn();
   const handler = runtime(database(), { stubs: {

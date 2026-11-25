@@ -34,8 +34,8 @@ final class LevelPlayActionAds {
         void destroy();
         default boolean prefetchNext() { return true; }
     }
-    private static final String LOADING_MESSAGE = "Chargement de la publicité… Le bouton Regarder sera disponible dès qu’elle sera prête.";
-    private static final String READY_MESSAGE = "Regardez une publicité jusqu’au bout pour débloquer cette action.";
+    private static final String LOADING_MESSAGE = "Chargement de la publicité…";
+    private static final String READY_MESSAGE = "Regardez la publicité jusqu’au bout pour gagner 1 point après validation.";
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Supplier<Activity> activity;
     private final Platform platform;
@@ -54,6 +54,7 @@ final class LevelPlayActionAds {
         Slot slot;
         AlertDialog dialog;
         Runnable deadline;
+        boolean autoShow;
         Request(Result callback) { this.callback = callback; }
     }
 
@@ -61,12 +62,17 @@ final class LevelPlayActionAds {
 
     void preload() { main.post(() -> prepare(false)); }
 
-    void show(Result callback) {
+    void show(Result callback) { show(callback, false); }
+
+    void showDirect(Result callback) { show(callback, true); }
+
+    private void show(Result callback, boolean autoShow) {
         main.post(() -> {
             if (destroyed || !foreground()) { callback.done(false, false, "background"); return; }
             if (pending != null) { callback.done(false, false, "busy"); return; }
             Request request = new Request(callback);
             pending = request;
+            request.autoShow = autoShow;
             deadline(request, 120_000, "timeout");
             request.dialog = new AlertDialog.Builder(activity.get())
                 .setTitle("Continuer avec une publicité")
@@ -80,6 +86,7 @@ final class LevelPlayActionAds {
                 updateDialog();
             });
             request.dialog.show();
+            if (autoShow) request.dialog.getButton(DialogInterface.BUTTON_POSITIVE).setVisibility(android.view.View.GONE);
             platform.allowConsentPrompt(true);
             prepare(true);
         });
@@ -147,6 +154,7 @@ final class LevelPlayActionAds {
     private void updateDialog() {
         if (pending == null || pending.slot != null || pending.dialog == null) return;
         boolean available = ready();
+        if (available && pending.autoShow) { showPrepared(pending); return; }
         pending.dialog.setMessage(available ? READY_MESSAGE : LOADING_MESSAGE);
         android.widget.Button button = pending.dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) { button.setText(available ? "Regarder" : "Chargement…"); button.setEnabled(available); }

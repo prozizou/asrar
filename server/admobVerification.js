@@ -1,6 +1,7 @@
 // Google SSV: preserve parameter order and match Tink URI.getQuery() percent-decoding.
 const crypto = require('node:crypto');
 const AD_UNIT = 'ca-app-pub-3895250961868134/9551701662';
+const INTERSTITIAL_AD_UNIT = 'ca-app-pub-3895250961868134/3047224257';
 let cached, expires = 0;
 async function googleKeys() {
   if (cached && Date.now() < expires) return cached;
@@ -36,9 +37,10 @@ function verifyAdMobQuery(query, keys, now = Date.now()) {
   const rawTimestamp = Number(params.get('timestamp'));
   // Google's documentation declares milliseconds but also shows microsecond examples.
   const timestamp = rawTimestamp >= 1e14 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
-  if (![AD_UNIT, AD_UNIT.split('/')[1]].includes(unit) || !Number.isSafeInteger(rawTimestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
+  const interstitial = [INTERSTITIAL_AD_UNIT, INTERSTITIAL_AD_UNIT.split('/')[1]].includes(unit);
+  if ((!interstitial && ![AD_UNIT, AD_UNIT.split('/')[1]].includes(unit)) || !Number.isSafeInteger(rawTimestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
   const transaction = params.get('transaction_id');
   if (!transaction || transaction.length > 256) return null;
-  return { sid: params.get('custom_data'), oid: 'admob:' + transaction };
+  return { sid: params.get('custom_data'), oid: 'admob:' + transaction, ...(interstitial ? { interstitial: true } : {}) };
 }
 module.exports = { verifyAdMobQuery, googleKeys, AD_UNIT };

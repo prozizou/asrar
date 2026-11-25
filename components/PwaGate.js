@@ -13,6 +13,8 @@ import Image from 'next/image';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall as promptInstallShared } from '@/lib/installPrompt';
 
 const FORCE_INSTALL = false;
+const IOS_WEB_ONLY = process.env.NEXT_PUBLIC_IOS_WEB_ONLY === '1';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.Asrar';
 
 export default function PwaGate({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -24,6 +26,8 @@ export default function PwaGate({ children }) {
     setMounted(true);
     setStandalone(isStandalone());
     setInstallState(getInstallState());
+
+    if (IOS_WEB_ONLY && !isIOS() && !window.Capacitor?.isNativePlatform?.()) return undefined;
 
     // Enregistrement du service worker (tous les visiteurs). public/sw.js ne
     // met RIEN en cache (l'app n'a pas de mode hors-ligne : tout dépend de
@@ -59,6 +63,28 @@ export default function PwaGate({ children }) {
       unsubscribe();
     };
   }, []);
+
+  if (IOS_WEB_ONLY) {
+    if (!mounted) return null;
+    if (!isIOS() && !window.Capacitor?.isNativePlatform?.()) {
+      const android = /Android/i.test(navigator.userAgent);
+      const openApp = 'intent://open#Intent;scheme=asrarpro;package=com.Asrar;S.browser_fallback_url='
+        + encodeURIComponent(PLAY_STORE_URL) + ';end';
+      return (
+        <main style={ov}>
+          <div style={card}>
+            <Image src="/assets/logo-mark.png" alt="" width={84} height={84} />
+            <h1 style={{ color: '#fff' }}>ASRAR PRO</h1>
+            <p style={txt}>Le site est accessible sur iPhone et iPad. Sur Android, utilisez l’application.</p>
+            {android && (
+              <p><a href={openApp} style={{ ...btn, display: 'inline-block', width: 'auto' }}>Ouvrir l’application</a></p>
+            )}
+            <a href={PLAY_STORE_URL} style={txt}>Voir sur Google Play</a>
+          </div>
+        </main>
+      );
+    }
+  }
 
   const promptInstall = () => promptInstallShared();
 

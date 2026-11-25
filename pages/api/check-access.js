@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     const level = status.level === Infinity ? 999999 : status.level;
     const ads = adsEnabled();
     const adCredits = ads && !status.allowed ? await countAdCredits(user.uid) : 0;
-    return res.status(200).json({ ...status, level, adsEnabled: ads, adCredits });
+    return res.status(200).json({ ...status, level, adsEnabled: ads, adCredits, rewardedInterstitial: process.env.ADMOB_REWARDED_INTERSTITIAL_SSV === "1" });
   } catch (e) {
     await reportError("check-access", e, { uid: user.uid });
     return res.status(500).json({ error: e.message });

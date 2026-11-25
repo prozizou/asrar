@@ -93,6 +93,20 @@ public class LevelPlayActionAdsTest {
         f.controller.destroy();
     }
 
+    @Test public void directRequestShowsOnlyAfterLoadingAndNeedsNoSecondTap() {
+        Fixture fixture = new Fixture();
+        fixture.controller.showDirect((shown, completed, reason) -> fixture.results.add(new Outcome(shown, completed, reason)));
+        idle();
+        FakeAd ad = fixture.platform.ads.get(0);
+        assertEquals(0, ad.shows);
+        assertTrue(dialog().isShowing());
+        ad.loaded();
+        assertEquals(1, ad.shows);
+        assertFalse(dialog().isShowing());
+        assertTrue(fixture.results.isEmpty());
+        fixture.controller.destroy();
+    }
+
     @Test public void followingAdDownloadsDuringVideoAndIsUsedForTheNextAction() {
         Fixture f = new Fixture(); FakeAd first = f.watch();
         first.events.displayed(); idle();

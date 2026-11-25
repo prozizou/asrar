@@ -68,7 +68,7 @@ export default function AsrarPage() {
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
   const { ensureAccess } = useAccess() as unknown as {
-    ensureAccess: (minLevel?: number) => Promise<boolean>;
+    ensureAccess: (minLevel?: number, content?: { kind: 'secret'; cat: string; key: string }) => Promise<boolean>;
   };
   const cacheRef = useRef<Record<string, SecretListItem[]>>({}); // secretsCache par catégorie
   const [currentCat, setCurrentCat] = useState<Category>(CATS[0]);
@@ -161,7 +161,7 @@ export default function AsrarPage() {
       } catch (e: any) {
         if (e.status === 403) {
           // paywall serveur : l'utilisateur a perdu l'accès entre-temps
-          ensureAccess();
+          notify("Accès expiré. Ouvrez à nouveau ce secret.");
           return;
         }
         notify('Ce secret n’a pas pu être chargé. Réessayez dans un instant.');
@@ -169,7 +169,7 @@ export default function AsrarPage() {
         setLoadingSecret(false);
       }
     },
-    [ensureAccess, notify]
+    [notify]
   );
 
   const openSecret = useCallback(
@@ -177,7 +177,7 @@ export default function AsrarPage() {
       // Pub au clic AVANT l'appel réseau (le navigateur n'ouvre un onglet que
       // pendant le clic) — ensureAccess() ci-dessous ne la rouvre pas.
       try {
-        const ok = await ensureAccess();
+        const ok = await ensureAccess(0, { kind: 'secret', cat: catId, key });
         if (ok) fetchDetail(catId, key);
       } catch { notify('Ce secret n’a pas pu être chargé. Réessayez.'); }
     },
