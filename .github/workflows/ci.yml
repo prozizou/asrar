@@ -44,6 +44,7 @@ jobs:
     timeout-minutes: 20
     env:
       NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_IOS_WEB_ONLY: '0' # les tests tournent sur Chrome ordinateur
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
