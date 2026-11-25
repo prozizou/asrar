@@ -19,6 +19,7 @@ import {
   VerticalAlign,
   WidthType,
 } from "docx";
+import { saveFileNative, DOCX_MIME } from "./nativeFiles";
 
 /** Largeur totale du tableau, en twips (1/20e de point ; ~9000 = 15,6 cm). */
 const TABLE_WIDTH_DXA = 9000;
@@ -127,10 +128,13 @@ export async function exportSquareToDocx({
   });
 
   const blob = await Packer.toBlob(doc);
+  const docxName = fileName.endsWith(".docx") ? fileName : `${fileName}.docx`;
+  // Application Android : la WebView ignore les téléchargements blob: (lib/nativeFiles.js).
+  if ((await saveFileNative(blob, docxName, DOCX_MIME)).handled) return;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = fileName.endsWith(".docx") ? fileName : `${fileName}.docx`;
+  a.download = docxName;
   document.body.appendChild(a);
   a.click();
   a.remove();
