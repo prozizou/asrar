@@ -1,8 +1,9 @@
-## Zikr collectif — publicité récompensée facultative tous les 100 grains
+## Zikr collectif — une vidéo récompensée tous les 100 grains pour continuer
 
-- Au 100e, 200e… grain récité (application Android, comptes sans abonnement), une invitation flottante propose de regarder une courte vidéo pour gagner 1 point (10 points ouvrent une action). La vidéo ne démarre que sur « Regarder » : « Plus tard » la referme, et elle se replie seule après 20 s. Une publicité récompensée doit rester proposée, jamais imposée (règle AdMob).
-- Bannière flottante : aucun décalage de la mise en page sous le pouce ; bouton armé après 0,7 s. Les abonnés, le site (iOS) et les restaurations de compteur ne déclenchent rien.
-- Les échecs de chargement sont réessayés par le natif (jusqu'à 3 fois). Le serveur limite les demandes à 30 par 10 minutes.
+- À chaque centaine récitée (100, 200…), application Android et comptes sans abonnement : le compteur est figé et une fenêtre demande de regarder une courte vidéo (1 point offert ; 10 points ouvrent une action). La vidéo ne démarre que sur « Regarder » (règle AdMob : une publicité récompensée est lancée par l'utilisateur, jamais automatiquement).
+- « Plus tard » ferme la fenêtre mais le compteur reste en pause ; toucher le chapelet la rouvre. Le verrou est conservé si l'on quitte puis rouvre le groupe.
+- Jamais d'enfermement par notre faute : après deux échecs de chargement (aucune annonce, erreur réseau), le verrou est levé et le comptage reprend. Une vidéo interrompue par l'utilisateur laisse le verrou ; une vidéo vue dont le crédit n'est pas encore confirmé le lève.
+- Les abonnés, le site (iOS) et les restaurations de compteur (autre appareil) ne verrouillent rien. Le verrou est une règle d'interface : le serveur n'impose pas la pause.
 
 ## Android 8.3.1 / SW v47.04 — Nouvelle tentative des publicités et abonnement simplifié
 

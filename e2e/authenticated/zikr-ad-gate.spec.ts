@@ -2,10 +2,10 @@ import { test, expect } from './fixtures';
 const { app } = require('../../server/grant');
 const { accounts } = require('./accounts.cjs');
 
-// Zikr collectif : invitation FACULTATIVE à regarder une publicité récompensée tous les
-// 100 grains (application Android, comptes sans abonnement). Aucune régie réelle : le SDK
-// et le rappel signé sont simulés, comme dans admob-rewards.spec.ts.
-const GID = 'zikr-ad-offer';
+// Zikr collectif : une vidéo récompensée à regarder tous les 100 grains pour continuer
+// (application Android, comptes sans abonnement) ; le compteur est figé jusque-là. Aucune régie
+// réelle : le SDK et le rappel signé sont simulés, comme dans admob-rewards.spec.ts.
+const GID = 'zikr-ad-gate';
 const freeKey = accounts.free.email.replace(/\./g, ',');
 const isolatedPaths = ['purchased_user/' + freeKey, 'allowedUsers/' + freeKey, 'secret_billing'];
 let saved: Record<string, unknown> = {};
@@ -39,6 +39,7 @@ async function installAdMob(page: any) {
         if (method === 'getCapabilities') return { adMobRewards: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
         if (method === 'showRewarded') {
           (window as any).__adMobShows++;
+          if ((window as any).__adMobFail) throw Object.assign(new Error('Aucune annonce'), { code: 'no_fill' });
           await fetch('/__test-admob-reward', { method: 'POST', body: JSON.stringify({ serverId: options.serverId }) });
           return { shown: true, completed: true };
         }
@@ -56,55 +57,95 @@ async function bindReward(page: any) {
   });
 }
 const tap = (page: any) => page.getByRole('button', { name: 'Toucher pour égrener un grain' });
+const lockedTap = (page: any) => page.getByRole('button', { name: /Compteur en pause/ });
+const gate = (page: any) => page.getByRole('dialog', { name: 'Vidéo pour continuer le comptage' });
 // Le chapelet ignore les appuis trop rapprochés (rebond) : on les espace comme une vraie récitation.
 async function tapTimes(page: any, count: number) {
   for (let i = 0; i < count; i++) { await tap(page).click(); await page.waitForTimeout(250); }
 }
 
-test('une invitation facultative apparaît au 100e grain et la vidéo ne démarre que sur « Regarder »', async ({ page, login }) => {
-  test.setTimeout(120_000);
-  await installAdMob(page); await page.setViewportSize({ width: 390, height: 850 });
-  await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+async function reachHundred(page: any) {
   await expect(tap(page)).toBeVisible({ timeout: 20000 });
   await expect(tap(page)).toContainText('98');
   await tapTimes(page, 1);
   await expect(tap(page)).toContainText('99');
-  await expect(page.locator('.zk-ad-offer')).toHaveCount(0);
+  await expect(gate(page)).toHaveCount(0);
   await tapTimes(page, 1);
-  await expect(tap(page)).toContainText('100');
-  const offer = page.locator('.zk-ad-offer');
-  await expect(offer).toContainText('100 grains');
-  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0); // rien ne démarre seul
-  // La bannière est flottante : elle ne déplace pas le chapelet sous le pouce.
-  expect(await offer.evaluate((node: HTMLElement) => getComputedStyle(node).position)).toBe('fixed');
-  const go = offer.getByRole('button', { name: 'Regarder', exact: true });
-  await expect(go).toBeEnabled();
-  await page.screenshot({ path: test.info().outputPath('zikr-pub-invitation.png') });
-  await go.click();
-  // Session, vidéo simulée puis confirmation serveur : plus long que l'attente par défaut.
-  await expect(page.getByText(/\+1 point gagné/)).toBeVisible({ timeout: 20000 });
-  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(1);
-  await expect(offer.getByRole('button', { name: 'Regarder', exact: true })).toHaveCount(0);
-});
+  await expect(gate(page)).toBeVisible();
+}
 
-test('« Plus tard » referme l’invitation sans lancer de vidéo', async ({ page, login }) => {
+test('au 100e grain le compteur est figé et la vidéo ne démarre que sur « Regarder »', async ({ page, login }) => {
   test.setTimeout(120_000);
-  await installAdMob(page); await login('free'); await page.goto('/zikr?item=' + GID);
-  await expect(tap(page)).toBeVisible({ timeout: 20000 });
-  await tapTimes(page, 2);
-  await page.locator('.zk-ad-offer').getByRole('button', { name: 'Plus tard' }).click();
-  await expect(page.locator('.zk-ad-offer')).toHaveCount(0);
-  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0);
+  await installAdMob(page); await page.setViewportSize({ width: 390, height: 850 });
+  await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+  await reachHundred(page);
+  await expect(gate(page)).toContainText('100 grains récités');
+  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0); // rien ne démarre seul
+  const go = gate(page).getByRole('button', { name: 'Regarder la vidéo', exact: true });
+  await expect(go).toBeEnabled();
+  await page.screenshot({ path: test.info().outputPath('zikr-pub-obligatoire.png') });
+  await go.click();
+  await expect(page.getByText(/\+1 point gagné/)).toBeVisible({ timeout: 15000 });
+  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(1);
+  await expect(gate(page)).toHaveCount(0);
+  // Le compteur reprend : 100 → 101.
+  await expect(tap(page)).toContainText('100');
+  await tapTimes(page, 1);
+  await expect(tap(page)).toContainText('101');
 });
 
-test('un abonné ne reçoit aucune invitation', async ({ page, login }) => {
+test('« Plus tard » ferme la fenêtre mais le compteur reste figé, et toucher le chapelet la rouvre', async ({ page, login }) => {
+  test.setTimeout(120_000);
+  await installAdMob(page); await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+  await reachHundred(page);
+  await gate(page).getByRole('button', { name: 'Plus tard', exact: true }).click();
+  await expect(gate(page)).toHaveCount(0);
+  await expect(lockedTap(page)).toContainText('100');
+  await lockedTap(page).click();
+  await expect(gate(page)).toBeVisible();
+  await expect(gate(page)).toContainText('100 grains récités');
+  expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0);
+  await gate(page).getByRole('button', { name: 'Plus tard', exact: true }).click();
+  await lockedTap(page).click({ force: true });
+  await expect(lockedTap(page)).toContainText('100'); // aucun grain compté pendant la pause
+});
+
+test('le verrou survit à une fermeture de la page : on le retrouve en rouvrant le groupe', async ({ page, login }) => {
+  test.setTimeout(120_000);
+  await installAdMob(page); await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+  await reachHundred(page);
+  // L'application retire « ?item= » de l'adresse : un rechargement revient à la liste des zikrs.
+  await page.reload();
+  await page.goto('/zikr?item=' + GID);
+  await expect(gate(page)).toBeVisible({ timeout: 20000 });
+  await expect(gate(page)).toContainText('100 grains récités');
+});
+
+test('sans vidéo disponible, le verrou est levé après deux échecs : jamais d’enfermement', async ({ page, login }) => {
+  test.setTimeout(120_000);
+  await installAdMob(page); await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+  await reachHundred(page);
+  await page.evaluate(() => { (window as any).__adMobFail = true; });
+  const go = gate(page).getByRole('button', { name: 'Regarder la vidéo', exact: true });
+  await expect(go).toBeEnabled();
+  await go.click();
+  await expect(gate(page)).toContainText('Vidéo indisponible');
+  await expect(gate(page)).toBeVisible(); // premier échec : on peut réessayer
+  await gate(page).getByRole('button', { name: 'Réessayer', exact: true }).click();
+  await expect(page.getByText(/vous pouvez continuer/)).toBeVisible({ timeout: 15000 });
+  await expect(gate(page)).toHaveCount(0);
+  await expect(tap(page)).toContainText('100');
+  await tapTimes(page, 1);
+  await expect(tap(page)).toContainText('101');
+});
+
+test('un abonné n’est jamais verrouillé', async ({ page, login }) => {
   test.setTimeout(120_000);
   await installAdMob(page); await login('basic'); await page.goto('/zikr?item=' + GID);
   await expect(tap(page)).toBeVisible({ timeout: 20000 });
   await expect(tap(page)).toContainText('98');
-  await tapTimes(page, 2);
-  await expect(tap(page)).toContainText('100');
-  await page.waitForTimeout(1500);
-  await expect(page.locator('.zk-ad-offer')).toHaveCount(0);
+  await tapTimes(page, 4);
+  await expect(tap(page)).toContainText('102');
+  await expect(gate(page)).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0);
 });

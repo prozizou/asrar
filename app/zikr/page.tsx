@@ -17,7 +17,7 @@
 import './zikr.css';
 import ParticipantWarning from './ParticipantWarning';
 import ZikrMessenger from './ZikrMessenger';
-import ZikrAdOffer from './ZikrAdOffer';
+import { useZikrAdGate } from './ZikrAdGate';
 import ParticipantsBoard from './ParticipantsBoard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -1494,6 +1494,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
 
   const target = Number(g.target) || 0;
   const t = useTasbih(`collectif_${groupId}_${uid}`, undefined, true);
+  const adGate = useZikrAdGate({ total: t.total, groupId, uid });
 
   // Rythme instantané (grains/minute), sur les tapotements des dix dernières
   // secondes — remis à zéro après six secondes sans tap plutôt que de rester
@@ -1572,10 +1573,9 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
 
   return (
     <>
-      {/* Invitation facultative à regarder une publicité récompensée tous les
-          100 grains (application Android, comptes sans abonnement). Flottante :
-          elle ne déplace rien pendant la récitation. */}
-      <ZikrAdOffer total={t.total} />
+      {/* Vidéo récompensée à regarder tous les 100 grains pour continuer (application
+          Android, comptes sans abonnement) : le compteur est figé jusque-là. */}
+      {adGate.dialog}
 
       {/* Avertissement privé du créateur — visible seulement de la personne
           concernée, jamais des autres participants. */}
@@ -1612,7 +1612,7 @@ function MemberCounter({ groupId, uid, g, onDismissWarning }: {
           Réglages masqués : pas de part personnelle en Zikr collectif,
           l'objectif restant affiché EST celui du groupe entier. */}
       <div className="zk-zikr-card zk-zikr-card-counter">
-        <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} myFait={myFait} embedded />
+        <TasbihChapelet id={`collectif-${groupId}-${uid}`} t={t} collectifRestant={restant} myFait={myFait} embedded locked={adGate.locked} onLockedTap={adGate.reopen} />
       </div>
     </>
   );
