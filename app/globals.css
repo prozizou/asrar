@@ -2130,6 +2130,8 @@ html[data-theme="light"] {
   border: 1px solid var(--glass-border); border-bottom: 0; border-radius: 26px 26px 0 0;
   background: var(--glass-bg); color: var(--text-main); box-shadow: 0 -8px 40px rgba(0, 0, 0, .18);
 }
+/* Un contrôle amené à l'écran (focus clavier, défilement automatique) garde de l'air sous lui. */
+.subscription-dialog { scroll-padding-block: 24px; }
 .subscription-dialog .sg-close {
   display: grid; place-items: center; width: 44px; height: 44px;
   top: 6px; left: 9px; right: auto; padding: 0; margin: 0;
