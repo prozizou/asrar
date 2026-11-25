@@ -64,7 +64,7 @@ export default function SubscriptionPlans({ plans = SUB_PLANS, section = undefin
   };
   return <div className="subscription-simple">
     {plans.length > 1 ? <>
-      <label htmlFor={selectId}>Durée et prix</label>
+      <label htmlFor={selectId} className="sr-only">Durée et prix</label>
       <div className="subscription-plan-picker">
         <select id={selectId} value={planId} disabled={busy} onChange={(event) => { setPlanId(event.target.value); setPaymentAttempt(null); setCopied(false); setError(''); }}>
           {plans.map((item) => <option key={item.id} value={item.id}>{item.dur} — {item.price} FCFA</option>)}
@@ -94,8 +94,8 @@ export default function SubscriptionPlans({ plans = SUB_PLANS, section = undefin
       <MessageCircle size={17} aria-hidden="true" /> Envoyer le justificatif sur WhatsApp
     </button>}
     <p className="subscription-simple-note" role="status"><LockKeyhole size={13} aria-hidden="true" /><span>{isPiSpi
-      ? `${copied ? 'Alias copié. ' : ''}Après le paiement, transmettez votre justificatif. Activation après vérification du paiement reçu.`
-      : paidVia === 'wave' ? 'Après votre paiement Wave, choisissez WhatsApp pour envoyer votre reçu. Activation après vérification.'
+      ? `${copied ? 'Alias copié. ' : ''}Après le paiement, envoyez votre justificatif.`
+      : paidVia === 'wave' ? 'Après votre paiement Wave, choisissez WhatsApp pour envoyer votre reçu.'
       : 'Activation après vérification du paiement.'}</span></p>
     {error && <p className="subscription-error" role="alert">{error}</p>}
   </div>;
