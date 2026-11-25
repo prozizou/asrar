@@ -86,6 +86,20 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        openAppLink(intent);
+    }
+
+    private void openAppLink(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction()) || getBridge() == null) return;
+        Uri uri = intent.getData();
+        if (uri == null || !uri.isHierarchical()) return;
+        if (!"https".equals(uri.getScheme()) || !"www.asrarpro.com".equals(uri.getEncodedAuthority())) return;
+        getBridge().getWebView().loadUrl(uri.toString());
+    }
+
     // Ancien comportement (site sans window.__asrarBack) : historique de la
     // WebView, puis accueil, puis double appui pour quitter.
     private void historyBack(WebView webView) {

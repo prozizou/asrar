@@ -60,7 +60,7 @@ export default function BibliothequePage() {
   // son contexte est créé via createContext(null), donc TS l'infère `null`
   // sans cast — la vraie forme documentée ici en local.
   const { ensureAccess, openGate, adFree } = useAccess() as unknown as {
-    ensureAccess: (minLevel?: number) => Promise<boolean>;
+    ensureAccess: (minLevel?: number, content?: { kind: 'book'; key: string }) => Promise<boolean>;
     openGate: (reason?: string | null) => void;
     adFree: boolean | null;
   };
@@ -97,7 +97,7 @@ export default function BibliothequePage() {
   const openBook = useCallback(
     async (key: string) => {
       if (adFree === false) {
-        const ok = await ensureAccess();
+        const ok = await ensureAccess(0, { kind: 'book', key });
         if (!ok) return;
         try {
           const { item } = await apiPost('get-content', { kind: 'book', key });
@@ -116,7 +116,7 @@ export default function BibliothequePage() {
         return;
       }
       try {
-        const ok = await ensureAccess();
+        const ok = await ensureAccess(0, { kind: 'book', key });
         if (!ok) { destination.close(); return; }
         const { item } = await apiPost('get-content', { kind: 'book', key });
         const link = driveDirectLink(item.pdf || item.pdfUrl || '');

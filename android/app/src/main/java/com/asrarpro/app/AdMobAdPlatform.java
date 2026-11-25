@@ -14,6 +14,8 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback;
 import java.util.function.Supplier;
 
 /** Privacy/SDK adapter; the controller can be tested without requesting real ads. */
@@ -25,7 +27,14 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
     private boolean destroyed;
 
     private final String serverId;
-    AdMobAdPlatform(Supplier<Activity> activity, String serverId) { this.activity = activity; this.serverId = serverId; }
+    private final boolean interstitial;
+    AdMobAdPlatform(Supplier<Activity> activity, String serverId) { this(activity, serverId, false); }
+
+    AdMobAdPlatform(Supplier<Activity> activity, String serverId, boolean interstitial) {
+        this.activity = activity;
+        this.serverId = serverId;
+        this.interstitial = interstitial;
+    }
     public void allowConsentPrompt(boolean allowed) { interactive = allowed; }
 
     public void initialize(boolean interactive, LevelPlayActionAds.Prepared callback) {
@@ -79,27 +88,60 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
     public LevelPlayActionAds.Ad create(LevelPlayActionAds.Events events) {
         return new LevelPlayActionAds.Ad() {
             private RewardedAd ad;
+            private RewardedInterstitialAd interstitialAd;
             private boolean cleared;
             public void load() {
+                AdRequest request = new AdRequest.Builder().build();
+                if (interstitial) {
+                    String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5354046379" : "ca-app-pub-3895250961868134/3047224257";
+                    RewardedInterstitialAd.load(activity.get(), unit, request, new RewardedInterstitialAdLoadCallback() {
+                        @Override public void onAdLoaded(RewardedInterstitialAd loaded) {
+                            if (cleared || destroyed) return;
+                            interstitialAd = loaded;
+                            loaded.setServerSideVerificationOptions(verification());
+                            loaded.setFullScreenContentCallback(fullscreen());
+                            events.loaded();
+                        }
+                        @Override public void onAdFailedToLoad(LoadAdError error) { noFill(); }
+                    });
+                    return;
+                }
                 String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5224354917" : BuildConfig.ADMOB_REWARDED_ID;
-                RewardedAd.load(activity.get(), unit, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
+                RewardedAd.load(activity.get(), unit, request, new RewardedAdLoadCallback() {
                     @Override public void onAdLoaded(RewardedAd loaded) {
                         if (cleared || destroyed) return;
                         ad = loaded;
-                        ad.setServerSideVerificationOptions(new ServerSideVerificationOptions.Builder().setCustomData(serverId).build());
-                        ad.setFullScreenContentCallback(new FullScreenContentCallback() {
-                            @Override public void onAdShowedFullScreenContent() { events.displayed(); }
-                            @Override public void onAdDismissedFullScreenContent() { ad = null; events.closed(); }
-                            @Override public void onAdFailedToShowFullScreenContent(AdError error) { ad = null; events.displayFailed(); }
-                        });
+                        ad.setServerSideVerificationOptions(verification());
+                        ad.setFullScreenContentCallback(fullscreen());
                         events.loaded();
                     }
-                    @Override public void onAdFailedToLoad(LoadAdError error) { if (!cleared && !destroyed) events.loadFailed("no_fill"); }
+                    @Override public void onAdFailedToLoad(LoadAdError error) { noFill(); }
                 });
             }
-            public boolean ready() { return ad != null && !cleared && !destroyed; }
-            public void show(Activity host) { if (ready()) ad.show(host, reward -> events.rewarded()); else events.displayFailed(); }
-            public void clear() { cleared = true; if (ad != null) ad.setFullScreenContentCallback(null); ad = null; }
+            private void noFill() { if (!cleared && !destroyed) events.loadFailed("no_fill"); }
+            private ServerSideVerificationOptions verification() {
+                return new ServerSideVerificationOptions.Builder().setCustomData(serverId).build();
+            }
+            private FullScreenContentCallback fullscreen() {
+                return new FullScreenContentCallback() {
+                    @Override public void onAdShowedFullScreenContent() { events.displayed(); }
+                    @Override public void onAdDismissedFullScreenContent() { events.closed(); }
+                    @Override public void onAdFailedToShowFullScreenContent(AdError error) { events.displayFailed(); }
+                };
+            }
+            public boolean ready() { return (ad != null || interstitialAd != null) && !cleared && !destroyed; }
+            public void show(Activity host) {
+                if (!ready()) { events.displayFailed(); return; }
+                if (interstitialAd != null) interstitialAd.show(host, reward -> events.rewarded());
+                else ad.show(host, reward -> events.rewarded());
+            }
+            public void clear() {
+                cleared = true;
+                if (ad != null) ad.setFullScreenContentCallback(null);
+                if (interstitialAd != null) interstitialAd.setFullScreenContentCallback(null);
+                ad = null;
+                interstitialAd = null;
+            }
         };
     }
 

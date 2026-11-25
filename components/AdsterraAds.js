@@ -12,12 +12,8 @@
 // une variable d'environnement Vercel (NEXT_PUBLIC_*, lue au build) ; une
 // variable définie à une chaîne VIDE désactive le format correspondant.
 //  - NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC : URL du script Social Bar.
-//  - NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC  : URL du script Popunder « global »
-//                                         (n'importe quel clic). VIDE par
-//                                         défaut : remplacé par la pub au clic
-//                                         sur les boutons d'action
-//                                         (lib/actionAd.js) — les deux
-//                                         ouvriraient deux onglets au même clic.
+//  - NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC : surcharge du Popunder, configuré
+//                                      par défaut pour iPhone et iPad.
 //  - NEXT_PUBLIC_ADSTERRA_NATIVE_SRC    : URL du script Native Banner. Sa clé
 //                                         (dernier segment) nomme le conteneur
 //                                         « container-<clé> » attendu.
@@ -28,15 +24,18 @@
 // Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
 import { Ban, ExternalLink } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useAuth } from './AuthProvider';
 import { useAccess } from './AccessProvider';
-import { ADSTERRA_SMARTLINK } from '@/lib/actionAd';
+import { ADSTERRA_SMARTLINK, isIOSAdsterra } from '@/lib/actionAd';
 import { ADS_PAUSED } from '@/lib/plans';
-import { AD_HOST, BANNERS, BANNERS_ENABLED, Banner } from './AdsterraBanner';
+import { AD_HOST, BANNERS, BANNERS_CONFIGURED, BANNERS_ENABLED, Banner } from './AdsterraBanner';
 
 const env = (value, fallback) => (value === undefined ? fallback : value);
 
 const SOCIALBAR_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_SOCIALBAR_SRC, `${AD_HOST}/14/56ff6c976d7d264a3439f37c7d6ca8e5`);
-const POPUNDER_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC, '');
+const POPUNDER_SRC = process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER_SRC;
+const IOS_POPUNDER_SRC = 'https://afders.org/1/d5663adcf33b434a0bee2c6cd0625bb4';
 const NATIVE_SRC = env(process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_SRC, `${AD_HOST}/21/00684bfc5a8802ccbed95bf0c1fa25a3`);
 const NATIVE_KEY = NATIVE_SRC.split('/').pop();
 // Smartlink : simple lien (pas de script), affiché par <SponsoredLink /> sur
@@ -58,7 +57,7 @@ function isNativeApp() {
 
 // Bandeau adapté à la largeur d'écran + pavé 300x250, en bas du contenu ;
 // colonnes 160x600 (droite) et 160x300 (gauche) sur grand écran.
-function Banners({ inApp = false }) {
+function Banners({ inApp = false, ios = false }) {
   const [width, setWidth] = useState(0);
   useEffect(() => { setWidth(window.innerWidth); }, []);
   if (!width) return null;
@@ -67,16 +66,16 @@ function Banners({ inApp = false }) {
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, margin: '16px auto' }}>
-        <Banner banner={strip} />
-        <Banner banner={BANNERS.b300x250} />
+        <Banner ios={ios} banner={strip} />
+        <Banner ios={ios} banner={BANNERS.b300x250} />
         {/* Dans l'application, pas d'offre payée par WhatsApp : Google Play
             impose son propre système de paiement pour ce type d'avantage. */}
-        {inApp ? null : <RemoveAdsButton />}
+        {inApp ? null : <RemoveAdsButton ios={ios} />}
       </div>
       {width >= SIDES_MIN_WIDTH ? (
         <>
-          <Banner banner={BANNERS.b160x300} style={{ ...side, left: 12 }} />
-          <Banner banner={BANNERS.b160x600} style={{ ...side, right: 12 }} />
+          <Banner ios={ios} banner={BANNERS.b160x300} style={{ ...side, left: 12 }} />
+          <Banner ios={ios} banner={BANNERS.b160x600} style={{ ...side, right: 12 }} />
         </>
       ) : null}
     </>
@@ -85,12 +84,12 @@ function Banners({ inApp = false }) {
 
 // Offre « sans publicité » : ouvre le portail d'abonnement (paiement validé
 // sur WhatsApp, cf. components/SubscriptionGate.js, motif 'noads').
-function RemoveAdsButton() {
+function RemoveAdsButton({ ios }) {
   const access = useAccess();
   return (
     <button
       type="button"
-      onClick={() => access?.openGate('noads')}
+      onClick={() => access?.openGate(ios ? null : 'noads')}
       style={{ background: 'none', border: '1px solid var(--text-muted)', color: 'var(--text-muted)', borderRadius: 999, padding: '6px 14px', fontSize: 13, cursor: 'pointer' }}
     >
       <Ban size={14} aria-hidden="true" style={{ verticalAlign: -2 }} /> Retirer les publicités
@@ -136,13 +135,19 @@ function BodyScript({ src }) {
 const IN_APP_ENABLED = process.env.NEXT_PUBLIC_ADSTERRA_IN_APP !== '0';
 function useAdPlace() {
   const access = useAccess();
-  const [native, setNative] = useState(null);
-  useEffect(() => { setNative(isNativeApp()); }, []);
-  if (ADS_PAUSED || native === null || !access || access.adFree !== false) return null;
+  const [platform, setPlatform] = useState(null);
+  useEffect(() => { setPlatform(isIOSAdsterra() ? 'ios' : isNativeApp() ? 'app' : 'web'); }, []);
+  if (!platform || access?.adFree !== false) return null;
+  if (platform === 'ios') return 'ios';
+  if (ADS_PAUSED) return null;
+  const native = platform === 'app';
   if (!native) return 'web';
   return IN_APP_ENABLED ? 'app' : null;
 }
-const useShowAds = () => useAdPlace() === 'web';
+function useShowAds() {
+  const place = useAdPlace();
+  return place === 'ios' || place === 'web';
+}
 
 export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
   if (!useShowAds() || !ADSTERRA_SMARTLINK) return null;
@@ -158,7 +163,29 @@ export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
 
 export default function AdsterraAds() {
   const place = useAdPlace();
+  const { user, loading } = useAuth();
+  const { adFree } = useAccess();
+  const pathname = usePathname();
+  const [android, setAndroid] = useState(false);
+  useEffect(() => {
+    setAndroid(isNativeApp() && window.Capacitor?.getPlatform?.() === 'android');
+  }, []);
+  if (ADS_PAUSED && IN_APP_ENABLED && process.env.NEXT_PUBLIC_ADSTERRA_BANNERS !== '0'
+    && android && !!user && !loading && adFree === false && pathname === '/menu/ressources') {
+    const { key, width, height } = BANNERS.b320x50;
+    return (
+      <iframe
+        title="Publicité Adsterra"
+        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        width={width}
+        height={height}
+        style={{ display: 'block', margin: '16px auto', maxWidth: '100%', border: 0 }}
+        srcDoc={`<script>window.atOptions = {key:"${key}",format:"iframe",width:${width},height:${height},params:{}};</script><script src="${AD_HOST}/22/${key}"></script>`}
+      />
+    );
+  }
   if (!place) return null;
+  const popunder = env(POPUNDER_SRC, place === 'ios' ? IOS_POPUNDER_SRC : '');
   // Application : bannières et Native Banner seulement. Pas de Social Bar (il
   // imite une notification, interdit par Google Play), ni de Popunder ou
   // d'onglet Smartlink (pubs qui ouvrent le navigateur sans action claire).
@@ -173,9 +200,9 @@ export default function AdsterraAds() {
   return (
     <>
       {SOCIALBAR_SRC ? <BodyScript src={SOCIALBAR_SRC} /> : null}
-      {POPUNDER_SRC ? <BodyScript src={POPUNDER_SRC} /> : null}
+      {popunder ? <BodyScript src={popunder} /> : null}
       {NATIVE_SRC ? <NativeBanner /> : null}
-      {BANNERS_ENABLED ? <Banners /> : null}
+      {(place === 'ios' ? BANNERS_CONFIGURED : BANNERS_ENABLED) ? <Banners ios={place === 'ios'} /> : null}
     </>
   );
 }

@@ -5,15 +5,16 @@
 import { X, Megaphone, Ban } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus, isAccessCacheValid } from '@/lib/access';
-import { consumeAdCredit, isUnityAdsAvailable, prepareNativeActionAd, showNativeActionAd } from '@/lib/unityAds';
+import { consumeAdCredit, isUnityAdsAvailable, supportsRewardedInterstitial, prepareNativeActionAd, showNativeActionAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
-import { openActionAd, recordAdOutcome } from '@/lib/actionAd';
+import { ADSTERRA_SMARTLINK, isIOSAdsterra, openActionAd, recordAdOutcome } from '@/lib/actionAd';
 import { apiPost } from '@/lib/api';
 import Modal from './Modal';
 import AdCountdown from './AdCountdown';
 import { ADS_PAUSED } from '@/lib/plans';
+import { AD_POINTS_PER_ACTION } from '@/lib/adPoints';
 
 const AccessCtx = createContext(null);
 export const useAccess = () => useContext(AccessCtx);
@@ -26,6 +27,7 @@ export default function AccessProvider({ children }) {
   // Pub au clic bloquée par le navigateur (lib/actionAd.ts) : l'action est
   // refusée et cette fenêtre explique comment autoriser les pop-ups.
   const [adBlocked, setAdBlocked] = useState(false);
+  const [smartlinkPrompt, setSmartlinkPrompt] = useState(false);
   // Une tentative publicitaire ne donne pas d’accès : le bloc chargé doit
   // rester visible avant que l’action en cours puisse continuer.
   const pendingAdAt = useRef(0);
@@ -37,6 +39,8 @@ export default function AccessProvider({ children }) {
   // Publicité récompensée proposée dans le portail (APK, sans abonnement,
   // module hors forfait 1 An) — voir lib/unityAds.js.
   const [gateAdEligible, setGateAdEligible] = useState(false);
+  const [gatePoints, setGatePoints] = useState(0);
+  const [gateInterstitial, setGateInterstitial] = useState(false);
   const [allowed, setAllowed] = useState(null); // null = inconnu, true/false = résolu
   // Abonnement valide → pas de publicité (components/AdsterraAds.js). Distinct
   // de `allowed` quand l'app est gratuite pour tous (lib/plans.js FREE_FOR_ALL).
@@ -46,17 +50,21 @@ export default function AccessProvider({ children }) {
   // ensureAccess() en attente de la fermeture du portail : résolu true si une
   // publicité a débloqué l'utilisation, false si le portail est fermé.
   const pendingGate = useRef(null);
+  const pendingContent = useRef(null);
 
   const settleGate = useCallback((result) => {
     const resolve = pendingGate.current;
     pendingGate.current = null;
+    pendingContent.current = null;
     if (resolve) resolve(result);
   }, []);
 
-  const openGate = useCallback((reason, { adEligible = false } = {}) => {
+  const openGate = useCallback((reason, { adEligible = false, adPoints = 0, rewardedInterstitial = false } = {}) => {
     settleGate(false);
     setGateReason(reason || null);
     setGateAdEligible(adEligible);
+    setGatePoints(adPoints);
+    setGateInterstitial(rewardedInterstitial);
     setGateOpen(true);
   }, [settleGate]);
   const closeGate = useCallback(() => {
@@ -66,28 +74,29 @@ export default function AccessProvider({ children }) {
 
   // Utilise un crédit publicitaire (gagné à l'instant ou plus tôt) et met à
   // jour le cache : l'utilisation est accordée si le serveur l'a consommé.
-  const spendAdCredit = useCallback(async () => {
-    const ok = await consumeAdCredit();
-    if (cache.current) cache.current = { ...cache.current, adCredits: Math.max(0, (cache.current.adCredits || 0) - (ok ? 1 : 0)) };
+  const spendAdCredit = useCallback(async (content) => {
+    const ok = await consumeAdCredit(content);
+    if (cache.current) cache.current = { ...cache.current, adCredits: Math.max(0, (cache.current.adCredits || 0) - (ok ? AD_POINTS_PER_ACTION : 0)) };
     return ok;
   }, []);
 
-  // Portail : publicité regardée et validée par Unity → l'action demandée
-  // s'exécute (une utilisation). Sans ensureAccess() en attente (portail
-  // ouvert directement par openGate), le crédit reste pour la prochaine.
+  // Relit le solde serveur après chaque confirmation AdMob.
   const onAdRewarded = useCallback(async () => {
-    if (!pendingGate.current) {
-      cache.current = null;
-      setGateOpen(false);
-      return true;
-    }
-    const ok = await spendAdCredit();
-    if (ok) {
-      setGateOpen(false);
-      settleGate(true);
-    }
-    return ok;
-  }, [spendAdCredit, settleGate]);
+    const pending = pendingGate.current;
+    if (!pending || !user) return false;
+    cache.current = null;
+    const status = await checkAccess(user);
+    if (pending !== pendingGate.current || userRef.current?.uid !== user.uid || status.unavailable) return false;
+    cache.current = status;
+    cacheAt.current = Date.now();
+    setGatePoints(status.adCredits);
+    if (!status.allowed && status.adCredits < AD_POINTS_PER_ACTION) return true;
+    if (!status.allowed && !(await spendAdCredit(pendingContent.current))) return false;
+    if (pending !== pendingGate.current || userRef.current?.uid !== user.uid) return false;
+    setGateOpen(false);
+    settleGate(true);
+    return true;
+  }, [user, spendAdCredit, settleGate]);
 
   // Publicité regardée mais rappel Unity pas encore reçu : le crédit arrivera
   // côté serveur — relire l'accès à la prochaine demande.
@@ -172,7 +181,7 @@ export default function AccessProvider({ children }) {
     return new Promise((resolve) => { adResolve.current = resolve; setCountdown({ start, resolve }); });
   }, []);
 
-  const ensureAccess = useCallback(async (minLevel = 0) => {
+  const ensureAccess = useCallback(async (minLevel = 0, content = null) => {
     if (actionBusy.current || !user) return false;
     actionBusy.current = true;
     const session = sessionVersion.current;
@@ -180,7 +189,9 @@ export default function AccessProvider({ children }) {
       let status = isAccessCacheValid(cache.current, cacheAt.current) ? cache.current : null;
       // Reserve the popup synchronously when access is known. A fresh deep
       // link must await its first subscription check instead of abandoning it.
-      const adPrepared = !ADS_PAUSED && !!status;
+      const iosAds = isIOSAdsterra();
+      const smartlinkOpened = iosAds && status?.adFree === false && openActionAd() === 'opened';
+      const adPrepared = !ADS_PAUSED && !iosAds && !!status;
       if (adPrepared && !requireActionAd(status)) return false;
       if (!status) {
         status = await checkAccess(user);
@@ -188,7 +199,16 @@ export default function AccessProvider({ children }) {
         if (!status.unavailable) { cache.current = status; cacheAt.current = Date.now(); setAdFree(!!status.adFree); }
       }
       if (status.unavailable) { pendingAdAt.current = 0; openGate('network'); return false; }
-      if (!ADS_PAUSED && !status.adFree) {
+      if (iosAds && status.adFree === false) {
+        if (!smartlinkOpened) {
+          const proceed = await new Promise((resolve) => {
+            adResolve.current = resolve;
+            setSmartlinkPrompt(true);
+          });
+          if (!proceed) return false;
+        }
+        recordAdOutcome((adStats) => apiPost('track', { type: 'ad_stats', adStats }).catch(() => {}));
+      } else if (!ADS_PAUSED && !status.adFree) {
         if (!adPrepared && !requireActionAd(status)) return false;
         const native = window.Capacitor?.isNativePlatform?.();
         if (native) {
@@ -203,9 +223,12 @@ export default function AccessProvider({ children }) {
       if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
       if (status.allowed && (!minLevel || (status.level || 0) >= minLevel)) return true;
       const adEligible = !minLevel && !status.allowed && status.adsEnabled && (await isUnityAdsAvailable());
-      if (adEligible && status.adCredits > 0 && (await spendAdCredit())) return true;
+      if (adEligible && status.adCredits >= AD_POINTS_PER_ACTION && (await spendAdCredit(content))) return true;
+      const rewardedInterstitial = adEligible && status.rewardedInterstitial && await supportsRewardedInterstitial();
+      if (sessionVersion.current !== session || userRef.current?.uid !== user.uid) return false;
       return await new Promise((resolve) => {
-        openGate(status.allowed && minLevel ? 'level' : null, { adEligible });
+        openGate(status.allowed && minLevel ? 'level' : null, { adEligible, adPoints: status.adCredits, rewardedInterstitial });
+        pendingContent.current = content;
         pendingGate.current = resolve;
       });
     } catch {
@@ -216,11 +239,11 @@ export default function AccessProvider({ children }) {
   }, [user, requireActionAd, waitForAd, openGate, spendAdCredit]);
 
   useEffect(() => {
-    setCountdown(null); setAdBlocked(false); pendingAdAt.current = 0;
+    setCountdown(null); setAdBlocked(false); setSmartlinkPrompt(false); pendingAdAt.current = 0;
     return () => {
       sessionVersion.current += 1;
       adResolve.current?.(false); adResolve.current = null;
-      pendingGate.current?.(false); pendingGate.current = null;
+      pendingGate.current?.(false); pendingGate.current = null; pendingContent.current = null;
     };
   }, [user?.uid]);
 
@@ -234,12 +257,32 @@ export default function AccessProvider({ children }) {
     refreshAccess().catch(() => {});
   }, [refreshAccess]);
 
+  const finishSmartlinkPrompt = (proceed) => {
+    const resolve = adResolve.current;
+    adResolve.current = null;
+    setSmartlinkPrompt(false);
+    resolve?.(proceed);
+  };
+
   return (
     <AccessCtx.Provider value={{ ensureAccess, requireActionAd, getLevel, openGate, closeGate, invalidate, allowed, adFree, refreshAccess }}>
       {/* Avant {children} : en flux normal (voir .expiry-banner), doit apparaître
           au-dessus de tout, pas se glisser derrière le contenu de la page. */}
       <SubscriptionExpiryBanner expiresAt={expiresAt} />
       {children}
+      {smartlinkPrompt && (
+        <Modal className="sg-overlay" onClose={() => finishSmartlinkPrompt(false)} label="Publicité">
+          <div className="sg-box">
+            <h2>Publicité</h2>
+            <p className="sg-sub">L’offre sponsorisée s’ouvre dans un nouvel onglet.</p>
+            <a className="sg-card best" href={ADSTERRA_SMARTLINK} target="_blank" rel="sponsored noopener noreferrer" onClick={() => finishSmartlinkPrompt(true)}>
+              Ouvrir l’offre sponsorisée
+            </a>
+            <button type="button" className="sg-card" onClick={() => { finishSmartlinkPrompt(false); openGate(); }}>Choisir un abonnement</button>
+            <button type="button" className="sg-card" onClick={() => finishSmartlinkPrompt(false)}>Annuler</button>
+          </div>
+        </Modal>
+      )}
       {!ADS_PAUSED && countdown && (
         <AdCountdown
           onDone={(completed) => {
@@ -288,6 +331,8 @@ export default function AccessProvider({ children }) {
         open={gateOpen}
         reason={gateReason}
         adEligible={gateAdEligible}
+        adPoints={gatePoints}
+        rewardedInterstitial={gateInterstitial}
         onAdRewarded={onAdRewarded}
         onAdPending={onAdPending}
         onClose={closeGate}

@@ -3,7 +3,7 @@
 // React contrôlé par AccessProvider. Aucune injection de <style>/DOM manuelle.
 //
 // adEligible : alternative « regarder une publicité » (Unity Ads, APK
-// uniquement) — une publicité regardée en entier débloque UNE utilisation
+// uniquement) — une publicité terminée et validée rapporte un point
 // (voir lib/unityAds.js, server/adReward.js).
 import { useEffect, useState } from 'react';
 import { X, WifiOff, Clapperboard } from 'lucide-react';
@@ -11,16 +11,17 @@ import Modal from './Modal';
 import { watchRewardedAd } from '@/lib/unityAds';
 import SubscriptionPlans from './SubscriptionPlans';
 import { ADS_PAUSED } from '@/lib/plans';
+import { AD_POINTS_PER_ACTION } from '@/lib/adPoints';
 
 const AD_MESSAGES = {
   no_fill: 'Aucune publicité disponible pour le moment. Réessayez dans quelques minutes.',
-  skipped: "Publicité interrompue : regardez-la jusqu'au bout pour débloquer l'accès.",
-  pending: 'Publicité validée en cours… Réessayez dans un instant : votre accès sera prêt.',
+  skipped: "Publicité interrompue : regardez-la jusqu’au bout pour gagner 1 point.",
+  pending: 'Confirmation du point en cours. Le solde sera actualisé à la prochaine vérification.',
   error: 'Publicité indisponible pour le moment. Vérifiez votre connexion et réessayez.',
   unavailable: 'Publicité indisponible sur cet appareil.',
 };
 
-export default function SubscriptionGate({ open, reason, adEligible, onAdRewarded, onAdPending, onClose }) {
+export default function SubscriptionGate({ open, reason, adEligible, adPoints, rewardedInterstitial, onAdRewarded, onAdPending, onClose }) {
   const [adBusy, setAdBusy] = useState(false);
   const [adMessage, setAdMessage] = useState('');
 
@@ -30,12 +31,12 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
 
   if (!open) return null;
 
-  const watchAd = async () => {
+  const watchAd = async (interstitial = false) => {
     if (adBusy) return;
     setAdBusy(true);
     setAdMessage('');
     try {
-      const result = await watchRewardedAd();
+      const result = await watchRewardedAd(interstitial);
       if (result.ok) {
         if (!(await onAdRewarded())) setAdMessage(AD_MESSAGES.pending);
         return;
@@ -96,10 +97,17 @@ export default function SubscriptionGate({ open, reason, adEligible, onAdRewarde
         </p>
         {adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
-            <button type="button" className="sg-ad-btn" onClick={watchAd} disabled={adBusy}>
-              {adBusy ? 'Publicité en cours…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
+            <button type="button" className="sg-ad-btn" onClick={() => watchAd()} disabled={adBusy}>
+              {adBusy ? 'Chargement ou validation…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
             </button>
-            <p className="sg-ad-hint">Gratuit : une publicité regardée en entier débloque cette utilisation.</p>
+            <p className="sg-ad-hint" aria-live="polite">
+              {adPoints} / {AD_POINTS_PER_ACTION} points pour cette action. Chaque vidéo terminée et validée rapporte 1 point.
+            </p>
+            {rewardedInterstitial && (
+              <button type="button" className="sg-ad-btn" onClick={() => watchAd(true)} disabled={adBusy}>
+                Regarder une autre vidéo pour gagner 1 point
+              </button>
+            )}
             {adMessage && <p className="sg-ad-msg" role="status">{adMessage}</p>}
             <p className="sg-ad-or">ou abonnez-vous</p>
           </div>
