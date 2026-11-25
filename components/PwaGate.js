@@ -11,10 +11,22 @@ import { CircleCheck, Download, Share, SquarePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall as promptInstallShared } from '@/lib/installPrompt';
+import { PLAY_STORE_URL, storeGate, webGateEnabled, openAppIntent } from '@/lib/storeRedirect';
 
 const FORCE_INSTALL = false;
-const IOS_WEB_ONLY = process.env.NEXT_PUBLIC_IOS_WEB_ONLY === '1';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.Asrar';
+// Site et PWA réservés à iOS (les publicités ne tournent que dans l'application
+// Android). Actif par défaut ; NEXT_PUBLIC_IOS_WEB_ONLY=0 au build le coupe.
+const IOS_WEB_ONLY = webGateEnabled(process.env.NEXT_PUBLIC_IOS_WEB_ONLY);
+const REDIRECT_KEY = 'asrar_store_redirected';
+
+function currentGate() {
+  return storeGate({
+    enabled: IOS_WEB_ONLY,
+    native: !!window.Capacitor?.isNativePlatform?.(),
+    ios: isIOS(),
+    ua: navigator.userAgent,
+  });
+}
 
 export default function PwaGate({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -27,7 +39,17 @@ export default function PwaGate({ children }) {
     setStandalone(isStandalone());
     setInstallState(getInstallState());
 
-    if (IOS_WEB_ONLY && !isIOS() && !window.Capacitor?.isNativePlatform?.()) return undefined;
+    const gate = currentGate();
+    if (gate !== 'allow') {
+      // Android (navigateur ou PWA installée) : direction Google Play, une seule
+      // fois par session pour qu'un « Retour » arrive sur l'écran ci-dessous.
+      if (gate === 'android') {
+        let done = false;
+        try { done = sessionStorage.getItem(REDIRECT_KEY) === '1'; sessionStorage.setItem(REDIRECT_KEY, '1'); } catch {}
+        if (!done) window.location.replace(PLAY_STORE_URL);
+      }
+      return undefined;
+    }
 
     // Enregistrement du service worker (tous les visiteurs). public/sw.js ne
     // met RIEN en cache (l'app n'a pas de mode hors-ligne : tout dépend de
@@ -66,16 +88,15 @@ export default function PwaGate({ children }) {
 
   if (IOS_WEB_ONLY) {
     if (!mounted) return null;
-    if (!isIOS() && !window.Capacitor?.isNativePlatform?.()) {
+    if (currentGate() !== 'allow') {
       const android = /Android/i.test(navigator.userAgent);
-      const openApp = 'intent://open#Intent;scheme=asrarpro;package=com.Asrar;S.browser_fallback_url='
-        + encodeURIComponent(PLAY_STORE_URL) + ';end';
+      const openApp = openAppIntent();
       return (
         <main style={ov}>
           <div style={card}>
             <Image src="/assets/logo-mark.png" alt="" width={84} height={84} />
             <h1 style={{ color: '#fff' }}>ASRAR PRO</h1>
-            <p style={txt}>Le site est accessible sur iPhone et iPad. Sur Android, utilisez l’application.</p>
+            <p style={txt}>Le site est réservé à iPhone et iPad. Sur Android, installez l’application ASRAR PRO depuis Google Play.</p>
             {android && (
               <p><a href={openApp} style={{ ...btn, display: 'inline-block', width: 'auto' }}>Ouvrir l’application</a></p>
             )}
