@@ -1,3 +1,9 @@
+## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
+
+- La fenêtre Android « Continuer avec une publicité / Chargement… » est remplacée par une attente dans la fenêtre de l'application (`components/AdLoadingState.js`) : anneau aux couleurs de l'application, « Préparation de votre vidéo… », message après 8 s si la connexion est lente, bouton « Annuler » ; puis « Validation de votre point… » pendant la confirmation serveur. Fenêtre d'abonnement et verrou du Zikr collectif.
+- Natif : mode `silent` de `showRewarded` (sans fenêtre, ouverture automatique dès que l'annonce est prête) et `cancelRewarded` (annule avant l'affichage, sans effet ensuite). Capacité `rewardedSilentLoading` ; les anciens APK gardent la fenêtre Android.
+- Correction : quand aucune annonce n'était disponible, le pont Android répond « no_fill » sans erreur ; le site le traduisait en « vidéo interrompue ». Le message était faux et le verrou du Zikr n'était jamais levé dans ce cas. Les raisons natives sont maintenant traduites correctement (`nativeOutcomeReason`).
+
 ## Android 8.3.2 / SW v47.05 — Publicité récompensée préchargée
 
 - Une publicité récompensée est gardée chargée « en attente » (`RewardedPreloader`) : elle s'affiche sans délai quand l'utilisateur la demande, et la suivante se recharge automatiquement dès que la précédente est affichée puis fermée. Le rapport AdMob montrait une latence de chargement moyenne d'environ 3,8 s et seulement 50 % des annonces trouvées effectivement affichées (l'utilisateur abandonnait avant l'affichage).

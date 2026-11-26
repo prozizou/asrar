@@ -270,4 +270,55 @@ public class LevelPlayActionAdsTest {
         f.controller.destroy();
     }
 
+    @Test public void silentRequestShowsNoAndroidDialogAndOpensTheAdOnceLoaded() {
+        Fixture f = new Fixture();
+        f.controller.showSilent((shown, completed, reason) -> f.results.add(new Outcome(shown, completed, reason)));
+        idle();
+        assertNull(dialog());
+        FakeAd ad = f.platform.ads.get(0);
+        assertEquals(0, ad.shows);
+        ad.loaded();
+        assertEquals(1, ad.shows);
+        assertNull(dialog());
+        assertTrue(f.results.isEmpty());
+        f.controller.destroy();
+    }
+
+    @Test public void silentRequestUsesAnAdThatIsAlreadyReady() {
+        Fixture f = new Fixture();
+        FakeAd ad = f.preload(); ad.loaded();
+        f.controller.showSilent((shown, completed, reason) -> f.results.add(new Outcome(shown, completed, reason)));
+        idle();
+        assertEquals(1, ad.shows);
+        assertNull(dialog());
+        f.controller.destroy();
+    }
+
+    @Test public void cancelBeforeDisplayEndsTheRequestWithoutGranting() {
+        Fixture f = new Fixture();
+        f.controller.showSilent((shown, completed, reason) -> f.results.add(new Outcome(shown, completed, reason)));
+        idle();
+        f.controller.cancel(); idle();
+        assertEquals(1, f.results.size());
+        assertEquals("cancelled", f.results.get(0).reason);
+        assertFalse(f.results.get(0).completed);
+        f.platform.ads.get(0).loaded();
+        assertEquals(0, f.platform.ads.get(0).shows);
+        f.controller.destroy();
+    }
+
+    @Test public void cancelAfterDisplayIsIgnored() {
+        Fixture f = new Fixture();
+        f.controller.showSilent((shown, completed, reason) -> f.results.add(new Outcome(shown, completed, reason)));
+        idle();
+        FakeAd ad = f.platform.ads.get(0);
+        ad.loaded();
+        ad.events.displayed(); idle();
+        f.controller.cancel(); idle();
+        assertTrue(f.results.isEmpty());
+        ad.events.rewarded(); ad.events.closed(); idle();
+        assertEquals(1, f.results.size());
+        assertTrue(f.results.get(0).completed);
+        f.controller.destroy();
+    }
 }

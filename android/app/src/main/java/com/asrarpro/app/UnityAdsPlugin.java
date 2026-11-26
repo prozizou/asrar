@@ -47,6 +47,7 @@ public class UnityAdsPlugin extends Plugin {
         result.put("legacyRewards", false);
         result.put("actionAdPreload", false); // Each ad must bind its own server session.
         result.put("rewardedPreload", true);  // Annonce récompensée gardée en attente (RewardedPreloader).
+        result.put("rewardedSilentLoading", true); // Attente affichée par la page, sans fenêtre Android (showRewarded silent).
         result.put("privacyRequired", UserMessagingPlatform.getConsentInformation(getContext()).getPrivacyOptionsRequirementStatus() == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);
         call.resolve(result);
     }
@@ -67,8 +68,9 @@ public class UnityAdsPlugin extends Plugin {
         host.runOnUiThread(() -> {
             if (pending != null || (displayAds != null && displayAds.isFullscreen())) { call.reject("Publicité déjà en cours", "busy"); return; }
             boolean interstitial = Boolean.TRUE.equals(call.getBoolean("interstitial"));
+            boolean silent = Boolean.TRUE.equals(call.getBoolean("silent"));
             pending = new LevelPlayActionAds(this::getActivity, new AdMobAdPlatform(this::getActivity, sid, interstitial));
-            pending.showDirect((shown, completed, reason) -> {
+            LevelPlayActionAds.Result done = (shown, completed, reason) -> {
                 LevelPlayActionAds finished = pending; pending = null;
                 if (finished != null) finished.destroy();
                 RewardedPreloader.get().preloadNext(); // annonce affichée, refusée ou en échec : une autre se prépare
@@ -76,8 +78,15 @@ public class UnityAdsPlugin extends Plugin {
                 result.put("shown", shown); result.put("completed", completed);
                 if (reason != null) result.put("reason", reason);
                 call.resolve(result);
-            });
+            };
+            if (silent) pending.showSilent(done); else pending.showDirect(done);
         });
+    }
+    /** « Annuler » de la page pendant l'attente (mode silent) : sans effet si l'annonce est déjà affichée. */
+    @PluginMethod public void cancelRewarded(PluginCall call) {
+        Activity host = getActivity();
+        if (host == null) { call.resolve(); return; }
+        host.runOnUiThread(() -> { if (pending != null) pending.cancel(); call.resolve(); });
     }
     @PluginMethod public void showPrivacyOptions(PluginCall call) {
         Activity host = getActivity();

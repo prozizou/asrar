@@ -62,3 +62,29 @@ test('AdMob : les abonnés conservent leur accès sans publicité', async ({ pag
   await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
   expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0);
 });
+
+test('AdMob : l’attente s’affiche dans la fenêtre d’abonnement, sans fenêtre Android, et « Annuler » revient au bouton', async ({ page, login }) => {
+  await page.addInitScript(() => {
+    (window as any).androidBridge = { postMessage() {} };
+    (window as any).Capacitor = {
+      isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
+      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showRewarded', 'cancelRewarded'].map(name => ({ name, rtype: 'promise' })) }],
+      nativePromise: async (_plugin: string, method: string, options: any) => {
+        if (method === 'getCapabilities') return { adMobRewards: true, rewardedSilentLoading: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
+        if (method === 'cancelRewarded') { (window as any).__releaseAd?.({ shown: false, completed: false, reason: 'cancelled' }); return; }
+        if (method === 'showRewarded') { (window as any).__lastShowOptions = options; return new Promise((resolve) => { (window as any).__releaseAd = resolve; }); }
+      },
+    };
+  });
+  await login('free'); await page.goto('/asrar');
+  await page.getByRole('button', { name: /Secret de test/i }).click();
+  await page.getByRole('button', { name: 'Regarder une publicité', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Abonnement', exact: true });
+  await expect(dialog.getByText('Préparation de votre vidéo…')).toBeVisible();
+  // L'appel natif suit l'ouverture de la session serveur : on l'attend.
+  await expect.poll(() => page.evaluate(() => (window as any).__lastShowOptions?.silent)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('abonnement-pub-attente.png') });
+  await dialog.getByRole('button', { name: 'Annuler', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Regarder une publicité', exact: true })).toBeVisible();
+  await expect(dialog.locator('.sg-ad-msg')).toHaveCount(0);
+});

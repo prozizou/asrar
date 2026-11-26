@@ -1,4 +1,4 @@
-Les vidéos récompensées se chargent à l’avance : elles s’affichent sans attente, et la suivante se prépare dès la fermeture.
-Al Qalam et Hatims : les exports Word et PDF fonctionnent dans l’application (enregistrement dans Téléchargements et partage).
-Si le chargement d’une publicité échoue, l’application redemande automatiquement une annonce avant d’abandonner.
-Pour les actions éligibles, chaque vidéo récompensée et confirmée rapporte 1 point. Une action coûte 10 points.
+Vidéos récompensées : chargement à l’avance et attente affichée dans l’application, avec un bouton Annuler.
+Al Qalam et Hatims : les exports Word et PDF fonctionnent dans l’application (Téléchargements et partage).
+Si aucune vidéo n’est disponible, l’application le signale clairement au lieu d’indiquer une vidéo interrompue.
+Chaque vidéo récompensée et confirmée rapporte 1 point. Une action coûte 10 points.
