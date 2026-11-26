@@ -85,12 +85,29 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
         } catch (RuntimeException error) { if (!destroyed) callback.done("init"); }
     }
 
+    /** Bloc récompensé standard (démonstration Google en debug). */
+    static String rewardedUnit() {
+        return BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5224354917" : BuildConfig.ADMOB_REWARDED_ID;
+    }
+
     public LevelPlayActionAds.Ad create(LevelPlayActionAds.Events events) {
         return new LevelPlayActionAds.Ad() {
             private RewardedAd ad;
             private RewardedInterstitialAd interstitialAd;
             private boolean cleared;
             public void load() {
+                // Annonce déjà chargée en attente (RewardedPreloader) : prête tout de suite. L'identifiant
+                // de vérification serveur de CETTE demande est posé maintenant, avant l'affichage.
+                if (!interstitial && !cleared && !destroyed) {
+                    RewardedAd preloaded = RewardedPreloader.get().take();
+                    if (preloaded != null) {
+                        ad = preloaded;
+                        ad.setServerSideVerificationOptions(verification());
+                        ad.setFullScreenContentCallback(fullscreen());
+                        events.loaded();
+                        return;
+                    }
+                }
                 AdRequest request = new AdRequest.Builder().build();
                 if (interstitial) {
                     String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5354046379" : "ca-app-pub-3895250961868134/3047224257";
@@ -106,8 +123,7 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
                     });
                     return;
                 }
-                String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5224354917" : BuildConfig.ADMOB_REWARDED_ID;
-                RewardedAd.load(activity.get(), unit, request, new RewardedAdLoadCallback() {
+                RewardedAd.load(activity.get(), rewardedUnit(), request, new RewardedAdLoadCallback() {
                     @Override public void onAdLoaded(RewardedAd loaded) {
                         if (cleared || destroyed) return;
                         ad = loaded;
@@ -125,7 +141,11 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
             private FullScreenContentCallback fullscreen() {
                 return new FullScreenContentCallback() {
                     @Override public void onAdShowedFullScreenContent() { events.displayed(); }
-                    @Override public void onAdDismissedFullScreenContent() { events.closed(); }
+                    @Override public void onAdDismissedFullScreenContent() {
+                        events.closed();
+                        // Annonce fermée : la suivante se recharge tout de suite, en attente.
+                        RewardedPreloader.get().preloadNext();
+                    }
                     @Override public void onAdFailedToShowFullScreenContent(AdError error) { events.displayFailed(); }
                 };
             }

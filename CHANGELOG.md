@@ -1,3 +1,10 @@
+## Android 8.3.2 / SW v47.05 — Publicité récompensée préchargée
+
+- Une publicité récompensée est gardée chargée « en attente » (`RewardedPreloader`) : elle s'affiche sans délai quand l'utilisateur la demande, et la suivante se recharge automatiquement dès que la précédente est affichée puis fermée. Le rapport AdMob montrait une latence de chargement moyenne d'environ 3,8 s et seulement 50 % des annonces trouvées effectivement affichées (l'utilisateur abandonnait avant l'affichage).
+- Activé par le site seulement pour un compte sans abonnement dont le serveur propose les récompenses ; coupé (et l'annonce en attente jetée) pour un abonné ou à la déconnexion. Indépendant de ADS_PAUSED. Les anciens APK n'ont pas la capacité `rewardedPreload` : aucun effet.
+- L'identifiant de vérification serveur (SSV) est posé juste avant l'affichage : aucune récompense n'est liée à une annonce préchargée. L'annonce en attente expire au bout de 50 min (AdMob : 1 h) ; après un échec de chargement, les nouvelles demandes sont espacées de 1, 2, 4… 15 min maximum.
+- À prévoir dans les rapports AdMob : le « taux de diffusion » baissera (des annonces chargées ne sont pas affichées). Comparer les impressions et les revenus par utilisateur, pas ce taux seul.
+
 ## Zikr collectif — une vidéo récompensée tous les 100 grains pour continuer
 
 - À chaque centaine récitée (100, 200…), application Android et comptes sans abonnement : le compteur est figé et une fenêtre demande de regarder une courte vidéo (1 point offert ; 10 points ouvrent une action). La vidéo ne démarre que sur « Regarder » (règle AdMob : une publicité récompensée est lancée par l'utilisateur, jamais automatiquement).

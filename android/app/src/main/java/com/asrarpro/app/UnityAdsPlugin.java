@@ -29,6 +29,7 @@ public class UnityAdsPlugin extends Plugin {
     }
     @Override protected void handleOnPause() { if (displayAds != null) displayAds.paused(); }
     @Override protected void handleOnResume() {
+        RewardedPreloader.get().preloadNext(); // au retour dans l'application : l'annonce en attente a pu expirer
         Activity host = getActivity();
         if (host != null && displayAds != null) {
             getBridge().getWebView().postDelayed(() -> {
@@ -45,10 +46,16 @@ public class UnityAdsPlugin extends Plugin {
         result.put("adMobRewardedInterstitial", true);
         result.put("legacyRewards", false);
         result.put("actionAdPreload", false); // Each ad must bind its own server session.
+        result.put("rewardedPreload", true);  // Annonce récompensée gardée en attente (RewardedPreloader).
         result.put("privacyRequired", UserMessagingPlatform.getConsentInformation(getContext()).getPrivacyOptionsRequirementStatus() == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);
         call.resolve(result);
     }
     @PluginMethod public void prepareActionAd(PluginCall call) { call.resolve(); }
+    /** Le site active le préchargement pour un compte éligible (sans abonnement) et le coupe sinon. */
+    @PluginMethod public void preloadRewarded(PluginCall call) {
+        RewardedPreloader.get().configure(this::getActivity, Boolean.TRUE.equals(call.getBoolean("enabled")));
+        call.resolve();
+    }
     @PluginMethod public void showInterstitial(PluginCall call) {
         call.reject("Utilisez une publicité récompensée avec validation serveur", "unavailable");
     }
@@ -64,6 +71,7 @@ public class UnityAdsPlugin extends Plugin {
             pending.showDirect((shown, completed, reason) -> {
                 LevelPlayActionAds finished = pending; pending = null;
                 if (finished != null) finished.destroy();
+                RewardedPreloader.get().preloadNext(); // annonce affichée, refusée ou en échec : une autre se prépare
                 JSObject result = new JSObject();
                 result.put("shown", shown); result.put("completed", completed);
                 if (reason != null) result.put("reason", reason);
@@ -82,6 +90,7 @@ public class UnityAdsPlugin extends Plugin {
         });
     }
     @Override protected void handleOnDestroy() {
+        RewardedPreloader.get().release();
         if (pending != null) { pending.destroy(); pending = null; }
         if (displayAds != null) { displayAds.destroy(); displayAds = null; }
         super.handleOnDestroy();

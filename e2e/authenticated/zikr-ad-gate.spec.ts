@@ -34,9 +34,10 @@ async function installAdMob(page: any) {
     (window as any).__adMobShows = 0;
     (window as any).Capacitor = {
       isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
-      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showRewarded'].map(name => ({ name, rtype: 'promise' })) }],
+      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showRewarded', 'preloadRewarded'].map(name => ({ name, rtype: 'promise' })) }],
       nativePromise: async (_plugin: string, method: string, options: any) => {
-        if (method === 'getCapabilities') return { adMobRewards: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
+        if (method === 'getCapabilities') return { adMobRewards: true, rewardedPreload: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
+        if (method === 'preloadRewarded') { ((window as any).__preloadCalls ||= []).push(options.enabled); return; }
         if (method === 'showRewarded') {
           (window as any).__adMobShows++;
           if ((window as any).__adMobFail) throw Object.assign(new Error('Aucune annonce'), { code: 'no_fill' });
@@ -148,4 +149,19 @@ test('un abonné n’est jamais verrouillé', async ({ page, login }) => {
   await expect(tap(page)).toContainText('102');
   await expect(gate(page)).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).__adMobShows)).toBe(0);
+});
+
+test('le préchargement de la vidéo est activé pour un compte sans abonnement', async ({ page, login }) => {
+  test.setTimeout(60_000);
+  await installAdMob(page); await login('free'); await page.goto('/zikr?item=' + GID);
+  await expect(tap(page)).toBeVisible({ timeout: 20000 });
+  await expect.poll(() => page.evaluate(() => (window as any).__preloadCalls || [])).toContain(true);
+});
+
+test('le préchargement n’est jamais activé pour un abonné', async ({ page, login }) => {
+  test.setTimeout(60_000);
+  await installAdMob(page); await login('basic'); await page.goto('/zikr?item=' + GID);
+  await expect(tap(page)).toBeVisible({ timeout: 20000 });
+  await page.waitForTimeout(2500);
+  expect(await page.evaluate(() => (window as any).__preloadCalls || [])).not.toContain(true);
 });
