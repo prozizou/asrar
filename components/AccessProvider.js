@@ -5,7 +5,7 @@
 import { X, Megaphone, Ban } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { checkAccess, levelFromStatus, isAccessCacheValid } from '@/lib/access';
-import { consumeAdCredit, isUnityAdsAvailable, supportsRewardedInterstitial, prepareNativeActionAd, showNativeActionAd } from '@/lib/unityAds';
+import { consumeAdCredit, isUnityAdsAvailable, supportsRewardedInterstitial, prepareNativeActionAd, prepareRewardedAd, showNativeActionAd } from '@/lib/unityAds';
 import { useAuth } from './AuthProvider';
 import SubscriptionGate from './SubscriptionGate';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
@@ -150,6 +150,19 @@ export default function AccessProvider({ children }) {
     const resume = () => { if (enabled && document.visibilityState === 'visible') void prepareNativeActionAd(true); };
     document.addEventListener('visibilitychange', resume);
     return () => { document.removeEventListener('visibilitychange', resume); void prepareNativeActionAd(false); };
+  }, [user, authLoading, adFree]);
+
+  // Publicité récompensée gardée en attente (APK 8.3.2+) pour les comptes sans abonnement dont le
+  // serveur propose les récompenses : elle s'affiche sans délai à la demande et la suivante se
+  // recharge dès qu'elle est fermée. Indépendant de ADS_PAUSED : AdMob reste actif pendant la pause.
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.()) return undefined;
+    if (authLoading || (user && adFree === null)) return undefined;
+    const enabled = !!user && adFree === false && cache.current?.adsEnabled === true;
+    void prepareRewardedAd(enabled);
+    const resume = () => { if (enabled && document.visibilityState === 'visible') void prepareRewardedAd(true); };
+    document.addEventListener('visibilitychange', resume);
+    return () => { document.removeEventListener('visibilitychange', resume); void prepareRewardedAd(false); };
   }, [user, authLoading, adFree]);
 
   // Vérifie l'accès à la demande. Résout true si autorisé (et si `minLevel`
