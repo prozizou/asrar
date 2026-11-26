@@ -33,7 +33,7 @@ android {
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
         // local, repli sur la valeur 127 définie plus haut.
         versionCode asrarVersionCode
-        versionName "8.3.2"
+        versionName "8.3.3"
         buildConfigField 'String', 'ADMOB_REWARDED_ID', '"ca-app-pub-3895250961868134/9551701662"'
         // App ID Google de production ; la variante debug utilise les identifiants de test.
         manifestPlaceholders.admobAppId = 'ca-app-pub-3895250961868134~5473242896'

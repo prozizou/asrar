@@ -34,13 +34,19 @@ async function installAdMob(page: any) {
     (window as any).__adMobShows = 0;
     (window as any).Capacitor = {
       isNativePlatform: () => true, getPlatform: () => 'android', isPluginAvailable: (name: string) => name === 'UnityAds',
-      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showRewarded', 'preloadRewarded'].map(name => ({ name, rtype: 'promise' })) }],
+      PluginHeaders: [{ name: 'UnityAds', methods: ['getCapabilities', 'prepareActionAd', 'showRewarded', 'preloadRewarded', 'cancelRewarded'].map(name => ({ name, rtype: 'promise' })) }],
       nativePromise: async (_plugin: string, method: string, options: any) => {
-        if (method === 'getCapabilities') return { adMobRewards: true, rewardedPreload: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
+        if (method === 'getCapabilities') return { adMobRewards: true, rewardedPreload: true, rewardedSilentLoading: true, mediation: 'admob', legacyRewards: false, privacyRequired: false };
         if (method === 'preloadRewarded') { ((window as any).__preloadCalls ||= []).push(options.enabled); return; }
+        // « Annuler » de la page : la demande native en attente se termine en « cancelled ».
+        if (method === 'cancelRewarded') { (window as any).__releaseAd?.({ shown: false, completed: false, reason: 'cancelled' }); return; }
         if (method === 'showRewarded') {
           (window as any).__adMobShows++;
-          if ((window as any).__adMobFail) throw Object.assign(new Error('Aucune annonce'), { code: 'no_fill' });
+          (window as any).__lastShowOptions = options;
+          // Vidéo qui ne s'ouvre pas encore : la page affiche son attente jusqu'à « Annuler ».
+          if ((window as any).__adMobHold) return new Promise((resolve) => { (window as any).__releaseAd = resolve; });
+          // Comme le vrai pont Android : aucune annonce → résolu (sans rejet) avec la raison.
+          if ((window as any).__adMobFail) return { shown: false, completed: false, reason: 'no_fill' };
           await fetch('/__test-admob-reward', { method: 'POST', body: JSON.stringify({ serverId: options.serverId }) });
           return { shown: true, completed: true };
         }
@@ -164,4 +170,24 @@ test('le préchargement n’est jamais activé pour un abonné', async ({ page, 
   await expect(tap(page)).toBeVisible({ timeout: 20000 });
   await page.waitForTimeout(2500);
   expect(await page.evaluate(() => (window as any).__preloadCalls || [])).not.toContain(true);
+});
+
+test('l’attente de la vidéo s’affiche dans la fenêtre de l’application, sans fenêtre Android, et « Annuler » garde le verrou', async ({ page, login }) => {
+  test.setTimeout(120_000);
+  await installAdMob(page); await page.setViewportSize({ width: 390, height: 850 });
+  await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
+  await reachHundred(page);
+  await page.evaluate(() => { (window as any).__adMobHold = true; });
+  const go = gate(page).getByRole('button', { name: 'Regarder la vidéo', exact: true });
+  await expect(go).toBeEnabled();
+  await go.click();
+  await expect(gate(page).getByText('Préparation de votre vidéo…')).toBeVisible();
+  // L'appel natif suit l'ouverture de la session serveur : on l'attend.
+  await expect.poll(() => page.evaluate(() => (window as any).__lastShowOptions?.silent)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('zikr-pub-attente.png') });
+  await gate(page).getByRole('button', { name: 'Annuler', exact: true }).click();
+  await expect(gate(page).getByText('Préparation de votre vidéo…')).toHaveCount(0);
+  await expect(gate(page).getByRole('button', { name: 'Regarder la vidéo', exact: true })).toBeVisible();
+  await expect(gate(page).locator('.sg-ad-msg')).toHaveCount(0); // annuler n'affiche aucune erreur
+  await expect(gate(page)).toContainText('100 grains récités'); // le verrou reste
 });

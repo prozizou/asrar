@@ -8,7 +8,8 @@
 import { useEffect, useState } from 'react';
 import { X, WifiOff, Clapperboard } from 'lucide-react';
 import Modal from './Modal';
-import { watchRewardedAd } from '@/lib/unityAds';
+import { watchRewardedAd, cancelRewardedAd } from '@/lib/unityAds';
+import AdLoadingState from './AdLoadingState';
 import SubscriptionPlans from './SubscriptionPlans';
 import { ADS_PAUSED } from '@/lib/plans';
 import { AD_POINTS_PER_ACTION } from '@/lib/adPoints';
@@ -23,6 +24,7 @@ const AD_MESSAGES = {
 
 export default function SubscriptionGate({ open, reason, adEligible, adPoints, rewardedInterstitial, onAdRewarded, onAdPending, onClose }) {
   const [adBusy, setAdBusy] = useState(false);
+  const [adPhase, setAdPhase] = useState('loading');
   const [adMessage, setAdMessage] = useState('');
 
   useEffect(() => {
@@ -34,13 +36,15 @@ export default function SubscriptionGate({ open, reason, adEligible, adPoints, r
   const watchAd = async (interstitial = false) => {
     if (adBusy) return;
     setAdBusy(true);
+    setAdPhase('loading');
     setAdMessage('');
     try {
-      const result = await watchRewardedAd(interstitial);
+      const result = await watchRewardedAd(interstitial, { onPhase: setAdPhase });
       if (result.ok) {
         if (!(await onAdRewarded())) setAdMessage(AD_MESSAGES.pending);
         return;
       }
+      if (result.reason === 'cancelled') return; // annulé avant la vidéo : aucun message
       if (result.reason === 'pending') onAdPending();
       setAdMessage(AD_MESSAGES[result.reason] || AD_MESSAGES.error);
     } finally {
@@ -95,17 +99,21 @@ export default function SubscriptionGate({ open, reason, adEligible, adPoints, r
         )}
         {adEligible && !isLevelGate && !isNoAdsGate && (
           <div className="sg-ad">
-            <button type="button" className="sg-ad-btn" onClick={() => watchAd()} disabled={adBusy}>
-              {adBusy ? 'Chargement ou validation…' : <><Clapperboard size={16} aria-hidden="true" /> Regarder une publicité</>}
-            </button>
+            {adBusy ? (
+              <AdLoadingState phase={adPhase} onCancel={() => { void cancelRewardedAd(); }} />
+            ) : (
+              <button type="button" className="sg-ad-btn" onClick={() => watchAd()}>
+                <Clapperboard size={16} aria-hidden="true" /> Regarder une publicité
+              </button>
+            )}
             <div className="sg-ad-progress" aria-hidden="true">
               <span style={{ width: `${Math.min(100, Math.max(0, (adPoints / AD_POINTS_PER_ACTION) * 100))}%` }} />
             </div>
             <p className="sg-ad-hint" aria-live="polite">
               {adPoints} / {AD_POINTS_PER_ACTION} points · 1 point par vidéo
             </p>
-            {rewardedInterstitial && (
-              <button type="button" className="sg-ad-btn" onClick={() => watchAd(true)} disabled={adBusy}>
+            {rewardedInterstitial && !adBusy && (
+              <button type="button" className="sg-ad-btn" onClick={() => watchAd(true)}>
                 Regarder une autre vidéo
               </button>
             )}

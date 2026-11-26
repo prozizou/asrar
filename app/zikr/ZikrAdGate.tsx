@@ -11,11 +11,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clapperboard } from 'lucide-react';
 import ModalUntyped from '@/components/Modal';
 import { useAccess } from '@/components/AccessProvider';
-import { watchRewardedAd } from '@/lib/unityAds';
+import { watchRewardedAd, cancelRewardedAd } from '@/lib/unityAds';
+import AdLoadingStateUntyped from '@/components/AdLoadingState';
 import { crossedAdThreshold, adThresholdReached } from '@/lib/zikrAdPrompt';
 import { readGate, writeGate, clearGate, resolveAttempt } from '@/lib/zikrAdGate';
 
 const Modal = ModalUntyped as any;
+const AdLoadingState = AdLoadingStateUntyped as any;
 const ARM_DELAY_MS = 1000; // pas d'appui possible dès l'apparition : le pouce tape encore le chapelet
 const NOTICE_MS = 5000;
 
@@ -30,6 +32,7 @@ export function useZikrAdGate({ total, groupId, uid }: { total: number; groupId:
   const [open, setOpen] = useState(false);
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<'loading' | 'validating'>('loading');
   const [message, setMessage] = useState('');
   const [notice, setNotice] = useState('');
   const eligible = useRef<boolean | null>(null);   // null : pas encore connu
@@ -90,9 +93,9 @@ export function useZikrAdGate({ total, groupId, uid }: { total: number; groupId:
 
   const watch = useCallback(async () => {
     if (busyRef.current || !armed) return;
-    busyRef.current = true; setBusy(true); setMessage('');
+    busyRef.current = true; setBusy(true); setPhase('loading'); setMessage('');
     try {
-      const result = await watchRewardedAd(false);
+      const result = await watchRewardedAd(false, { onPhase: setPhase });
       const outcome = resolveAttempt(result, failures.current);
       failures.current = outcome.failures;
       if (result.ok || ('reason' in result && result.reason === 'pending')) accessRef.current?.invalidate?.();
@@ -115,13 +118,19 @@ export function useZikrAdGate({ total, groupId, uid }: { total: number; groupId:
             <div className="sg-hero-icon"><Clapperboard size={40} strokeWidth={1.8} aria-hidden="true" /></div>
             <h2>{threshold} grains récités</h2>
             <p className="sg-sub">Pour continuer le comptage, regardez une courte vidéo. Vous gagnez aussi 1 point.</p>
-            {message && <p className="sg-ad-msg" role="status">{message}</p>}
-            <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={watch} disabled={busy || !armed}>
-              {busy ? 'Chargement…' : failures.current > 0 ? 'Réessayer' : 'Regarder la vidéo'}
-            </button>
-            <button type="button" className="sg-card" style={{ width: '100%', marginTop: 8 }} onClick={() => setOpen(false)} disabled={busy}>
-              Plus tard
-            </button>
+            {message && !busy && <p className="sg-ad-msg" role="status">{message}</p>}
+            {busy ? (
+              <AdLoadingState phase={phase} onCancel={() => { void cancelRewardedAd(); }} />
+            ) : (
+              <>
+                <button type="button" className="sg-card best" style={{ width: '100%', marginTop: 8 }} onClick={watch} disabled={!armed}>
+                  {failures.current > 0 ? 'Réessayer' : 'Regarder la vidéo'}
+                </button>
+                <button type="button" className="sg-card" style={{ width: '100%', marginTop: 8 }} onClick={() => setOpen(false)}>
+                  Plus tard
+                </button>
+              </>
+            )}
             <p className="zk-ad-gate-note">Le compteur reste en pause jusqu’à la vidéo.</p>
           </div>
         </Modal>

@@ -2232,3 +2232,21 @@ a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6p
 .support-actions .support-later:disabled { opacity: .6; cursor: default; font-variant-numeric: tabular-nums; }
 .support-actions .support-done { border: 0; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .support-actions button:hover { transform: none; box-shadow: none; }
+
+/* Attente d'une vidéo récompensée (components/AdLoadingState.js) : remplace la fenêtre Android. */
+.ad-loading { display: grid; justify-items: center; gap: 6px; padding: 18px 12px 6px; text-align: center; }
+.ad-loading-ring {
+  width: 38px; height: 38px; margin-bottom: 8px; border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--accent) 22%, transparent); border-top-color: var(--accent);
+  animation: ad-loading-spin .9s linear infinite;
+}
+@keyframes ad-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ad-loading-ring { animation-duration: 2.4s; } }
+.ad-loading-title { margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-main); }
+.ad-loading-sub { margin: 0; font-size: .85rem; line-height: 1.45; color: var(--text-dim); }
+.ad-loading-cancel {
+  min-height: 44px; margin-top: 10px; padding: 0 24px; border: 1px solid var(--border); border-radius: 10px;
+  background: transparent; color: var(--text-main); font: inherit; font-weight: 600; cursor: pointer;
+}
+.ad-loading-cancel:hover { background: var(--surface-2); }
+.ad-loading-cancel:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

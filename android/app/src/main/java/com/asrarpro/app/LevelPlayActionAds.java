@@ -68,11 +68,22 @@ final class LevelPlayActionAds {
 
     void preload() { main.post(() -> prepare(false)); }
 
-    void show(Result callback) { show(callback, false); }
+    void show(Result callback) { show(callback, false, true); }
 
-    void showDirect(Result callback) { show(callback, true); }
+    void showDirect(Result callback) { show(callback, true, true); }
 
-    private void show(Result callback, boolean autoShow) {
+    /**
+     * Comme showDirect, mais SANS fenêtre Android : la page affiche elle-même l'attente dans le
+     * style de l'application (chargement, « Annuler » → cancel()). L'annonce s'ouvre dès qu'elle est prête.
+     */
+    void showSilent(Result callback) { show(callback, true, false); }
+
+    /** Annule une demande dont l'annonce n'est pas encore affichée (sans effet ensuite). */
+    void cancel() {
+        main.post(() -> { if (pending != null && pending.slot == null) finish(pending, "cancelled"); });
+    }
+
+    private void show(Result callback, boolean autoShow, boolean withDialog) {
         main.post(() -> {
             if (destroyed || !foreground()) { callback.done(false, false, "background"); return; }
             if (pending != null) { callback.done(false, false, "busy"); return; }
@@ -80,6 +91,11 @@ final class LevelPlayActionAds {
             pending = request;
             request.autoShow = autoShow;
             deadline(request, 120_000, "timeout");
+            if (!withDialog) {
+                platform.allowConsentPrompt(true);
+                prepare(true);
+                return;
+            }
             request.dialog = new AlertDialog.Builder(activity.get())
                 .setTitle("Continuer avec une publicité")
                 .setMessage(LOADING_MESSAGE)
@@ -158,9 +174,10 @@ final class LevelPlayActionAds {
     }
 
     private void updateDialog() {
-        if (pending == null || pending.slot != null || pending.dialog == null) return;
+        if (pending == null || pending.slot != null) return;
         boolean available = ready();
         if (available && pending.autoShow) { showPrepared(pending); return; }
+        if (pending.dialog == null) return;
         pending.dialog.setMessage(available ? READY_MESSAGE : LOADING_MESSAGE);
         android.widget.Button button = pending.dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) { button.setText(available ? "Regarder" : "Chargement…"); button.setEnabled(available); }
@@ -172,8 +189,7 @@ final class LevelPlayActionAds {
         if (!ready()) { prepare(true); updateDialog(); return; }
         request.slot = cached;
         cached = null;
-        request.dialog.dismiss();
-        request.dialog = null;
+        if (request.dialog != null) { request.dialog.dismiss(); request.dialog = null; }
         deadline(request, 600_000, "timeout");
         try { request.slot.ad.show(activity.get()); }
         catch (RuntimeException exception) { finish(request, "show"); }
