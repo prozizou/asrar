@@ -3,8 +3,9 @@
 //
 // Pour chaque utilisateur connecté : chaque page ouverte (changement de route)
 // et chaque action (bouton, lien, onglet touché) est mise en file, puis
-// envoyée par lots à /api/track (type « actions ») — toutes les 10 s, dès
-// 20 actions en attente, et quand l'application passe en arrière-plan. Le
+// envoyée par lots à /api/track (type « actions ») — toutes les 30 s, dès
+// 30 actions en attente, et quand l'application passe en arrière-plan.
+// Les touches répétées sur le même élément (double tap) ne comptent qu'une fois. Le
 // serveur y ajoute l'e-mail, le pays et l'heure (pages/api/track.js).
 // La connexion elle-même (type « visit ») reste envoyée par AuthProvider.
 import { useEffect, useRef } from 'react';
@@ -12,8 +13,10 @@ import { usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { useAuth } from './AuthProvider';
 
-const FLUSH_MS = 10_000;
-const BATCH_MAX = 20;
+const FLUSH_MS = 30_000;
+const BATCH_MAX = 30; // = ACTIONS_MAX côté serveur
+const REQUEST_TIMEOUT_MS = 10_000;
+const REPEAT_MS = 1_500;
 const QUEUE_MAX = 200;
 const LABEL_MAX = 60;
 
@@ -53,25 +56,41 @@ export default function ActivityTracker() {
     if (!u || sending.current || !queue.current.length) return;
     sending.current = true;
     const events = queue.current.splice(0, BATCH_MAX);
+    // Délai maximal : une requête sans réponse ne doit pas bloquer tous les
+    // envois suivants (sending resterait vrai indéfiniment).
+    const controller = typeof AbortController === 'undefined' ? null : new AbortController();
+    const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+    let retry = false;
     try {
       const idToken = await u.getIdToken();
-      await fetch('/api/track', {
+      const r = await fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, type: 'actions', events, sentAt: Date.now() }),
         keepalive: true,
+        ...(controller ? { signal: controller.signal } : {}),
       });
+      retry = r.status >= 500;
     } catch {
-      // Réseau coupé : on remet le lot en tête de file (borné) pour le prochain envoi.
-      queue.current = events.concat(queue.current).slice(0, QUEUE_MAX);
+      retry = true;
     } finally {
+      if (timer) clearTimeout(timer);
       sending.current = false;
+    }
+    if (retry) {
+      // Réseau coupé ou serveur indisponible : on remet le lot en tête de file
+      // (borné) pour le prochain envoi périodique, sans réessai immédiat.
+      queue.current = events.concat(queue.current).slice(0, QUEUE_MAX);
+      return;
     }
     if (queue.current.length >= BATCH_MAX) flush.current();
   };
 
   const push = (event) => {
-    queue.current.push({ ...event, at: Date.now() });
+    const at = Date.now();
+    const prev = queue.current[queue.current.length - 1];
+    if (prev && prev.type === event.type && prev.page === event.page && prev.label === event.label && at - prev.at < REPEAT_MS) return;
+    queue.current.push({ ...event, at });
     if (queue.current.length > QUEUE_MAX) queue.current.splice(0, queue.current.length - QUEUE_MAX);
     if (queue.current.length >= BATCH_MAX) flush.current();
   };
