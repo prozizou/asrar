@@ -14,8 +14,9 @@ import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInst
 import { PLAY_STORE_URL, storeGate, webGateEnabled, openAppIntent } from '@/lib/storeRedirect';
 
 const FORCE_INSTALL = false;
-// Site et PWA réservés à iOS (les publicités ne tournent que dans l'application
-// Android). Actif par défaut ; NEXT_PUBLIC_IOS_WEB_ONLY=0 au build le coupe.
+// Navigateurs Android déroutés vers Google Play (sur Android, les publicités
+// passent par l'application). iPhone/iPad et ordinateur gardent le site.
+// Actif par défaut ; NEXT_PUBLIC_IOS_WEB_ONLY=0 au build le coupe.
 const IOS_WEB_ONLY = webGateEnabled(process.env.NEXT_PUBLIC_IOS_WEB_ONLY);
 const REDIRECT_KEY = 'asrar_store_redirected';
 
@@ -96,7 +97,7 @@ export default function PwaGate({ children }) {
           <div style={card}>
             <Image src="/assets/logo-mark.png" alt="" width={84} height={84} />
             <h1 style={{ color: '#fff' }}>ASRAR PRO</h1>
-            <p style={txt}>Le site est réservé à iPhone et iPad. Sur Android, installez l’application ASRAR PRO depuis Google Play.</p>
+            <p style={txt}>Sur Android, ASRAR PRO s’utilise dans l’application. Installez-la depuis Google Play.</p>
             {android && (
               <p><a href={openApp} style={{ ...btn, display: 'inline-block', width: 'auto' }}>Ouvrir l’application</a></p>
             )}

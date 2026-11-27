@@ -132,7 +132,10 @@ function useAdPlace() {
   useEffect(() => { setPlatform(isIOSAdsterra() ? 'ios' : isNativeApp() ? 'app' : 'web'); }, []);
   if (!platform || access?.adFree !== false) return null;
   if (platform === 'ios') return 'ios';
-  if (ADS_PAUSED) return null;
+  // Ordinateur pendant la pause : bannières et Native Banner seulement (ni
+  // Social Bar, ni Popunder). Android n'atteint pas ce cas : application →
+  // null, navigateur Android → dérouté vers Google Play (lib/storeRedirect.js).
+  if (ADS_PAUSED) return platform === 'web' ? 'desktop' : null;
   return platform === 'app' ? null : 'web';
 }
 function useShowAds() {
@@ -155,6 +158,14 @@ export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
 export default function AdsterraAds() {
   const place = useAdPlace();
   if (!place) return null;
+  if (place === 'desktop') {
+    return (
+      <>
+        {NATIVE_SRC ? <NativeBanner /> : null}
+        {BANNERS_CONFIGURED ? <Banners /> : null}
+      </>
+    );
+  }
   const popunder = env(POPUNDER_SRC, place === 'ios' ? IOS_POPUNDER_SRC : '');
   return (
     <>

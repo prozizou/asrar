@@ -36,8 +36,13 @@ for (const native of [false, true]) {
         await page.getByRole('button', { name: 'Calculer', exact: true }).click();
         await expect(dialog).toBeVisible();
       } else await expect(page.locator('.kz-grid .kz-cell')).toHaveCount(36);
-      expect(adRequests).toEqual([]); expect(popups).toEqual([]);
-      await expect(page.locator('[aria-label="Publicité"]')).toHaveCount(0);
+      // Ordinateur : bannières et Native Banner Adsterra autorisés (affichage
+      // seul, sans déblocage) ; jamais Social Bar ni Popunder. Android : aucun.
+      if (native) {
+        expect(adRequests).toEqual([]);
+        await expect(page.locator('[aria-label="Publicité"]')).toHaveCount(0);
+      } else expect(adRequests.filter(url => !/bicea\.org\/(21|22)\//.test(url))).toEqual([]);
+      expect(popups).toEqual([]);
       expect(await page.evaluate(() => (window as any).__adCalls.filter((call: any) => call.method !== 'prepareActionAd' || call.enabled !== false))).toEqual([]);
     });
   }
