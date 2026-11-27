@@ -12,8 +12,12 @@ import ActivityTracker from './ActivityTracker';
 import AndroidBackHandler from './AndroidBackHandler';
 import SupportProvider from './SupportProvider';
 import DiagnosticMonitor from './DiagnosticMonitor';
+import { usePathname } from 'next/navigation';
+import { isPublicPath } from '@/lib/publicPages';
 
 export default function Providers({ children }) {
+  // Pages publiques (app/decouvrir) : ni connexion, ni accès, ni publicité.
+  if (isPublicPath(usePathname())) return children;
   return (
     <>
     {/* Hors d'AuthProvider : le bouton retour Android agit aussi sur l'écran de connexion. */}

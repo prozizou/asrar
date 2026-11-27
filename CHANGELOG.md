@@ -1,3 +1,10 @@
+## SW v47.08 — Pages publiques « Découvrir » (validation AdSense)
+
+- AdSense refusait le site (« annonces sur des pages sans contenu d'éditeur ») : tout le site exige une connexion Google, le HTML serveur était vide (`PwaGate`) et le robot mobile de Google, qui se présente comme Android, était dérouté vers Google Play.
+- Nouvelles pages publiques rendues sur le serveur, sans connexion ni publicité : `/decouvrir` (présentation), une page par module (`/decouvrir/<module>`), `/decouvrir/a-propos`, `/decouvrir/contact`. Textes dans `lib/publicPages.js`.
+- `PwaGate` et `Providers` laissent passer ces pages ; les robots (Googlebot, Mediapartners-Google, AdsBot…) ne sont plus déroutés vers Google Play (`BOT_UA`, `lib/storeRedirect.js`).
+- `robots.txt` (sans `/api/`) et `sitemap.xml` (pages publiques et politique de confidentialité) ; lien « Découvrir ASRAR PRO » sur l'écran de connexion du site.
+
 ## Android 8.3.4 / SW v47.07 — Bannières AdMob des écrans, Adsterra sur le site, verrou strict du Zikr, icônes nettes
 
 - Bannière AdMob fixe en bas de l'écran pour les Secrets mystiques (`secrets`) et la Bibliothèque (`library`), comme sur le Marché (`home`). Le menu garde son encart natif ; l'app-open et l'interstitiel de transition restent limités à l'accueil et au menu (`AdMobDisplayAds.BANNER_SURFACES`, `lib/inFeedAds.js#displaySurface`).

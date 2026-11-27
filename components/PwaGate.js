@@ -10,6 +10,8 @@
 import { CircleCheck, Download, Share, SquarePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { isPublicPath } from '@/lib/publicPages';
 import { isStandalone, isIOS, getInstallState, subscribeInstallState, promptInstall as promptInstallShared } from '@/lib/installPrompt';
 import { PLAY_STORE_URL, storeGate, webGateEnabled, openAppIntent } from '@/lib/storeRedirect';
 
@@ -30,6 +32,9 @@ function currentGate() {
 }
 
 export default function PwaGate({ children }) {
+  // Pages publiques (app/decouvrir) : jamais déroutées ni masquées, et rendues
+  // dès le serveur — ce sont elles que lisent les robots de Google.
+  const publicPage = isPublicPath(usePathname());
   const [mounted, setMounted] = useState(false);
   const [standalone, setStandalone] = useState(true); // optimiste → pas de flash pour les installés
   const [installState, setInstallState] = useState(getInstallState); // { canInstall, installed }
@@ -41,7 +46,7 @@ export default function PwaGate({ children }) {
     setInstallState(getInstallState());
 
     const gate = currentGate();
-    if (gate !== 'allow') {
+    if (gate !== 'allow' && !isPublicPath(window.location.pathname)) {
       // Android (navigateur ou PWA installée) : direction Google Play, une seule
       // fois par session pour qu'un « Retour » arrive sur l'écran ci-dessous.
       if (gate === 'android') {
@@ -87,7 +92,7 @@ export default function PwaGate({ children }) {
     };
   }, []);
 
-  if (IOS_WEB_ONLY) {
+  if (IOS_WEB_ONLY && !publicPage) {
     if (!mounted) return null;
     if (currentGate() !== 'allow') {
       const android = /Android/i.test(navigator.userAgent);
