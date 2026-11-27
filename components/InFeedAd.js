@@ -2,39 +2,31 @@
 // Encarts publicitaires web (Adsterra) intégrés aux listes — Secrets
 // mystiques, Bibliothèque, Marché — toutes les IN_FEED_EVERY cartes
 // (lib/inFeedAds.js), et bandeau sous l'en-tête de la discussion Zikr.
-// Les vues AdMob natives ne peuvent pas s'insérer entre des éléments de la
-// page web : elles sont posées en bas de l'écran (AdMobDisplayAds.java).
 //
-// Affichés seulement à un compte non abonné (adFree === false) :
-//  • dans l'application Android (NEXT_PUBLIC_ADSTERRA_IN_APP ≠ 0) ;
-//  • sur iPhone/iPad (site), seule version web encore servie.
+// Adsterra est réservé au site (iPhone/iPad et ordinateur) : l'application
+// Android n'affiche QUE des bannières AdMob (en bas des écrans). Aucun encart
+// sur Android, ni dans l'application ni dans un navigateur Android.
+// Seulement pour un visiteur non abonné (adFree === false).
 // NEXT_PUBLIC_ADSTERRA_BANNERS=0 coupe tout. Chaque encart est un iframe
 // sandboxé (pas d'accès à la page) chargé à l'approche de l'écran.
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from './AuthProvider';
 import { useAccess } from './AccessProvider';
 import { isIOSAdsterra } from '@/lib/actionAd';
 import { AD_HOST, BANNERS, BANNERS_CONFIGURED } from './AdsterraBanner';
 
-const IN_APP_ENABLED = process.env.NEXT_PUBLIC_ADSTERRA_IN_APP !== '0';
-
 function platform() {
   try {
     if (isIOSAdsterra()) return 'ios';
-    const cap = window.Capacitor;
-    if (cap?.isNativePlatform?.() && cap.getPlatform?.() === 'android') return 'android';
+    if (window.Capacitor?.isNativePlatform?.() || /android/i.test(navigator.userAgent || '')) return 'android';
   } catch { /* navigateur sans Capacitor */ }
-  return 'web';
+  return 'desktop';
 }
 
 export function useInFeedAds() {
-  const { user, loading } = useAuth();
   const { adFree } = useAccess();
   const [where, setWhere] = useState(null);
   useEffect(() => { setWhere(platform()); }, []);
-  if (!BANNERS_CONFIGURED || adFree !== false || !where) return false;
-  if (where === 'ios') return true;
-  return where === 'android' && IN_APP_ENABLED && !!user && !loading;
+  return BANNERS_CONFIGURED && adFree === false && (where === 'ios' || where === 'desktop');
 }
 
 export default function InFeedAd({ format = 'b300x250', className = 'in-feed-ad' }) {

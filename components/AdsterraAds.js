@@ -1,8 +1,8 @@
 'use client';
 // Publicités Adsterra — montées dans Providers, donc sur toutes les pages.
-// Site : tous les formats. Application Android (qui charge ce même site) :
-// bannières et Native Banner seulement (voir AdsterraAds), à côté des pubs
-// plein écran Unity (lib/unityAds.js). Jamais pour un abonné valide
+// Site (iPhone/iPad, ordinateur) seulement. JAMAIS dans l'application
+// Android : elle n'affiche que les publicités AdMob (bannières natives,
+// AdMobDisplayAds.java, et vidéos récompensées). Jamais pour un abonné valide
 // (adFree === true — l'app étant gratuite, l'abonnement retire les pubs).
 // adFree === null (statut pas encore résolu) : rien d'affiché, pour ne pas
 // montrer une pub une fraction de seconde à un abonné.
@@ -19,13 +19,9 @@
 //                                         « container-<clé> » attendu.
 //  - NEXT_PUBLIC_ADSTERRA_BANNERS=0     : coupe les bannières (actives par
 //                                         défaut, voir components/AdsterraBanner.js).
-//  - NEXT_PUBLIC_ADSTERRA_IN_APP=0      : coupe Adsterra dans l'application
-//                                         Android (bannières et Native Banner).
 // Les clés des Banners sont dans BANNERS (components/AdsterraBanner.js).
 import { Ban, ExternalLink } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { useAuth } from './AuthProvider';
 import { useAccess } from './AccessProvider';
 import { ADSTERRA_SMARTLINK, isIOSAdsterra } from '@/lib/actionAd';
 import { ADS_PAUSED } from '@/lib/plans';
@@ -57,7 +53,7 @@ function isNativeApp() {
 
 // Bandeau adapté à la largeur d'écran + pavé 300x250, en bas du contenu ;
 // colonnes 160x600 (droite) et 160x300 (gauche) sur grand écran.
-function Banners({ inApp = false, ios = false }) {
+function Banners({ ios = false }) {
   const [width, setWidth] = useState(0);
   useEffect(() => { setWidth(window.innerWidth); }, []);
   if (!width) return null;
@@ -68,9 +64,7 @@ function Banners({ inApp = false, ios = false }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, margin: '16px auto' }}>
         <Banner ios={ios} banner={strip} />
         <Banner ios={ios} banner={BANNERS.b300x250} />
-        {/* Dans l'application, pas d'offre payée par WhatsApp : Google Play
-            impose son propre système de paiement pour ce type d'avantage. */}
-        {inApp ? null : <RemoveAdsButton ios={ios} />}
+        <RemoveAdsButton ios={ios} />
       </div>
       {width >= SIDES_MIN_WIDTH ? (
         <>
@@ -131,8 +125,7 @@ function BodyScript({ src }) {
 // même site). Dans l'application, seuls les formats compatibles avec les
 // règles de Google Play sont affichés (voir AdsterraAds) ; la pub plein écran
 // aux actions y est celle d'Unity (lib/unityAds.js), pas l'onglet Smartlink.
-// NEXT_PUBLIC_ADSTERRA_IN_APP=0 coupe Adsterra dans l'application.
-const IN_APP_ENABLED = process.env.NEXT_PUBLIC_ADSTERRA_IN_APP !== '0';
+// Application Android : aucun format Adsterra (AdMob uniquement).
 function useAdPlace() {
   const access = useAccess();
   const [platform, setPlatform] = useState(null);
@@ -140,9 +133,7 @@ function useAdPlace() {
   if (!platform || access?.adFree !== false) return null;
   if (platform === 'ios') return 'ios';
   if (ADS_PAUSED) return null;
-  const native = platform === 'app';
-  if (!native) return 'web';
-  return IN_APP_ENABLED ? 'app' : null;
+  return platform === 'app' ? null : 'web';
 }
 function useShowAds() {
   const place = useAdPlace();
@@ -163,40 +154,8 @@ export function SponsoredLink({ label = 'Découvrir une offre partenaire' }) {
 
 export default function AdsterraAds() {
   const place = useAdPlace();
-  const { user, loading } = useAuth();
-  const { adFree } = useAccess();
-  const pathname = usePathname();
-  const [android, setAndroid] = useState(false);
-  useEffect(() => {
-    setAndroid(isNativeApp() && window.Capacitor?.getPlatform?.() === 'android');
-  }, []);
-  if (ADS_PAUSED && IN_APP_ENABLED && process.env.NEXT_PUBLIC_ADSTERRA_BANNERS !== '0'
-    && android && !!user && !loading && adFree === false && pathname === '/menu/ressources') {
-    const { key, width, height } = BANNERS.b320x50;
-    return (
-      <iframe
-        title="Publicité Adsterra"
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
-        width={width}
-        height={height}
-        style={{ display: 'block', margin: '16px auto', maxWidth: '100%', border: 0 }}
-        srcDoc={`<script>window.atOptions = {key:"${key}",format:"iframe",width:${width},height:${height},params:{}};</script><script src="${AD_HOST}/22/${key}"></script>`}
-      />
-    );
-  }
   if (!place) return null;
   const popunder = env(POPUNDER_SRC, place === 'ios' ? IOS_POPUNDER_SRC : '');
-  // Application : bannières et Native Banner seulement. Pas de Social Bar (il
-  // imite une notification, interdit par Google Play), ni de Popunder ou
-  // d'onglet Smartlink (pubs qui ouvrent le navigateur sans action claire).
-  if (place === 'app') {
-    return (
-      <>
-        {NATIVE_SRC ? <NativeBanner /> : null}
-        {BANNERS_ENABLED ? <Banners inApp /> : null}
-      </>
-    );
-  }
   return (
     <>
       {SOCIALBAR_SRC ? <BodyScript src={SOCIALBAR_SRC} /> : null}

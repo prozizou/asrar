@@ -21,8 +21,7 @@ async function manyProducts(page: any, count: number) {
   });
 }
 
-test('application Android : un encart toutes les 6 cartes du Marché, jamais en fin de liste', async ({ page, login }) => {
-  await android(page);
+test('site (ordinateur) : un encart toutes les 6 cartes du Marché, jamais en fin de liste', async ({ page, login }) => {
   await login('free');
   await manyProducts(page, 12);
   await page.goto('/');
@@ -31,7 +30,6 @@ test('application Android : un encart toutes les 6 cartes du Marché, jamais en 
   // 12 cartes affichées : encart après la 6e, pas après la 12e (fin de liste).
   await expect(ads).toHaveCount(1);
   await expect(ads.first().getByText('Publicité', { exact: true })).toBeVisible();
-  // Placé juste après la 6e carte.
   expect(await page.evaluate(() => {
     const list = document.querySelector('.prod-list')!;
     const children = Array.from(list.children);
@@ -41,8 +39,21 @@ test('application Android : un encart toutes les 6 cartes du Marché, jamais en 
   await expect(ads.first().locator('iframe[sandbox]')).toHaveCount(1);
 });
 
-test('compte abonné ou site Android : aucun encart', async ({ page, login }) => {
+test('application Android : aucune publicité Adsterra, AdMob seulement', async ({ page, login }) => {
   await android(page);
+  const adsterra: string[] = [];
+  page.on('request', (request: any) => { if (/bicea\.org/.test(request.url())) adsterra.push(request.url()); });
+  await login('free');
+  await manyProducts(page, 12);
+  await page.goto('/');
+  await expect(page.locator('.prod-card')).toHaveCount(12);
+  await page.goto('/menu/ressources');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('aside.in-feed-ad, iframe[title^="Publicité"]')).toHaveCount(0);
+  expect(adsterra).toEqual([]);
+});
+
+test('compte abonné : aucun encart', async ({ page, login }) => {
   await login('basic');
   await manyProducts(page, 12);
   await page.goto('/');

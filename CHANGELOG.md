@@ -1,9 +1,8 @@
 ## Android 8.3.4 / SW v47.07 — Bannières des écrans et encarts dans les listes
 
 - Bannière AdMob fixe en bas de l'écran pour les Secrets mystiques (`secrets`) et la Bibliothèque (`library`), comme sur le Marché (`home`). Le menu garde son encart natif ; l'app-open et l'interstitiel de transition restent limités à l'accueil et au menu (`AdMobDisplayAds.BANNER_SURFACES`, `lib/inFeedAds.js#displaySurface`).
-- Encart web (Adsterra 300x250, iframe sandboxé chargé à l'approche) toutes les 6 cartes dans les Secrets, la Bibliothèque et le Marché, jamais en fin de liste ; étiquette « Publicité », pleine largeur de la grille (`components/InFeedAd.js`).
-- Discussion du Zikr collectif : bandeau 320x50 en haut, sous l'en-tête, loin du champ de saisie. Une vue AdMob native ne peut pas se placer entre des éléments de la page web : elle aurait recouvert l'en-tête et les fenêtres de la discussion.
-- Jamais pour un abonné ; dans l'application pour un compte connecté non abonné, sur iPhone/iPad pour un visiteur non abonné. `NEXT_PUBLIC_ADSTERRA_BANNERS=0` ou `NEXT_PUBLIC_ADSTERRA_IN_APP=0` coupent les encarts web.
+- Adsterra réservé au site (iPhone/iPad et ordinateur) : encart 300x250 (iframe sandboxé chargé à l'approche) toutes les 6 cartes dans les Secrets, la Bibliothèque et le Marché, jamais en fin de liste, étiquette « Publicité » (`components/InFeedAd.js`) ; bandeau 320x50 en haut de la discussion du Zikr collectif, loin du champ de saisie. Jamais pour un abonné ; `NEXT_PUBLIC_ADSTERRA_BANNERS=0` les coupe.
+- Application Android : plus AUCUN format Adsterra (ni Native Banner, ni bannières, ni bandeau des Ressources) ; uniquement les bannières AdMob et les vidéos récompensées. `NEXT_PUBLIC_ADSTERRA_IN_APP` n'est plus utilisée.
 
 ## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
 
