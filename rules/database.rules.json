@@ -2,9 +2,174 @@
   "rules": {
     ".read": false,
     ".write": false,
-
-    "notification_jobs": { ".indexOn": ["availableAt", "createdAt", "finishedAt", "status"] },
-    "notifications": { "$uid": { ".indexOn": ["createdAt", "read"] } },
+    "appData": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "sourate": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "versetRef": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "alqalam_fonts": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "purchased_user": {
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",
+        ".write": false
+      }
+    },
+    "purchases": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "allowedUsers": {
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",
+        ".write": false
+      }
+    },
+    "admins": {
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email.replace('.', ',') === $emailKey",
+        ".write": false
+      }
+    },
+    "vip_users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "sellers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "orders": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false,
+        ".indexOn": [
+          "at"
+        ]
+      }
+    },
+    "vendor_sales": {
+      ".read": false,
+      ".write": false
+    },
+    "db_sirr_deblocage": {
+      ".read": false,
+      ".write": false
+    },
+    "db_sirr_domptage": {
+      ".read": false,
+      ".write": false
+    },
+    "db_sirr_ilham": {
+      ".read": false,
+      ".write": false
+    },
+    "db_sirr_protection": {
+      ".read": false,
+      ".write": false
+    },
+    "db_sirr_ouverture": {
+      ".read": false,
+      ".write": false
+    },
+    "almaqtab": {
+      ".read": false,
+      ".write": false
+    },
+    "theme_fondamental": {
+      ".read": false,
+      ".write": false
+    },
+    "det_produits": {
+      ".read": false,
+      ".write": false,
+      ".indexOn": [
+        "uid"
+      ]
+    },
+    "ratings": {
+      "$cat": {
+        ".read": "auth != null",
+        "$key": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+          }
+        }
+      }
+    },
+    "comments": {
+      "$cat": {
+        ".read": "auth != null",
+        "$key": {
+          ".read": "auth != null",
+          ".indexOn": [
+            "timestamp"
+          ],
+          "$commentId": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+            ".validate": "newData.hasChildren(['uid', 'text']) && newData.child('uid').isString() && newData.child('text').isString() && newData.child('text').val().length <= 500"
+          }
+        }
+      }
+    },
+    "analytics": {
+      ".read": false,
+      ".write": false
+    },
+    "activity_feed": {
+      ".read": false,
+      ".write": false,
+      ".indexOn": [
+        "at"
+      ]
+    },
+    "geomancie_logs": {
+      ".read": false,
+      ".write": false,
+      ".indexOn": [
+        "at"
+      ]
+    },
+    "data": {
+      "appData": {
+        "asmaUlHusna": {
+          ".read": "auth != null"
+        }
+      }
+    },
+    "notification_jobs": {
+      ".indexOn": [
+        "availableAt",
+        "createdAt",
+        "finishedAt",
+        "status"
+      ]
+    },
+    "notifications": {
+      "$uid": {
+        ".indexOn": [
+          "createdAt",
+          "read"
+        ]
+      }
+    },
     "zikr_chat_read_counts": {
       "$gid": {
         "$uid": {
@@ -19,20 +184,63 @@
         ".write": false
       }
     },
-    "zikr_inactivity": { ".indexOn": ["deadline"] },
-    "zikr_groups": { ".indexOn": ["sessionAt"] },
-    "product_requests": { "$vendorId": { ".indexOn": ["uid", "at"] } },
-    "orders_v2": { ".indexOn": ["buyerSort", "sellerSort", "sellerUid", "buyerUid", "at"] },
-    "privacy_requests": { ".indexOn": ["status"] },
-    "orders": { "$uid": { ".indexOn": ["at"] } },
-    "push_subscriptions": { "$uid": { ".indexOn": ["updatedAt"] } },
-    "fcm_devices": { "$uid": { ".indexOn": ["updatedAt"] } },
-
+    "zikr_inactivity": {
+      ".indexOn": [
+        "deadline"
+      ]
+    },
+    "zikr_groups": {
+      ".indexOn": [
+        "sessionAt"
+      ]
+    },
+    "product_requests": {
+      "$vendorId": {
+        ".indexOn": [
+          "uid",
+          "at"
+        ]
+      }
+    },
+    "orders_v2": {
+      ".indexOn": [
+        "buyerSort",
+        "sellerSort",
+        "sellerUid",
+        "buyerUid",
+        "at"
+      ]
+    },
+    "privacy_requests": {
+      ".indexOn": [
+        "status"
+      ]
+    },
+    "push_subscriptions": {
+      "$uid": {
+        ".indexOn": [
+          "updatedAt"
+        ]
+      }
+    },
+    "fcm_devices": {
+      "$uid": {
+        ".indexOn": [
+          "updatedAt"
+        ]
+      }
+    },
     "ac_signals": {
-      "$cid": { ".read": "auth != null && auth.token.email_verified == true && root.child('ac_members').child($cid).child(auth.uid).exists()", ".write": false }
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true && root.child('ac_members').child($cid).child(auth.uid).exists()",
+        ".write": false
+      }
     },
     "ac_inbox_signals": {
-      "$uid": { ".read": "auth != null && auth.uid == $uid && auth.token.email_verified == true", ".write": false }
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid && auth.token.email_verified == true",
+        ".write": false
+      }
     },
     "ac_typing": {
       "$cid": {
@@ -43,17 +251,38 @@
         }
       }
     },
-    "ac_profiles": { ".indexOn": ["handle", "seller/enabled"] },
-    "ac_posts": { ".indexOn": ["createdAt", "sellerUid"] },
-    "ac_convs": { ".indexOn": ["inviteCode", "visibility"] },
-    "ac_orders": { ".indexOn": ["status"] },
-    "ac_reports": { ".indexOn": ["status"] },
-    "ac_audit": { ".indexOn": ["at"] },
-
-    "sourate": { ".read": "auth != null" },
-    "versetRef": { ".read": "auth != null" },
-    "data": {
-      "appData": { ".read": "auth != null" }
+    "ac_profiles": {
+      ".indexOn": [
+        "handle",
+        "seller/enabled"
+      ]
+    },
+    "ac_posts": {
+      ".indexOn": [
+        "createdAt",
+        "sellerUid"
+      ]
+    },
+    "ac_convs": {
+      ".indexOn": [
+        "inviteCode",
+        "visibility"
+      ]
+    },
+    "ac_orders": {
+      ".indexOn": [
+        "status"
+      ]
+    },
+    "ac_reports": {
+      ".indexOn": [
+        "status"
+      ]
+    },
+    "ac_audit": {
+      ".indexOn": [
+        "at"
+      ]
     }
   }
 }
