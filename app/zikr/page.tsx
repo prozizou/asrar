@@ -173,7 +173,7 @@ const fmtSessionAt = (ms: number) =>
 const waContactUrl = (phone: string, groupName: string) =>
   'https://api.whatsapp.com/send?phone=' + phone.replace(/\D/g, '') + '&text=' + encodeURIComponent(`Assalamou aleykoum — au sujet du zikr collectif « ${groupName} » sur ASRAR PRO.`);
 const SAVE_DEBOUNCE = 1500; // regroupe les frappes avant l'envoi (comme la référence)
-const POLL_MS = 4000;       // « temps réel » : resonde le groupe régulièrement
+const POLL_MS = 10000;      // resonde le groupe régulièrement (10 s : chaque sondage relit membres et vœux)
 const LIST_POLL_MS = 15000; // La liste n'affiche pas le compteur en direct.
 
 export default function ZikrCollectifPage() {

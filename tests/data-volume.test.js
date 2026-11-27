@@ -65,3 +65,25 @@ describe('Fil d’activité', () => {
     expect(pushKeyPrefix(1795820000000).startsWith('-P')).toBe(true);
   });
 });
+
+describe('Lectures globales partagées (téléchargements RTDB)', () => {
+  it('le Marché ne relit pas tous les likes/avis à chaque ouverture, mais voit un nouveau like', async () => {
+    const db = database({ ratings: { product: { p1: { a: 1 } } }, comments: { product: {} } });
+    const handler = runtime(db, { user: { uid: 'b', email: 'b@example.test' } })('pages/api/social.js').default;
+    for (let i = 0; i < 5; i++) await invoke(handler, { action: 'market-popularity' });
+    expect(db.metrics.reads.filter((r) => r.path === 'ratings/product')).toHaveLength(1);
+    await invoke(handler, { action: 'toggle-like', cat: 'product', key: 'p1' });
+    const res = await invoke(handler, { action: 'market-popularity' });
+    expect(Object.keys(res.body.likes.p1)).toEqual(['a', 'b']);
+  });
+  it('la liste des zikr est partagée entre sondages et rafraîchie après une création', async () => {
+    const db = database({ zikr_groups: { g1: { name: 'A', target: 10, total: 0, ownerUid: 'u', approved: true } } });
+    const handler = runtime(db, { user: { uid: 'u', email: 'u@example.test' } })('pages/api/zikr.js').default;
+    await invoke(handler, { action: 'list' });
+    await invoke(handler, { action: 'list' });
+    expect(db.metrics.reads.filter((r) => r.path === 'zikr_groups')).toHaveLength(1);
+    await invoke(handler, { action: 'delete', groupId: 'g1' });
+    await invoke(handler, { action: 'list' });
+    expect(db.metrics.reads.filter((r) => r.path === 'zikr_groups')).toHaveLength(2);
+  });
+});

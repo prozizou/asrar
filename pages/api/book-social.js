@@ -11,6 +11,10 @@
 //   action="comment" { bookKey,text}→ { ok, comment:{name,text,at} }
 
 const { verifyUser } = require("../../server/access");
+// Compteurs de la bibliothèque : les deux nœuds complets sont partagés 30 s par
+// instance au lieu d'être relus à chaque ouverture de la page.
+const { publicCatalog, invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const bulk = (db, path) => publicCatalog(db, path, async () => (await db.ref(path).once("value")).val() || {});
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { reportError } = require("../../server/log");
@@ -43,11 +47,7 @@ export default async function handler(req, res) {
     // Compteurs pour une liste de livres (2 lectures max).
     if (action === "counts") {
       const list = Array.isArray(keys) ? keys.filter(validKey).slice(0, 400) : [];
-      const [likesSnap, commSnap] = await Promise.all([
-        db.ref("book_likes").once("value"),
-        db.ref("book_comments").once("value")
-      ]);
-      const likes = likesSnap.val() || {}, comm = commSnap.val() || {};
+      const [likes, comm] = await Promise.all([bulk(db, "book_likes"), bulk(db, "book_comments")]);
       const stats = {};
       for (const k of list) {
         const lk = likes[k] || {};
@@ -70,6 +70,7 @@ export default async function handler(req, res) {
         await ref.set(true);
         await notifyAdmins(db, bookKey, user, likeNotification, {}, "book-like:" + bookKey + ":" + user.uid);
       }
+      invalidatePublicCatalog(db, "book_likes");
       const all = (await db.ref("book_likes/" + bookKey).once("value")).val() || {};
       return res.status(200).json({ likes: Object.keys(all).length, liked: !cur });
     }
@@ -101,6 +102,7 @@ export default async function handler(req, res) {
       }
       const rec = { uid: user.uid, name: nameFromEmail(user.email), text: t, at: now };
       const pushed = await db.ref("book_comments/" + bookKey).push(rec);
+      invalidatePublicCatalog(db, "book_comments");
       await notifyAdmins(db, bookKey, user, commentNotification, { preview: t }, "book-comment:" + bookKey + ":" + pushed.key);
       await metaRef.set(now);
       return res.status(200).json({ ok: true, comment: { name: rec.name, text: rec.text, at: rec.at } });
