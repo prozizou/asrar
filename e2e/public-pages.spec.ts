@@ -13,8 +13,8 @@ test('le HTML serveur de chaque page publique contient son texte', async ({ requ
     expect(html, path).toContain('<h1');
     expect(html, path).not.toContain('Se connecter</h1>');
   }
-  const module = await (await request.get('/decouvrir/zikr-collectif')).text();
-  expect(module).toContain('Réciter ensemble');
+  const zikr = await (await request.get('/decouvrir/zikr-collectif')).text();
+  expect(zikr).toContain('Réciter ensemble');
 });
 
 test('un visiteur non connecté lit la page sans écran de connexion ni publicité', async ({ page }) => {
