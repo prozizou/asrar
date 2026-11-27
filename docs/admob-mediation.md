@@ -35,3 +35,10 @@ Quand le chargement d’une publicité récompensée échoue (aucune annonce, er
 ## Préchargement de la publicité récompensée
 
 Android 8.3.2 garde une annonce récompensée chargée en attente (`RewardedPreloader`, `PreloadedSlot`) pour supprimer l'attente du chargement (latence moyenne mesurée ≈ 3,8 s, 50 % des annonces trouvées jamais affichées). Le site l'active par `preloadRewarded({ enabled })` pour un compte sans abonnement dont le serveur propose les récompenses, et la coupe sinon. `AdMobAdPlatform.load()` prend l'annonce en attente à la place d'une nouvelle demande et pose l'identifiant SSV de la demande courante juste avant l'affichage ; à la fermeture, la suivante se recharge. Garde-fous : un seul chargement à la fois, annonce jetée après 50 min, demandes espacées de 1 à 15 min après un échec, aucune demande si le consentement n'est pas obtenu (sans fenêtre). Dans AdMob, le taux de diffusion baisse mécaniquement : suivre impressions et revenus.
+
+## Liftoff Monetize (ex-Vungle) — Android 8.3.5
+
+- Adaptateur `com.google.ads.mediation:vungle` ajouté dans `android/app/build.gradle` (actif à partir de l'APK 8.3.5).
+- `public/app-ads.txt` : ligne DIRECT `vungle.com, 6b0940e8824b51cafc14acbd` et revendeurs fournis par Liftoff (doublons déjà présents ignorés).
+- Liftoff (publisher.vungle.com) : ajouter l'application Android `com.Asrar`, puis créer les emplacements (Rewarded, Interstitial, Banner, App Open) et noter l'App ID et les Reference ID.
+- AdMob → Médiation → Sources d'annonces : activer Liftoff Monetize en enchères, saisir l'App ID et les Reference ID, puis l'ajouter aux groupes de médiation existants (récompensée, interstitiel, bannière, ouverture d'application).
