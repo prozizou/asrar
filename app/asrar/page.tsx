@@ -14,7 +14,7 @@ import './asrar.css';
 import Link from 'next/link';
 import ViewState from '@/components/ViewState';
 import { useToast } from '@/components/useToast';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { ShieldCheck, DoorOpen, Lock, BookOpen, Flower, ScrollText, Bookmark, ChevronRight, ArrowLeft } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
@@ -26,6 +26,8 @@ import SmartImageUntyped from '@/components/SmartImage';
 import { useHistoryClose } from '@/components/useHistoryClose';
 import { useProgressiveList } from '@/components/useProgressiveList';
 import SecretDetail from './SecretDetail';
+import InFeedAd, { useInFeedAds } from '@/components/InFeedAd';
+import { inFeedAdAfter } from '@/lib/inFeedAds';
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -61,6 +63,7 @@ const CATS: Category[] = [
 ];
 
 export default function AsrarPage() {
+  const showFeedAds = useInFeedAds();
   const { notify, toast } = useToast();
   const [listError, setListError] = useState(false);
   const listRequest = useRef(0);
@@ -294,7 +297,8 @@ export default function AsrarPage() {
                       capitales + filet vert + description, flèche ronde à droite. */}
                   <h2 className="sr-only">{currentCat.label}</h2>
                   <div className="secrets-grid">
-                  {visibleList.map((item) => (
+                  {visibleList.map((item, index) => (
+                    <Fragment key={item.key}>
                     <button
                       type="button"
                       title={sentenceCaseIfShouting(item.faida)}
@@ -330,6 +334,8 @@ export default function AsrarPage() {
                         <ChevronRight size={20} strokeWidth={2.6} />
                       </span>
                     </button>
+                    {showFeedAds && inFeedAdAfter(index, visibleList.length) && <InFeedAd />}
+                    </Fragment>
                   ))}
                   </div>
                   {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}

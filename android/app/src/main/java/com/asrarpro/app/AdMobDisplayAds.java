@@ -45,6 +45,11 @@ final class AdMobDisplayAds {
     private InterstitialAd interstitial;
     private AppOpenAd appOpen;
     private boolean fetchingInterstitial, fetchingAppOpen, initializing, initialized, fullscreen;
+    // Écrans qui reçoivent la bannière fixe en bas : Marché (accueil), Secrets
+    // mystiques et Bibliothèque. Le menu garde son encart natif ; l'app-open et
+    // l'interstitiel de transition restent limités à l'accueil et au menu.
+    static final java.util.Set<String> BANNER_SURFACES = new java.util.HashSet<>(java.util.Arrays.asList("home", "secrets", "library"));
+    static boolean isSurface(String value) { return "menu".equals(value) || BANNER_SURFACES.contains(value); }
     private String surface = "";
     private boolean enabled;
     private int revision;
@@ -59,7 +64,7 @@ final class AdMobDisplayAds {
     }
 
     void configure(boolean allowed, String nextSurface) {
-        boolean transition = enabled && surface.isEmpty() && "menu".equals(nextSurface);
+        boolean transition = enabled && !"home".equals(surface) && !"menu".equals(surface) && "menu".equals(nextSurface);
         if (allowed != enabled || !nextSurface.equals(surface)) {
             revision++;
             removeFooter();
@@ -85,7 +90,7 @@ final class AdMobDisplayAds {
     }
 
     private void prepare(boolean transition) {
-        if ("home".equals(surface) && footer == null) loadBanner();
+        if (BANNER_SURFACES.contains(surface) && footer == null) loadBanner();
         if ("menu".equals(surface) && footer == null) loadNative();
         long now = SystemClock.elapsedRealtime();
         if (transition && interstitial != null && now - interstitialAt < CACHE_MS && canShowFullscreen()) {
@@ -130,7 +135,7 @@ final class AdMobDisplayAds {
         long now = SystemClock.elapsedRealtime();
         long away = backgroundAt == 0 ? 0 : now - backgroundAt;
         backgroundAt = 0;
-        if (enabled && initialized && !surface.isEmpty() && away >= BACKGROUND_INTERVAL_MS
+        if (enabled && initialized && ("home".equals(surface) || "menu".equals(surface)) && away >= BACKGROUND_INTERVAL_MS
             && appOpen != null && now - appOpenAt < CACHE_MS && canShowFullscreen()) {
             AppOpenAd ready = appOpen;
             appOpen = null;

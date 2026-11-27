@@ -24,7 +24,7 @@
 // ce batch) — mêmes principes que dans les batches précédents (#114, #116,
 // #118).
 import './marche/marche.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Search, Package, Heart, MessageCircle, Crown, Menu as MenuIcon, Store, ImageOff, BadgeCheck } from 'lucide-react';
 import { auth } from '@/lib/firebase';
@@ -42,6 +42,8 @@ import { useToast } from '@/components/useToast';
 import ProductModal from './marche/ProductModal';
 import VendorShop from './marche/VendorShop';
 import ProductPrice from './marche/ProductPrice';
+import InFeedAd, { useInFeedAds } from '@/components/InFeedAd';
+import { inFeedAdAfter } from '@/lib/inFeedAds';
 
 const SmartImage = SmartImageUntyped as any;
 
@@ -93,6 +95,7 @@ const engagement = (pop: Record<string, PopulariteEntry>, key: string) =>
 const chainLabel = (c?: string) => (c ? c.charAt(0).toUpperCase() + c.slice(1) : '');
 
 export default function Home() {
+  const showFeedAds = useInFeedAds();
   const { notify, toast } = useToast();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
@@ -567,6 +570,7 @@ export default function Home() {
                     const top = index === 0 && engagement(rankPop, p._key) > 0;
                     const name = displayProductName(p.produit) || 'Produit';
                     return (
+                      <Fragment key={p._key}>
                       <article
                         key={p._key}
                         className="prod-card"
@@ -637,6 +641,8 @@ export default function Home() {
                           </div>
                         </div>
                       </article>
+                      {showFeedAds && inFeedAdAfter(index, visibleProducts.length) && <InFeedAd />}
+                      </Fragment>
                     );
                   })}
                   {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}
