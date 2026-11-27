@@ -3,6 +3,7 @@
 // répétés dans chaque page. Un seul point d'entrée : useAuth().
 // Tant que l'utilisateur n'est pas connecté, on affiche l'écran de connexion
 // Google (port de la logique de index.html), au lieu de rediriger en dur.
+import Link from 'next/link';
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
@@ -192,6 +193,8 @@ function LoginScreen({ onLogin, status, error }) {
           </p>
         )}
         <a className="login-privacy-link" href="/confidentialite.html">Politique de confidentialité</a>
+        {/* Site seulement : pages publiques lisibles sans compte (app/decouvrir). */}
+        {!isNativeApp() && <Link className="login-privacy-link" href="/decouvrir">Découvrir ASRAR PRO</Link>}
       </div>
     </div>
   );
