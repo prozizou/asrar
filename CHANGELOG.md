@@ -1,9 +1,11 @@
-## Android 8.3.4 / SW v47.07 — Bannières des écrans et encarts dans les listes
+## Android 8.3.4 / SW v47.07 — Bannières AdMob des écrans, Adsterra sur le site, verrou strict du Zikr
 
 - Bannière AdMob fixe en bas de l'écran pour les Secrets mystiques (`secrets`) et la Bibliothèque (`library`), comme sur le Marché (`home`). Le menu garde son encart natif ; l'app-open et l'interstitiel de transition restent limités à l'accueil et au menu (`AdMobDisplayAds.BANNER_SURFACES`, `lib/inFeedAds.js#displaySurface`).
 - Adsterra réservé au site (iPhone/iPad et ordinateur) : encart 300x250 (iframe sandboxé chargé à l'approche) toutes les 6 cartes dans les Secrets, la Bibliothèque et le Marché, jamais en fin de liste, étiquette « Publicité » (`components/InFeedAd.js`) ; bandeau 320x50 en haut de la discussion du Zikr collectif, loin du champ de saisie. Jamais pour un abonné ; `NEXT_PUBLIC_ADSTERRA_BANNERS=0` les coupe.
 - Le site rouvre sur ordinateur : seuls les navigateurs et PWA Android sont encore déroutés vers Google Play (`lib/storeRedirect.js`). Sur ordinateur, pendant la pause des formats web : bannières et Native Banner Adsterra (ni Social Bar ni Popunder).
 - Application Android : plus AUCUN format Adsterra (ni Native Banner, ni bannières, ni bandeau des Ressources) ; uniquement les bannières AdMob et les vidéos récompensées. `NEXT_PUBLIC_ADSTERRA_IN_APP` n'est plus utilisée.
+- Le verrou des 100 grains ne se lève plus après deux échecs de chargement : une vidéo absente, une coupure réseau ou une erreur laissent le compteur figé jusqu'à ce que l'utilisateur sans abonnement regarde une vidéo jusqu'au bout ou s'abonne. Ferme le contournement par mode avion ou bloqueur de publicités (DNS privé).
+- Messages clairs selon la cause (aucune vidéo disponible, connexion, appareil) ; bouton « S'abonner » dans la fenêtre du verrou ; le verrou se lève dès que le compte est abonné (vérifié aussi en rouvrant la fenêtre).
 
 ## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
 
