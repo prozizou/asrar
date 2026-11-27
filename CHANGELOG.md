@@ -9,6 +9,7 @@
 - Couche avant de l'icône adaptative à la bonne taille (108 dp : 81 à 432 px selon la densité) : les anciens fichiers faisaient 36 à 192 px, la taille des anciennes icônes, et Android les agrandissait ~2,25× (icône floue).
 - Écran de démarrage : logo dédié `splash_icon` (288 dp, jusqu'à 1152 px) au lieu de l'icône du lanceur, très agrandie et floue à cette taille. Fond du logo aligné sur l'icône (#EFEFEF).
 - Toutes les tailles sont des réductions depuis `public/assets/logo-full.png` (640 px) : aucune n'est agrandie. Générateur reproductible : `scripts/generate-android-icons.py` (Pillow).
+- Exports Word/PDF dans l'application : délai maximal (enregistrement 20 s, impression 8 s) pour que la fenêtre d'attente ne reste plus affichée indéfiniment (`lib/nativeFiles.js`).
 
 ## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
 
