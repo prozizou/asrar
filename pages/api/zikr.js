@@ -184,6 +184,10 @@ const webpush = require("web-push");
 const { sendWebPush } = require("../../server/webPush");
 const { verifyUser, isAdmin } = require("../../server/access");
 const { app } = require("../../server/grant");
+// Liste des groupes partagée 30 s par instance (sondée toutes les 15 s par
+// chaque visiteur de /zikr) ; invalidée localement après chaque écriture.
+const { publicCatalog, invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const READ_ACTIONS = new Set(["list", "get", "progress", "requests", "messages", "messageReaders", "readMessages"]);
 const { setCors, parseBody, isValidKey } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
 const { reportError } = require("../../server/log");
@@ -275,6 +279,8 @@ export default async function handler(req, res) {
   } catch (e) {
     if (!e.statusCode) await reportError("zikr", e, { action, uid: user.uid });
     return res.status(e.statusCode || 500).json({ error: e.message });
+  } finally {
+    if (!READ_ACTIONS.has(action)) invalidatePublicCatalog(db, "zikr_groups");
   }
 };
 
@@ -302,7 +308,8 @@ async function readRequests(db, gid) {
 
 async function handleList(db, res, user) {
   const admin = await isAdmin(user);
-  const snap = await db.ref("zikr_groups").once("value");
+  const all = await publicCatalog(db, "zikr_groups", async () => (await db.ref("zikr_groups").once("value")).val() || {});
+  const snap = { forEach: (fn) => Object.entries(all).forEach(([key, value]) => fn({ key, val: () => value })) };
   const groups = [];
   snap.forEach((g) => {
     const v = g.val() || {};

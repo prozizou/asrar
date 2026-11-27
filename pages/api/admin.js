@@ -363,11 +363,13 @@ async function readAll(db, path) {
   snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
   return out;
 }
+// orderByKey (clés push chronologiques) : orderByChild("at") sans index
+// .indexOn téléchargeait TOUT le fil d'activité à chaque appel.
 async function readFeed(db, path, n) {
-  const snap = await db.ref(path).orderByChild("at").limitToLast(n).once("value");
+  const snap = await db.ref(path).orderByKey().limitToLast(n).once("value");
   const out = [];
   snap.forEach((c) => { out.push({ _key: c.key, ...(c.val() || {}) }); });
-  return out.reverse(); // plus récent d'abord
+  return out.sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0)); // plus récent d'abord
 }
 
 function str(v, max) { return (v == null ? "" : String(v)).trim().slice(0, max || 200); }

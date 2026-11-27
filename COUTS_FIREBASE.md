@@ -14,6 +14,12 @@ transférées, en conservant les vérifications d'identité et de droits.
 | Liste des groupes Zikr | Toutes les 6 s | Toutes les 15 s ; détail du groupe toujours toutes les 4 s au premier plan |
 | Rappels de session | Tous les groupes à chaque passage | Requête indexée sur la fenêtre de rappel : de 10 minutes après à 30 minutes avant la session |
 | Consultations répétées du catalogue | Relecture de la collection | Métadonnées filtrées partagées pendant 30 s dans chaque instance serveur |
+| Journal d'activité (clics, pages) | Lot toutes les 10 s ; 1 écriture par action + 2 mises à jour de session | Lot toutes les 30 s (30 actions max), doubles taps ignorés ; 1 seule écriture multi-chemins par lot |
+| Fil `activity_feed` | Jamais nettoyé ; l'admin le lisait en entier (`orderByChild("at")` sans index) | Purge quotidienne au-delà de 14 jours (cron des rappels) ; lecture admin bornée par clé |
+| Diagnostics « Bugs et lenteurs » | 3 transactions séquentielles par événement + contrôle de révocation Firebase Auth à chaque envoi | Lot regroupé : 2 transactions de quota + 1 par groupe, en parallèle ; pas d'appel de révocation |
+| Marché (likes/avis de tous les produits et boutiques), compteurs de la Bibliothèque | Relus en entier à chaque ouverture | Partagés 30 s par instance serveur, invalidés après un like/avis |
+| Liste des zikr | `zikr_groups` relu toutes les 15 s par visiteur | Partagée 30 s par instance, invalidée après une modification |
+| Détail d'un zikr (membres, vœux, présence) | Sondage toutes les 4 s | Toutes les 10 s ; présence « en ligne » sur 20 s |
 
 Les push reçus au premier plan rafraîchissent les notifications immédiatement.
 Les événements simultanés sont regroupés ; un sondage lent ne chevauche pas

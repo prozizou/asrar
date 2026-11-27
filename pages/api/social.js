@@ -33,6 +33,10 @@
 // pour un avis boutique/formation — voir lib/reviews.js).
 
 const { verifyUser } = require("../../server/access");
+// Lectures globales (toutes les fiches) partagées 30 s par instance : chaque
+// ouverture du Marché relisait sinon tous les likes et avis de la base.
+const { publicCatalog, invalidatePublicCatalog } = require("../../server/publicCatalogCache");
+const bulk = (db, path) => publicCatalog(db, path, async () => (await db.ref(path).once("value")).val() || {});
 const { app } = require("../../server/grant");
 const { setCors, parseBody } = require("../../server/http");
 const { rateLimit } = require("../../lib/rateLimit");
@@ -82,34 +86,27 @@ export default async function handler(req, res) {
     // — Lectures agrégées (page Marché : cartes produit + boutiques, avant
     // même l'ouverture d'un produit précis) — aucun cat/key requis. —
     if (action === "market-popularity") {
-      const [likesSnap, comsSnap] = await Promise.all([
-        db.ref("ratings/product").once("value"),
-        db.ref("comments/product").once("value"),
-      ]);
+      const [likes, comments] = await Promise.all([bulk(db, "ratings/product"), bulk(db, "comments/product")]);
       return res.status(200).json({
-        likes: likesSnap.val() || {},
-        comments: comsSnap.val() || {},
+        likes,
+        comments,
         // Les anciens compteurs étaient des clics WhatsApp, pas des ventes.
         orders: {},
       });
     }
 
     if (action === "vendor-likes") {
-      const [likesSnap, comsSnap] = await Promise.all([
-        db.ref("ratings/vendor").once("value"),
-        db.ref("comments/vendor").once("value"),
-      ]);
+      const [vendorLikes, vendorComments] = await Promise.all([bulk(db, "ratings/vendor"), bulk(db, "comments/vendor")]);
       // vendorComments (avis, avec `stars`? — voir lib/reviews.js avgStars) :
       // champ AJOUTÉ, jamais retiré — compat ascendante avec les appelants
       // qui ne lisaient jusqu'ici que vendorLikes.
-      return res.status(200).json({ vendorLikes: likesSnap.val() || {}, vendorComments: comsSnap.val() || {} });
+      return res.status(200).json({ vendorLikes, vendorComments });
     }
 
     if (action === "formation-popularity") {
       // Pas de likes pour les formations, seulement des avis (étoiles) —
       // voir lib/reviews.js avgStars.
-      const snap = await db.ref("comments/formation").once("value");
-      return res.status(200).json({ comments: snap.val() || {} });
+      return res.status(200).json({ comments: await bulk(db, "comments/formation") });
     }
 
     // — Actions ciblées sur un secret/produit/vendeur précis —
@@ -156,6 +153,7 @@ export default async function handler(req, res) {
         // aimer à nouveau ne renvoie pas la notification (eventId stable).
         await notifyOwner(db, cat, key, user, likeNotification, {}, `like:${cat}:${key}:${user.uid}`);
       }
+      invalidatePublicCatalog(db, "ratings/" + cat);
       const likesSnap = await likesRef.once("value");
       const likes = likesSnap.val() || {};
       return res.status(200).json({ liked: !!likes[user.uid], likeCount: Object.keys(likes).length });
@@ -172,6 +170,7 @@ export default async function handler(req, res) {
       const record = { uid: user.uid, email: user.email || "", photo, text, timestamp: Date.now() };
       if (stars != null) record.stars = stars;
       const ref = await commentsRef.push(record);
+      invalidatePublicCatalog(db, "comments/" + cat);
       await notifyOwner(db, cat, key, user, commentNotification, { preview: text, stars }, `comment:${cat}:${key}:${ref.key}`);
       return res.status(200).json({ comment: { id: ref.key, email: user.email || "", photo, text, stars } });
     }

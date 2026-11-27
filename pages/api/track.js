@@ -69,6 +69,35 @@ export default async function handler(req, res) {
     const sessionRef = db.ref("user_sessions/" + user.uid);
     const platform = platformOf(req.headers["user-agent"]);
     const sessionUpdate = { uid: user.uid, email: user.email, lastActivityAt: now };
+
+    // 2quater) Lot d'actions (components/ActivityTracker.js) : chaque page
+    // ouverte et chaque bouton/lien touché, avec e-mail, pays et heure.
+    // UNE seule écriture multi-chemins (entrées du fil + session) au lieu
+    // d'un push par action puis deux mises à jour de session séparées.
+    if (kind === "actions") {
+      const events = actionEvents(parseBody(req).events, now);
+      const updates = {};
+      for (const [k, v] of Object.entries(sessionUpdate)) updates["user_sessions/" + user.uid + "/" + k] = v;
+      if (events.length) {
+        const feed = db.ref("activity_feed");
+        for (const e of events) {
+          updates["activity_feed/" + feed.push().key] = {
+            uid: user.uid, email: user.email, at: e.at, type: e.type, page: e.page,
+            ...(e.label ? { label: e.label } : {}), platform,
+            ...(countryCode ? { country, countryCode } : {}),
+          };
+        }
+        const last = events[events.length - 1];
+        Object.assign(updates, {
+          ["user_sessions/" + user.uid + "/lastPage"]: last.page || null,
+          ["user_sessions/" + user.uid + "/lastAction"]: last.label || last.page || null,
+          ["user_sessions/" + user.uid + "/lastActionAt"]: last.at,
+        });
+      }
+      await db.ref().update(updates);
+      return res.status(200).json({ ok: true, count: events.length });
+    }
+
     let previousVisitDay = "";
     if (kind === "visit") {
       previousVisitDay = String((await sessionRef.child("lastVisitDay").once("value")).val() || "");
@@ -79,23 +108,6 @@ export default async function handler(req, res) {
 
     // 2ter) Compteurs d'audience agrégés (visites/jour, appareil, pays).
     if (kind === "visit") await countAudience(db, date, previousVisitDay, countryCode, platform);
-
-    // 2quater) Lot d'actions (components/ActivityTracker.js) : chaque page
-    // ouverte et chaque bouton/lien touché, avec e-mail, pays et heure.
-    if (kind === "actions") {
-      const events = actionEvents(parseBody(req).events, now);
-      if (events.length) {
-        const feed = db.ref("activity_feed");
-        await Promise.all(events.map((e) => feed.push({
-          uid: user.uid, email: user.email, at: e.at, type: e.type, page: e.page,
-          ...(e.label ? { label: e.label } : {}), platform,
-          ...(countryCode ? { country, countryCode } : {}),
-        })));
-        const last = events[events.length - 1];
-        await sessionRef.update({ lastPage: last.page || null, lastAction: last.label || last.page || null, lastActionAt: last.at });
-      }
-      return res.status(200).json({ ok: true, count: events.length });
-    }
 
     // 0) Compteurs de la pub au clic : un envoi groupé par session environ
     // (lib/actionAd.ts). Valeurs bornées : un client ne peut pas gonfler les
