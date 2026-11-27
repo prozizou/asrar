@@ -1,3 +1,7 @@
+## Android 8.3.5 — Liftoff Monetize dans la médiation AdMob
+
+- Adaptateur de médiation Liftoff Monetize (ex-Vungle) pour AdMob ; `app-ads.txt` complété (ligne DIRECT Liftoff et revendeurs). Configuration console : `docs/admob-mediation.md`.
+
 ## SW v47.08 — Pages publiques « Découvrir » (validation AdSense)
 
 - AdSense refusait le site (« annonces sur des pages sans contenu d'éditeur ») : tout le site exige une connexion Google, le HTML serveur était vide (`PwaGate`) et le robot mobile de Google, qui se présente comme Android, était dérouté vers Google Play.

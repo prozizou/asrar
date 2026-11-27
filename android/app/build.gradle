@@ -33,7 +33,7 @@ android {
         // via ASRAR_VERSION_CODE (100 + numéro d'exécution du workflow) ; en
         // local, repli sur la valeur 127 définie plus haut.
         versionCode asrarVersionCode
-        versionName "8.3.4"
+        versionName "8.3.5"
         buildConfigField 'String', 'ADMOB_REWARDED_ID', '"ca-app-pub-3895250961868134/9551701662"'
         // App ID Google de production ; la variante debug utilise les identifiants de test.
         manifestPlaceholders.admobAppId = 'ca-app-pub-3895250961868134~5473242896'
@@ -103,6 +103,8 @@ dependencies {
     implementation 'com.google.ads.mediation:unity:4.21.0.0'
     implementation 'com.google.ads.mediation:bigo:6.2.0.1'
     implementation 'com.google.ads.mediation:chartboost:9.14.1.0'
+    // Liftoff Monetize (ex-Vungle) : adaptateur de médiation AdMob (enchères).
+    implementation 'com.google.ads.mediation:vungle:7.5.0.0'
     implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.robolectric:robolectric:4.16.1"
