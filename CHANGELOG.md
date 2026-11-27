@@ -1,3 +1,9 @@
+## SW v47.07 — Zikr collectif : verrou strict, vidéo ou abonnement
+
+- Le verrou des 100 grains ne se lève plus après deux échecs de chargement : une vidéo absente, une coupure réseau ou une erreur laissent le compteur figé jusqu'à ce que l'utilisateur sans abonnement regarde une vidéo jusqu'au bout ou s'abonne. Ferme le contournement par mode avion ou bloqueur de publicités (DNS privé).
+- Messages clairs selon la cause (aucune vidéo disponible, connexion, appareil) ; bouton « S'abonner » dans la fenêtre du verrou ; le verrou se lève dès que le compte est abonné (vérifié aussi en rouvrant la fenêtre).
+- Côté site uniquement : aucun nouvel APK nécessaire.
+
 ## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
 
 - La fenêtre Android « Continuer avec une publicité / Chargement… » est remplacée par une attente dans la fenêtre de l'application (`components/AdLoadingState.js`) : anneau aux couleurs de l'application, « Préparation de votre vidéo… », message après 8 s si la connexion est lente, bouton « Annuler » ; puis « Validation de votre point… » pendant la confirmation serveur. Fenêtre d'abonnement et verrou du Zikr collectif.
