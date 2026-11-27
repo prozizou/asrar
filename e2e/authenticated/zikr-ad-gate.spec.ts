@@ -128,7 +128,7 @@ test('le verrou survit à une fermeture de la page : on le retrouve en rouvrant 
   await expect(gate(page)).toContainText('100 grains récités');
 });
 
-test('sans vidéo disponible, le verrou est levé après deux échecs : jamais d’enfermement', async ({ page, login }) => {
+test('sans vidéo disponible, le compteur reste figé : réessayer ou s’abonner', async ({ page, login }) => {
   test.setTimeout(120_000);
   await installAdMob(page); await login('free'); await bindReward(page); await page.goto('/zikr?item=' + GID);
   await reachHundred(page);
@@ -136,14 +136,23 @@ test('sans vidéo disponible, le verrou est levé après deux échecs : jamais d
   const go = gate(page).getByRole('button', { name: 'Regarder la vidéo', exact: true });
   await expect(go).toBeEnabled();
   await go.click();
-  await expect(gate(page)).toContainText('Vidéo indisponible');
-  await expect(gate(page)).toBeVisible(); // premier échec : on peut réessayer
-  await gate(page).getByRole('button', { name: 'Réessayer', exact: true }).click();
-  await expect(page.getByText(/vous pouvez continuer/)).toBeVisible({ timeout: 15000 });
+  await expect(gate(page)).toContainText('Aucune vidéo disponible');
+  // Échecs répétés (mode avion, bloqueur de publicités) : le verrou ne se lève jamais.
+  for (let i = 0; i < 3; i++) {
+    await gate(page).getByRole('button', { name: 'Réessayer', exact: true }).click();
+    await expect(gate(page)).toContainText('Aucune vidéo disponible');
+  }
+  await page.screenshot({ path: test.info().outputPath('zikr-pub-indisponible.png') });
+  await gate(page).getByRole('button', { name: 'Plus tard', exact: true }).click();
+  await expect(lockedTap(page)).toContainText('100');
+  await lockedTap(page).click();
+  await expect(gate(page)).toBeVisible();
+  // « S'abonner » ouvre la fenêtre d'abonnement.
+  await gate(page).getByRole('button', { name: 'S’abonner', exact: true }).click();
+  const subscription = page.getByRole('dialog', { name: 'Abonnement', exact: true });
+  await expect(subscription).toBeVisible();
+  await expect(subscription.getByRole('combobox', { name: 'Durée et prix' })).toBeVisible();
   await expect(gate(page)).toHaveCount(0);
-  await expect(tap(page)).toContainText('100');
-  await tapTimes(page, 1);
-  await expect(tap(page)).toContainText('101');
 });
 
 test('un abonné n’est jamais verrouillé', async ({ page, login }) => {

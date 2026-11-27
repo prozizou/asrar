@@ -15,7 +15,7 @@ import { reserveExternalWindow } from '@/lib/externalWindow';
 import './bibliotheque.css';
 import ViewState from '@/components/ViewState';
 import { useToast } from '@/components/useToast';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useAccess } from '@/components/AccessProvider';
@@ -25,6 +25,8 @@ import { driveDirectLink } from '@/lib/drive';
 import { optimImg } from '@/lib/img';
 import SmartImageUntyped from '@/components/SmartImage';
 import CommentModal from './CommentModal';
+import InFeedAd, { useInFeedAds } from '@/components/InFeedAd';
+import { inFeedAdAfter } from '@/lib/inFeedAds';
 import ModalUntyped from '@/components/Modal';
 // Modal.js (non typé) : ses paramètres par défaut `undefined` seraient
 // inférés comme seuls types admis.
@@ -55,6 +57,7 @@ interface Comment {
 }
 
 export default function BibliothequePage() {
+  const showFeedAds = useInFeedAds();
   const { notify, toast } = useToast();
   // useAccess() vient d'AccessProvider.js (.js, hors scope de ce batch) :
   // son contexte est créé via createContext(null), donc TS l'infère `null`
@@ -260,10 +263,11 @@ export default function BibliothequePage() {
           <ViewState title="Aucun ouvrage disponible" description="Les prochaines publications apparaîtront ici." />
         ) : (
           <>
-          {visibleBooks.map((book) => {
+          {visibleBooks.map((book, index) => {
             const s = social[book._key] || { likes: 0, liked: false, comments: 0 };
             return (
-              <div key={book._key} className={'book-card' + (highlightKey === book._key ? ' book-highlight' : '')} id={'book-' + book._key}>
+              <Fragment key={book._key}>
+              <div className={'book-card' + (highlightKey === book._key ? ' book-highlight' : '')} id={'book-' + book._key}>
                 <button type="button" className="book-cover" aria-label={"Ouvrir « " + book.text + " »"} onClick={() => openBook(book._key)}>
                   {book.img && !imgErrors[book._key] ? (
                     <SmartImage
@@ -294,6 +298,8 @@ export default function BibliothequePage() {
                   </div>
                 </div>
               </div>
+              {showFeedAds && inFeedAdAfter(index, visibleBooks.length) && <InFeedAd />}
+              </Fragment>
             );
           })}
           {hasMore && <div ref={sentinelRef} className="load-sentinel" aria-hidden />}

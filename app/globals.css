@@ -2250,3 +2250,11 @@ a.back-btn, button.back-btn { display: inline-flex; align-items: center; gap: 6p
 }
 .ad-loading-cancel:hover { background: var(--surface-2); }
 .ad-loading-cancel:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Encarts publicitaires dans les listes (components/InFeedAd.js) : pleine
+   largeur de la grille, clairement signalés, sans ressembler à une carte. */
+.in-feed-ad { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 4px 0; padding: 8px 0; border-top: 1px solid var(--border, rgba(0,0,0,.08)); border-bottom: 1px solid var(--border, rgba(0,0,0,.08)); }
+.in-feed-ad-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted, #777); }
+.in-feed-ad-slot { overflow: hidden; }
+.in-feed-ad-slot iframe { display: block; border: 0; }
+.in-feed-ad.zk-chat-ad { margin: 0; padding: 4px 0; border-top: 0; flex: 0 0 auto; }

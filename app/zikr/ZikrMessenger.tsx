@@ -1,4 +1,5 @@
 'use client';
+import InFeedAd, { useInFeedAds } from '@/components/InFeedAd';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ArrowDown, Camera, Check, CheckCheck, ChevronDown, ChevronUp, Copy, Forward, Image as ImageIcon, Info, MoreVertical, Plus, Reply, Search, Send, Share2, Trash2, X, Pencil } from 'lucide-react';
@@ -37,6 +38,7 @@ const dayLabel = (value: number) => {
 const thumb = (url: string) => url.includes('res.cloudinary.com') && url.includes('/image/upload/') && !url.includes('/image/upload/f_auto') ? url.replace('/image/upload/', '/image/upload/f_auto,q_auto,c_limit,w_720/') : url;
 const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 export default function ZikrMessenger({ groupId, uid, active, onUnread, notify, searchOpen = false, onSearchClose }: Props) {
+  const showChatAd = useInFeedAds();
   const [messages, setMessages] = useState<Message[]>(() => getChatCache(uid, groupId));
   const [quoteUpdates, setQuoteUpdates] = useState<Record<string, Message>>({});
   const [text, setText] = useState(''); const [reply, setReply] = useState<Message | null>(null);
@@ -274,6 +276,9 @@ export default function ZikrMessenger({ groupId, uid, active, onUnread, notify, 
   };
 
   return <section className="zk-chat-panel zk-messenger" aria-label="Discussion du Zikr collectif" style={!active ? { display: 'none' } : undefined}>
+    {/* Bandeau publicitaire en HAUT de la discussion, loin du champ de saisie
+        (pas de clic accidentel en écrivant) — voir components/InFeedAd.js. */}
+    {showChatAd && active && <InFeedAd format="b320x50" className="in-feed-ad zk-chat-ad" />}
     {searchOpen && <div className="zk-chat-search" role="search">
       <Search size={18} aria-hidden="true" />
       <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans la discussion" aria-label="Rechercher dans la discussion"

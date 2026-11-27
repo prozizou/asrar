@@ -1596,3 +1596,9 @@ body:has(.zk-has-bottom-nav) .toast { bottom: calc(var(--zk-nav-h) + 16px); }
   background: var(--glass-bg); color: var(--text-main); font-size: .88rem; text-align: center;
   box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
 }
+.zk-ad-gate-later {
+  display: block; width: 100%; min-height: 44px; margin-top: 4px; border: 0; background: transparent;
+  color: var(--text-dim); font: inherit; font-weight: 600; cursor: pointer;
+}
+.zk-ad-gate-later:hover { color: var(--text-main); }
+.zk-ad-gate-later:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 10px; }

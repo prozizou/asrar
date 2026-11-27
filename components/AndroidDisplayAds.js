@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { configureDisplayAds } from '@/lib/unityAds';
+import { displaySurface } from '@/lib/inFeedAds';
 import { useAccess } from './AccessProvider';
 import { useAuth } from './AuthProvider';
 
@@ -18,7 +19,7 @@ export default function AndroidDisplayAds() {
       void configureDisplayAds(enabled, surface, () => revision.current === current);
     };
     const enabled = !!user && !loading && adFree === false;
-    const surface = path === '/' ? 'home' : path === '/menu' ? 'menu' : '';
+    const surface = displaySurface(path);
     configure(enabled, surface);
     return () => configure(false, '');
   }, [user, loading, adFree, path]);

@@ -1,3 +1,16 @@
+## Android 8.3.4 / SW v47.07 — Bannières AdMob des écrans, Adsterra sur le site, verrou strict du Zikr, icônes nettes
+
+- Bannière AdMob fixe en bas de l'écran pour les Secrets mystiques (`secrets`) et la Bibliothèque (`library`), comme sur le Marché (`home`). Le menu garde son encart natif ; l'app-open et l'interstitiel de transition restent limités à l'accueil et au menu (`AdMobDisplayAds.BANNER_SURFACES`, `lib/inFeedAds.js#displaySurface`).
+- Adsterra réservé au site (iPhone/iPad et ordinateur) : encart 300x250 (iframe sandboxé chargé à l'approche) toutes les 6 cartes dans les Secrets, la Bibliothèque et le Marché, jamais en fin de liste, étiquette « Publicité » (`components/InFeedAd.js`) ; bandeau 320x50 en haut de la discussion du Zikr collectif, loin du champ de saisie. Jamais pour un abonné ; `NEXT_PUBLIC_ADSTERRA_BANNERS=0` les coupe.
+- Le site rouvre sur ordinateur : seuls les navigateurs et PWA Android sont encore déroutés vers Google Play (`lib/storeRedirect.js`). Sur ordinateur, pendant la pause des formats web : bannières et Native Banner Adsterra (ni Social Bar ni Popunder).
+- Application Android : plus AUCUN format Adsterra (ni Native Banner, ni bannières, ni bandeau des Ressources) ; uniquement les bannières AdMob et les vidéos récompensées. `NEXT_PUBLIC_ADSTERRA_IN_APP` n'est plus utilisée.
+- Le verrou des 100 grains ne se lève plus après deux échecs de chargement : une vidéo absente, une coupure réseau ou une erreur laissent le compteur figé jusqu'à ce que l'utilisateur sans abonnement regarde une vidéo jusqu'au bout ou s'abonne. Ferme le contournement par mode avion ou bloqueur de publicités (DNS privé).
+- Messages clairs selon la cause (aucune vidéo disponible, connexion, appareil) ; bouton « S'abonner » dans la fenêtre du verrou ; le verrou se lève dès que le compte est abonné (vérifié aussi en rouvrant la fenêtre).
+- Couche avant de l'icône adaptative à la bonne taille (108 dp : 81 à 432 px selon la densité) : les anciens fichiers faisaient 36 à 192 px, la taille des anciennes icônes, et Android les agrandissait ~2,25× (icône floue).
+- Écran de démarrage : logo dédié `splash_icon` (288 dp, jusqu'à 1152 px) au lieu de l'icône du lanceur, très agrandie et floue à cette taille. Fond du logo aligné sur l'icône (#EFEFEF).
+- Toutes les tailles sont des réductions depuis `public/assets/logo-full.png` (640 px) : aucune n'est agrandie. Générateur reproductible : `scripts/generate-android-icons.py` (Pillow).
+- Exports Word/PDF dans l'application : délai maximal (enregistrement 20 s, impression 8 s) pour que la fenêtre d'attente ne reste plus affichée indéfiniment (`lib/nativeFiles.js`).
+
 ## Android 8.3.3 / SW v47.06 — Attente des vidéos dans l'application
 
 - La fenêtre Android « Continuer avec une publicité / Chargement… » est remplacée par une attente dans la fenêtre de l'application (`components/AdLoadingState.js`) : anneau aux couleurs de l'application, « Préparation de votre vidéo… », message après 8 s si la connexion est lente, bouton « Annuler » ; puis « Validation de votre point… » pendant la confirmation serveur. Fenêtre d'abonnement et verrou du Zikr collectif.

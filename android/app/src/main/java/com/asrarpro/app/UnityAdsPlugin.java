@@ -23,7 +23,7 @@ public class UnityAdsPlugin extends Plugin {
             if (displayAds == null) displayAds = new AdMobDisplayAds(host, getBridge().getWebView(), () -> pending != null);
             String surface = call.getString("surface", "");
             displayAds.configure(Boolean.TRUE.equals(call.getBoolean("enabled")),
-                "home".equals(surface) || "menu".equals(surface) ? surface : "");
+                AdMobDisplayAds.isSurface(surface) ? surface : "");
             call.resolve();
         });
     }
