@@ -1,3 +1,7 @@
+## Android 8.3.7 — Adaptateur ironSource Ads dans la médiation AdMob
+
+- Adaptateur `com.google.ads.mediation:ironsource:9.6.0.1` : ironSource était configuré dans les groupes de médiation AdMob mais l'adaptateur manquait dans l'APK (Ad Inspector : « Adapter : Failed: Not found »), donc cette source n'enchérissait jamais.
+
 ## Android 8.3.6 — Blocs AdMob « high » en priorité, repli sur les blocs par défaut
 
 - Chaque format essaie d'abord son bloc « high » (eCPM minimal élevé), puis, s'il ne renvoie aucune annonce, le bloc par défaut : ouverture (`1739268591` → `8571013678`), interstitiel (`6831813175` → `7998946847`), bannière (`6582345828` → `4160161224`), récompensé (`2847200667` → `9551701662`, aussi pour le préchargement), interstitiel avec récompense (`6939945186` → `3047224257`). Le natif du menu garde son bloc unique (`AdUnitChain.java`).
