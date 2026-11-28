@@ -85,10 +85,8 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
         } catch (RuntimeException error) { if (!destroyed) callback.done("init"); }
     }
 
-    /** Bloc récompensé standard (démonstration Google en debug). */
-    static String rewardedUnit() {
-        return BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5224354917" : BuildConfig.ADMOB_REWARDED_ID;
-    }
+    /** Blocs récompensés à essayer : « High ecpm » puis le bloc par défaut (démonstration en debug). */
+    static String[] rewardedUnits() { return AdUnitChain.units(AdUnitChain.REWARDED, BuildConfig.DEBUG); }
 
     public LevelPlayActionAds.Ad create(LevelPlayActionAds.Events events) {
         return new LevelPlayActionAds.Ad() {
@@ -109,30 +107,36 @@ final class AdMobAdPlatform implements LevelPlayActionAds.Platform {
                     }
                 }
                 AdRequest request = new AdRequest.Builder().build();
+                // Bloc « high » d'abord ; s'il ne remplit pas, bloc par défaut ; sinon « no_fill ».
                 if (interstitial) {
-                    String unit = BuildConfig.DEBUG ? "ca-app-pub-3940256099942544/5354046379" : "ca-app-pub-3895250961868134/3047224257";
-                    RewardedInterstitialAd.load(activity.get(), unit, request, new RewardedInterstitialAdLoadCallback() {
-                        @Override public void onAdLoaded(RewardedInterstitialAd loaded) {
-                            if (cleared || destroyed) return;
-                            interstitialAd = loaded;
-                            loaded.setServerSideVerificationOptions(verification());
-                            loaded.setFullScreenContentCallback(fullscreen());
-                            events.loaded();
-                        }
-                        @Override public void onAdFailedToLoad(LoadAdError error) { noFill(); }
-                    });
+                    AdUnitChain.run(AdUnitChain.units(AdUnitChain.REWARDED_INTERSTITIAL, BuildConfig.DEBUG), (unit, next) -> {
+                        if (cleared || destroyed) return;
+                        RewardedInterstitialAd.load(activity.get(), unit, request, new RewardedInterstitialAdLoadCallback() {
+                            @Override public void onAdLoaded(RewardedInterstitialAd loaded) {
+                                if (cleared || destroyed) return;
+                                interstitialAd = loaded;
+                                loaded.setServerSideVerificationOptions(verification());
+                                loaded.setFullScreenContentCallback(fullscreen());
+                                events.loaded();
+                            }
+                            @Override public void onAdFailedToLoad(LoadAdError error) { next.run(); }
+                        });
+                    }, this::noFill);
                     return;
                 }
-                RewardedAd.load(activity.get(), rewardedUnit(), request, new RewardedAdLoadCallback() {
-                    @Override public void onAdLoaded(RewardedAd loaded) {
-                        if (cleared || destroyed) return;
-                        ad = loaded;
-                        ad.setServerSideVerificationOptions(verification());
-                        ad.setFullScreenContentCallback(fullscreen());
-                        events.loaded();
-                    }
-                    @Override public void onAdFailedToLoad(LoadAdError error) { noFill(); }
-                });
+                AdUnitChain.run(rewardedUnits(), (unit, next) -> {
+                    if (cleared || destroyed) return;
+                    RewardedAd.load(activity.get(), unit, request, new RewardedAdLoadCallback() {
+                        @Override public void onAdLoaded(RewardedAd loaded) {
+                            if (cleared || destroyed) return;
+                            ad = loaded;
+                            ad.setServerSideVerificationOptions(verification());
+                            ad.setFullScreenContentCallback(fullscreen());
+                            events.loaded();
+                        }
+                        @Override public void onAdFailedToLoad(LoadAdError error) { next.run(); }
+                    });
+                }, this::noFill);
             }
             private void noFill() { if (!cleared && !destroyed) events.loadFailed("no_fill"); }
             private ServerSideVerificationOptions verification() {

@@ -32,8 +32,6 @@ final class AdMobDisplayAds {
     private static final long FULLSCREEN_INTERVAL_MS = 180_000;
     private static final long BACKGROUND_INTERVAL_MS = 120_000;
     private static final long CACHE_MS = 60 * 60_000;
-    private static final String PUBLISHER = "ca-app-pub-3895250961868134/";
-    private static final String TEST = "ca-app-pub-3940256099942544/";
 
     private final Activity activity;
     private final android.webkit.WebView webView;
@@ -105,23 +103,26 @@ final class AdMobDisplayAds {
     private void loadFullscreen(long now) {
         if (!fetchingInterstitial && (interstitial == null || now - interstitialAt >= CACHE_MS)) {
             fetchingInterstitial = true;
-            InterstitialAd.load(activity, unit("7998946847", "1033173712"), request(), new InterstitialAdLoadCallback() {
-                @Override public void onAdLoaded(InterstitialAd ad) {
-                    fetchingInterstitial = false;
-                    if (enabled) { interstitial = ad; interstitialAt = SystemClock.elapsedRealtime(); }
-                }
-                @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) { fetchingInterstitial = false; }
-            });
+            // Bloc « high interstitial » d'abord, bloc par défaut s'il ne remplit pas.
+            AdUnitChain.run(AdUnitChain.units(AdUnitChain.INTERSTITIAL, BuildConfig.DEBUG), (unit, next) ->
+                InterstitialAd.load(activity, unit, request(), new InterstitialAdLoadCallback() {
+                    @Override public void onAdLoaded(InterstitialAd ad) {
+                        fetchingInterstitial = false;
+                        if (enabled) { interstitial = ad; interstitialAt = SystemClock.elapsedRealtime(); }
+                    }
+                    @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) { next.run(); }
+                }), () -> fetchingInterstitial = false);
         }
         if (!fetchingAppOpen && (appOpen == null || now - appOpenAt >= CACHE_MS)) {
             fetchingAppOpen = true;
-            AppOpenAd.load(activity, unit("8571013678", "9257395921"), request(), new AppOpenAd.AppOpenAdLoadCallback() {
-                @Override public void onAdLoaded(AppOpenAd ad) {
-                    fetchingAppOpen = false;
-                    if (enabled) { appOpen = ad; appOpenAt = SystemClock.elapsedRealtime(); }
-                }
-                @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) { fetchingAppOpen = false; }
-            });
+            AdUnitChain.run(AdUnitChain.units(AdUnitChain.APP_OPEN, BuildConfig.DEBUG), (unit, next) ->
+                AppOpenAd.load(activity, unit, request(), new AppOpenAd.AppOpenAdLoadCallback() {
+                    @Override public void onAdLoaded(AppOpenAd ad) {
+                        fetchingAppOpen = false;
+                        if (enabled) { appOpen = ad; appOpenAt = SystemClock.elapsedRealtime(); }
+                    }
+                    @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) { next.run(); }
+                }), () -> fetchingAppOpen = false);
         }
     }
 
@@ -165,19 +166,29 @@ final class AdMobDisplayAds {
 
     private void loadBanner() {
         if (banner != null) return;
-        final AdView view = new AdView(activity);
-        banner = view;
-        view.setAdUnitId(unit("4160161224", "6300978111"));
-        view.setAdSize(AdSize.BANNER);
-        view.setAdListener(new AdListener() {
-            @Override public void onAdLoaded() {
-                if (banner == view) attachFooter(view, dp(50));
-            }
-            @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) {
-                if (banner == view) { banner = null; view.destroy(); }
-            }
-        });
-        view.loadAd(request());
+        // Une AdView par bloc : « high banner » d'abord, bannière par défaut si elle ne remplit pas.
+        AdUnitChain.run(AdUnitChain.units(AdUnitChain.BANNER, BuildConfig.DEBUG), (unit, next) -> {
+            final AdView view = new AdView(activity);
+            final boolean[] shown = { false };
+            banner = view;
+            view.setAdUnitId(unit);
+            view.setAdSize(AdSize.BANNER);
+            view.setAdListener(new AdListener() {
+                @Override public void onAdLoaded() {
+                    if (banner != view || shown[0]) return;
+                    shown[0] = true;
+                    attachFooter(view, dp(50));
+                }
+                @Override public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError error) {
+                    // Échec d'une actualisation automatique : la bannière affichée reste en place.
+                    if (banner != view || shown[0]) return;
+                    banner = null;
+                    view.destroy();
+                    next.run();
+                }
+            });
+            view.loadAd(request());
+        }, () -> {});
     }
 
     private int loadingNative = -1;
@@ -271,6 +282,6 @@ final class AdMobDisplayAds {
 
     void destroy() { configure(false, ""); platform.destroy(); }
     private int dp(int value) { return Math.round(activity.getResources().getDisplayMetrics().density * value); }
-    private static String unit(String production, String debug) { return BuildConfig.DEBUG ? TEST + debug : PUBLISHER + production; }
+    private static String unit(String production, String debug) { return BuildConfig.DEBUG ? AdUnitChain.TEST + debug : AdUnitChain.PUBLISHER + production; }
     private static AdRequest request() { return new AdRequest.Builder().build(); }
 }
