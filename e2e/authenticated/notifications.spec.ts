@@ -5,7 +5,9 @@ const { enqueueNotification, claimJob, TERMINAL_TIME } = require('../../server/n
 test('les règles RTDB réelles refusent données privées et écritures client', async ({ request }) => {
   const token = await tokenAs(request, 'premium');
   const url = (path: string) => `http://127.0.0.1:9000/${path}.json?ns=demo-asrar-test-default-rtdb&auth=${token}`;
-  expect((await request.get(url('data/appData'))).status()).toBe(200);
+  // Règle de production : seul asmaUlHusna (lu par lib/benefits.js) est lisible, pas tout data/appData.
+  expect((await request.get(url('data/appData/asmaUlHusna'))).status()).toBe(200);
+  expect((await request.get(url('data/appData'))).status()).toBe(401);
   for (const path of ['allowedUsers', 'notification_jobs', 'notifications/fixture-free', 'db_sirr_protection']) {
     expect((await request.get(url(path))).status()).toBe(401);
   }
