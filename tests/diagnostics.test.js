@@ -237,3 +237,27 @@ it('ne conserve jamais le contenu d’une ressource data ou blob', () => {
     expect(sanitizeDiagnostic({ details: { sourceFile } }).details.sourceFile).toBe('');
   }
 });
+
+describe('Fenêtres natives', () => {
+  it('le temps passé dans confirm/alert n’est pas compté comme un blocage, et la fonction est restaurée à l’arrêt', async () => {
+    let time = 0, tick;
+    const confirm = vi.fn(() => { time += 8000; return true; });
+    const win = { location: { pathname: '/' }, addEventListener: vi.fn(), removeEventListener: vi.fn(), confirm };
+    const fetch = vi.fn(async () => ({ status: 204 }));
+    const monitor = runtime(database(), { globals: {
+      window: win, navigator: { onLine: true },
+      document: { visibilityState: 'visible', addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      performance: { now: () => time }, setInterval: f => { tick = f; return 1; }, clearInterval: vi.fn(), fetch,
+    } })('lib/diagnostics.js');
+    const stop = monitor.startDiagnostics({ version: 'v47.09' });
+    tick();
+    expect(win.confirm('Retirer votre demande ?')).toBe(true);
+    expect(confirm).toHaveBeenCalledWith('Retirer votre demande ?');
+    tick(); // le heartbeat déclenche aussi un envoi asynchrone (5 s écoulées)
+    await monitor.flushDiagnostics();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(fetch).not.toHaveBeenCalled();
+    stop();
+    expect(win.confirm).toBe(confirm);
+  });
+});
