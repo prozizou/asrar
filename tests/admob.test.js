@@ -112,3 +112,11 @@ it('accepte la sonde signée de validation AdMob sans jamais accorder de crédit
   await handler({ method: 'GET', url: '/api/admob-ssv?' + probe }, res);
   expect(res.code).toBe(200); expect(reward).not.toHaveBeenCalled();
 });
+
+it('accepte les récompenses des blocs « high » avec le même format que les blocs par défaut', () => {
+  const { HIGH_AD_UNIT, HIGH_INTERSTITIAL_AD_UNIT } = require('../server/admobVerification');
+  expect(verifyAdMobQuery(signed({ ad_unit: HIGH_AD_UNIT }), { 123: publicKey }, now)).toEqual({ sid: 'user1.' + 'a'.repeat(32), oid: 'admob:transaction-1' });
+  expect(verifyAdMobQuery(signed({ ad_unit: '2847200667' }), { 123: publicKey }, now)).not.toBe(null);
+  expect(verifyAdMobQuery(signed({ ad_unit: HIGH_INTERSTITIAL_AD_UNIT }), { 123: publicKey }, now)).toMatchObject({ interstitial: true });
+  expect(verifyAdMobQuery(signed({ ad_unit: '6582345828' }), { 123: publicKey }, now)).toBe(null); // bannière : jamais de récompense
+});

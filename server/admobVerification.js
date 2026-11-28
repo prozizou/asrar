@@ -2,6 +2,11 @@
 const crypto = require('node:crypto');
 const AD_UNIT = 'ca-app-pub-3895250961868134/9551701662';
 const INTERSTITIAL_AD_UNIT = 'ca-app-pub-3895250961868134/3047224257';
+// Android 8.3.6 : blocs « high » (eCPM minimal élevé) essayés avant les blocs
+// par défaut ci-dessus (android/.../AdUnitChain.java). Même format de récompense.
+const HIGH_AD_UNIT = 'ca-app-pub-3895250961868134/2847200667';
+const HIGH_INTERSTITIAL_AD_UNIT = 'ca-app-pub-3895250961868134/6939945186';
+const accepts = (units, unit) => units.some((u) => u === unit || u.split('/')[1] === unit);
 let cached, expires = 0;
 async function googleKeys() {
   if (cached && Date.now() < expires) return cached;
@@ -37,10 +42,10 @@ function verifyAdMobQuery(query, keys, now = Date.now()) {
   const rawTimestamp = Number(params.get('timestamp'));
   // Google's documentation declares milliseconds but also shows microsecond examples.
   const timestamp = rawTimestamp >= 1e14 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
-  const interstitial = [INTERSTITIAL_AD_UNIT, INTERSTITIAL_AD_UNIT.split('/')[1]].includes(unit);
-  if ((!interstitial && ![AD_UNIT, AD_UNIT.split('/')[1]].includes(unit)) || !Number.isSafeInteger(rawTimestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
+  const interstitial = accepts([INTERSTITIAL_AD_UNIT, HIGH_INTERSTITIAL_AD_UNIT], unit);
+  if ((!interstitial && !accepts([AD_UNIT, HIGH_AD_UNIT], unit)) || !Number.isSafeInteger(rawTimestamp) || timestamp > now + 300000 || now - timestamp > 7200000) return null;
   const transaction = params.get('transaction_id');
   if (!transaction || transaction.length > 256) return null;
   return { sid: params.get('custom_data'), oid: 'admob:' + transaction, ...(interstitial ? { interstitial: true } : {}) };
 }
-module.exports = { verifyAdMobQuery, googleKeys, AD_UNIT };
+module.exports = { verifyAdMobQuery, googleKeys, AD_UNIT, HIGH_AD_UNIT, HIGH_INTERSTITIAL_AD_UNIT };

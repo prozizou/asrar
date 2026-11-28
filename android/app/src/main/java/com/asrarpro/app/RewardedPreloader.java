@@ -61,13 +61,16 @@ final class RewardedPreloader {
             if (token == 0) { scheduleRetryIfWaiting(); return; }
             platform.initialize(false, error -> main.post(() -> {
                 if (error != null || !enabled) { slot.failed(token, now()); scheduleRetry(); return; }
+                Runnable failed = () -> { slot.failed(token, now()); scheduleRetry(); };
                 try {
-                    RewardedAd.load(host.getApplicationContext(), AdMobAdPlatform.rewardedUnit(), new AdRequest.Builder().build(),
-                        new RewardedAdLoadCallback() {
-                            @Override public void onAdLoaded(RewardedAd loaded) { slot.loaded(token, loaded, now()); }
-                            @Override public void onAdFailedToLoad(LoadAdError loadError) { slot.failed(token, now()); scheduleRetry(); }
-                        });
-                } catch (RuntimeException exception) { slot.failed(token, now()); scheduleRetry(); }
+                    // « High ecpm » d'abord, bloc récompensé par défaut s'il ne remplit pas.
+                    AdUnitChain.run(AdMobAdPlatform.rewardedUnits(), (unit, next) ->
+                        RewardedAd.load(host.getApplicationContext(), unit, new AdRequest.Builder().build(),
+                            new RewardedAdLoadCallback() {
+                                @Override public void onAdLoaded(RewardedAd loaded) { slot.loaded(token, loaded, now()); }
+                                @Override public void onAdFailedToLoad(LoadAdError loadError) { next.run(); }
+                            }), failed);
+                } catch (RuntimeException exception) { failed.run(); }
             }));
         });
     }

@@ -24,6 +24,10 @@ Les paiements Wave, PI-SPI et WhatsApp restent disponibles. Les abonnés passent
 
 Une nouvelle installation/mise à jour Android est nécessaire pour changer le moteur de médiation. Le déploiement web seul ne remplace pas le SDK dans un APK existant. Les builds debug utilisent les identifiants Google officiels de démonstration ; ils ne peuvent pas créer de crédits de production. Les essais automatisés utilisent des clés locales et émulateurs, sans affichage publicitaire réel. L’affichage et les revenus réels restent à vérifier sur appareil avec la console AdMob configurée.
 
+## Blocs « high » (Android 8.3.6)
+
+L’application essaie d’abord le bloc « high » de chaque format, puis le bloc par défaut s’il ne remplit pas (`android/app/src/main/java/com/asrarpro/app/AdUnitChain.java`). Les blocs « high » récompensés doivent avoir la même URL SSV que les blocs par défaut : `High ecpm` (`2847200667`) et `high int_recomp` (`6939945186`). Le serveur accepte les deux (`server/admobVerification.js`).
+
 Configurez également le bloc interstitiel récompensé `ca-app-pub-3895250961868134/3047224257` avec la même URL SSV, puis activez `ADMOB_REWARDED_INTERSTITIAL_SSV=1` dans Vercel. Les blocs d’affichage sont réservés aux comptes Android sans abonnement. La bannière AdMob apparaît à l’accueil, le format natif dans le menu et la bannière Adsterra dans Ressources.
 
 Le fichier `public/.well-known/assetlinks.json` contient l’empreinte du certificat de signature Play. Après déploiement, vérifiez les liens `https://www.asrarpro.com` sur Android 8.3.0. Le blocage du site hors iOS est actif par défaut (`NEXT_PUBLIC_IOS_WEB_ONLY=0` au build pour le couper) : Android est redirigé vers Google Play, l’ordinateur voit un écran d’installation. Le domaine sans `www` redirige actuellement vers `www`. Son association Android directe exige de servir aussi `/.well-known/assetlinks.json` sans redirection sur ce domaine.
