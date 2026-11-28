@@ -24,6 +24,10 @@ Les paiements Wave, PI-SPI et WhatsApp restent disponibles. Les abonnés passent
 
 Une nouvelle installation/mise à jour Android est nécessaire pour changer le moteur de médiation. Le déploiement web seul ne remplace pas le SDK dans un APK existant. Les builds debug utilisent les identifiants Google officiels de démonstration ; ils ne peuvent pas créer de crédits de production. Les essais automatisés utilisent des clés locales et émulateurs, sans affichage publicitaire réel. L’affichage et les revenus réels restent à vérifier sur appareil avec la console AdMob configurée.
 
+## ironSource Ads (Android 8.3.7)
+
+Adaptateur `com.google.ads.mediation:ironsource:9.6.0.1`. Dans AdMob, la source ironSource Ads de chaque groupe doit avoir l’App Key et les identifiants d’instance ironSource. Ajouter dans `public/app-ads.txt` la ligne DIRECT fournie par le tableau de bord ironSource (identifiant propre au compte).
+
 ## Blocs « high » (Android 8.3.6)
 
 L’application essaie d’abord le bloc « high » de chaque format, puis le bloc par défaut s’il ne remplit pas (`android/app/src/main/java/com/asrarpro/app/AdUnitChain.java`). Les blocs « high » récompensés doivent avoir la même URL SSV que les blocs par défaut : `High ecpm` (`2847200667`) et `high int_recomp` (`6939945186`). Le serveur accepte les deux (`server/admobVerification.js`).
